@@ -11,9 +11,9 @@ public class TrialInternetConnection {
 	public static void main(String[] args) {
 		Bindings b = new Bindings();
 		Random RND = new Random();
-		b.addInterface("wlan0");
+		b.addInterface("wlan1");
 		
-		String ip = "192.168.43.234";
+		String ip = "192.168.43.65";
 		try {
 			PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(4000).bindings(b).start()).start();
 			
