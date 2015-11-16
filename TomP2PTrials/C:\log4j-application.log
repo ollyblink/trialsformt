@@ -1,0 +1,2 @@
+2015-11-12 10:20:48 FATAL DefaultJobManager:42 - Hello logger.
+2015-11-12 10:20:58 DEBUG DefaultJobManager:42 - Hello logger.

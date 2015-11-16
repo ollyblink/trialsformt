@@ -1,0 +1,5 @@
+package firstdesignidea.execution.jobtask;
+
+public enum JobStatus {
+	DISTRIBUTED_MAP_TASKS, NEW_JOB_AVAILABLE, FINISHED_MAP_TASKS, DISTRIBUTED_REDUCE_TASKS, FINISHED_REDUCE_TASKS, JOB_FAILED
+}
