@@ -1,7 +1,9 @@
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
@@ -14,11 +16,14 @@ import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 import utils.GetOwnIpAddressTest;
 
 public class TrialInternetConnection {
+	private static Peer master;
+
 	public static void main(String[] args) throws InterruptedException, IOException, ClassNotFoundException {
 //		final String key = "Hello World";
 		Random random = new Random();
@@ -28,14 +33,14 @@ public class TrialInternetConnection {
 		Bindings b = new Bindings();
 		b.addInterface("wlan0");
 
-		int peerID = 2;
-		String action = "GET";
-		final String key = "key";
-		final String value ="value";
+		int peerID =2;
+		String action = "";
+		final String key = "C";
+		final String value ="My World";
 		
 		Random RND = new Random();
 		if (peerID == 1) {
-			Peer master = new PeerBuilder(Number160.createHash("super peer")).ports(port).bindings(b).start();
+			master = new PeerBuilder(Number160.createHash("super peer")).ports(port).bindings(b).broadcastHandler(new MyBroadcastHandler()).start();
 			PeerDHT masterDHT = new PeerBuilderDHT(master).start();
 		} else {
 			int port2 = port + RND.nextInt(1000) + 1;
@@ -57,12 +62,16 @@ public class TrialInternetConnection {
 			if (!bootstrap.isSuccess()) {
 				System.err.println("B no success!");
 			}
+			
+			System.out.println("Peers: " + myPeer.peerBean().peerMap());
 			//
 			PeerDHT myPeerDHT = new PeerBuilderDHT(myPeer).start();
-			// Number160 hash = Number160.createHash("Hello");
-			// NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
-			// dataMap.put(new Number640(hash, hash, hash, hash), new Data("Broadcast hello world"));
-			// myPeer.broadcast(hash).dataMap(dataMap).start();
+			
+			
+			 Number160 hash = Number160.createHash("Hello");
+			 NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+			 dataMap.put(new Number640(hash, hash, hash, hash), new Data("Broadcast hello world"));
+			 myPeer.broadcast(hash).dataMap(dataMap).start();
 			//
 			if (action == "PUT") {
 
@@ -104,14 +113,14 @@ public class TrialInternetConnection {
 					}
 
 				});
-				Data data = futureDHT.data();
-				if (data == null) {
-					throw new RuntimeException("Address not available in DHT.");
-				}
-				InetSocketAddress inetSocketAddress = (InetSocketAddress) data.object();
-				System.err.println("returned " + inetSocketAddress);
+//				Data data = futureDHT.data();
+//				if (data == null) {
+//					throw new RuntimeException("Address not available in DHT.");
+//				}
+//				InetSocketAddress inetSocketAddress = (InetSocketAddress) data.object();
+//				System.err.println("returned " + inetSocketAddress);
 			}
-			// myPeer.shutdown();
+//			 myPeer.shutdown();
 		}
 	}
 }
