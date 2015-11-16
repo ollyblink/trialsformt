@@ -83,7 +83,7 @@ public class TrialInternetConnection {
 						t.printStackTrace();
 					}
 
-				});
+				}); 
 			}
 			if (action == "GET") {
 				FutureGet futureDHT = myPeerDHT.get(Number160.createHash(key)).start();
