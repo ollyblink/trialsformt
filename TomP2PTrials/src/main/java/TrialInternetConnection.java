@@ -53,7 +53,7 @@ public class TrialInternetConnection {
 			discovery.awaitUninterruptibly();
 			if (!discovery.isSuccess()) {
 				System.err.println("A no success!");
-			}
+			} 
 			System.err.println("Peer: " + discovery.reporter() + " told us about our address.");
 			bootstrapServerPeerAddress = discovery.reporter();
 			FutureBootstrap bootstrap = myPeer.bootstrap().peerAddress(bootstrapServerPeerAddress).start();
