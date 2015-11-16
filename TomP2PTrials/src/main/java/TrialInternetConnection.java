@@ -18,7 +18,7 @@ import net.tomp2p.storage.Data;
 import utils.GetOwnIpAddressTest;
 
 public class TrialInternetConnection {
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String[] args) {
 
 		String ip = "192.168.43.234";
 		int port = 4000;
