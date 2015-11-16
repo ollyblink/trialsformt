@@ -48,7 +48,7 @@ public class TrialInternetConnection {
 			}
 			System.err.println("Peer: " + discovery.reporter() + " told us about our address.");
 			InetSocketAddress myInetSocketAddress = new InetSocketAddress(myPeer.peerAddress().inetAddress(), port2);
-
+ 
 			bootstrapServerPeerAddress = discovery.reporter();
 			FutureBootstrap bootstrap = myPeer.bootstrap().peerAddress(bootstrapServerPeerAddress).start();
 			bootstrap.awaitUninterruptibly();
