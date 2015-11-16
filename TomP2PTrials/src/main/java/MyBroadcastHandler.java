@@ -22,7 +22,7 @@ public class MyBroadcastHandler extends StructuredBroadcastHandler {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
+					// TODO Auto-generated catch sblock
 					e.printStackTrace();
 				}
 			}
