@@ -18,11 +18,11 @@ import net.tomp2p.storage.Data;
 import utils.GetOwnIpAddressTest;
 
 public class TrialInternetConnection {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 
 		String ip = "192.168.43.234";
 		int port = 4000;
-		int peerID = 3;
+		int peerID = 2;
 		if (peerID == 1) {
 			Bindings b = new Bindings();
 			Random RND = new Random();
@@ -41,7 +41,7 @@ public class TrialInternetConnection {
 		} else {
 
 			Bindings b = new Bindings();
-			b.addInterface("wlan0");
+			b.addInterface("wlan1");
 			try {
 				Peer peer = new PeerBuilder(Number160.createHash("client peer")).bindings(b).ports(port + 1).behindFirewall(true)
 						.broadcastHandler(new MyBroadcastHandler()).start();
