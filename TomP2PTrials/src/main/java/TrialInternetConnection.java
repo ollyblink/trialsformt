@@ -25,15 +25,15 @@ public class TrialInternetConnection {
 		int port = 4000;
 		int peerID = 2;
 		GetOwnIpAddressTest.main(null);
+		Bindings b = new Bindings();
+		b.addInterface("wlan0");
+		 Random RND = new Random();
 		if (peerID == 1) {
-//			Bindings b = new Bindings();
-//			Random RND = new Random();
-//			b.addInterface("wlan0");
 
-	        new PeerBuilder(Number160.createHash("super peer")).ports(port).start();
+			new PeerBuilder(Number160.createHash("super peer")).bindings(b).ports(port).start();
 
 		} else {
-			Peer myPeer = new PeerBuilder(Number160.createHash("client peer")).behindFirewall(true).ports(port).enableMaintenance(false).start();
+			Peer myPeer = new PeerBuilder(Number160.createHash("client peer")).bindings(b).behindFirewall(true).ports(port+RND.nextInt(1000)+1).enableMaintenance(false).start();
 			PeerAddress bootstrapServerPeerAddress = new PeerAddress(Number160.ZERO, new InetSocketAddress(InetAddress.getByName(ipSuperPeer), port));
 
 			FutureDiscover discovery = myPeer.discover().peerAddress(bootstrapServerPeerAddress).start();
@@ -65,7 +65,7 @@ public class TrialInternetConnection {
 			}
 			InetSocketAddress inetSocketAddress = (InetSocketAddress) data.object();
 			System.err.println("returned " + inetSocketAddress);
-			myPeer.shutdown();
+//			myPeer.shutdown();
 		}
 	}
 }
