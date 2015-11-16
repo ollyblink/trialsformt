@@ -14,7 +14,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.storage.Data;
 import utils.GetOwnIpAddressTest;
 
 public class TrialInternetConnection {
