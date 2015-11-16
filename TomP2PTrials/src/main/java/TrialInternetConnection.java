@@ -18,6 +18,8 @@ public class TrialInternetConnection {
 		String ip = "192.168.43.234";
 		int port = 4000;
 		int peerID = 2;
+		String ip = "192.168.43.234";
+		int port = 4000;
 		if (peerID == 1) {
 			Bindings b = new Bindings();
 			Random RND = new Random();
@@ -25,7 +27,7 @@ public class TrialInternetConnection {
 
 			try {
 				GetOwnIpAddressTest.main(null);
-				Peer start = new PeerBuilder(Number160.createHash("super peer")).bindings(b).ports(port).behindFirewall(true).start();
+				Peer start = new PeerBuilder(Number160.createHash("super peer")).bindings(b).ports(port).broadcastHandler(new MyBroadcastHandler()).behindFirewall(true).start();
 				System.out.println("Created peer");
 				PeerDHT peerDHT = new PeerBuilderDHT(start).start();
 				System.out.println("Created peerDHT");
@@ -38,7 +40,7 @@ public class TrialInternetConnection {
 		b2.addInterface("wlan1"); 
 		String ip2 = "192.168.43.65";
 		try {
-	        Peer peer = new PeerBuilder(Number160.createHash("client peer")).bindings(b2).ports(port).behindFirewall(true).start();
+	        Peer peer = new PeerBuilder(Number160.createHash("client peer")).bindings(b2).ports(port).behindFirewall(true).broadcastHandler(new MyBroadcastHandler()).start();
 	        PeerDHT peerDHT = new PeerBuilderDHT(peer).start();
 	        PeerAddress bootstrap = new PeerAddress(Number160.ZERO, new InetSocketAddress(ip, port));
 	        FutureDiscover futureDiscover = peer.discover().peerAddress(bootstrap).start();
