@@ -31,6 +31,23 @@ public class TrialInternetConnection {
 			}
 		} else {
 
+		Bindings b2 = new Bindings(); 
+		b2.addInterface("wlan1"); 
+		String ip2 = "192.168.43.65";
+		try {
+	        Peer peer = new PeerBuilder(Number160.createHash("client peer")).bindings(b2).ports(port).behindFirewall(true).start();
+	        PeerDHT peerDHT = new PeerBuilderDHT(peer).start();
+	        PeerAddress bootstrap = new PeerAddress(Number160.ZERO, new InetSocketAddress(ip, port));
+	        FutureDiscover futureDiscover = peer.discover().peerAddress(bootstrap).start();
+	        futureDiscover.awaitUninterruptibly();
+	        if(futureDiscover.isSuccess()){
+	        	System.out.println("Successfully connected");
+	        }else{
+	        	System.out.println("Could not connect");
+	        }
+ 		} catch (IOException e) { 
+			e.printStackTrace();
+		}
 		}
 	}
 }
