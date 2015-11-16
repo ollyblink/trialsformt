@@ -21,43 +21,51 @@ public class TrialInternetConnection {
 	public static void main(String[] args) throws InterruptedException, IOException, ClassNotFoundException {
 		final String key = "Hello World";
 		Random random = new Random();
-		String ip = "192.168.43.234";
+		String ipSuperPeer = "192.168.43.234";
 		int port = 4000;
-		int peerID = 1;
+		int peerID = 2;
 		GetOwnIpAddressTest.main(null);
 		if (peerID == 1) {
-			Bindings b = new Bindings();
-			Random RND = new Random();
-			b.addInterface("wlan0");
+//			Bindings b = new Bindings();
+//			Random RND = new Random();
+//			b.addInterface("wlan0");
 
-			new PeerBuilder(Number160.createHash("super peer")).bindings(b).behindFirewall(true).ports(port).start();
+	        new PeerBuilder(Number160.createHash("super peer")).ports(port).start();
 
 		} else {
+			Peer myPeer = new PeerBuilder(Number160.createHash("client peer")).behindFirewall(true).ports(port).enableMaintenance(false).start();
+			PeerAddress bootstrapServerPeerAddress = new PeerAddress(Number160.ZERO, new InetSocketAddress(InetAddress.getByName(ipSuperPeer), port));
 
-			Bindings b = new Bindings();
-			b.addInterface("wlan1");
-
-			Peer peer = new PeerBuilder(Number160.createHash("client peer")).bindings(b).ports(port + random.nextInt(1000)).behindFirewall(true)
-					.start();
-			PeerAddress bootstrapServerPeerAddress = new PeerAddress(Number160.ZERO, new InetSocketAddress(InetAddress.getByName(ip), port));
-			FutureDiscover discovery = peer.discover().peerAddress(bootstrapServerPeerAddress).start();
+			FutureDiscover discovery = myPeer.discover().peerAddress(bootstrapServerPeerAddress).start();
 			discovery.awaitUninterruptibly();
+			if (!discovery.isSuccess()) {
+				System.err.println("no success!");
+			}
+			System.err.println("Peer: " + discovery.reporter() + " told us about our address.");
+			InetSocketAddress myInetSocketAddress = new InetSocketAddress(myPeer.peerAddress().inetAddress(), port);
+
 			bootstrapServerPeerAddress = discovery.reporter();
-			FutureBootstrap bootstrap = peer.bootstrap().peerAddress(bootstrapServerPeerAddress).start();
+			FutureBootstrap bootstrap = myPeer.bootstrap().peerAddress(bootstrapServerPeerAddress).start();
 			bootstrap.awaitUninterruptibly();
 
-		    PeerDHT myPeerDHT = new PeerBuilderDHT(peer).start();
+			if (!bootstrap.isSuccess()) {
+				System.err.println("no success!");
+			}
 
-	        FuturePut putFuture = myPeerDHT.put(Number160.createHash("key")).data(new Data("Hello World")).start();
-	        putFuture.awaitUninterruptibly();
-	        FutureGet futureDHT = myPeerDHT.get(Number160.createHash("key")).start();
-	        futureDHT.awaitUninterruptibly();
-	        futureDHT.futureRequests().awaitUninterruptibly();
-	        Data data = futureDHT.data();
-	        if (data == null) {
-	            throw new RuntimeException("Address not available in DHT.");
-	        } 
-	        System.err.println("returned " + data.object());
+			PeerDHT myPeerDHT = new PeerBuilderDHT(myPeer).start();
+
+			FuturePut putFuture = myPeerDHT.put(Number160.createHash("key")).data(new Data(myInetSocketAddress)).start();
+			putFuture.awaitUninterruptibly();
+			FutureGet futureDHT = myPeerDHT.get(Number160.createHash("key")).start();
+			futureDHT.awaitUninterruptibly();
+			futureDHT.futureRequests().awaitUninterruptibly();
+			Data data = futureDHT.data();
+			if (data == null) {
+				throw new RuntimeException("Address not available in DHT.");
+			}
+			InetSocketAddress inetSocketAddress = (InetSocketAddress) data.object();
+			System.err.println("returned " + inetSocketAddress);
+			myPeer.shutdown();
 		}
 	}
 }
