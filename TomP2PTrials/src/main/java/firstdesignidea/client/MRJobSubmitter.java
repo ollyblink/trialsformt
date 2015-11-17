@@ -11,6 +11,7 @@ import firstdesignidea.execution.exceptions.NotSetException;
 import firstdesignidea.execution.jobtask.FutureJobCompletion;
 import firstdesignidea.execution.jobtask.FutureResult;
 import firstdesignidea.execution.jobtask.Job;
+import firstdesignidea.execution.scheduling.ITaskSplitter;
 import firstdesignidea.utils.FormatUtils;
 import firstdesignidea.utils.PortGenerator;
 import net.tomp2p.dht.FuturePut;
@@ -29,6 +30,8 @@ public class MRJobSubmitter {
 	private String ip;
 	private int port;
 	private PeerDHT connectionPeer;
+	private ITaskSplitter taskSplitter;
+	
 
 	private MRJobSubmitter() {
 	}

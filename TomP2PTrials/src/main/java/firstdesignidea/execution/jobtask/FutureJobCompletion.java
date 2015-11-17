@@ -137,8 +137,8 @@ public class FutureJobCompletion implements BaseFuture{
 		return null;
 	}
 
-	public Map<ITask, List<PeerAddress>> locations() {
-		return new HashMap<ITask, List<PeerAddress>>();
+	public Map<Task, List<PeerAddress>> locations() {
+		return new HashMap<Task, List<PeerAddress>>();
 	}
 
 }

@@ -12,7 +12,7 @@ public class MyBroadcastHandler extends StructuredBroadcastHandler {
 
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
-		
+		System.out.println(message.peerSocketAddresses());
 		 System.out.println("Called BroadCast handler");
 		for (DataMap maps : message.dataMapList()) {
 			NavigableMap<Number640, Data> dataMap = maps.dataMap();

@@ -1,89 +1,139 @@
 package firstdesignidea;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import firstdesignidea.client.MRJobSubmitter;
-import firstdesignidea.execution.computation.combiner.ICombiner;
-import firstdesignidea.execution.computation.combiner.NullCombiner;
+import firstdesignidea.execution.computation.IMapReduceProcedure;
 import firstdesignidea.execution.computation.context.IContext;
-import firstdesignidea.execution.computation.mapper.IMapper;
-import firstdesignidea.execution.computation.reducer.IReducer;
-import firstdesignidea.execution.jobtask.FutureJobCompletion;
-import firstdesignidea.execution.jobtask.ITask;
+import firstdesignidea.execution.computation.context.PrintContext;
 import firstdesignidea.execution.jobtask.Job;
-import net.tomp2p.futures.BaseFutureListener;
-import net.tomp2p.peers.PeerAddress;
 
 public class DesignIdeaJobSubmitter {
-	public static void main(String[] args) {
+	public static void main(String[] args)
+			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, InstantiationException {
 
 		String ip = "192.235.25.1";
 		int port = 5000;
 
 		MRJobSubmitter mRJS = MRJobSubmitter.newMapReduceJobSubmitter().ip(ip).port(port);
 
-		IMapper<Object, String, String, Integer> mapper = new IMapper<Object, String, String, Integer>() {
+		IMapReduceProcedure<Object, String, String, Integer> mapper = new IMapReduceProcedure<Object, String, String, Integer>() {
 
 			@Override
-			public void map(Object key, String value, IContext<String, Integer> context) {
+			public void process(Object key, String value, IContext<String, Integer> context) {
 				String[] values = value.split(" ");
 				for (String word : values) {
 					context.write(word, 1);
 				}
 			}
 		};
-		
-		IReducer<String, Integer, String, Integer> reducer = new IReducer<String, Integer, String, Integer>() {
+
+		final Map<String, List<Integer>> ones = new TreeMap<String, List<Integer>>();
+
+		IContext<String, Integer> mapperContext = new IContext<String, Integer>() {
 
 			@Override
-			public void reduce(String key, Iterable<Integer> values, IContext<String, Integer> context) {
-				Integer sum = 0;
-				for (Integer cnt : values) {
-					sum += cnt;
+			public void write(String keyOut, Integer valueOut) {
+
+				List<Integer> one = ones.get(keyOut);
+				if (one == null) {
+					one = new ArrayList<Integer>();
+					ones.put(keyOut, one);
+				}
+				one.add(1);
+				System.out.println("<" + keyOut + "," + valueOut + ">");
+			}
+		};
+		IMapReduceProcedure<String, Iterable<Integer>, String, Integer> reducer = new IMapReduceProcedure<String, Iterable<Integer>, String, Integer>() {
+
+			@Override
+			public void process(String key, Iterable<Integer> values, IContext<String, Integer> context) {
+				int sum = 0;
+				for (Integer i : values) {
+					sum += i;
 				}
 				context.write(key, sum);
 			}
+
 		};
-		
-		ICombiner<String, Integer, String, Integer> combiner = new NullCombiner();
+
+		IContext<String, Integer> reducerContext = new IContext<String, Integer>() {
+
+			@Override
+			public void write(String keyOut, Integer valueOut) {
+				System.out.println("<" + keyOut + "," + valueOut + ">"); 
+			}
+
+		};
+
 		String inputPath = "location/to/data";
 		String outputPath = "location/to/store/results";
 
-		Job job = Job.newJob().mapper(mapper).reducer(reducer).combiner(combiner).inputPath(inputPath).outputPath(outputPath);
-		Job job2 = Job.newJob().mapper(mapper).reducer(reducer);
-		job.appendJob(job2);
+		Job job = Job.newJob().procedures(mapper).procedures(reducer).inputPath(inputPath).outputPath(outputPath);
 
-		mRJS.submit(job);
-		FutureJobCompletion completion = mRJS.awaitCompletion(); 
-		completion.addListener(new BaseFutureListener<FutureJobCompletion>(){
+		int i = 0;
+		for (IMapReduceProcedure<?, ?, ?, ?> p : job.procedures()) {
+			Method process = p.getClass().getMethods()[0];
 
-			@Override
-			public void operationComplete(FutureJobCompletion future) throws Exception {
-				if(future.isSuccess()){
-					Map<ITask, List<PeerAddress>> results = future.locations();
-					for(ITask task: results.keySet()){
-						List<PeerAddress> list = results.get(task);
-						for(PeerAddress p: list){
-							//Connect to p
-							//Request data stored on p for ITask task
-							//Transfer data from p to here
-							//If all data is transferred: break;
-							//else: either discard all and request all data from next PeerAddress
-							//or only request difference from next PeerAddress
-							//If not all data for a task could be received: mark job as failed and reschedule
-						}
-					}
-				}else{
-					System.err.println("Error occured");
+			// Class c1 = (Class)((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
+			// Type c2 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[1];
+			// Type c3 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[2];
+			// Type c4 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[3];
+
+			if (i == 0) {
+				System.out.println("In first");
+				process.invoke(p, new Object[] { "HELLO", "this this is is this is a this", mapperContext });
+				i++;
+			} else if (i == 1) {
+				System.out.println("In second");
+				for (Object word : ones.keySet()) {
+					// System.out.println(word.getClass());
+					// if (Class.forName(c1.getTypeName()).newInstance().getClass().isInstance(word) &&
+					// Class.forName(c2.getTypeName()).isInstance(word)) {
+					process.invoke(p, new Object[] { word, ones.get(word), reducerContext });
+					// }
 				}
+				i++;
 			}
+		}
 
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				t.printStackTrace();
-			}
-			
-		});
+		 mRJS.submit(job);
+		// FutureJobCompletion completion = mRJS.awaitCompletion();
+		// completion.addListener(new BaseFutureListener<FutureJobCompletion>(){
+		//
+		// @Override
+		// public void operationComplete(FutureJobCompletion future) throws Exception {
+		// if(future.isSuccess()){
+		// Map<ITask, List<PeerAddress>> results = future.locations();
+		// for(ITask task: results.keySet()){
+		// List<PeerAddress> list = results.get(task);
+		// for(PeerAddress p: list){
+		// //Connect to p
+		// //Request data stored on p for ITask task
+		// //Transfer data from p to here
+		// //If all data is transferred: break;
+		// //else: either discard all and request all data from next PeerAddress
+		// //or only request difference from next PeerAddress
+		// //If not all data for a task could be received: mark job as failed and reschedule
+		// }
+		// }
+		// }else{
+		// System.err.println("Error occured");
+		// }
+		// }
+		//
+		// @Override
+		// public void exceptionCaught(Throwable t) throws Exception {
+		// t.printStackTrace();
+		// }
+		//
+		// });
 	}
 }
