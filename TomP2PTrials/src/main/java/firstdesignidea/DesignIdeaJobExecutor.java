@@ -1,40 +1,19 @@
 package firstdesignidea;
 
-import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
-import firstdesignidea.storage.DefaultDHTConnection;
-import firstdesignidea.storage.IDHTConnection;
+import firstdesignidea.server.MRJobExecutor;
+import firstdesignidea.storage.DHTConnectionProvider;
 
 public class DesignIdeaJobExecutor {
 	public static void main(String[] args) {
-		String ip = "192.36.54.85";
-		int port = 5000; 
-		
-		
+		int id = 1;
+		String bootstrapIP = "192.168.43.234";
+		int bootstrapPort = 4001;
+		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider();
 
-		MRBroadcastHandler broadcastHandler = new MRBroadcastHandler();
-		
-		IDHTConnection dhtConnection = DefaultDHTConnection.newDHTConnection()
-				.broadcastHandler(broadcastHandler);
-		
-		
-//		IMapperEngine mapperEngine = DefaultMapperEngine
-//										.newDefaultMapperEngine()
-//										.mapTaskSplitter(new DefaultTaskSplitter());
-//		
-//		IReducerEngine reducerEngine = DefaultReducerEngine
-//										.newDefaultReducerEngine()
-//										.reduceDataDistributor(new DefaultReduceDataDistributor());
- 
-//
-//		MRJobExecutor jobExecutor = MRJobExecutor
-//										.newJobExecutor()
-//										.ip(ip)
-//										.port(port)
-//										.dhtConnection(dhtConnection)
-//										.mapperEngine(mapperEngine)
-//										.reducerEngine(reducerEngine);
-		 
-
-//		jobExecutor.startListeningAndExecuting();
+		if (id != 1) {
+			dhtConnectionProvider = dhtConnectionProvider.bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
+		}
+		MRJobExecutor jobExecutor = MRJobExecutor.newJobExecutor().dhtConnectionProvider(dhtConnectionProvider);
+		jobExecutor.start();
 	}
 }

@@ -14,15 +14,18 @@ import firstdesignidea.execution.computation.IMapReduceProcedure;
 import firstdesignidea.execution.computation.context.IContext;
 import firstdesignidea.execution.computation.context.PrintContext;
 import firstdesignidea.execution.jobtask.Job;
+import firstdesignidea.storage.DHTConnectionProvider;
 
 public class DesignIdeaJobSubmitter {
 	public static void main(String[] args)
 			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, InstantiationException {
 
-		String ip = "192.235.25.1";
-		int port = 5000;
+		String bootstrapIP = "192.168.43.234";
+		int bootstrapPort = 4001;
 
-		MRJobSubmitter mRJS = MRJobSubmitter.newMapReduceJobSubmitter().ip(ip).port(port);
+		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP)
+				.bootstrapPort(bootstrapPort);
+		MRJobSubmitter mRJS = MRJobSubmitter.newMapReduceJobSubmitter().dhtConnectionProvider(dhtConnectionProvider);
 
 		IMapReduceProcedure<Object, String, String, Integer> mapper = new IMapReduceProcedure<Object, String, String, Integer>() {
 
@@ -34,23 +37,24 @@ public class DesignIdeaJobSubmitter {
 				}
 			}
 		};
-
-		final Map<String, List<Integer>> ones = new TreeMap<String, List<Integer>>();
-
-		IContext<String, Integer> mapperContext = new IContext<String, Integer>() {
-
-			@Override
-			public void write(String keyOut, Integer valueOut) {
-
-				List<Integer> one = ones.get(keyOut);
-				if (one == null) {
-					one = new ArrayList<Integer>();
-					ones.put(keyOut, one);
-				}
-				one.add(1);
-				System.out.println("<" + keyOut + "," + valueOut + ">");
-			}
-		};
+		//
+		 final Map<String, List<Integer>> ones = new TreeMap<String, List<Integer>>();
+		//
+		IContext<String, Integer> mapperContext = null;
+		// new IContext<String, Integer>() {
+		//
+		// @Override
+		// public void write(String keyOut, Integer valueOut) {
+		//
+		// List<Integer> one = ones.get(keyOut);
+		// if (one == null) {
+		// one = new ArrayList<Integer>();
+		// ones.put(keyOut, one);
+		// }
+		// one.add(1);
+		// System.out.println("<" + keyOut + "," + valueOut + ">");
+		// }
+		// };
 		IMapReduceProcedure<String, Iterable<Integer>, String, Integer> reducer = new IMapReduceProcedure<String, Iterable<Integer>, String, Integer>() {
 
 			@Override
@@ -64,14 +68,15 @@ public class DesignIdeaJobSubmitter {
 
 		};
 
-		IContext<String, Integer> reducerContext = new IContext<String, Integer>() {
-
-			@Override
-			public void write(String keyOut, Integer valueOut) {
-				System.out.println("<" + keyOut + "," + valueOut + ">"); 
-			}
-
-		};
+		IContext<String, Integer> reducerContext = null;
+		// new IContext<String, Integer>() {
+		//
+		// @Override
+		// public void write(String keyOut, Integer valueOut) {
+		// System.out.println("<" + keyOut + "," + valueOut + ">");
+		// }
+		//
+		// };
 
 		String inputPath = "location/to/data";
 		String outputPath = "location/to/store/results";
@@ -104,7 +109,7 @@ public class DesignIdeaJobSubmitter {
 			}
 		}
 
-		 mRJS.submit(job);
+		mRJS.submit(job);
 		// FutureJobCompletion completion = mRJS.awaitCompletion();
 		// completion.addListener(new BaseFutureListener<FutureJobCompletion>(){
 		//

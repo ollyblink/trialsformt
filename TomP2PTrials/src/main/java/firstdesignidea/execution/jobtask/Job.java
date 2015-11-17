@@ -1,22 +1,18 @@
 package firstdesignidea.execution.jobtask;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 import firstdesignidea.execution.computation.IMapReduceProcedure;
-import firstdesignidea.execution.exceptions.FileLocationNotFoundException;
-import firstdesignidea.execution.exceptions.NotSetException;
 
 public class Job {
+	private int maxFileSize;
 	private String id;
 	private List<IMapReduceProcedure<?, ?, ?, ?>> procedures;
 	private String inputPath;
 	private String outputPath;
-	private JobInformation jobInformation;
-	private JobStatus currentStatus;
 
 	private Job() {
 		Random random = new Random();
@@ -28,16 +24,6 @@ public class Job {
 		return new Job();
 	}
 
-	public Job inputPath(String inputPath) {
-		this.inputPath = inputPath;
-		return this;
-	}
-
-	public Job outputPath(String outputPath) {
-		this.outputPath = outputPath;
-		return this;
-	}
-
 	public Job procedures(IMapReduceProcedure<?, ?, ?, ?>... procedures) {
 		Collections.addAll(this.procedures, procedures);
 		return this;
@@ -47,31 +33,35 @@ public class Job {
 		return this.procedures;
 	}
 
-	public String inputPath() throws FileLocationNotFoundException, NotSetException {
-		if (this.inputPath != null) {
-			if (new File(this.inputPath).exists()) {
-				return this.inputPath;
-			} else {
-				throw new FileLocationNotFoundException("Could not find the file location specified.");
-			}
-		} else {
-			throw new NotSetException("You need to specify a file location for the input file(s).");
-		}
+	public Job inputPath(String inputPath) {
+		this.inputPath = inputPath;
+		return this;
 	}
 
-	public String outputPath() throws FileLocationNotFoundException, NotSetException {
-		if (this.outputPath != null) {
-			if (new File(this.outputPath).exists()) {
-				return this.outputPath;
-			} else {
-				throw new FileLocationNotFoundException("Could not find the file location specified.");
-			}
-		} else {
-			throw new NotSetException("You need to specify a file location for the output file(s).");
-		}
+	public String inputPath() {
+		return inputPath;
+	}
+
+	public Job outputPath(String outputPath) {
+		this.outputPath = outputPath;
+		return this;
+	}
+
+	public String outputPath() {
+		return outputPath;
+	}
+
+	public Job maxFileSize(int maxFileSize) {
+		this.maxFileSize = maxFileSize;
+		return this;
+	}
+
+	public int maxFileSize() {
+		return this.maxFileSize;
 	}
 
 	public String id() {
 		return this.id;
 	}
+
 }
