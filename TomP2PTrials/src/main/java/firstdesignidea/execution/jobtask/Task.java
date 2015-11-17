@@ -13,4 +13,9 @@ public class Task {
 		this.file = file;
 	}
 
+	public String id() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

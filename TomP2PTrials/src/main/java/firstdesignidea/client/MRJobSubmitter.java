@@ -1,7 +1,10 @@
 package firstdesignidea.client;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import firstdesignidea.execution.exceptions.IncorrectFormatException;
 import firstdesignidea.execution.exceptions.NotSetException;
 import firstdesignidea.execution.jobtask.Job;
+import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.execution.scheduling.ITaskSplitter;
 import firstdesignidea.utils.FormatUtils;
 import firstdesignidea.utils.PortGenerator;
@@ -19,6 +23,7 @@ import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 public class MRJobSubmitter {
@@ -66,42 +71,42 @@ public class MRJobSubmitter {
 		return this.port;
 	}
 
-	public void disconnect() {
-		// TODO Auto-generated method stub
-
-	}
-
 	/**
 	 * 
 	 * @param job
 	 * @return
 	 */
-	public Object submit(Job job) {
+	public Object submit(final Job job) {
 		try {
 			if (this.connectionPeer == null) {
 				this.connectionPeer = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).start()).start();
 			}
 
-			// TODO add callback for this MRJobSubmitter
-			FuturePut put = this.connectionPeer.add(Number160.createHash("jobqueue")).data(new Data(job)).start();
-			put.addListener(putNewJobListener(this.connectionPeer));
+			List<Task> tasks = taskSplitter.split(job);
 
+			for (Task task : tasks) {
+				FuturePut put = this.connectionPeer.add(Number160.createHash(task.id())).data(new Data(task)).start();
+				put.addListener(putNewJobListener(this.connectionPeer, job));
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
 
-	private BaseFutureListener<FuturePut> putNewJobListener(final PeerDHT peer) {
+	private BaseFutureListener<FuturePut> putNewJobListener(final PeerDHT peer, final Job job) {
 		return new BaseFutureListener<FuturePut>() {
 
 			@Override
 			public void operationComplete(FuturePut future) throws Exception {
 				if (future.isSuccess()) {
 
+					NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+					Number160 hash = Number160.createHash(new Random().nextInt(Integer.MAX_VALUE));
+					dataMap.put(new Number640(hash,hash,hash,hash), new Data(job));
 					// Broadcast that a new job was put into the DHT
-					BroadcastBuilder broadcast = peer.peer().broadcast(Number160.createHash("new job submission"));
-					broadcast.start();
+					peer.peer().broadcast(Number160.createHash("new job submission")).dataMap(dataMap).start();
+					
 				} else {
 					logger.error("Could not put new job into job queue");
 				}
@@ -114,5 +119,5 @@ public class MRJobSubmitter {
 
 		};
 	}
- 
+
 }

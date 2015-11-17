@@ -12,13 +12,14 @@ public class MyBroadcastHandler extends StructuredBroadcastHandler {
 
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
+		
 		System.out.println(message.peerSocketAddresses());
-		 System.out.println("Called BroadCast handler");
+		System.out.println("Called BroadCast handler");
 		for (DataMap maps : message.dataMapList()) {
 			NavigableMap<Number640, Data> dataMap = maps.dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				try {
-					System.out.println("Received: " +dataMap.get(nr).object());
+					System.out.println("Received: " + dataMap.get(nr).object());
 				} catch (ClassNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
