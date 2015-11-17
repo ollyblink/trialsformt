@@ -9,8 +9,8 @@ import firstdesignidea.execution.computation.reducer.DefaultReducerEngine;
 import firstdesignidea.execution.computation.reducer.IReducerEngine;
 import firstdesignidea.execution.datadistribution.DefaultReduceDataDistributor;
 import firstdesignidea.execution.datadistribution.IReduceDataDistributor;
-import firstdesignidea.execution.scheduling.DefaultMapTaskSplitter;
-import firstdesignidea.execution.scheduling.IMapTaskSplitter;
+import firstdesignidea.execution.scheduling.DefaultTaskSplitter;
+import firstdesignidea.execution.scheduling.ITaskSplitter;
 import firstdesignidea.server.MRJobExecutor;
 import firstdesignidea.storage.DefaultDHTConnection;
 import firstdesignidea.storage.IDHTConnection;
@@ -31,7 +31,7 @@ public class DesignIdeaJobExecutor {
 		
 		IMapperEngine mapperEngine = DefaultMapperEngine
 										.newDefaultMapperEngine()
-										.mapTaskSplitter(new DefaultMapTaskSplitter());
+										.mapTaskSplitter(new DefaultTaskSplitter());
 		
 		IReducerEngine reducerEngine = DefaultReducerEngine
 										.newDefaultReducerEngine()

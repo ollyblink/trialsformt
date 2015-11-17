@@ -12,7 +12,7 @@ import firstdesignidea.execution.computation.reducer.IReducerEngine;
 import firstdesignidea.execution.exceptions.IncorrectFormatException;
 import firstdesignidea.execution.exceptions.NotSetException;
 import firstdesignidea.execution.jobtask.IJobManager;
-import firstdesignidea.execution.jobtask.ITask;
+import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.execution.jobtask.Job;
 import firstdesignidea.execution.jobtask.JobStatus;
 import firstdesignidea.execution.jobtask.MapTaskStatus;
@@ -117,7 +117,7 @@ public class MRJobExecutor implements IJobManager {
 					List<Job> jobs = new ArrayList<Job>();
 					Job chosen = jobScheduler.schedule(jobs);
 					Number160 jobIdHash = Number160.createHash(chosen.id());
-					Map<ITask, Map<PeerAddress, MapTaskStatus>> mapTasks = mapperEngine.split(chosen);
+					Map<Task, Map<PeerAddress, MapTaskStatus>> mapTasks = mapperEngine.split(chosen);
 					dhtConnection.add(jobIdHash, mapTasks, putTaskMapListener(dhtConnection, chosen.id(), jobIdHash));
 				} else {
 					logger.error("Could not get jobs from job queue.");
@@ -159,7 +159,7 @@ public class MRJobExecutor implements IJobManager {
 			@Override
 			public void operationComplete(FutureGet future) throws Exception {
 				if (future.isSuccess()) {
-					Map<ITask, Map<PeerAddress, MapTaskStatus>> mapTasks = (Map<ITask, Map<PeerAddress, MapTaskStatus>>) future.data().object();
+					Map<Task, Map<PeerAddress, MapTaskStatus>> mapTasks = (Map<Task, Map<PeerAddress, MapTaskStatus>>) future.data().object();
 				 
 				} else {
 					logger.error("Could not get job from job location.");

@@ -12,8 +12,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
+import firstdesignidea.execution.computation.IMapReduceProcedure;
 import firstdesignidea.execution.computation.context.IContext;
-import firstdesignidea.execution.computation.mapper.IMapper;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
@@ -49,7 +49,7 @@ public class CTPrep2 {
 		// int firstIndex = random.nextInt(nrOfPeers);
 		Set<String> keys = new TreeSet<String>();
 
-		IMapper<String, String, String, String> mapper = new IMapper<String, String, String, String>() {
+		IMapReduceProcedure<String, String, String, String> mapper = new IMapReduceProcedure<String, String, String, String>() {
 
 			@Override
 			public void map(String key, String value, IContext<String, String> context) {
@@ -105,10 +105,10 @@ public class CTPrep2 {
 					// while (iterator.hasNext()) {
 					// System.out.println(iterator.next().object());
 					// }  
-					if (future.data().object() instanceof IMapper) {
-						IMapper<String, String, String, String> mapper = (IMapper<String, String, String, String>) future.data().object();
+					if (future.data().object() instanceof IMapReduceProcedure) {
+						IMapReduceProcedure<String, String, String, String> mapper = (IMapReduceProcedure<String, String, String, String>) future.data().object();
 
-						mapper.map("trial", "test test this is a test", new IContext<String, String>() {
+						mapper.process("trial", "test test this is a test", new IContext<String, String>() {
 
 							@Override
 							public void write(String keyOut, String valueOut) {
