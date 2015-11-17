@@ -8,7 +8,7 @@ import java.util.Random;
 import firstdesignidea.execution.computation.IMapReduceProcedure;
 
 public class Job {
-	private int maxFileSize;
+	private long maxFileSize;
 	private String id;
 	private List<IMapReduceProcedure<?, ?, ?, ?>> procedures;
 	private String inputPath;
@@ -51,12 +51,12 @@ public class Job {
 		return outputPath;
 	}
 
-	public Job maxFileSize(int maxFileSize) {
+	public Job maxFileSize(long maxFileSize) {
 		this.maxFileSize = maxFileSize;
 		return this;
 	}
 
-	public int maxFileSize() {
+	public long maxFileSize() {
 		return this.maxFileSize;
 	}
 

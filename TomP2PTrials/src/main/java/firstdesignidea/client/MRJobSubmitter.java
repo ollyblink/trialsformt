@@ -31,11 +31,8 @@ public class MRJobSubmitter implements IJobManager {
 	public void submit(final Job job) {
 
 		dhtConnectionProvider.connect();
-		List<Task> tasks = taskSplitter.split(job);
+		taskSplitter.splitAndPut(job, dhtConnectionProvider);
 
-		for (Task task : tasks) {
-			dhtConnectionProvider.addTask(job.id(), task);
-		}
 	}
 
 	@Override
