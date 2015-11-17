@@ -13,8 +13,12 @@ public class MyBroadcastHandler extends StructuredBroadcastHandler {
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
 		
+<<<<<<< HEAD
 		System.out.println(message.peerSocketAddresses());
 		System.out.println("Called BroadCast handler");
+=======
+		 System.out.println("Called BroadCast handler");
+>>>>>>> branch 'master' of https://github.com/ollyblink/trialsformt.git
 		for (DataMap maps : message.dataMapList()) {
 			NavigableMap<Number640, Data> dataMap = maps.dataMap();
 			for (Number640 nr : dataMap.keySet()) {
