@@ -52,12 +52,12 @@ public class CTPrep2 {
 		IMapReduceProcedure<String, String, String, String> mapper = new IMapReduceProcedure<String, String, String, String>() {
 
 			@Override
-			public void map(String key, String value, IContext<String, String> context) {
-				String[] split = value.split(" ");
-				for (String s : split) {
-					context.write(s, "1");
-				}
+			public void process(String key, String value, IContext<String, String> context) {
+				// TODO Auto-generated method stub
+				
 			}
+
+			 
 
 		};
 

@@ -62,7 +62,7 @@ public class TrialInternetConnection {
 			FutureBootstrap bootstrap = myPeer.bootstrap().peerAddress(bootstrapServerPeerAddress).start();
 
 			bootstrap.awaitUninterruptibly();
-
+ 
 			if (!bootstrap.isSuccess()) {
 				System.err.println("B no success!");
 			}

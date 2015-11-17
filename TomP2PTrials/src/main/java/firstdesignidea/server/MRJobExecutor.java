@@ -7,15 +7,13 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import firstdesignidea.execution.computation.mapper.IMapperEngine;
-import firstdesignidea.execution.computation.reducer.IReducerEngine;
 import firstdesignidea.execution.exceptions.IncorrectFormatException;
 import firstdesignidea.execution.exceptions.NotSetException;
 import firstdesignidea.execution.jobtask.IJobManager;
-import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.execution.jobtask.Job;
 import firstdesignidea.execution.jobtask.JobStatus;
-import firstdesignidea.execution.jobtask.MapTaskStatus;
+import firstdesignidea.execution.jobtask.Task;
+import firstdesignidea.execution.jobtask.TaskStatus;
 import firstdesignidea.execution.scheduling.IJobScheduler;
 import firstdesignidea.storage.IDHTConnection;
 import firstdesignidea.utils.FormatUtils;
@@ -33,8 +31,8 @@ public class MRJobExecutor implements IJobManager {
 	private String ip;
 
 	private IJobScheduler jobScheduler;
-	private IMapperEngine mapperEngine;
-	private IReducerEngine reducerEngine;
+//	private IMapperEngine mapperEngine;
+//	private IReducerEngine reducerEngine;
 	private IDHTConnection dhtConnection;
 
 	private MRJobExecutor() {
@@ -74,15 +72,15 @@ public class MRJobExecutor implements IJobManager {
 		return this.port;
 	}
 
-	public MRJobExecutor mapperEngine(IMapperEngine mapperEngine) {
-		this.mapperEngine = mapperEngine;
-		return this;
-	}
-
-	public MRJobExecutor reducerEngine(IReducerEngine reducerEngine) {
-		this.reducerEngine = reducerEngine;
-		return this;
-	}
+//	public MRJobExecutor mapperEngine(IMapperEngine mapperEngine) {
+//		this.mapperEngine = mapperEngine;
+//		return this;
+//	}
+//
+//	public MRJobExecutor reducerEngine(IReducerEngine reducerEngine) {
+//		this.reducerEngine = reducerEngine;
+//		return this;
+//	}
 
 	public MRJobExecutor dhtConnection(IDHTConnection dhtConnection) {
 		this.dhtConnection = dhtConnection;
@@ -117,8 +115,8 @@ public class MRJobExecutor implements IJobManager {
 					List<Job> jobs = new ArrayList<Job>();
 					Job chosen = jobScheduler.schedule(jobs);
 					Number160 jobIdHash = Number160.createHash(chosen.id());
-					Map<Task, Map<PeerAddress, MapTaskStatus>> mapTasks = mapperEngine.split(chosen);
-					dhtConnection.add(jobIdHash, mapTasks, putTaskMapListener(dhtConnection, chosen.id(), jobIdHash));
+//					Map<Task, Map<PeerAddress, TaskStatus>> mapTasks = mapperEngine.split(chosen);
+//					dhtConnection.add(jobIdHash, mapTasks, putTaskMapListener(dhtConnection, chosen.id(), jobIdHash));
 				} else {
 					logger.error("Could not get jobs from job queue.");
 
@@ -139,7 +137,7 @@ public class MRJobExecutor implements IJobManager {
 			@Override
 			public void operationComplete(FuturePut future) throws Exception {
 				if (future.isSuccess()) {
-					dhtConnection.broadcast(jobIdHash, JobStatus.DISTRIBUTED_MAP_TASKS);
+//					dhtConnection.broadcast(jobIdHash, JobStatus.DISTRIBUTED_MAP_TASKS);
 				} else {
 					logger.error("Could not put task map for job " + jobId);
 				}
@@ -159,7 +157,7 @@ public class MRJobExecutor implements IJobManager {
 			@Override
 			public void operationComplete(FutureGet future) throws Exception {
 				if (future.isSuccess()) {
-					Map<Task, Map<PeerAddress, MapTaskStatus>> mapTasks = (Map<Task, Map<PeerAddress, MapTaskStatus>>) future.data().object();
+					Map<Task, Map<PeerAddress, TaskStatus>> mapTasks = (Map<Task, Map<PeerAddress, TaskStatus>>) future.data().object();
 				 
 				} else {
 					logger.error("Could not get job from job location.");

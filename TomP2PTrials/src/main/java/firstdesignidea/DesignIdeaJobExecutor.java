@@ -1,20 +1,8 @@
 package firstdesignidea;
 
 import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
-import firstdesignidea.execution.computation.combiner.DefaultCombinerEngine;
-import firstdesignidea.execution.computation.combiner.ICombinerEngine;
-import firstdesignidea.execution.computation.mapper.DefaultMapperEngine;
-import firstdesignidea.execution.computation.mapper.IMapperEngine;
-import firstdesignidea.execution.computation.reducer.DefaultReducerEngine;
-import firstdesignidea.execution.computation.reducer.IReducerEngine;
-import firstdesignidea.execution.datadistribution.DefaultReduceDataDistributor;
-import firstdesignidea.execution.datadistribution.IReduceDataDistributor;
-import firstdesignidea.execution.scheduling.DefaultTaskSplitter;
-import firstdesignidea.execution.scheduling.ITaskSplitter;
-import firstdesignidea.server.MRJobExecutor;
 import firstdesignidea.storage.DefaultDHTConnection;
 import firstdesignidea.storage.IDHTConnection;
-import net.tomp2p.p2p.BroadcastHandler;
 
 public class DesignIdeaJobExecutor {
 	public static void main(String[] args) {
@@ -29,24 +17,24 @@ public class DesignIdeaJobExecutor {
 				.broadcastHandler(broadcastHandler);
 		
 		
-		IMapperEngine mapperEngine = DefaultMapperEngine
-										.newDefaultMapperEngine()
-										.mapTaskSplitter(new DefaultTaskSplitter());
-		
-		IReducerEngine reducerEngine = DefaultReducerEngine
-										.newDefaultReducerEngine()
-										.reduceDataDistributor(new DefaultReduceDataDistributor());
+//		IMapperEngine mapperEngine = DefaultMapperEngine
+//										.newDefaultMapperEngine()
+//										.mapTaskSplitter(new DefaultTaskSplitter());
+//		
+//		IReducerEngine reducerEngine = DefaultReducerEngine
+//										.newDefaultReducerEngine()
+//										.reduceDataDistributor(new DefaultReduceDataDistributor());
  
-
-		MRJobExecutor jobExecutor = MRJobExecutor
-										.newJobExecutor()
-										.ip(ip)
-										.port(port)
-										.dhtConnection(dhtConnection)
-										.mapperEngine(mapperEngine)
-										.reducerEngine(reducerEngine);
+//
+//		MRJobExecutor jobExecutor = MRJobExecutor
+//										.newJobExecutor()
+//										.ip(ip)
+//										.port(port)
+//										.dhtConnection(dhtConnection)
+//										.mapperEngine(mapperEngine)
+//										.reducerEngine(reducerEngine);
 		 
 
-		jobExecutor.startListeningAndExecuting();
+//		jobExecutor.startListeningAndExecuting();
 	}
 }

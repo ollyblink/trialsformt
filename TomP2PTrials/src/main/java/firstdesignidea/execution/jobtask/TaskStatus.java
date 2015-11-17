@@ -1,5 +1,5 @@
 package firstdesignidea.execution.jobtask;
 
-public enum MapTaskStatus {
+public enum TaskStatus {
 	EXECUTING, FINISHED, FAILED
 }

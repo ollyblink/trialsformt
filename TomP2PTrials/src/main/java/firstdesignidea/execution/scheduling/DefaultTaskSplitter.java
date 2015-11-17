@@ -5,7 +5,7 @@ import java.util.Map;
 
 import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.execution.jobtask.Job;
-import firstdesignidea.execution.jobtask.MapTaskStatus;
+import firstdesignidea.execution.jobtask.TaskStatus;
 import net.tomp2p.peers.PeerAddress;
 
 public final class DefaultTaskSplitter implements ITaskSplitter {

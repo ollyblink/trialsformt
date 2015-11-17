@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.TreeMap;
 
 import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
-import firstdesignidea.execution.computation.mapper.IMapperEngine;
-import firstdesignidea.execution.computation.reducer.IReducerEngine;
 import firstdesignidea.execution.jobtask.JobStatus;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;

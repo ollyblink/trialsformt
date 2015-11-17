@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import firstdesignidea.execution.exceptions.IncorrectFormatException;
 import firstdesignidea.execution.exceptions.NotSetException;
-import firstdesignidea.execution.jobtask.FutureJobCompletion;
-import firstdesignidea.execution.jobtask.FutureResult;
 import firstdesignidea.execution.jobtask.Job;
 import firstdesignidea.execution.scheduling.ITaskSplitter;
 import firstdesignidea.utils.FormatUtils;
@@ -31,7 +29,6 @@ public class MRJobSubmitter {
 	private int port;
 	private PeerDHT connectionPeer;
 	private ITaskSplitter taskSplitter;
-	
 
 	private MRJobSubmitter() {
 	}
@@ -79,13 +76,13 @@ public class MRJobSubmitter {
 	 * @param job
 	 * @return
 	 */
-	public FutureResult submit(Job job) {
-		try { 
+	public Object submit(Job job) {
+		try {
 			if (this.connectionPeer == null) {
 				this.connectionPeer = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).start()).start();
 			}
-			
-			//TODO add callback for this MRJobSubmitter
+
+			// TODO add callback for this MRJobSubmitter
 			FuturePut put = this.connectionPeer.add(Number160.createHash("jobqueue")).data(new Data(job)).start();
 			put.addListener(putNewJobListener(this.connectionPeer));
 
@@ -100,12 +97,12 @@ public class MRJobSubmitter {
 
 			@Override
 			public void operationComplete(FuturePut future) throws Exception {
-				if(future.isSuccess()){
-					
-					//Broadcast that a new job was put into the DHT 
+				if (future.isSuccess()) {
+
+					// Broadcast that a new job was put into the DHT
 					BroadcastBuilder broadcast = peer.peer().broadcast(Number160.createHash("new job submission"));
 					broadcast.start();
-				}else{
+				} else {
 					logger.error("Could not put new job into job queue");
 				}
 			}
@@ -117,8 +114,5 @@ public class MRJobSubmitter {
 
 		};
 	}
-
-	public FutureJobCompletion awaitCompletion() {
-		return new FutureJobCompletion();
-	}
+ 
 }

@@ -27,24 +27,13 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	public StructuredBroadcastHandler receive(Message message) {
 		super.receive(message);
 
-		JobStatus jobStatus = JobStatus.NEW_JOB_AVAILABLE; // to get from message
+		JobStatus jobStatus = JobStatus.DISTRIBUTED_TASKS; // to get from message
  
-		switch (jobStatus) {
-		case NEW_JOB_AVAILABLE:
-
-			Number160 jobQueueLocation = Number160.createHash("Job Queue Location"); //to get from message
-			jobManager.scheduleJobs(jobQueueLocation);
+		switch (jobStatus) { 
+		case DISTRIBUTED_TASKS: 
 			break;
-		case DISTRIBUTED_MAP_TASKS:
-			Number160 jobLocation =  Number160.createHash("jobId1"); //to get from message
-			jobManager.startMapping(jobLocation);
-			break;
-		case FINISHED_MAP_TASKS:
-			jobManager.scheduleReduceTasks();
-			break;
-		case DISTRIBUTED_REDUCE_TASKS:
-			jobManager.startReducing();
-			break;
+		case FINISHED_TASKS: 
+			break; 
 		default:
 			break;
 		}  
