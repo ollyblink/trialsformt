@@ -71,7 +71,7 @@ public class TrialInternetConnection {
 			//
 			// if (!bootstrap.isSuccess()) {
 			// System.err.println("B no success!");
-			// }
+			// } 
 			FutureBootstrap bootstrap = myPeer.bootstrap().inetAddress(InetAddress.getByName(ipSuperPeer)).ports(port).start();
 
 			bootstrap.awaitUninterruptibly();
