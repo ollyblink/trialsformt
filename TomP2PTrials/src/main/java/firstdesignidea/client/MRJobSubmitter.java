@@ -3,12 +3,13 @@ package firstdesignidea.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import firstdesignidea.execution.jobtask.IJobManager;
+import firstdesignidea.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import firstdesignidea.execution.jobtask.Job;
 import firstdesignidea.execution.scheduling.ITaskSplitter;
 import firstdesignidea.storage.DHTConnectionProvider;
+import firstdesignidea.storage.IBroadcastListener;
 
-public class MRJobSubmitter implements IJobManager {
+public class MRJobSubmitter implements IBroadcastListener {
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmitter.class);
 	private DHTConnectionProvider dhtConnectionProvider;
 	private ITaskSplitter taskSplitter;
@@ -27,18 +28,19 @@ public class MRJobSubmitter implements IJobManager {
 	 */
 	public void submit(final Job job) {
 		dhtConnectionProvider.connect();
+		System.out.println("connect");
 		taskSplitter.splitAndEmit(job, dhtConnectionProvider);
-		dhtConnectionProvider.addJob(job);
+		System.out.println("split");
+//		dhtConnectionProvider.addJob(job);
+		System.out.println("Add job");
 	}
 
-	@Override
 	public MRJobSubmitter dhtConnectionProvider(DHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
-		this.dhtConnectionProvider.jobManager(this);
+		dhtConnectionProvider.broadcastDistributor().broadcastListener(this);
 		return this;
 	}
 
-	@Override
 	public DHTConnectionProvider dhtConnectionProvider() {
 		return this.dhtConnectionProvider;
 	}
@@ -47,5 +49,11 @@ public class MRJobSubmitter implements IJobManager {
 		this.taskSplitter = taskSplitter;
 		return this;
 	}
+
+	@Override
+	public void inform(IBCMessage bcMessage) {
+		System.out.println("MRJobSubmitter received BC message with status: " +bcMessage.status());
+	}
+ 
 
 }

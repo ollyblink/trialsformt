@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import firstdesignidea.client.MRJobSubmitter;
+import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
 import firstdesignidea.execution.computation.IMapReduceProcedure;
 import firstdesignidea.execution.computation.context.IContext;
 import firstdesignidea.execution.jobtask.Job;
@@ -19,10 +20,10 @@ public class DesignIdeaJobSubmitter {
 			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, InstantiationException {
 
 		String bootstrapIP = "192.168.43.234";
-		int bootstrapPort = 4001;
+		int bootstrapPort = 4000;
 
 		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP)
-				.bootstrapPort(bootstrapPort);
+				.bootstrapPort(bootstrapPort).broadcastDistributor(new MRBroadcastHandler());
 		
 		ITaskSplitter taskSplitter = MaxFileSizeTaskSplitter.newTaskSplitter().shouldDeleteAfterEmission(true);
 		MRJobSubmitter mRJS = MRJobSubmitter.newMapReduceJobSubmitter().dhtConnectionProvider(dhtConnectionProvider).taskSplitter(taskSplitter);
@@ -78,38 +79,41 @@ public class DesignIdeaJobSubmitter {
 		//
 		// };
 
-		String inputPath = "location/to/data";
+		long maxFileSize = 1024*1024;
+		String inputPath = "/home/ozihler/Desktop/input_small";
 		String outputPath = "location/to/store/results";
 
-		Job job = Job.newJob().procedures(mapper).procedures(reducer).inputPath(inputPath).outputPath(outputPath);
+		Job job = Job.newJob().procedures(mapper).procedures(reducer).inputPath(inputPath).outputPath(outputPath).maxFileSize(maxFileSize);
 
-		int i = 0;
-		for (IMapReduceProcedure<?, ?, ?, ?> p : job.procedures()) {
-			Method process = p.getClass().getMethods()[0];
-
-			// Class c1 = (Class)((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
-			// Type c2 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[1];
-			// Type c3 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[2];
-			// Type c4 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[3];
-
-			if (i == 0) {
-				System.out.println("In first");
-				process.invoke(p, new Object[] { "HELLO", "this this is is this is a this", mapperContext });
-				i++;
-			} else if (i == 1) {
-				System.out.println("In second");
-				for (Object word : ones.keySet()) {
-					// System.out.println(word.getClass());
-					// if (Class.forName(c1.getTypeName()).newInstance().getClass().isInstance(word) &&
-					// Class.forName(c2.getTypeName()).isInstance(word)) {
-					process.invoke(p, new Object[] { word, ones.get(word), reducerContext });
-					// }
-				}
-				i++;
-			}
-		}
-
+		System.out.println("Jobsubmission");
 		mRJS.submit(job);
+		
+//		int i = 0;
+//		for (IMapReduceProcedure<?, ?, ?, ?> p : job.procedures()) {
+//			Method process = p.getClass().getMethods()[0];
+//
+//			// Class c1 = (Class)((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
+//			// Type c2 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[1];
+//			// Type c3 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[2];
+//			// Type c4 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[3];
+//
+//			if (i == 0) {
+//				System.out.println("In first");
+//				process.invoke(p, new Object[] { "HELLO", "this this is is this is a this", mapperContext });
+//				i++;
+//			} else if (i == 1) {
+//				System.out.println("In second");
+//				for (Object word : ones.keySet()) {
+//					// System.out.println(word.getClass());
+//					// if (Class.forName(c1.getTypeName()).newInstance().getClass().isInstance(word) &&
+//					// Class.forName(c2.getTypeName()).isInstance(word)) {
+//					process.invoke(p, new Object[] { word, ones.get(word), reducerContext });
+//					// }
+//				}
+//				i++;
+//			}
+//		}
+
 		// FutureJobCompletion completion = mRJS.awaitCompletion();
 		// completion.addListener(new BaseFutureListener<FutureJobCompletion>(){
 		//

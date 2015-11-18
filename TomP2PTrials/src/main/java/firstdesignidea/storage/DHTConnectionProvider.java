@@ -11,9 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
+import firstdesignidea.execution.broadcasthandler.broadcastmessages.DistributedTaskBCMessage;
 import firstdesignidea.execution.exceptions.IncorrectFormatException;
 import firstdesignidea.execution.exceptions.NotSetException;
-import firstdesignidea.execution.jobtask.IJobManager;
 import firstdesignidea.execution.jobtask.Job;
 import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.utils.FormatUtils;
@@ -26,23 +26,24 @@ import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
+import net.tomp2p.p2p.StructuredBroadcastHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 public class DHTConnectionProvider {
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
-	private static final Random RND = new Random(42L);
+	private static final Random RND = new Random();
 
-	private static final int MIN_PORT = 4000;
-	private static final int PORT_RANGE = 10000;
+	private static final int MIN_PORT = 4001;
+	private static final int PORT_RANGE = 100;
 
 	private int bootstrapPort;
 	private String bootstrapIP;
 
 	private PeerDHT connectionPeer;
 	private int port;
-	private IJobManager jobManager;
+	private MRBroadcastHandler broadcastHandler;
 
 	private DHTConnectionProvider() {
 	}
@@ -71,15 +72,6 @@ public class DHTConnectionProvider {
 		}
 	}
 
-	public DHTConnectionProvider jobManager(IJobManager jobManager) {
-		this.jobManager = jobManager;
-		return this;
-	}
-
-	public IJobManager jobManager() {
-		return this.jobManager;
-	}
-
 	public DHTConnectionProvider bootstrapPort(int bootstrapPort) {
 		this.bootstrapPort = bootstrapPort;
 		return this;
@@ -96,10 +88,9 @@ public class DHTConnectionProvider {
 
 	public int port() {
 		if (port == 0) {
-			return MIN_PORT + RND.nextInt(PORT_RANGE);
-		} else {
-			return this.port;
-		}
+			this.port = MIN_PORT + RND.nextInt(PORT_RANGE);
+ 		}
+		return this.port;
 	}
 
 	// GETTER/SETTER FINISHED
@@ -111,10 +102,11 @@ public class DHTConnectionProvider {
 	 */
 	public void connect() {
 		try {
-			MRBroadcastHandler broadcastHandler = new MRBroadcastHandler(jobManager);
-			Peer peer = new PeerBuilder(Number160.createHash(RND.nextLong())).ports(port()).broadcastHandler(broadcastHandler).start();
-
+			this.port = port();
+			Peer peer = new PeerBuilder(Number160.createHash(RND.nextLong())).ports(port).broadcastHandler(this.broadcastHandler).start();
+			logger.warn("port: " + port);
 			if (bootstrapIP != null && bootstrapPort > 0) {
+				logger.warn(bootstrapIP + " " + bootstrapPort);
 				doBootstrapping(peer);
 			}
 
@@ -172,12 +164,11 @@ public class DHTConnectionProvider {
 			@Override
 			public void operationComplete(FuturePut future) throws Exception {
 				if (future.isSuccess()) {
-
+					DistributedTaskBCMessage message = DistributedTaskBCMessage.newDistributedTaskBCMessage().jobId(jobId).taskId(taskId);
 					Number160 taskHash = Number160.createHash(taskId);
 					Number160 jobHash = Number160.createHash(jobId);
 					NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
-					dataMap.put(new Number640(taskHash, jobHash, taskHash, taskHash), new Data(taskId));
-					dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(jobId));
+					dataMap.put(new Number640(taskHash, jobHash, taskHash, taskHash), new Data(message));
 					connectionPeer.peer().broadcast(taskHash).dataMap(dataMap).start();
 
 				} else {
@@ -270,6 +261,15 @@ public class DHTConnectionProvider {
 		} else {
 			return null;
 		}
+	}
+
+	public IBroadcastDistributor broadcastDistributor() {
+		return this.broadcastHandler;
+	}
+
+	public DHTConnectionProvider broadcastDistributor(MRBroadcastHandler broadcastHandler) {
+		this.broadcastHandler = broadcastHandler;
+		return this;
 	}
 
 }
