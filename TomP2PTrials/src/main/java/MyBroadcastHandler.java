@@ -28,7 +28,7 @@ public class MyBroadcastHandler extends StructuredBroadcastHandler {
 					e.printStackTrace();
 				}
 			}
-		} 
+		}  
 
 		return super.receive(message);
 	}

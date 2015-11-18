@@ -78,7 +78,7 @@ public class TrialInternetConnection {
 			if (!bootstrap.isSuccess()) {
 				System.err.println("B no success!");
 			}
-
+ 
 			// myPeer.peerBean().peerMap().peerFound(bootstrapServerPeerAddress, null, null, null);
 			// System.out.println("Bootstrapped to:" +p.inetAddress() + " " + p.tcpPort() + " " + p.udpPort());
 			// }
