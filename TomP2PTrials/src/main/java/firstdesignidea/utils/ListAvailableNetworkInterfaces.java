@@ -1,4 +1,4 @@
-package utils;
+package firstdesignidea.utils;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;

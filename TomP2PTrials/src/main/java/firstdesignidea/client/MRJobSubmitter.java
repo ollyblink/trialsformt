@@ -1,13 +1,10 @@
 package firstdesignidea.client;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import firstdesignidea.execution.jobtask.IJobManager;
 import firstdesignidea.execution.jobtask.Job;
-import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.execution.scheduling.ITaskSplitter;
 import firstdesignidea.storage.DHTConnectionProvider;
 
@@ -29,10 +26,9 @@ public class MRJobSubmitter implements IJobManager {
 	 * @return
 	 */
 	public void submit(final Job job) {
-
 		dhtConnectionProvider.connect();
-		taskSplitter.splitAndPut(job, dhtConnectionProvider);
-
+		taskSplitter.splitAndEmit(job, dhtConnectionProvider);
+		dhtConnectionProvider.addJob(job);
 	}
 
 	@Override
@@ -45,6 +41,11 @@ public class MRJobSubmitter implements IJobManager {
 	@Override
 	public DHTConnectionProvider dhtConnectionProvider() {
 		return this.dhtConnectionProvider;
+	}
+
+	public MRJobSubmitter taskSplitter(ITaskSplitter taskSplitter) {
+		this.taskSplitter = taskSplitter;
+		return this;
 	}
 
 }

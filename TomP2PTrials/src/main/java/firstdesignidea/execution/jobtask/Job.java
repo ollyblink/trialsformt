@@ -1,23 +1,28 @@
 package firstdesignidea.execution.jobtask;
 
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.Collections;
-import java.util.List;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Random;
 
 import firstdesignidea.execution.computation.IMapReduceProcedure;
 
-public class Job {
+public class Job implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1152022246679324578L;
 	private long maxFileSize;
 	private String id;
-	private List<IMapReduceProcedure<?, ?, ?, ?>> procedures;
+	private Queue<IMapReduceProcedure<?, ?, ?, ?>> procedures;
 	private String inputPath;
 	private String outputPath;
 
 	private Job() {
 		Random random = new Random();
 		id = "job" + "_" + System.currentTimeMillis() + "_" + random.nextLong();
-		this.procedures = new ArrayList<IMapReduceProcedure<?, ?, ?, ?>>();
+		this.procedures = new LinkedList<IMapReduceProcedure<?, ?, ?, ?>>();
 	}
 
 	public static Job newJob() {
@@ -29,7 +34,7 @@ public class Job {
 		return this;
 	}
 
-	public List<IMapReduceProcedure<?, ?, ?, ?>> procedures() {
+	public Queue<IMapReduceProcedure<?, ?, ?, ?>> procedures() {
 		return this.procedures;
 	}
 

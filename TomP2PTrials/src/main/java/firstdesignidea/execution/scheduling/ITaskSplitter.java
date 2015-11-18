@@ -5,6 +5,6 @@ import firstdesignidea.storage.DHTConnectionProvider;
 
 public interface ITaskSplitter {
 
-	public void splitAndPut(Job job, DHTConnectionProvider dhtConnectionProvider);
+	public void splitAndEmit(final Job job, DHTConnectionProvider dhtConnectionProvider);
 
 }

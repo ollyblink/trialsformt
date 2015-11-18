@@ -6,6 +6,7 @@ import java.util.NavigableMap;
 import java.util.Random;
 import java.util.TreeMap;
 
+import firstdesignidea.utils.GetOwnIpAddressTest;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -24,7 +25,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.storage.Data;
-import utils.GetOwnIpAddressTest;
 
 public class TrialInternetConnection {
 	private static Peer master;

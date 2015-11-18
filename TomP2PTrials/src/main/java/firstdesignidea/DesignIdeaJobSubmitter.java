@@ -2,9 +2,6 @@ package firstdesignidea;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -12,8 +9,9 @@ import java.util.TreeMap;
 import firstdesignidea.client.MRJobSubmitter;
 import firstdesignidea.execution.computation.IMapReduceProcedure;
 import firstdesignidea.execution.computation.context.IContext;
-import firstdesignidea.execution.computation.context.PrintContext;
 import firstdesignidea.execution.jobtask.Job;
+import firstdesignidea.execution.scheduling.ITaskSplitter;
+import firstdesignidea.execution.scheduling.MaxFileSizeTaskSplitter;
 import firstdesignidea.storage.DHTConnectionProvider;
 
 public class DesignIdeaJobSubmitter {
@@ -25,7 +23,9 @@ public class DesignIdeaJobSubmitter {
 
 		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP)
 				.bootstrapPort(bootstrapPort);
-		MRJobSubmitter mRJS = MRJobSubmitter.newMapReduceJobSubmitter().dhtConnectionProvider(dhtConnectionProvider);
+		
+		ITaskSplitter taskSplitter = MaxFileSizeTaskSplitter.newTaskSplitter().shouldDeleteAfterEmission(true);
+		MRJobSubmitter mRJS = MRJobSubmitter.newMapReduceJobSubmitter().dhtConnectionProvider(dhtConnectionProvider).taskSplitter(taskSplitter);
 
 		IMapReduceProcedure<Object, String, String, Integer> mapper = new IMapReduceProcedure<Object, String, String, Integer>() {
 

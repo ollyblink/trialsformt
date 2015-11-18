@@ -11,16 +11,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
-import firstdesignidea.execution.computation.context.IContext;
 import firstdesignidea.execution.exceptions.IncorrectFormatException;
 import firstdesignidea.execution.exceptions.NotSetException;
 import firstdesignidea.execution.jobtask.IJobManager;
 import firstdesignidea.execution.jobtask.Job;
 import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.utils.FormatUtils;
+import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.Peer;
@@ -149,26 +150,35 @@ public class DHTConnectionProvider {
 		}
 	}
 
-	public void addTask(String jobID, Task task) {
+	/**
+	 * Adds a new task to the DHT with key made from task.id() and domainKey made from task.jobId()
+	 * 
+	 * @param task
+	 */
+	public void addTask(Task task) {
 		try {
-			Number160 taskHash = Number160.createHash(jobID + "_" + task.id());
-			FuturePut put = this.connectionPeer.put(taskHash).data(new Data(task)).start();
-			put.addListener(newTaskListener(this.connectionPeer, taskHash));
+			Number160 taskHash = Number160.createHash(task.id());
+			Number160 jobHash = Number160.createHash(task.jobId());
+			FuturePut put = this.connectionPeer.put(taskHash).domainKey(jobHash).data(new Data(task)).start();
+			put.addListener(newTaskListener(task.id(), task.jobId()));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private BaseFutureListener<FuturePut> newTaskListener(final PeerDHT peer, final Number160 taskHash) {
+	private BaseFutureListener<FuturePut> newTaskListener(final String taskId, final String jobId) {
 		return new BaseFutureListener<FuturePut>() {
 
 			@Override
 			public void operationComplete(FuturePut future) throws Exception {
 				if (future.isSuccess()) {
 
+					Number160 taskHash = Number160.createHash(taskId);
+					Number160 jobHash = Number160.createHash(jobId);
 					NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
-					dataMap.put(new Number640(taskHash, taskHash, taskHash, taskHash), new Data(taskHash));
-					peer.peer().broadcast(taskHash).dataMap(dataMap).start();
+					dataMap.put(new Number640(taskHash, jobHash, taskHash, taskHash), new Data(taskId));
+					dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(jobId));
+					connectionPeer.peer().broadcast(taskHash).dataMap(dataMap).start();
 
 				} else {
 					logger.error("Could not put new job into job queue");
@@ -181,6 +191,85 @@ public class DHTConnectionProvider {
 			}
 
 		};
+	}
+
+	public Task getTask(String taskId, String jobId) {
+
+		Number160 taskHash = Number160.createHash(taskId);
+		Number160 jobDomainKey = Number160.createHash(jobId);
+		FutureGet getTask = this.connectionPeer.get(taskHash).domainKey(jobDomainKey).start();
+		getTask.awaitUninterruptibly();
+		if (getTask.isSuccess()) {
+			if (getTask.data() != null) {
+				try {
+					return (Task) getTask.data().object();
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				return null;
+			} else {
+				return null;
+			}
+		} else {
+			return null;
+		}
+	}
+
+	public void addJob(Job job) {
+		try {
+			Number160 jobHash = Number160.createHash(job.id());
+			FuturePut put = this.connectionPeer.put(jobHash).domainKey(jobHash).data(new Data(job)).start();
+			put.addListener(newJobListener(job.id()));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private BaseFutureListener<? extends BaseFuture> newJobListener(final String jobId) {
+		return new BaseFutureListener<FuturePut>() {
+
+			@Override
+			public void operationComplete(FuturePut future) throws Exception {
+				if (future.isSuccess()) {
+					Number160 jobHash = Number160.createHash(jobId);
+					NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+					dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(jobHash));
+					connectionPeer.peer().broadcast(jobHash).dataMap(dataMap).start();
+				} else {
+					logger.error("Could not put new job into job queue");
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.debug("Exception caught in putNewJobListener", t);
+			}
+
+		};
+	}
+
+	public Job getJob(String jobId) {
+		Number160 jobHash = Number160.createHash(jobId);
+		FutureGet getJob = this.connectionPeer.get(jobHash).domainKey(jobHash).start();
+		getJob.awaitUninterruptibly();
+		if (getJob.isSuccess()) {
+			if (getJob.data() != null) {
+				try {
+					return (Job) getJob.data().object();
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				return null;
+			} else {
+				return null;
+			}
+		} else {
+			return null;
+		}
 	}
 
 }

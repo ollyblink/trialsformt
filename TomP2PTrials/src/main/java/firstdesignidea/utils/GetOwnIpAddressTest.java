@@ -1,4 +1,4 @@
-package utils;
+package firstdesignidea.utils;
 
 import java.io.IOException;
 import java.net.InetAddress;
