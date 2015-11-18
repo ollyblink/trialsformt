@@ -6,7 +6,7 @@ public class PortGenerator {
 	private static Random random = new Random();
 
 	public static int generatePort() {
-		return random.nextInt(10000) + 4000;
+		return random.nextInt(1000) + 4000;
 	}
 
 }

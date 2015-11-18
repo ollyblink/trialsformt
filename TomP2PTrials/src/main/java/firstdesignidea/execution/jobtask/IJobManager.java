@@ -1,16 +1,19 @@
 package firstdesignidea.execution.jobtask;
 
-import net.tomp2p.peers.Number160;
+import firstdesignidea.storage.DHTConnectionProvider;
 
 public interface IJobManager {
+	public IJobManager dhtConnectionProvider(DHTConnectionProvider dhtConnectionProvider);
 
-	public void scheduleJobs(Number160 jobQueueLocation);
+	public DHTConnectionProvider dhtConnectionProvider();
+	// public void scheduleJobs(Number160 jobQueueLocation);
+	//
+	//
+	// public void scheduleReduceTasks();
+	//
+	// public void startReducing();
+	//
+	// public void startMapping(Number160 jobLocation);
 
  
-	public void scheduleReduceTasks();
-
-	public void startReducing();
-
-	public void startMapping(Number160 jobLocation);
-
 }

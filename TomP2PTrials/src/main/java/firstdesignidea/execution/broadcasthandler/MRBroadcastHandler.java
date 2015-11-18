@@ -29,8 +29,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
-
-		try {
+ 		try {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				JobStatus jobStatus = (JobStatus) dataMap.get(nr).object();
@@ -38,7 +37,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 				switch (jobStatus) {
 				case DISTRIBUTED_TASKS:
 					break;
-				case FINISHED_TASKS:
+				case FINISHED_ALL_TASKS:
 					break;
 				default:
 					break;

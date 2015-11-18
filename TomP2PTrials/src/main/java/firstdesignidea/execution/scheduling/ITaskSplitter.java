@@ -1,12 +1,10 @@
 package firstdesignidea.execution.scheduling;
 
-import java.util.List;
-
 import firstdesignidea.execution.jobtask.Job;
-import firstdesignidea.execution.jobtask.Task;
+import firstdesignidea.storage.DHTConnectionProvider;
 
 public interface ITaskSplitter {
 
-	public List<Task> split(Job job);
+	public void splitAndEmit(final Job job, DHTConnectionProvider dhtConnectionProvider);
 
 }
