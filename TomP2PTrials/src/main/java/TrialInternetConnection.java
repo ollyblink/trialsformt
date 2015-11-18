@@ -36,11 +36,11 @@ public class TrialInternetConnection {
 		int port = 4000;
 		GetOwnIpAddressTest.main(null);
 
-		int peerID = 2;
+		int peerID = 31;
 		String action = "";
 		final String key = "C";
 		final String value = "asdfasdf";
-		final String bc = "PIKKU";
+		final String bc = "PAKKU";
 
 		Random RND = new Random();
 		if (peerID == 1) {
@@ -50,25 +50,32 @@ public class TrialInternetConnection {
 		} else {
 			int port2 = port + RND.nextInt(1000) + 1;
 			System.out.println("Port 2: " + port2);
-			PeerMapConfiguration p = new PeerMapConfiguration(Number160.createHash("NULULU"));
-			p.peerVerification(false);
-			final Peer myPeer = new PeerBuilder(Number160.createHash("client peer")).peerMap(new PeerMap(p)).broadcastHandler(new MyBroadcastHandler()).ports(port2)
-					.enableMaintenance(false).start();
-	 
- 
-			PeerAddress bootstrapServerPeerAddress = new PeerAddress(Number160.ZERO, new InetSocketAddress(InetAddress.getByName(ipSuperPeer), port));
+			// PeerMapConfiguration p = new PeerMapConfiguration(Number160.createHash("PeerMap"));
+			// p.peerVerification(false);
+			final Peer myPeer = new PeerBuilder(Number160.createHash("client peer" + RND.nextLong())).ports(port2)
+					.broadcastHandler(new MyBroadcastHandler()).start();
 
-			FutureDiscover discovery = myPeer.discover().peerAddress(bootstrapServerPeerAddress).start();
-			discovery.awaitUninterruptibly();
-			if (!discovery.isSuccess()) {
-				System.err.println("A no success!");
-			} 
-			System.err.println("Peer: " + discovery.reporter() + " told us about our address.");
-			bootstrapServerPeerAddress = discovery.reporter();
-			FutureBootstrap bootstrap = myPeer.bootstrap().peerAddress(bootstrapServerPeerAddress).start();
+			PeerDHT myPeerDHT = new PeerBuilderDHT(myPeer).start();
+			// PeerAddress bootstrapServerPeerAddress = new PeerAddress(Number160.ZERO, new InetSocketAddress(InetAddress.getByName(ipSuperPeer),
+			// port));
+			//
+			// FutureDiscover discovery = myPeer.discover().peerAddress(bootstrapServerPeerAddress).start();
+			// discovery.awaitUninterruptibly();
+			// if (!discovery.isSuccess()) {
+			// System.err.println("A no success!");
+			// }
+			// System.err.println("Peer: " + discovery.reporter() + " told us about our address.");
+			// bootstrapServerPeerAddress = discovery.reporter();
+			// FutureBootstrap bootstrap = myPeer.bootstrap().inetAddress(InetAddress.getByName(ipSuperPeer)).ports(port).start();
+			//
+			// bootstrap.awaitUninterruptibly();
+			//
+			// if (!bootstrap.isSuccess()) {
+			// System.err.println("B no success!");
+			// }
+			FutureBootstrap bootstrap = myPeer.bootstrap().inetAddress(InetAddress.getByName(ipSuperPeer)).ports(port).start();
 
 			bootstrap.awaitUninterruptibly();
-
 			if (!bootstrap.isSuccess()) {
 				System.err.println("B no success!");
 			}
@@ -79,68 +86,67 @@ public class TrialInternetConnection {
 			// System.out.println("Peers:" + myPeer.peerBean().peerMap());
 			// System.out.println("Peers: " + myPeer.peerBean().peerMap());
 			//
-			PeerDHT myPeerDHT = new PeerBuilderDHT(myPeer).start();
 			if (action.equals("")) {
 				Number160 hash = Number160.createHash("Hello");
 				final NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 				dataMap.put(new Number640(hash, hash, hash, hash), new Data(bc));
 				myPeer.broadcast(hash).dataMap(dataMap).start();
-
-				// StructuredBroadcastHandler d = (StructuredBroadcastHandler) myPeer.broadcastRPC().broadcastHandler();
-				// System.out.println(d.broadcastCounter());
-				// while(d.broadcastCounter() <= 1){
-				// System.out.println("Here");
-				// Thread.sleep(200);
-				// }
+				//
+				// // StructuredBroadcastHandler d = (StructuredBroadcastHandler) myPeer.broadcastRPC().broadcastHandler();
+				// // System.out.println(d.broadcastCounter());
+				// // while(d.broadcastCounter() <= 1){
+				// // System.out.println("Here");
+				// // Thread.sleep(200);
+				// // }
 			}
+			// //
+			// if (action.equals("PUT")) {
 			//
-			if (action.equals("PUT")) {
-
-				FuturePut putFuture = myPeerDHT.add(Number160.createHash(key)).data(new Data(value)).start();
-				putFuture.addListener(new BaseFutureListener<FuturePut>() {
-
-					@Override
-					public void operationComplete(FuturePut future) throws Exception {
-						if (future.isSuccess()) {
-							System.out.println("Success on put");
-						} else {
-							System.out.println("C No success");
-						}
-					}
-
-					@Override
-					public void exceptionCaught(Throwable t) throws Exception {
-						t.printStackTrace();
-					}
-
-				});
-			}
-			if (action.equals("GET")) {
-				FutureGet futureDHT = myPeerDHT.get(Number160.createHash(key)).all().start();
-				futureDHT.addListener(new BaseFutureListener<FutureGet>() {
-
-					@Override
-					public void operationComplete(FutureGet future) throws Exception {
-						if (future.isSuccess()) {
-							System.out.println(future.data().object());
-						} else {
-							System.out.println("C No success");
-						}
-					}
-
-					@Override
-					public void exceptionCaught(Throwable t) throws Exception {
-						t.printStackTrace();
-					}
-
-				});
-				// Data data = futureDHT.data();
-				// if (data == null) {
-				// throw new RuntimeException("Address not available in DHT.");
-				// }
-				// InetSocketAddress inetSocketAddress = (InetSocketAddress) data.object();
-				// System.err.println("returned " + inetSocketAddress);
-			}
+			// FuturePut putFuture = myPeerDHT.add(Number160.createHash(key)).data(new Data(value)).start();
+			// putFuture.addListener(new BaseFutureListener<FuturePut>() {
+			//
+			// @Override
+			// public void operationComplete(FuturePut future) throws Exception {
+			// if (future.isSuccess()) {
+			// System.out.println("Success on put");
+			// } else {
+			// System.out.println("C No success");
+			// }
+			// }
+			//
+			// @Override
+			// public void exceptionCaught(Throwable t) throws Exception {
+			// t.printStackTrace();
+			// }
+			//
+			// });
+			// }
+			// if (action.equals("GET")) {
+			// FutureGet futureDHT = myPeerDHT.get(Number160.createHash(key)).all().start();
+			// futureDHT.addListener(new BaseFutureListener<FutureGet>() {
+			//
+			// @Override
+			// public void operationComplete(FutureGet future) throws Exception {
+			// if (future.isSuccess()) {
+			// System.out.println(future.data().object());
+			// } else {
+			// System.out.println("C No success");
+			// }
+			// }
+			//
+			// @Override
+			// public void exceptionCaught(Throwable t) throws Exception {
+			// t.printStackTrace();
+			// }
+			//
+			// });
+			// // Data data = futureDHT.data();
+			// // if (data == null) {
+			// // throw new RuntimeException("Address not available in DHT.");
+			// // }
+			// // InetSocketAddress inetSocketAddress = (InetSocketAddress) data.object();
+			// // System.err.println("returned " + inetSocketAddress);
+			// }
 			// myPeer.shutdown();
 		}
 	}
