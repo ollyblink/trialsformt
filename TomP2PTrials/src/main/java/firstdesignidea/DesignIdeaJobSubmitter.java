@@ -10,9 +10,9 @@ import firstdesignidea.client.MRJobSubmitter;
 import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
 import firstdesignidea.execution.computation.IMapReduceProcedure;
 import firstdesignidea.execution.computation.context.IContext;
+import firstdesignidea.execution.datasplitting.ITaskSplitter;
+import firstdesignidea.execution.datasplitting.MaxFileSizeTaskSplitter;
 import firstdesignidea.execution.jobtask.Job;
-import firstdesignidea.execution.scheduling.ITaskSplitter;
-import firstdesignidea.execution.scheduling.MaxFileSizeTaskSplitter;
 import firstdesignidea.storage.DHTConnectionProvider;
 
 public class DesignIdeaJobSubmitter {
@@ -25,7 +25,7 @@ public class DesignIdeaJobSubmitter {
 		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP)
 				.bootstrapPort(bootstrapPort).broadcastDistributor(new MRBroadcastHandler());
 		
-		ITaskSplitter taskSplitter = MaxFileSizeTaskSplitter.newTaskSplitter().shouldDeleteAfterEmission(true);
+		ITaskSplitter taskSplitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter().shouldDeleteAfterEmission(true);
 		MRJobSubmitter mRJS = MRJobSubmitter.newMapReduceJobSubmitter().dhtConnectionProvider(dhtConnectionProvider).taskSplitter(taskSplitter);
 
 		IMapReduceProcedure<Object, String, String, Integer> mapper = new IMapReduceProcedure<Object, String, String, Integer>() {

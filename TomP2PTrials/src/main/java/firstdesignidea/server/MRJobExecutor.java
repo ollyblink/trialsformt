@@ -2,7 +2,7 @@ package firstdesignidea.server;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,15 +18,19 @@ import firstdesignidea.storage.IBroadcastListener;
 
 public class MRJobExecutor implements IBroadcastListener {
 	private static Logger logger = LoggerFactory.getLogger(MRJobExecutor.class);
+	
 	private DHTConnectionProvider dhtConnectionProvider;
 	private BlockingQueue<IBCMessage> bcMessages;
 	private ITaskScheduler taskScheduler;
 	private int maxNrOfFinishedPeers;
 
+	private MessageConsumer messageConsumer;
+
 	private MRJobExecutor(DHTConnectionProvider dhtConnectionProvider) {
-		this.bcMessages = new PriorityBlockingQueue<IBCMessage>();
+		this.bcMessages = new LinkedBlockingQueue<IBCMessage>();
 		dhtConnectionProvider(dhtConnectionProvider);
-		new Thread(new MessageConsumer(bcMessages, this));
+		this.messageConsumer = MessageConsumer.newMessageConsumer(bcMessages, this);
+		new Thread(messageConsumer);
 
 	}
 
@@ -68,7 +72,7 @@ public class MRJobExecutor implements IBroadcastListener {
 			if (task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK) == this.maxNrOfFinishedPeers) {
 				continue; // there are already enough peers that finished this task
 			} else {
-				this.dhtConnectionProvider.getDataForTask(task);
+//				this.dhtConnectionProvider.getDataForTask(task);
 			}
 		}
 	}

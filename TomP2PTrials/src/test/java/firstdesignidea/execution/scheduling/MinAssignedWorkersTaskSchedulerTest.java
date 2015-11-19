@@ -24,25 +24,25 @@ public class MinAssignedWorkersTaskSchedulerTest {
 	@Before
 	public void setUp() throws Exception {
 		this.taskScheduler = new MinAssignedWorkersTaskScheduler();
-		List<Task> tasksToTest = new ArrayList<Task>();
-		tasksToTest.add(Task.newTask().id("1")
+		Task[] tasksToTest = new Task[5];
+		tasksToTest[0] = (Task.newTask().id("1")
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.FINISHED_TASK)
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.FINISHED_TASK));
 
-		tasksToTest.add(Task.newTask().id("2")
+		tasksToTest[1] = (Task.newTask().id("2")
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.FINISHED_TASK)
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.FINISHED_TASK)
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.EXECUTING_TASK));
 
-		tasksToTest.add(Task.newTask().id("3")
+		tasksToTest[2] = (Task.newTask().id("3")
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.EXECUTING_TASK)
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.EXECUTING_TASK));
 
-		tasksToTest.add(Task.newTask().id("4")
+		tasksToTest[3] = (Task.newTask().id("4")
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.FINISHED_TASK)
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.EXECUTING_TASK));
 
-		tasksToTest.add(Task.newTask().id("5")
+		tasksToTest[4] = (Task.newTask().id("5")
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.FINISHED_TASK)
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.EXECUTING_TASK)
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.EXECUTING_TASK));

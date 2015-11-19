@@ -13,6 +13,7 @@ public class Task implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 5374181867289486399L;
+
 	private String id;
 	private String jobId;
 	private IMapReduceProcedure<?, ?, ?, ?> procedure;

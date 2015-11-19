@@ -4,8 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import firstdesignidea.execution.broadcasthandler.broadcastmessages.IBCMessage;
+import firstdesignidea.execution.datasplitting.ITaskSplitter;
 import firstdesignidea.execution.jobtask.Job;
-import firstdesignidea.execution.scheduling.ITaskSplitter;
 import firstdesignidea.storage.DHTConnectionProvider;
 import firstdesignidea.storage.IBroadcastListener;
 

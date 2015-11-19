@@ -1,6 +1,7 @@
 package firstdesignidea.execution.jobtask;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,6 +26,7 @@ public class Job implements Serializable {
 		Random random = new Random();
 		id = "job" + "_" + System.currentTimeMillis() + "_" + random.nextLong();
 		this.procedures = new LinkedList<IMapReduceProcedure<?, ?, ?, ?>>();
+		this.tasks = new ArrayList<Task>();
 	}
 
 	public static Job newJob() {
@@ -71,16 +73,12 @@ public class Job implements Serializable {
 		return this.id;
 	}
 
-	public void addTask(Task task) {
-		this.tasks.add(task);
-	}
-
 	public List<Task> tasks() {
 		return this.tasks;
 	}
 
-	public Job tasks(List<Task> tasks) {
-		this.tasks = tasks;
+	public Job tasks(Task... tasks) {
+		Collections.addAll(this.tasks, tasks);
 		return this;
 	}
 
