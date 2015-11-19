@@ -1,8 +1,10 @@
 package firstdesignidea.storage;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.Random;
 import java.util.TreeMap;
@@ -11,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
-import firstdesignidea.execution.broadcasthandler.broadcastmessages.DistributedTaskBCMessage;
+import firstdesignidea.execution.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
 import firstdesignidea.execution.exceptions.IncorrectFormatException;
 import firstdesignidea.execution.exceptions.NotSetException;
 import firstdesignidea.execution.jobtask.Job;
@@ -89,7 +91,7 @@ public class DHTConnectionProvider {
 	public int port() {
 		if (port == 0) {
 			this.port = MIN_PORT + RND.nextInt(PORT_RANGE);
- 		}
+		}
 		return this.port;
 	}
 
@@ -141,127 +143,133 @@ public class DHTConnectionProvider {
 			e.printStackTrace();
 		}
 	}
+	//
+	// /**
+	// * Adds a new task to the DHT with key made from task.id() and domainKey made from task.jobId()
+	// *
+	// * @param task
+	// */
+	// public void addTask(Task task) {
+	// try {
+	// Number160 taskHash = Number160.createHash(task.id());
+	// Number160 jobHash = Number160.createHash(task.jobId());
+	// FuturePut put = this.connectionPeer.put(taskHash).domainKey(jobHash).data(new Data(task)).start();
+	// put.addListener(newTaskListener(task.id(), task.jobId()));
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// }
+	//
+	// private BaseFutureListener<FuturePut> newTaskListener(final String taskId, final String jobId) {
+	// return new BaseFutureListener<FuturePut>() {
+	//
+	// @Override
+	// public void operationComplete(FuturePut future) throws Exception {
+	// if (future.isSuccess()) {
+	// DistributedTaskBCMessage message = DistributedTaskBCMessage.newDistributedTaskBCMessage().jobId(jobId).taskId(taskId);
+	// Number160 taskHash = Number160.createHash(taskId);
+	// Number160 jobHash = Number160.createHash(jobId);
+	// NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+	// dataMap.put(new Number640(taskHash, jobHash, taskHash, taskHash), new Data(message));
+	// connectionPeer.peer().broadcast(taskHash).dataMap(dataMap).start();
+	//
+	// } else {
+	// logger.error("Could not put new job into job queue");
+	// }
+	// }
+	//
+	// @Override
+	// public void exceptionCaught(Throwable t) throws Exception {
+	// logger.debug("Exception caught in putNewJobListener", t);
+	// }
+	//
+	// };
+	// }
+	//
+	// public Task getTask(String taskId, String jobId) {
+	//
+	// Number160 taskHash = Number160.createHash(taskId);
+	// Number160 jobDomainKey = Number160.createHash(jobId);
+	// FutureGet getTask = this.connectionPeer.get(taskHash).domainKey(jobDomainKey).start();
+	// getTask.awaitUninterruptibly();
+	// if (getTask.isSuccess()) {
+	// if (getTask.data() != null) {
+	// try {
+	// return (Task) getTask.data().object();
+	// } catch (ClassNotFoundException e) {
+	// e.printStackTrace();
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// return null;
+	// } else {
+	// return null;
+	// }
+	// } else {
+	// return null;
+	// }
+	// }
 
-	/**
-	 * Adds a new task to the DHT with key made from task.id() and domainKey made from task.jobId()
-	 * 
-	 * @param task
-	 */
-	public void addTask(Task task) {
+	public void broadcastNewJob(Job job) {
 		try {
-			Number160 taskHash = Number160.createHash(task.id());
-			Number160 jobHash = Number160.createHash(task.jobId());
-			FuturePut put = this.connectionPeer.put(taskHash).domainKey(jobHash).data(new Data(task)).start();
-			put.addListener(newTaskListener(task.id(), task.jobId()));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 
-	private BaseFutureListener<FuturePut> newTaskListener(final String taskId, final String jobId) {
-		return new BaseFutureListener<FuturePut>() {
-
-			@Override
-			public void operationComplete(FuturePut future) throws Exception {
-				if (future.isSuccess()) {
-					DistributedTaskBCMessage message = DistributedTaskBCMessage.newDistributedTaskBCMessage().jobId(jobId).taskId(taskId);
-					Number160 taskHash = Number160.createHash(taskId);
-					Number160 jobHash = Number160.createHash(jobId);
-					NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
-					dataMap.put(new Number640(taskHash, jobHash, taskHash, taskHash), new Data(message));
-					connectionPeer.peer().broadcast(taskHash).dataMap(dataMap).start();
-
-				} else {
-					logger.error("Could not put new job into job queue");
-				}
-			}
-
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				logger.debug("Exception caught in putNewJobListener", t);
-			}
-
-		};
-	}
-
-	public Task getTask(String taskId, String jobId) {
-
-		Number160 taskHash = Number160.createHash(taskId);
-		Number160 jobDomainKey = Number160.createHash(jobId);
-		FutureGet getTask = this.connectionPeer.get(taskHash).domainKey(jobDomainKey).start();
-		getTask.awaitUninterruptibly();
-		if (getTask.isSuccess()) {
-			if (getTask.data() != null) {
-				try {
-					return (Task) getTask.data().object();
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				return null;
-			} else {
-				return null;
-			}
-		} else {
-			return null;
-		}
-	}
-
-	public void addJob(Job job) {
-		try {
 			Number160 jobHash = Number160.createHash(job.id());
-			FuturePut put = this.connectionPeer.put(jobHash).domainKey(jobHash).data(new Data(job)).start();
-			put.addListener(newJobListener(job.id()));
+			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(job));
+			connectionPeer.peer().broadcast(jobHash).dataMap(dataMap).start();
+
+			// Number160 jobHash = Number160.createHash(job.id());
+			// FuturePut put = this.connectionPeer.put(jobHash).domainKey(jobHash).data(new Data(job)).start();
+			// put.addListener(newJobListener(job.id()));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private BaseFutureListener<? extends BaseFuture> newJobListener(final String jobId) {
-		return new BaseFutureListener<FuturePut>() {
-
-			@Override
-			public void operationComplete(FuturePut future) throws Exception {
-				if (future.isSuccess()) {
-					Number160 jobHash = Number160.createHash(jobId);
-					NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
-					dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(jobHash));
-					connectionPeer.peer().broadcast(jobHash).dataMap(dataMap).start();
-				} else {
-					logger.error("Could not put new job into job queue");
-				}
-			}
-
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				logger.debug("Exception caught in putNewJobListener", t);
-			}
-
-		};
-	}
-
-	public Job getJob(String jobId) {
-		Number160 jobHash = Number160.createHash(jobId);
-		FutureGet getJob = this.connectionPeer.get(jobHash).domainKey(jobHash).start();
-		getJob.awaitUninterruptibly();
-		if (getJob.isSuccess()) {
-			if (getJob.data() != null) {
-				try {
-					return (Job) getJob.data().object();
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				return null;
-			} else {
-				return null;
-			}
-		} else {
-			return null;
-		}
-	}
+	// private BaseFutureListener<? extends BaseFuture> newJobListener(final String jobId) {
+	// return new BaseFutureListener<FuturePut>() {
+	//
+	// @Override
+	// public void operationComplete(FuturePut future) throws Exception {
+	// if (future.isSuccess()) {
+	// Number160 jobHash = Number160.createHash(jobId);
+	// NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+	// dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(jobHash));
+	// connectionPeer.peer().broadcast(jobHash).dataMap(dataMap).start();
+	// } else {
+	// logger.error("Could not put new job into job queue");
+	// }
+	// }
+	//
+	// @Override
+	// public void exceptionCaught(Throwable t) throws Exception {
+	// logger.debug("Exception caught in putNewJobListener", t);
+	// }
+	//
+	// };
+	// }
+	//
+	// public Job getJob(String jobId) {
+	// Number160 jobHash = Number160.createHash(jobId);
+	// FutureGet getJob = this.connectionPeer.get(jobHash).domainKey(jobHash).start();
+	// getJob.awaitUninterruptibly();
+	// if (getJob.isSuccess()) {
+	// if (getJob.data() != null) {
+	// try {
+	// return (Job) getJob.data().object();
+	// } catch (ClassNotFoundException e) {
+	// e.printStackTrace();
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// return null;
+	// } else {
+	// return null;
+	// }
+	// } else {
+	// return null;
+	// }
+	// }
 
 	public IBroadcastDistributor broadcastDistributor() {
 		return this.broadcastHandler;
@@ -270,6 +278,39 @@ public class DHTConnectionProvider {
 	public DHTConnectionProvider broadcastDistributor(MRBroadcastHandler broadcastHandler) {
 		this.broadcastHandler = broadcastHandler;
 		return this;
+	}
+
+	public <KEY, VALUE> void addData(final KEY key, final VALUE value) {
+		try {
+			FuturePut addData = this.connectionPeer.add(Number160.createHash(key.toString())).data(new Data(value)).start();
+			addData.addListener(new BaseFutureListener<FuturePut>() {
+
+				@Override
+				public void operationComplete(FuturePut future) throws Exception {
+					if (future.isSuccess()) {
+						logger.info("Successfully added data for key " + key);
+					} else {
+						logger.error("Could not put new job into job queue");
+					}
+				}
+
+				@Override
+				public void exceptionCaught(Throwable t) throws Exception {
+					logger.debug("Exception caught", t);
+				}
+
+			});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void getDataForTask(Task task) {
+		// TODO Auto-generated method stub
+ 
+		for (int i = 0; i < task.keys().size(); ++i) {
+			connectionPeer.get(Number160.createHash(task.keys().get(i).toString())).domainKey(Number160.createHash(task.id())).all();
+		}
 	}
 
 }

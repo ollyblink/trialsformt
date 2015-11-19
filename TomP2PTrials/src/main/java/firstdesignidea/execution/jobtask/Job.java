@@ -3,6 +3,7 @@ package firstdesignidea.execution.jobtask;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 
@@ -18,6 +19,7 @@ public class Job implements Serializable {
 	private Queue<IMapReduceProcedure<?, ?, ?, ?>> procedures;
 	private String inputPath;
 	private String outputPath;
+	private List<Task> tasks;
 
 	private Job() {
 		Random random = new Random();
@@ -67,6 +69,19 @@ public class Job implements Serializable {
 
 	public String id() {
 		return this.id;
+	}
+
+	public void addTask(Task task) {
+		this.tasks.add(task);
+	}
+
+	public List<Task> tasks() {
+		return this.tasks;
+	}
+
+	public Job tasks(List<Task> tasks) {
+		this.tasks = tasks;
+		return this;
 	}
 
 }

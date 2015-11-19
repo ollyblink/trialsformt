@@ -14,6 +14,9 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import firstdesignidea.execution.computation.IMapReduceProcedure;
 import firstdesignidea.execution.jobtask.Job;
 import firstdesignidea.execution.jobtask.Task;
@@ -21,6 +24,7 @@ import firstdesignidea.storage.DHTConnectionProvider;
 import firstdesignidea.utils.FileUtils;
 
 public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
+	private static Logger logger = LoggerFactory.getLogger(MaxFileSizeTaskSplitter.class);
 
 	private static final String ENDCODING = "UTF-8";
 	private boolean shouldDeleteAfterEmission;
@@ -98,19 +102,24 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 
 		int taskCounter = 1;
 		IMapReduceProcedure<?, ?, ?, ?> firstProcedure = job.procedures().poll();
-		if (firstProcedure != null) { 
+		if (firstProcedure != null) {
 			for (List<String> locations : allNewFileLocations) {
 				for (String location : locations) {
-					Task task = Task.newTask().file(new File(location)).jobId(job.id()).id((taskCounter++) + "").procedure(firstProcedure, 1);
-					if(dhtConnectionProvider != null){
-						dhtConnectionProvider.addTask(task);
-					}else{
-						System.err.println("Could not put job due to no dhtConnectionProvider specified.");
+					List<String> keys = new ArrayList<String>();
+					keys.add(location);
+					Task task = Task.newTask().id((taskCounter++) + "").jobId(job.id()).keys(keys).procedure(firstProcedure, 1);
+					job.addTask(task);
+					if (dhtConnectionProvider != null) {  
+						for (String key : keys) {
+							dhtConnectionProvider.addData(key, new File(key));
+						}
+					} else {
+						logger.error("Could not put job due to no dhtConnectionProvider specified.");
 					}
 				}
 			}
 		} else {
-			System.err.println("Could not put job due to no procedure specified.");
+			logger.error("Could not put job due to no procedure specified.");
 		}
 	}
 

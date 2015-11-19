@@ -1,31 +1,40 @@
 package firstdesignidea.server;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import firstdesignidea.execution.broadcasthandler.broadcastmessages.DistributedTaskBCMessage;
 import firstdesignidea.execution.broadcasthandler.broadcastmessages.IBCMessage;
-import firstdesignidea.execution.jobtask.IJobReceiver;
+import firstdesignidea.execution.broadcasthandler.broadcastmessages.MessageConsumer;
+import firstdesignidea.execution.jobtask.Job;
+import firstdesignidea.execution.jobtask.JobStatus;
+import firstdesignidea.execution.jobtask.Task;
+import firstdesignidea.execution.scheduling.ITaskScheduler;
 import firstdesignidea.storage.DHTConnectionProvider;
 import firstdesignidea.storage.IBroadcastListener;
 
-public class MRJobExecutor implements IJobReceiver, IBroadcastListener {
+public class MRJobExecutor implements IBroadcastListener {
 	private static Logger logger = LoggerFactory.getLogger(MRJobExecutor.class);
 	private DHTConnectionProvider dhtConnectionProvider;
-	private Queue<IBCMessage> bcMessages;
+	private BlockingQueue<IBCMessage> bcMessages;
+	private ITaskScheduler taskScheduler;
+	private int maxNrOfFinishedPeers;
 
-	private MRJobExecutor() {
-		this.bcMessages = new LinkedList<IBCMessage>();
+	private MRJobExecutor(DHTConnectionProvider dhtConnectionProvider) {
+		this.bcMessages = new PriorityBlockingQueue<IBCMessage>();
+		dhtConnectionProvider(dhtConnectionProvider);
+		new Thread(new MessageConsumer(bcMessages, this));
+
 	}
 
-	public static MRJobExecutor newJobExecutor() {
-		return new MRJobExecutor();
+	public static MRJobExecutor newJobExecutor(DHTConnectionProvider dhtConnectionProvider) {
+		return new MRJobExecutor(dhtConnectionProvider);
 	}
 
-	public MRJobExecutor dhtConnectionProvider(DHTConnectionProvider dhtConnectionProvider) {
+	private MRJobExecutor dhtConnectionProvider(DHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
 		this.dhtConnectionProvider.broadcastDistributor().broadcastListener(this);
 		return this;
@@ -41,32 +50,27 @@ public class MRJobExecutor implements IJobReceiver, IBroadcastListener {
 
 	@Override
 	public void inform(IBCMessage bcMessage) {
-		switch (bcMessage.status()) {
-		case DISTRIBUTED_TASKS:
-			DistributedTaskBCMessage dtbcMessage = (DistributedTaskBCMessage) bcMessage;
-			System.out.println("MRjobexecutor");
-			System.out.println("Received distributed task bc message:");
-			System.out.println("jobid: " + dtbcMessage.jobId());
-			System.out.println("task id: " + dtbcMessage.taskId());
-			bcMessages.add(dtbcMessage);
-			break;
-		case EXECUTING_TASK:
-			break;
-		case FINISHED_TASK:
-			break;
-		case TASK_FAILED:
-			break;
-		case FINISHED_ALL_TASKS:
-			break;
-		default:
-			break;
-		}
+		bcMessages.add(bcMessage);
 	}
 
-	@Override
-	public void addJob(String taskId, String jobId) {
-		// TODO Auto-generated method stub
+	public MRJobExecutor maxNrOfFinishedPeers(int maxNrOfFinishedPeers) {
+		this.maxNrOfFinishedPeers = maxNrOfFinishedPeers;
+		return this;
+	}
 
+	public int maxNrOfFinishedPeers() {
+		return this.maxNrOfFinishedPeers;
+	}
+
+	public void executeJob(Job job) {
+		List<Task> tasks = this.taskScheduler.schedule(job);
+		for (Task task : tasks) {
+			if (task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK) == this.maxNrOfFinishedPeers) {
+				continue; // there are already enough peers that finished this task
+			} else {
+				this.dhtConnectionProvider.getDataForTask(task);
+			}
+		}
 	}
 
 }
