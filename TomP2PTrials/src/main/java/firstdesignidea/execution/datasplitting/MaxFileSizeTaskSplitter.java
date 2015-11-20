@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import firstdesignidea.execution.computation.IMapReduceProcedure;
-import firstdesignidea.execution.computation.NullMapReduceProcedure;
+import firstdesignidea.execution.computation.standardprocedures.NullMapReduceProcedure;
 import firstdesignidea.execution.jobtask.Job;
 import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.storage.DHTConnectionProvider;
@@ -207,13 +207,7 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 
 		// Create the final tasks
 		createFinalTaskSplits(job, oldAndNew.values());
-	}
-
-	@Override
-	public void emit(Job job, DHTConnectionProvider dhtConnectionProvider) {
-		// TODO Auto-generated method stub
-
-	}
+	} 
 
 	public MaxFileSizeTaskSplitter tempFolderName(String tempFolderName) {
 		this.tempFolderName = tempFolderName;

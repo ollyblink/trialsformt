@@ -1,9 +1,6 @@
 package firstdesignidea.execution.datasplitting;
 
-import java.util.List;
-
 import firstdesignidea.execution.jobtask.Job;
-import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.storage.DHTConnectionProvider;
 
 public interface ITaskSplitter {
@@ -15,5 +12,4 @@ public interface ITaskSplitter {
 	 * @param job 
 	 */
 	public void split(final Job job);
-	public void emit(final Job job, DHTConnectionProvider dhtConnectionProvider);
-}
+ }

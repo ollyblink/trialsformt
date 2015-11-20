@@ -2,6 +2,9 @@ package firstdesignidea;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -24,42 +27,35 @@ public class DesignIdeaJobSubmitter {
 
 		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP)
 				.bootstrapPort(bootstrapPort).broadcastDistributor(new MRBroadcastHandler());
-		
-		ITaskSplitter taskSplitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter().shouldDeleteAfterEmission(true);
+
+		ITaskSplitter taskSplitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
 		MRJobSubmitter mRJS = MRJobSubmitter.newMapReduceJobSubmitter().dhtConnectionProvider(dhtConnectionProvider).taskSplitter(taskSplitter);
 
-		IMapReduceProcedure<Object, String, String, Integer> mapper = new IMapReduceProcedure<Object, String, String, Integer>() {
+		IMapReduceProcedure<String, String, String, Integer> mapper = new IMapReduceProcedure<String, String, String, Integer>() {
+
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 2783620472142008391L;
 
 			@Override
-			public void process(Object key, String value, IContext<String, Integer> context) {
-				String[] values = value.split(" ");
-				for (String word : values) {
+			public void process(String key, String value, IContext context) {
+				String[] words = value.split(" ");
+				for (String word : words) {
 					context.write(word, 1);
 				}
 			}
+
 		};
+
 		//
-		 final Map<String, List<Integer>> ones = new TreeMap<String, List<Integer>>();
+		final Map<String, List<Integer>> ones = new TreeMap<String, List<Integer>>();
 		//
-		IContext<String, Integer> mapperContext = null;
-		// new IContext<String, Integer>() {
-		//
-		// @Override
-		// public void write(String keyOut, Integer valueOut) {
-		//
-		// List<Integer> one = ones.get(keyOut);
-		// if (one == null) {
-		// one = new ArrayList<Integer>();
-		// ones.put(keyOut, one);
-		// }
-		// one.add(1);
-		// System.out.println("<" + keyOut + "," + valueOut + ">");
-		// }
-		// };
+
 		IMapReduceProcedure<String, Iterable<Integer>, String, Integer> reducer = new IMapReduceProcedure<String, Iterable<Integer>, String, Integer>() {
 
 			@Override
-			public void process(String key, Iterable<Integer> values, IContext<String, Integer> context) {
+			public void process(String key, Iterable<Integer> values, IContext context) {
 				int sum = 0;
 				for (Integer i : values) {
 					sum += i;
@@ -69,7 +65,7 @@ public class DesignIdeaJobSubmitter {
 
 		};
 
-		IContext<String, Integer> reducerContext = null;
+		IContext reducerContext = null;
 		// new IContext<String, Integer>() {
 		//
 		// @Override
@@ -79,40 +75,54 @@ public class DesignIdeaJobSubmitter {
 		//
 		// };
 
-		long maxFileSize = 1024*1024;
+		long maxFileSize = 1024 * 1024;
 		String inputPath = "/home/ozihler/Desktop/input_small";
 		String outputPath = "location/to/store/results";
 
 		Job job = Job.newJob().procedures(mapper).procedures(reducer).inputPath(inputPath).outputPath(outputPath).maxFileSize(maxFileSize);
 
 		System.out.println("Jobsubmission");
-		mRJS.submit(job);
-		
-//		int i = 0;
-//		for (IMapReduceProcedure<?, ?, ?, ?> p : job.procedures()) {
-//			Method process = p.getClass().getMethods()[0];
-//
-//			// Class c1 = (Class)((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
-//			// Type c2 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[1];
-//			// Type c3 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[2];
-//			// Type c4 = ((ParameterizedType) p.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[3];
-//
-//			if (i == 0) {
-//				System.out.println("In first");
-//				process.invoke(p, new Object[] { "HELLO", "this this is is this is a this", mapperContext });
-//				i++;
-//			} else if (i == 1) {
-//				System.out.println("In second");
-//				for (Object word : ones.keySet()) {
-//					// System.out.println(word.getClass());
-//					// if (Class.forName(c1.getTypeName()).newInstance().getClass().isInstance(word) &&
-//					// Class.forName(c2.getTypeName()).isInstance(word)) {
-//					process.invoke(p, new Object[] { word, ones.get(word), reducerContext });
-//					// }
-//				}
-//				i++;
-//			}
-//		}
+		// mRJS.submit(job);
+
+		// int i = 0;
+		// for (IMapReduceProcedure<?, ?, ?, ?> p : job.procedures()) {
+		Method process = mapper.getClass().getMethods()[0];
+
+		Type c1 = ((ParameterizedType) mapper.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
+		Type c2 = ((ParameterizedType) mapper.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[1];
+		Type c3 = ((ParameterizedType) mapper.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[2];
+		Type c4 = ((ParameterizedType) mapper.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[3];
+
+		// if (i == 0) {
+		System.out.println("In first");
+		Class<?> class1 = Class.forName(c1.getTypeName());
+		Class<?> class2 = Class.forName(c2.getTypeName());
+		final Class<?> class3 = Class.forName(c3.getTypeName());
+		Class<?> class4 = Class.forName(c4.getTypeName());
+
+		IContext mapperContext = new IContext() {
+
+			@Override
+			public void write(Object keyOut, Object valueOut) {
+				// Object cast = class3.cast(keyOut);
+
+			}
+		};
+
+		process.invoke(mapper, new Object[] { class4.cast("Hello"), class2.cast("this this is is this is a this"), mapperContext });
+		// i++;
+		// } else if (i == 1) {
+		// System.out.println("In second");
+		// for (Object word : ones.keySet()) {
+		// // System.out.println(word.getClass());
+		// // if (Class.forName(c1.getTypeName()).newInstance().getClass().isInstance(word) &&
+		// // Class.forName(c2.getTypeName()).isInstance(word)) {
+		// process.invoke(p, new Object[] { word, ones.get(word), reducerContext });
+		// // }
+		// }
+		// i++;
+		// }
+		// }
 
 		// FutureJobCompletion completion = mRJS.awaitCompletion();
 		// completion.addListener(new BaseFutureListener<FutureJobCompletion>(){

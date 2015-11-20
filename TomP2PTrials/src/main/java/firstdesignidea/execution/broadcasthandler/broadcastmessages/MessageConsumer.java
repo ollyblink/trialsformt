@@ -2,6 +2,9 @@ package firstdesignidea.execution.broadcasthandler.broadcastmessages;
 
 import java.util.concurrent.BlockingQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import firstdesignidea.server.MRJobExecutor;
 
 /**
@@ -11,6 +14,7 @@ import firstdesignidea.server.MRJobExecutor;
  *
  */
 public class MessageConsumer implements Runnable {
+	private static Logger logger = LoggerFactory.getLogger(MessageConsumer.class);
 
 	private static final long DEFAULT_SLEEPING_TIME = 500;
 	private BlockingQueue<IBCMessage> bcMessages;
@@ -30,14 +34,17 @@ public class MessageConsumer implements Runnable {
 	@Override
 	public void run() {
 		try {
-			while (!bcMessages.isEmpty()) {
-				IBCMessage nextMessage = bcMessages.take();
-				nextMessage.execute(mrJobExecutor);
-				this.isWaitingForExecutionFinishing(true);
-				while (isWaitingForExecutionFinishing()) {
-					Thread.sleep(sleepingTime);
-				}
+			logger.info("In MessageConsumer");
+			logger.info("number of BC messages: " + bcMessages.size());
+			while (bcMessages.isEmpty()) {
 			}
+			IBCMessage nextMessage = bcMessages.take();
+			nextMessage.execute(mrJobExecutor);
+			this.isWaitingForExecutionFinishing(true);
+			while (isWaitingForExecutionFinishing()) {
+				Thread.sleep(sleepingTime);
+			}
+
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

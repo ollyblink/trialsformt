@@ -1,9 +1,10 @@
 package firstdesignidea.storage;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Random;
@@ -14,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
 import firstdesignidea.execution.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
+import firstdesignidea.execution.broadcasthandler.broadcastmessages.IBCMessage;
+import firstdesignidea.execution.broadcasthandler.broadcastobserver.IBroadcastDistributor;
 import firstdesignidea.execution.exceptions.IncorrectFormatException;
 import firstdesignidea.execution.exceptions.NotSetException;
 import firstdesignidea.execution.jobtask.Job;
@@ -23,17 +26,15 @@ import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
-import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
-import net.tomp2p.p2p.StructuredBroadcastHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
-public class DHTConnectionProvider {
+public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
 	private static final Random RND = new Random();
 
@@ -102,6 +103,7 @@ public class DHTConnectionProvider {
 	 * Creates a BroadcastHandler and Peer and connects to the DHT. If a bootstrap port and ip were provided (meaning, there are already peers
 	 * connected to a DHT), it will be bootstrap to that node.
 	 */
+	@Override
 	public void connect() {
 		try {
 			this.port = port();
@@ -210,12 +212,15 @@ public class DHTConnectionProvider {
 	// }
 	// }
 
+	@Override
 	public void broadcastNewJob(Job job) {
 		try {
 
 			Number160 jobHash = Number160.createHash(job.id());
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
-			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(job));
+			
+			IBCMessage message = DistributedJobBCMessage.newDistributedTaskBCMessage().job(job);
+			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
 			connectionPeer.peer().broadcast(jobHash).dataMap(dataMap).start();
 
 			// Number160 jobHash = Number160.createHash(job.id());
@@ -280,9 +285,11 @@ public class DHTConnectionProvider {
 		return this;
 	}
 
-	public <KEY, VALUE> void addData(final KEY key, final VALUE value) {
+	@Override
+	public <KEY, VALUE extends Serializable> void addDataForTask(String taskId, final KEY key, final VALUE value) {
 		try {
-			FuturePut addData = this.connectionPeer.add(Number160.createHash(key.toString())).data(new Data(value)).start();
+			FuturePut addData = this.connectionPeer.add(Number160.createHash(key.toString())).data(new Data(value))
+					.domainKey(Number160.createHash(taskId)).start();
 			addData.addListener(new BaseFutureListener<FuturePut>() {
 
 				@Override
@@ -305,12 +312,28 @@ public class DHTConnectionProvider {
 		}
 	}
 
-	public void getDataForTask(Task task) {
-		// TODO Auto-generated method stub
- 
+	@Override
+	public <VALUE extends Serializable> List<VALUE> getDataForTask(Task task) {
+		final List<VALUE> values = new ArrayList<VALUE>();
 		for (int i = 0; i < task.keys().size(); ++i) {
-			connectionPeer.get(Number160.createHash(task.keys().get(i).toString())).domainKey(Number160.createHash(task.id())).all();
+			FutureGet getFuture = connectionPeer.get(Number160.createHash(task.keys().get(i).toString())).domainKey(Number160.createHash(task.id()))
+					.all().start();
+			getFuture.awaitUninterruptibly();
+			if (getFuture.isSuccess()) {
+				try {
+					if (getFuture.data() != null) {
+						values.add((VALUE) getFuture.data().object());
+					} else {
+						logger.warn("future data is null!");
+					}
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 		}
+		return values;
 	}
 
 }

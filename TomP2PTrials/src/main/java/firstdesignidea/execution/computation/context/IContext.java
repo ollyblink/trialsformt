@@ -1,7 +1,7 @@
 package firstdesignidea.execution.computation.context;
 
-public interface IContext<KEYOUT, VALUEOUT> {
+public interface IContext {
 
-	public void write(KEYOUT keyOut, VALUEOUT valueOut);
+	public void write(Object keyOut, Object valueOut);
 
 }

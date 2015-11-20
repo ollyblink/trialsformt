@@ -15,7 +15,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import firstdesignidea.execution.computation.NullMapReduceProcedure;
+import firstdesignidea.execution.computation.standardprocedures.NullMapReduceProcedure;
 import firstdesignidea.execution.jobtask.Job;
 import firstdesignidea.execution.jobtask.Task;
 import firstdesignidea.utils.FileUtils;

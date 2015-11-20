@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.NavigableMap;
 
 import firstdesignidea.execution.broadcasthandler.broadcastmessages.IBCMessage;
-import firstdesignidea.storage.IBroadcastDistributor;
-import firstdesignidea.storage.IBroadcastListener;
+import firstdesignidea.execution.broadcasthandler.broadcastobserver.IBroadcastDistributor;
+import firstdesignidea.execution.broadcasthandler.broadcastobserver.IBroadcastListener;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.StructuredBroadcastHandler;
 import net.tomp2p.peers.Number640;
