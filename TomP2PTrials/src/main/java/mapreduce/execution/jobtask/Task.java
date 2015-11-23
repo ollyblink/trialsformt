@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
+import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import net.tomp2p.peers.PeerAddress;
 

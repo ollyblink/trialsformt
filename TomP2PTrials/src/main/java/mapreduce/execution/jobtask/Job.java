@@ -1,9 +1,9 @@
 package mapreduce.execution.jobtask;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 
@@ -14,14 +14,14 @@ public class Job implements Serializable {
 	private static final long serialVersionUID = 1152022246679324578L;
 	private long maxFileSize;
 	private String id;
-	private TreeMap<IMapReduceProcedure<?, ?, ?, ?>, List<Task>> procedures;
+	private TreeMap<IMapReduceProcedure<?, ?, ?, ?>, BlockingQueue<Task>> procedures;
 	private String inputPath;
 	private int maxNumberOfFinishedPeers;
 
 	private Job() {
 		Random random = new Random();
 		id = "job" + "_" + System.currentTimeMillis() + "_" + random.nextLong();
-		this.procedures = new TreeMap<IMapReduceProcedure<?, ?, ?, ?>, List<Task>>();
+		this.procedures = new TreeMap<IMapReduceProcedure<?, ?, ?, ?>, BlockingQueue<Task>>();
 	}
 
 	public static Job newJob() {
@@ -57,11 +57,11 @@ public class Job implements Serializable {
 	 * @param tasksForProcedure
 	 * @return
 	 */
-	public Job nextProcedure(IMapReduceProcedure<?, ?, ?, ?> procedure, List<Task> tasksForProcedure) {
+	public Job nextProcedure(IMapReduceProcedure<?, ?, ?, ?> procedure, BlockingQueue<Task> tasksForProcedure) {
 		IMapReduceProcedure<?, ?, ?, ?> nextProcedure = nextProcedure();
 		int procedureNr = 1;
-		if(nextProcedure != null){
-			procedureNr = nextProcedure.procedureNr()+1;
+		if (nextProcedure != null) {
+			procedureNr = nextProcedure.procedureNr() + 1;
 		}
 		procedure.procedureNr(procedureNr);
 		this.procedures.put(procedure, tasksForProcedure);
@@ -97,7 +97,7 @@ public class Job implements Serializable {
 		return null;
 	}
 
-	public List<Task> tasksFor(IMapReduceProcedure<?, ?, ?, ?> procedure) {
+	public BlockingQueue<Task> tasksFor(IMapReduceProcedure<?, ?, ?, ?> procedure) {
 		return procedures.get(procedure);
 	}
 

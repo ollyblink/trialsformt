@@ -16,10 +16,11 @@ import org.junit.Test;
 import com.google.common.collect.Multimap;
 
 import mapreduce.client.MRJobSubmitter;
+import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.computation.context.NullContext;
+import mapreduce.execution.computation.context.PrintContext;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.jobtask.Job;
-import mapreduce.execution.jobtask.JobStatus;
 import mapreduce.execution.jobtask.Task;
 import mapreduce.server.MRJobExecutor;
 import mapreduce.storage.DHTConnectionProvider;
@@ -33,7 +34,6 @@ public class MRJobExecutorTest {
 	private static Job job;
 	private static MRJobSubmitter submitter;
 	private static ExecutorService server;
-	private static LinkedBlockingDeque<Job> jobs;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -111,16 +111,16 @@ public class MRJobExecutorTest {
 	public void test() throws InterruptedException {
 
 		submitter.submit(job);
-		Thread.sleep(4000);
+		Thread.sleep(10000);
 		for (MRJobExecutor e : executors) {
 			Job job = e.getJob();
 			System.out.println("JOB: " + job.id());
-			List<Task> tasksFor = job.tasksFor(job.nextProcedure());
+			BlockingQueue<Task> tasksFor = job.tasksFor(job.nextProcedure());
 			for (Task t : tasksFor) {
 				System.out.println("Task: " + t.id());
 				Multimap<PeerAddress, JobStatus> multimap = t.get();
 				System.out.println(multimap.size());
-				for (PeerAddress p : multimap.keys()) {
+				for (PeerAddress p : multimap.keySet()) {
 					System.out.println(p.inetAddress() + "/" + p.tcpPort() + ": " + multimap.get(p));
 				}
 				System.out.println();

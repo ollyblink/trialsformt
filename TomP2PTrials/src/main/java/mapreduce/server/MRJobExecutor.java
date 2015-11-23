@@ -2,6 +2,8 @@ package mapreduce.server;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -10,12 +12,12 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.MessageConsumer;
+import mapreduce.execution.broadcasthandler.MessageConsumer;
+import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.computation.context.NullContext;
 import mapreduce.execution.jobtask.Job;
-import mapreduce.execution.jobtask.JobStatus;
 import mapreduce.execution.jobtask.KeyValuePair;
 import mapreduce.execution.jobtask.Task;
 import mapreduce.execution.scheduling.ITaskScheduler;
@@ -23,7 +25,7 @@ import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
 import mapreduce.storage.IDHTConnectionProvider;
 
 public class MRJobExecutor {
-	private static final ITaskScheduler DEFAULT_TASK_SCHEDULER = new MinAssignedWorkersTaskScheduler();
+	private static final ITaskScheduler DEFAULT_TASK_SCHEDULER = MinAssignedWorkersTaskScheduler.newRandomTaskScheduler();
 	private static final IContext DEFAULT_CONTEXT = NullContext.newNullContext();
 	private static final long DEFAULT_SLEEPING_TIME = 100;
 
@@ -84,18 +86,18 @@ public class MRJobExecutor {
 
 	public void executeJob(Job job) {
 		logger.warn("executing job: " + job.id());
-		List<Task> tasks = job.tasksFor(job.nextProcedure());
+		BlockingQueue<Task> tasks = job.tasksFor(job.nextProcedure());
 
 		executeTasksForJob(job, tasks);
 
 	}
 
-	private void executeTasksForJob(Job job, List<Task> tasks) {
+	private void executeTasksForJob(Job job, BlockingQueue<Task> tasks) {
 		Task task = null;
-		synchronized (tasks) {
-			System.err.println(tasks);
-			task = this.taskScheduler().schedule(tasks);
+		for (Task t : tasks) {
+			System.err.println(t);
 		}
+		task = this.taskScheduler().schedule(new LinkedList<Task>(tasks));
 
 		if (task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK) < job.maxNrOfFinishedPeers()) {
 			logger.warn("number of peers that finished the task: " + task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK));
@@ -105,6 +107,7 @@ public class MRJobExecutor {
 			this.executeTasksForJob(job, tasks);
 
 		} else {// check if all tasks finished
+
 			boolean allHaveFinished = true;
 			for (Task t : tasks) {
 				if (t.numberOfPeersWithStatus(JobStatus.FINISHED_TASK) < job.maxNrOfFinishedPeers()) {

@@ -1,7 +1,8 @@
 package mapreduce.execution.broadcasthandler.broadcastmessages;
 
-import mapreduce.execution.jobtask.JobStatus;
+import mapreduce.execution.broadcasthandler.MessageConsumer;
 import mapreduce.server.MRJobExecutor;
+import net.tomp2p.peers.PeerAddress;
 
 public class FinishedJobBCMessage extends AbstractBCMessage {
 
@@ -30,4 +31,8 @@ public class FinishedJobBCMessage extends AbstractBCMessage {
 		return this;
 	}
 
+	@Override
+	public FinishedJobBCMessage sender(PeerAddress peerAddress) {
+		return (FinishedJobBCMessage) super.sender(peerAddress);
+	}
 }

@@ -11,8 +11,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +79,7 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 		int taskCounter = 1;
 		IMapReduceProcedure<?, ?, ?, ?> procedure = job.nextProcedure();
 		if (procedure != null) {
-			List<Task> tasksForProcedure = new ArrayList<Task>();
+			BlockingQueue<Task> tasksForProcedure = new LinkedBlockingQueue<Task>();
 			for (List<String> locations : allNewFileLocations) {
 				for (String location : locations) {
 					List<String> keys = new ArrayList<String>();

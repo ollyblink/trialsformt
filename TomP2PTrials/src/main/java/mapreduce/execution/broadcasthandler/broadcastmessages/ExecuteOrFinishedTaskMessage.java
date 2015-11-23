@@ -1,6 +1,6 @@
 package mapreduce.execution.broadcasthandler.broadcastmessages;
 
-import mapreduce.execution.jobtask.JobStatus;
+import mapreduce.execution.broadcasthandler.MessageConsumer;
 import mapreduce.server.MRJobExecutor;
 import net.tomp2p.peers.PeerAddress;
 
@@ -10,7 +10,6 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 	 * 
 	 */
 	private static final long serialVersionUID = 7388714464226222965L;
-	private PeerAddress peerAddress;
 	private String taskId;
 	private String jobId;
 
@@ -23,7 +22,7 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 
 	@Override
 	public void execute(MessageConsumer messageConsumer) {
-		messageConsumer.updateTask(jobId, taskId, peerAddress, status());
+		messageConsumer.updateTask(jobId, taskId, sender, status());
 	}
 
 	public static ExecuteOrFinishedTaskMessage newTaskAssignedBCMessage() {
@@ -38,10 +37,6 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 		this.status = status;
 	}
 
-	public ExecuteOrFinishedTaskMessage executingPeer(PeerAddress peerAddress) {
-		this.peerAddress = peerAddress;
-		return this;
-	}
 
 	public ExecuteOrFinishedTaskMessage taskId(String taskId) {
 		this.taskId = taskId;
@@ -51,5 +46,11 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 	public ExecuteOrFinishedTaskMessage jobId(String jobId) {
 		this.jobId = jobId;
 		return this;
+	}
+	
+
+	@Override
+	public ExecuteOrFinishedTaskMessage sender(PeerAddress peerAddress) {
+		return (ExecuteOrFinishedTaskMessage)super.sender(peerAddress); 
 	}
 }

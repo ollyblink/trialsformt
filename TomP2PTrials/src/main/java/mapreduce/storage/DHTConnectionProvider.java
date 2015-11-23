@@ -135,7 +135,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 				logger.warn(bootstrapIP + " " + bootstrapPort);
 				doBootstrapping(peer);
 			}
-			PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer).storage(new StorageDisk(peer.peerID(), new File(storageFilePath()), null));
+			PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer);
 			if (useDiskStorage()) {
 				peerDHTBuilder.storage(new StorageDisk(peer.peerID(), new File(storageFilePath()), null));
 			}
@@ -173,28 +173,27 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastNewJob(Job job) {
-		IBCMessage message = DistributedJobBCMessage.newDistributedTaskBCMessage().job(job);
+		IBCMessage message = DistributedJobBCMessage.newDistributedTaskBCMessage().job(job).sender(this.connectionPeer.peerAddress());
 		broadcastJob(job, message);
 	}
 
 	@Override
 	public void broadcastFinishedAllTasks(Job job) {
-		IBCMessage message = FinishedAllTasksBCMessage.newFinishedAllTasksBCMessage().jobId(job.id());
+		IBCMessage message = FinishedAllTasksBCMessage.newFinishedAllTasksBCMessage().jobId(job.id()).sender(this.connectionPeer.peerAddress());
 		broadcastJob(job, message);
 	}
 
 	@Override
 	public void broadcastFinishedJob(Job job) {
-		IBCMessage message = FinishedJobBCMessage.newFinishedJobBCMessage().jobId(job.id());
+		IBCMessage message = FinishedJobBCMessage.newFinishedJobBCMessage().jobId(job.id()).sender(this.connectionPeer.peerAddress());
 		broadcastJob(job, message);
 	}
 
 	private void broadcastJob(Job job, IBCMessage message) {
 		try {
 
-			Number160 jobHash = Number160.createHash(job.id());
-			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
-
+			Number160 jobHash = Number160.createHash(job.id()+message.sender().toString()+message.status());
+			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>(); 
 			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
 			connectionPeer.peer().broadcast(jobHash).dataMap(dataMap).start();
 		} catch (IOException e) {
@@ -204,22 +203,23 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastFinishedTask(Task task) {
-		broadcastTask(task, ExecuteOrFinishedTaskMessage.newFinishedTaskBCMessage());
+		broadcastTask(task, ExecuteOrFinishedTaskMessage.newFinishedTaskBCMessage().sender(this.connectionPeer.peerAddress()));
 	}
 
 	@Override
 	public void broadcastTaskSchedule(Task task) {
-		broadcastTask(task, ExecuteOrFinishedTaskMessage.newTaskAssignedBCMessage());
+		broadcastTask(task, ExecuteOrFinishedTaskMessage.newTaskAssignedBCMessage().sender(this.connectionPeer.peerAddress()));
 
 	}
 
 	private void broadcastTask(Task task, ExecuteOrFinishedTaskMessage message) {
 		try {
-			Number160 taskHash = Number160.createHash(task.id());
-			message.taskId(task.id()).jobId(task.jobId()).executingPeer(this.connectionPeer.peerAddress());
+			Number160 taskHash = Number160.createHash(task.id()+message.sender().toString()+message.status());
+			message.taskId(task.id()).jobId(task.jobId()).sender(this.connectionPeer.peerAddress());
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(taskHash, taskHash, taskHash, taskHash), new Data(message));
 			connectionPeer.peer().broadcast(taskHash).dataMap(dataMap).start();
+			
 		} catch (IOException e) {
 			logger.warn("Exception thrown in DHTConnectionProvider::broadcastTaskSchedule", e);
 		}

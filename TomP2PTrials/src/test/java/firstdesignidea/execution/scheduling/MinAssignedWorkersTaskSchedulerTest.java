@@ -10,8 +10,8 @@ import java.util.Random;
 import org.junit.Before;
 import org.junit.Test;
 
+import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.jobtask.Job;
-import mapreduce.execution.jobtask.JobStatus;
 import mapreduce.execution.jobtask.Task;
 import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
 import net.tomp2p.peers.Number160;
@@ -26,7 +26,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 
 	@Before
 	public void setUp() throws Exception {
-		this.taskScheduler = new MinAssignedWorkersTaskScheduler();
+		this.taskScheduler =  MinAssignedWorkersTaskScheduler.newRandomTaskScheduler();
 		Task[] tasksToTest = new Task[5];
 		tasksToTest[0] = (Task.newTask().id("1")
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.FINISHED_TASK)

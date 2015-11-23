@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.MessageConsumer;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.StructuredBroadcastHandler;
 import net.tomp2p.peers.Number640;
@@ -29,11 +28,12 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
-		logger.warn("Received message");
 		try {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
+
+				logger.warn("Received message "+bcMessage.status() +" from " + bcMessage.sender());
 				bcMessages.add(bcMessage);
 			}
 		} catch (ClassNotFoundException e) {

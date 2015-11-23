@@ -4,9 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,17 +11,14 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.MessageConsumer;
-import mapreduce.execution.broadcasthandler.broadcastobserver.IBroadcastListener;
+import mapreduce.execution.broadcasthandler.MessageConsumer;
 import mapreduce.execution.datasplitting.ITaskSplitter;
 import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
-import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 
-public class MRJobSubmitter implements IBroadcastListener {
+public class MRJobSubmitter  {
 	private static final ITaskSplitter DEFAULT_TASK_SPLITTER = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmitter.class);
 	private IDHTConnectionProvider dhtConnectionProvider;
@@ -112,11 +106,7 @@ public class MRJobSubmitter implements IBroadcastListener {
 		}
 		return this.taskSplitter;
 	}
-
-	@Override
-	public void inform(IBCMessage bcMessage) {
-		System.out.println("MRJobSubmitter received BC message with status: " + bcMessage.status());
-	}
+ 
 
 	public void shutdown() {
 		this.dhtConnectionProvider.shutdown();

@@ -1,5 +1,7 @@
 package mapreduce.execution.scheduling;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -7,8 +9,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.jobtask.Job;
-import mapreduce.execution.jobtask.JobStatus;
+import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.jobtask.Task;
 
 /**
@@ -21,9 +22,17 @@ import mapreduce.execution.jobtask.Task;
 public class MinAssignedWorkersTaskScheduler implements ITaskScheduler {
 	private static Logger logger = LoggerFactory.getLogger(MinAssignedWorkersTaskScheduler.class);
 
+	private MinAssignedWorkersTaskScheduler() {
+		// TODO Auto-generated constructor stub
+	}
+
+	public static MinAssignedWorkersTaskScheduler newRandomTaskScheduler() {
+		return new MinAssignedWorkersTaskScheduler();
+	}
+
 	@Override
 	public Task schedule(List<Task> tasksToSchedule) {
-
+ 
 		Collections.sort(tasksToSchedule, new Comparator<Task>() {
 
 			@Override
@@ -58,7 +67,7 @@ public class MinAssignedWorkersTaskScheduler implements ITaskScheduler {
 		String taskAssignments = "";
 		for (Task task : tasksToSchedule) {
 			taskAssignments += JobStatus.EXECUTING_TASK + ": " + task.numberOfPeersWithStatus(JobStatus.EXECUTING_TASK) + "; ";
-			taskAssignments += JobStatus.FINISHED_TASK + ": " + task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK);
+			taskAssignments += JobStatus.FINISHED_TASK + ": " + task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK)+"\n";
 		}
 		logger.warn("MinAssignedWorkersTaskScheduler::schedule(): Task assignments:" + taskAssignments);
 
