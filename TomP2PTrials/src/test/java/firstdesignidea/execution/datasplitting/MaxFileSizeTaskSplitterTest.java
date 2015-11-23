@@ -15,10 +15,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import firstdesignidea.execution.computation.standardprocedures.NullMapReduceProcedure;
-import firstdesignidea.execution.jobtask.Job;
-import firstdesignidea.execution.jobtask.Task;
-import firstdesignidea.utils.FileUtils;
+import mapreduce.execution.computation.standardprocedures.NullMapReduceProcedure;
+import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
+import mapreduce.execution.jobtask.Job;
+import mapreduce.execution.jobtask.Task;
+import mapreduce.utils.FileUtils;
 
 public class MaxFileSizeTaskSplitterTest {
 
@@ -39,7 +40,7 @@ public class MaxFileSizeTaskSplitterTest {
 		System.out.println(new File(inputPath).exists());
 		maxFileSize = 1024 * 1024;
 		System.out.println(inputPath);
-		job = Job.newJob().inputPath(inputPath).maxFileSize(maxFileSize).procedures(new NullMapReduceProcedure());
+		job = Job.newJob().inputPath(inputPath).maxFileSize(maxFileSize).nextProcedure(new NullMapReduceProcedure().procedureNr(1), null);
 		dataSplitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
 
 		originalFileAllLines = readFile(inputPath + "/trial.txt");
@@ -73,7 +74,7 @@ public class MaxFileSizeTaskSplitterTest {
 	@Test
 	public void testNumberOfLines() {
 		int sum = 0;
-		for (Task task : job.tasks()) {
+		for (Task task : job.tasksFor(job.nextProcedure())) {
 			for (Object key : task.keys()) {
 				String filePath = (String) key;
 				sum += readFile(filePath).size();
@@ -88,7 +89,7 @@ public class MaxFileSizeTaskSplitterTest {
 	@Test
 	public void testFileSize() {
 		long sum = 0;
-		for (Task task : job.tasks()) {
+		for (Task task :job.tasksFor(job.nextProcedure())) {
 			for (Object key : task.keys()) {
 				String filePath = (String) key;
 				sum += new File(filePath).length();
@@ -102,7 +103,7 @@ public class MaxFileSizeTaskSplitterTest {
 
 	@Test
 	public void testMaxFileSize() {
-		for (Task task : job.tasks()) {
+		for (Task task : job.tasksFor(job.nextProcedure())) {
 			for (Object key : task.keys()) {
 				String filePath = (String) key;
 				if (PRINT_RESULTS) {

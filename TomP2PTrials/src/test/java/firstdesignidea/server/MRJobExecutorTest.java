@@ -2,35 +2,47 @@ package firstdesignidea.server;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import firstdesignidea.client.MRJobSubmitter;
-import firstdesignidea.execution.broadcasthandler.MRBroadcastHandler;
-import firstdesignidea.execution.computation.standardprocedures.WordCountMapper;
-import firstdesignidea.execution.jobtask.Job;
-import firstdesignidea.storage.DHTConnectionProvider;
-import firstdesignidea.utils.FileUtils;
+import com.google.common.collect.Multimap;
+
+import mapreduce.client.MRJobSubmitter;
+import mapreduce.execution.computation.context.NullContext;
+import mapreduce.execution.computation.standardprocedures.WordCountMapper;
+import mapreduce.execution.jobtask.Job;
+import mapreduce.execution.jobtask.JobStatus;
+import mapreduce.execution.jobtask.Task;
+import mapreduce.server.MRJobExecutor;
+import mapreduce.storage.DHTConnectionProvider;
+import mapreduce.utils.FileUtils;
+import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutorTest {
 
 	private static final Random RND = new Random(42l);
 	private static ArrayList<MRJobExecutor> executors;
+	private static Job job;
 	private static MRJobSubmitter submitter;
+	private static ExecutorService server;
+	private static LinkedBlockingDeque<Job> jobs;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		String bootstrapIP = "192.168.43.234";
 		int bootstrapPort = 4000;
-		int maxNrOfFinishedPeers = 3;
 
 		executors = new ArrayList<MRJobExecutor>();
-		for (int id = 1; id < 10; ++id) {
-			DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider()
-					.broadcastDistributor(new MRBroadcastHandler());
+		for (int id = 1; id < 4; ++id) {
+			DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider();
 
 			if (id != 1) {
 				dhtConnectionProvider.bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
@@ -38,32 +50,84 @@ public class MRJobExecutorTest {
 				dhtConnectionProvider.port(bootstrapPort);
 			}
 
-			executors.add(MRJobExecutor.newJobExecutor(dhtConnectionProvider).maxNrOfFinishedPeers(maxNrOfFinishedPeers));
-		}
-		submitter = MRJobSubmitter.newMapReduceJobSubmitter().dhtConnectionProvider(DHTConnectionProvider.newDHTConnectionProvider()
-				.broadcastDistributor(new MRBroadcastHandler()).bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
+			MRJobExecutor executor = MRJobExecutor.newJobExecutor(dhtConnectionProvider, new LinkedBlockingDeque<Job>())
+					.context(NullContext.newNullContext());
+			executors.add(executor);
 
-		for (MRJobExecutor e : executors) {
-			e.start();
 		}
+		submitter = MRJobSubmitter.newMapReduceJobSubmitter(
+				DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort).useDiskStorage(false),
+				new LinkedBlockingDeque<Job>());
+
+		server = Executors.newFixedThreadPool(3);
+
+		server.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				executors.get(0).start(false);
+			}
+
+		});
+		for (int i = 1; i < executors.size(); ++i) {
+			final int index = i;
+			server.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					executors.get(index).start(false);
+				}
+			});
+
+		}
+
+		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
+		String inputPath = "/home/ozihler/Desktop/input_small";
+		if (new File(inputPath + "/tmp").exists()) {
+			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
+		}
+
+		long megaByte = 1024 * 1024;
+
+		int maxNumberOfFinishedPeers = 3;
+		job = Job.newJob().nextProcedure(new WordCountMapper(), null).maxNrOfFinishedPeers(maxNumberOfFinishedPeers).inputPath(inputPath)
+				.maxFileSize(megaByte);
 
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
+		// submitter.shutdown();
+		// for (MRJobExecutor e : executors) {
+		// e.shutdown();
+		// }
+		// server.shutdown();
+		// while (!server.isTerminated()) {
+		// Thread.sleep(1000);
+		// }
 	}
 
 	@Test
 	public void test() throws InterruptedException {
-		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
-		FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
-
-		long megaByte = 1024 * 1024;
-		 
-		Job job = Job.newJob().procedures(new WordCountMapper()).inputPath(inputPath).maxFileSize(megaByte);
 
 		submitter.submit(job);
-		Thread.sleep(Long.MAX_VALUE);
+		Thread.sleep(4000);
+		for (MRJobExecutor e : executors) {
+			Job job = e.getJob();
+			System.out.println("JOB: " + job.id());
+			List<Task> tasksFor = job.tasksFor(job.nextProcedure());
+			for (Task t : tasksFor) {
+				System.out.println("Task: " + t.id());
+				Multimap<PeerAddress, JobStatus> multimap = t.get();
+				System.out.println(multimap.size());
+				for (PeerAddress p : multimap.keys()) {
+					System.out.println(p.inetAddress() + "/" + p.tcpPort() + ": " + multimap.get(p));
+				}
+				System.out.println();
+			}
+			System.out.println();
+		}
+
 	}
 
 }

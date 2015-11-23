@@ -6,7 +6,7 @@ import java.util.NavigableMap;
 import java.util.Random;
 import java.util.TreeMap;
 
-import firstdesignidea.utils.GetOwnIpAddressTest;
+import mapreduce.utils.GetOwnIpAddressTest;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;

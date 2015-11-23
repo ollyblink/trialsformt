@@ -3,15 +3,17 @@ package firstdesignidea.execution.scheduling;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import firstdesignidea.execution.jobtask.Job;
-import firstdesignidea.execution.jobtask.JobStatus;
-import firstdesignidea.execution.jobtask.Task;
+import mapreduce.execution.jobtask.Job;
+import mapreduce.execution.jobtask.JobStatus;
+import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -20,6 +22,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 	private static final Random RND = new Random();
 	private MinAssignedWorkersTaskScheduler taskScheduler;
 	private Job job;
+	private ArrayList<Task> tasks;
 
 	@Before
 	public void setUp() throws Exception {
@@ -47,20 +50,22 @@ public class MinAssignedWorkersTaskSchedulerTest {
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.EXECUTING_TASK)
 				.updateExecutingPeerStatus(new PeerAddress(Number160.createHash(RND.nextInt(Integer.MAX_VALUE))), JobStatus.EXECUTING_TASK));
 
-		this.job = Job.newJob().tasks(tasksToTest);
+		tasks = new ArrayList<Task>();
+		Collections.addAll(tasks, tasksToTest);
 	}
 
 	@Test
 	public void testScheduledTasks() {
 		// Test result should be the following order (task ids): 3,4,5,1,2
-		List<Task> scheduledTasks = this.taskScheduler.schedule(job);
+		Task task1 = this.taskScheduler.schedule(tasks);
+
 		// 0_ in front of the task id is needed because this is the procedure index
-		assertTrue("Number of scheduled tasks is 5", scheduledTasks.size() == 5);
-		assertTrue("task id 3", scheduledTasks.get(0).id().equals("0_3"));
-		assertTrue("task id 4", scheduledTasks.get(1).id().equals("0_4"));
-		assertTrue("task id 5", scheduledTasks.get(2).id().equals("0_5"));
-		assertTrue("task id 2", scheduledTasks.get(3).id().equals("0_1"));
-		assertTrue("task id 1", scheduledTasks.get(4).id().equals("0_2"));
+		assertTrue("task id 3", task1.id().equals("0_3"));
+		assertTrue("task id 3", tasks.get(0).id().equals("0_3"));
+		assertTrue("task id 4", tasks.get(1).id().equals("0_4"));
+		assertTrue("task id 5", tasks.get(2).id().equals("0_5"));
+		assertTrue("task id 2", tasks.get(3).id().equals("0_1"));
+		assertTrue("task id 1", tasks.get(4).id().equals("0_2"));
 	}
 
 }

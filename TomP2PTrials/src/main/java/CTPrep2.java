@@ -12,8 +12,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
-import firstdesignidea.execution.computation.IMapReduceProcedure;
-import firstdesignidea.execution.computation.context.IContext;
+import mapreduce.execution.computation.IMapReduceProcedure;
+import mapreduce.execution.computation.context.IContext;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
