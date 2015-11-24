@@ -2,18 +2,17 @@ package mapreduce.server;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.broadcasthandler.MessageConsumer;
-import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.computation.context.NullContext;
@@ -47,8 +46,8 @@ public class MRJobExecutor {
 
 	}
 
-	public static MRJobExecutor newJobExecutor(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
-		return new MRJobExecutor(dhtConnectionProvider, jobs);
+	public static MRJobExecutor newJobExecutor(IDHTConnectionProvider dhtConnectionProvider) {
+		return new MRJobExecutor(dhtConnectionProvider, new LinkedBlockingQueue<Job>());
 	}
 
 	private MRJobExecutor dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
@@ -84,7 +83,7 @@ public class MRJobExecutor {
 		return this.context;
 	}
 
-	public void executeJob(Job job) {
+	private void executeJob(Job job) {
 		logger.warn("executing job: " + job.id());
 		BlockingQueue<Task> tasks = job.tasksFor(job.nextProcedure());
 
@@ -95,12 +94,12 @@ public class MRJobExecutor {
 	private void executeTasksForJob(Job job, BlockingQueue<Task> tasks) {
 		int maxNrOfFinishedPeers = job.maxNrOfFinishedPeers();
 		Task task = this.taskScheduler().schedule(new LinkedList<Task>(tasks));
- 		if (task.totalNumberOfFinishedExecutions() < maxNrOfFinishedPeers) {
- 			this.dhtConnectionProvider().broadcastTaskSchedule(task);
+		if (task.totalNumberOfFinishedExecutions() < maxNrOfFinishedPeers) {
+			this.dhtConnectionProvider().broadcastTaskSchedule(task);
 			executeTask(task);
 			this.dhtConnectionProvider().broadcastFinishedTask(task);
-			this.executeTasksForJob(job, tasks); 
-		} else {// check if all tasks finished 
+			this.executeTasksForJob(job, tasks);
+		} else {// check if all tasks finished
 			boolean allHaveFinished = allTasksHaveFinished(maxNrOfFinishedPeers, tasks);
 			if (allHaveFinished) {
 				this.dhtConnectionProvider.broadcastFinishedAllTasks(job);

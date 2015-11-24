@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +33,8 @@ public class MRJobSubmitter  {
 		dhtConnectionProvider.broadcastHandler().queue(messageConsumer.queue());
 	}
 
-	public static MRJobSubmitter newMapReduceJobSubmitter(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
-		return new MRJobSubmitter(dhtConnectionProvider, jobs);
+	public static MRJobSubmitter newMapReduceJobSubmitter(IDHTConnectionProvider dhtConnectionProvider ) {
+		return new MRJobSubmitter(dhtConnectionProvider, new LinkedBlockingQueue<Job>());
 	}
 
 	/**
