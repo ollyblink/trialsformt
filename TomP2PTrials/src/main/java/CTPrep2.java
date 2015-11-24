@@ -32,108 +32,108 @@ import net.tomp2p.storage.Data;
 
 public class CTPrep2 {
 	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-		PeerDHT[] peers = null;
-		int nrOfPeers = 100;
-		int port = 4001;
-
-		// final String myPhoneNumber = "079 666 40 20";
-		// final String myName = "Oliver Zihler";
-		peers = Example.createAndAttachPeersDHT(nrOfPeers, port);
-
-		Example.bootstrap(peers);
-
-		Thread.sleep(1000);
-		final PeerDHT master = peers[0];
-		// Random random = new Random();
-
-		// int firstIndex = random.nextInt(nrOfPeers);
-		Set<String> keys = new TreeSet<String>();
-
-		IMapReduceProcedure<String, String, String, String> mapper = new IMapReduceProcedure<String, String, String, String>() {
-
-			@Override
-			public void process(String key, String value, IContext<String, String> context) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			 
-
-		};
-
-		try {
-			// String[] words = "hello there hello world hello hello how low".split(" ");
-			// for (String word : words) {
-			// keys.add(word);
-			// final String j = word;
-			// System.err.println("a-(" + word + ")");
-			FuturePut futurePut = master.put(Number160.createHash("Mapper")).data(new Data(mapper)).start();
-			futurePut.addListener(new BaseFutureListener<FuturePut>() {
-
-				@Override
-				public void operationComplete(FuturePut future) throws Exception {
-					// System.out.println("added: f " + j + " (" + future.isSuccess() + ")");
-					// System.out.println(future.failedReason());
-					if (future.isSuccess()) {
-						System.err.println("send message mapper with bc");
-						TreeMap<Number640, Data> treeMap = new TreeMap<Number640, Data>();
-						treeMap.put(new Number640(Number160.createHash("Mapper"), Number160.createHash("Mapper"), Number160.createHash("Mapper"),
-								Number160.createHash("Mapper")), new Data("added some mapper to the dht"));
-						master.peer().broadcast(Number160.createHash("Mapper")).dataMap(treeMap).start();
-						
-					}
-				}
-
-				@Override
-				public void exceptionCaught(Throwable t) throws Exception {
-					t.printStackTrace();
-				}
-			});
-			// Thread.sleep(500);
-			// }
-
-			Thread.sleep(2000);
-			// for (String key : keys) {
-			// System.err.println("b-(" + key + ")");
-			FutureGet futureGet = master.get(Number160.createHash("Mapper")).start();
-			futureGet.addListener(new BaseFutureListener<FutureGet>() {
-
-				@Override
-				public void operationComplete(FutureGet future) throws Exception {
-					// System.out.println("size " + future.dataMap().size());
-					// Iterator<Data> iterator = future.dataMap().values().iterator();
-					// while (iterator.hasNext()) {
-					// System.out.println(iterator.next().object());
-					// }  
-					if (future.data().object() instanceof IMapReduceProcedure) {
-						IMapReduceProcedure<String, String, String, String> mapper = (IMapReduceProcedure<String, String, String, String>) future.data().object();
-
-						mapper.process("trial", "test test this is a test", new IContext<String, String>() {
-
-							@Override
-							public void write(String keyOut, String valueOut) {
-								System.out.println(keyOut + ": " + valueOut);
-							}
-
-						});
-					}
-				}
-
-				@Override
-				public void exceptionCaught(Throwable t) throws Exception {
-					t.printStackTrace();
-				}
-			});
-			// }
-
-		} finally {
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			master.shutdown();
-		}
+//		PeerDHT[] peers = null;
+//		int nrOfPeers = 100;
+//		int port = 4001;
+//
+//		// final String myPhoneNumber = "079 666 40 20";
+//		// final String myName = "Oliver Zihler";
+//		peers = Example.createAndAttachPeersDHT(nrOfPeers, port);
+//
+//		Example.bootstrap(peers);
+//
+//		Thread.sleep(1000);
+//		final PeerDHT master = peers[0];
+//		// Random random = new Random();
+//
+//		// int firstIndex = random.nextInt(nrOfPeers);
+//		Set<String> keys = new TreeSet<String>();
+//
+////		IMapReduceProcedure<String, String, String, String> mapper = new IMapReduceProcedure<String, String, String, String>() {
+////
+////			@Override
+////			public void process(String key, String value, IContext<String, String> context) {
+////				// TODO Auto-generated method stub
+////				
+////			}
+////
+////			 
+////
+////		};
+//
+//		try {
+//			// String[] words = "hello there hello world hello hello how low".split(" ");
+//			// for (String word : words) {
+//			// keys.add(word);
+//			// final String j = word;
+//			// System.err.println("a-(" + word + ")");
+//			FuturePut futurePut = master.put(Number160.createHash("Mapper")).data(new Data(mapper)).start();
+//			futurePut.addListener(new BaseFutureListener<FuturePut>() {
+//
+//				@Override
+//				public void operationComplete(FuturePut future) throws Exception {
+//					// System.out.println("added: f " + j + " (" + future.isSuccess() + ")");
+//					// System.out.println(future.failedReason());
+//					if (future.isSuccess()) {
+//						System.err.println("send message mapper with bc");
+//						TreeMap<Number640, Data> treeMap = new TreeMap<Number640, Data>();
+//						treeMap.put(new Number640(Number160.createHash("Mapper"), Number160.createHash("Mapper"), Number160.createHash("Mapper"),
+//								Number160.createHash("Mapper")), new Data("added some mapper to the dht"));
+//						master.peer().broadcast(Number160.createHash("Mapper")).dataMap(treeMap).start();
+//						
+//					}
+//				}
+//
+//				@Override
+//				public void exceptionCaught(Throwable t) throws Exception {
+//					t.printStackTrace();
+//				}
+//			});
+//			// Thread.sleep(500);
+//			// }
+//
+//			Thread.sleep(2000);
+//			// for (String key : keys) {
+//			// System.err.println("b-(" + key + ")");
+//			FutureGet futureGet = master.get(Number160.createHash("Mapper")).start();
+//			futureGet.addListener(new BaseFutureListener<FutureGet>() {
+//
+//				@Override
+//				public void operationComplete(FutureGet future) throws Exception {
+//					// System.out.println("size " + future.dataMap().size());
+//					// Iterator<Data> iterator = future.dataMap().values().iterator();
+//					// while (iterator.hasNext()) {
+//					// System.out.println(iterator.next().object());
+//					// }  
+//					if (future.data().object() instanceof IMapReduceProcedure) {
+//						IMapReduceProcedure<String, String, String, String> mapper = (IMapReduceProcedure<String, String, String, String>) future.data().object();
+//
+//						mapper.process("trial", "test test this is a test", new IContext<String, String>() {
+//
+//							@Override
+//							public void write(String keyOut, String valueOut) {
+//								System.out.println(keyOut + ": " + valueOut);
+//							}
+//
+//						});
+//					}
+//				}
+//
+//				@Override
+//				public void exceptionCaught(Throwable t) throws Exception {
+//					t.printStackTrace();
+//				}
+//			});
+//			// }
+//
+//		} finally {
+//			try {
+//				Thread.sleep(1000);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//			master.shutdown();
+//		}
 	}
 
 	private static void trials(PeerDHT[] peers, int nrOfPeers, final String myName, Random random, int firstIndex) throws IOException {
