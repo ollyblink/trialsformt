@@ -14,10 +14,14 @@ public class WordCountMapper extends AbstractMapReduceProcedure<String, String, 
 	@Override
 	public void process(String key, String value, IContext context) {
 		StringTokenizer tokens = new StringTokenizer(value);
-		while(tokens.hasMoreTokens()) {
+		while (tokens.hasMoreTokens()) {
 			context.write(tokens.nextToken(), 1);
 		}
 
 	}
 
+	@Override
+	public String toString() {
+		return "WordCountMapper";
+	}
 }

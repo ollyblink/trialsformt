@@ -1,9 +1,9 @@
-package firstdesignidea.server;
+package mapreduce.server;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,16 +13,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.Multimap;
-
 import mapreduce.client.MRJobSubmitter;
-import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.computation.context.NullContext;
-import mapreduce.execution.computation.context.PrintContext;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
-import mapreduce.server.MRJobExecutor;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileUtils;
 import net.tomp2p.peers.PeerAddress;
@@ -115,13 +110,13 @@ public class MRJobExecutorTest {
 		for (MRJobExecutor e : executors) {
 			Job job = e.getJob();
 			System.out.println("JOB: " + job.id());
+			System.out.println("Procedure: " +job.nextProcedure());
 			BlockingQueue<Task> tasksFor = job.tasksFor(job.nextProcedure());
 			for (Task t : tasksFor) {
 				System.out.println("Task: " + t.id());
-				Multimap<PeerAddress, JobStatus> multimap = t.get();
-				System.out.println(multimap.size());
-				for (PeerAddress p : multimap.keySet()) {
-					System.out.println(p.inetAddress() + "/" + p.tcpPort() + ": " + multimap.get(p));
+				Set<PeerAddress> assignedPeers = t.allAssignedPeers(); 
+				for (PeerAddress p : assignedPeers) {
+					System.out.println(p.inetAddress() + "/" + p.tcpPort() + ": " + t.statiForPeer(p));
 				}
 				System.out.println();
 			}

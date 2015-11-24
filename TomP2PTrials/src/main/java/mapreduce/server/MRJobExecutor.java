@@ -93,33 +93,31 @@ public class MRJobExecutor {
 	}
 
 	private void executeTasksForJob(Job job, BlockingQueue<Task> tasks) {
-		Task task = null;
-		for (Task t : tasks) {
-			System.err.println(t);
-		}
-		task = this.taskScheduler().schedule(new LinkedList<Task>(tasks));
-
-		if (task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK) < job.maxNrOfFinishedPeers()) {
-			logger.warn("number of peers that finished the task: " + task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK));
-			this.dhtConnectionProvider().broadcastTaskSchedule(task);
+		int maxNrOfFinishedPeers = job.maxNrOfFinishedPeers();
+		Task task = this.taskScheduler().schedule(new LinkedList<Task>(tasks));
+ 		if (task.totalNumberOfFinishedExecutions() < maxNrOfFinishedPeers) {
+ 			this.dhtConnectionProvider().broadcastTaskSchedule(task);
 			executeTask(task);
 			this.dhtConnectionProvider().broadcastFinishedTask(task);
-			this.executeTasksForJob(job, tasks);
-
-		} else {// check if all tasks finished
-
-			boolean allHaveFinished = true;
-			for (Task t : tasks) {
-				if (t.numberOfPeersWithStatus(JobStatus.FINISHED_TASK) < job.maxNrOfFinishedPeers()) {
-					allHaveFinished = false;
-				}
-			}
+			this.executeTasksForJob(job, tasks); 
+		} else {// check if all tasks finished 
+			boolean allHaveFinished = allTasksHaveFinished(maxNrOfFinishedPeers, tasks);
 			if (allHaveFinished) {
 				this.dhtConnectionProvider.broadcastFinishedAllTasks(job);
 			} else {
 				this.executeTasksForJob(job, tasks);
 			}
 		}
+	}
+
+	private boolean allTasksHaveFinished(int maxNrOfFinishedPeers, BlockingQueue<Task> tasks) {
+		boolean allHaveFinished = true;
+		for (Task t : tasks) {
+			if (t.totalNumberOfFinishedExecutions() < maxNrOfFinishedPeers) {
+				allHaveFinished = false;
+			}
+		}
+		return allHaveFinished;
 	}
 
 	private void executeTask(final Task task) {

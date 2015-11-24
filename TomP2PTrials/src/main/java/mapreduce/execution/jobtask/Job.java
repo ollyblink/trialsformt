@@ -1,11 +1,15 @@
 package mapreduce.execution.jobtask;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 
+import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.computation.IMapReduceProcedure;
+import net.tomp2p.peers.PeerAddress;
 
 public class Job implements Serializable {
 	/**
@@ -14,14 +18,14 @@ public class Job implements Serializable {
 	private static final long serialVersionUID = 1152022246679324578L;
 	private long maxFileSize;
 	private String id;
-	private TreeMap<IMapReduceProcedure<?, ?, ?, ?>, BlockingQueue<Task>> procedures;
+	private Map<IMapReduceProcedure<?, ?, ?, ?>, BlockingQueue<Task>> procedures;
 	private String inputPath;
 	private int maxNumberOfFinishedPeers;
 
 	private Job() {
 		Random random = new Random();
 		id = "job" + "_" + System.currentTimeMillis() + "_" + random.nextLong();
-		this.procedures = new TreeMap<IMapReduceProcedure<?, ?, ?, ?>, BlockingQueue<Task>>();
+		this.procedures = Collections.synchronizedMap(new TreeMap<IMapReduceProcedure<?, ?, ?, ?>, BlockingQueue<Task>>());
 	}
 
 	public static Job newJob() {
@@ -64,7 +68,18 @@ public class Job implements Serializable {
 			procedureNr = nextProcedure.procedureNr() + 1;
 		}
 		procedure.procedureNr(procedureNr);
-		this.procedures.put(procedure, tasksForProcedure);
+
+		// Make sure the tasks have this procedure assigned...
+		if (tasksForProcedure != null) {
+			for (Task task : tasksForProcedure) {
+				if (task.procedure() == null) {
+					task.procedure(procedure);
+				}
+			}
+		}
+		synchronized (procedures) {
+			this.procedures.put(procedure, tasksForProcedure);
+		}
 		return this;
 	}
 
@@ -77,11 +92,13 @@ public class Job implements Serializable {
 	public IMapReduceProcedure<?, ?, ?, ?> nextProcedure() {
 		IMapReduceProcedure<?, ?, ?, ?> nextProcedure = null;
 		int counter = 0;
-		for (IMapReduceProcedure<?, ?, ?, ?> p : procedures.keySet()) {
-			if (counter++ == 0) {
-				nextProcedure = p;
-			} else if (procedures.get(p) != null) {
-				nextProcedure = p;
+		synchronized (procedures) {
+			for (IMapReduceProcedure<?, ?, ?, ?> p : procedures.keySet()) {
+				if (counter++ == 0) {
+					nextProcedure = p;
+				} else if (procedures.get(p) != null) {
+					nextProcedure = p;
+				}
 			}
 		}
 		return nextProcedure;
@@ -89,16 +106,20 @@ public class Job implements Serializable {
 	}
 
 	public IMapReduceProcedure<?, ?, ?, ?> procedure(Integer procedureNr) {
-		for (IMapReduceProcedure<?, ?, ?, ?> p : procedures.keySet()) {
-			if (p.procedureNr().equals(procedureNr)) {
-				return p;
+		synchronized (procedures) {
+			for (IMapReduceProcedure<?, ?, ?, ?> p : procedures.keySet()) {
+				if (p.procedureNr().equals(procedureNr)) {
+					return p;
+				}
 			}
 		}
 		return null;
 	}
 
 	public BlockingQueue<Task> tasksFor(IMapReduceProcedure<?, ?, ?, ?> procedure) {
-		return procedures.get(procedure);
+		synchronized (procedures) {
+			return procedures.get(procedure);
+		}
 	}
 
 	public int maxNrOfFinishedPeers() {
@@ -108,5 +129,21 @@ public class Job implements Serializable {
 	public Job maxNrOfFinishedPeers(int maxNumberOfFinishedPeers) {
 		this.maxNumberOfFinishedPeers = maxNumberOfFinishedPeers;
 		return this;
+	}
+
+	public void updateTaskStatus(String taskId, PeerAddress peerAddress, JobStatus currentStatus) {
+		synchronized (procedures) {
+			for (IMapReduceProcedure<?, ?, ?, ?> procedure : procedures.keySet()) {
+				BlockingQueue<Task> tasks = procedures.get(procedure);
+				if (tasks != null) {
+					for (Task task : tasks) {
+						if (task.id().equals(taskId)) {
+							task.updateExecutingPeerStatus(peerAddress, currentStatus);
+						}
+						break;
+					}
+				}
+			}
+		}
 	}
 }

@@ -279,7 +279,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public boolean alreadyExecuted(Task task) {
-		return (task.statusForPeer(this.connectionPeer.peerAddress()) != null);
+		return (task.statiForPeer(this.connectionPeer.peerAddress()) != null);
 	}
 
 	@Override

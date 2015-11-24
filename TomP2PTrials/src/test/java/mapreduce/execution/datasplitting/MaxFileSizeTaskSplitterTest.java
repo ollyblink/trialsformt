@@ -1,4 +1,4 @@
-package firstdesignidea.execution.datasplitting;
+package mapreduce.execution.datasplitting;
 
 import static org.junit.Assert.*;
 
@@ -34,8 +34,8 @@ public class MaxFileSizeTaskSplitterTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
-		outputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile/tmp";
+		inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/datasplitting/testfile";
+		outputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/datasplitting/testfile/tmp";
 
 		System.out.println(new File(inputPath).exists());
 		maxFileSize = 1024 * 1024;

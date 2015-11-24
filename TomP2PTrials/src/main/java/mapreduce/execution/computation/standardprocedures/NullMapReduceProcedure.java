@@ -19,7 +19,10 @@ public class NullMapReduceProcedure extends AbstractMapReduceProcedure<Object, O
 	public void process(Object key, Object value, IContext context) {
 		context.write(key, value);
 	}
- 
- 
+
+	@Override
+	public String toString() {
+		return "NullMapReduceProcedure";
+	}
 
 }

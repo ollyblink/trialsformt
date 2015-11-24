@@ -1,7 +1,5 @@
 package mapreduce.execution.scheduling;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -13,8 +11,9 @@ import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.jobtask.Task;
 
 /**
- * Scheduler simply orders the tasks such that those tasks with least currently assigned peers to execute it are favoured. Tasks with more
- * <code>JobStatus.EXECUTING_TASK</code> are also favoured over tasks with more <code>JobStatus.FINISHED_TASK</code>
+ * Scheduler simply orders the tasks such that those tasks with least currently assigned peers to execute it are favoured. Tasks with less different
+ * executors are favoured over such that already have a larger diversity. Lastly, Tasks with more <code>JobStatus.EXECUTING_TASK</code> are also
+ * favoured over tasks with more <code>JobStatus.FINISHED_TASK</code>
  * 
  * @author ozihler
  *
@@ -32,29 +31,30 @@ public class MinAssignedWorkersTaskScheduler implements ITaskScheduler {
 
 	@Override
 	public Task schedule(List<Task> tasksToSchedule) {
- 
+
 		Collections.sort(tasksToSchedule, new Comparator<Task>() {
 
 			@Override
 			public int compare(Task t1, Task t2) {
-
-				int t1Finished = t1.numberOfPeersWithStatus(JobStatus.FINISHED_TASK);
-				int t2Finished = t2.numberOfPeersWithStatus(JobStatus.FINISHED_TASK);
+				int t1Finished = t1.totalNumberOfFinishedExecutions();
+				int t2Finished = t2.totalNumberOfFinishedExecutions();
 				if (t1Finished > t2Finished) {
 					return 1;
 				} else if (t1Finished < t2Finished) {
 					return -1;
 				} else {
-					int t1Executing = t1.numberOfPeersWithStatus(JobStatus.EXECUTING_TASK);
-					int t2Executing = t2.numberOfPeersWithStatus(JobStatus.EXECUTING_TASK);
-					if (t1Executing > t2Executing) {
+					int t1differentFinished = t1.numberOfDifferentPeersExecutingTask();
+					int t2differentFinished = t2.numberOfDifferentPeersExecutingTask();
+					if (t1differentFinished > t2differentFinished) {
 						return 1;
-					} else if (t1Executing < t2Executing) {
+					} else if (t1differentFinished < t2differentFinished) {
 						return -1;
 					} else {
-						if (t1.numberOfAssignedPeers() > t2.numberOfAssignedPeers()) {
+						int t1Executing = t1.totalNumberOfCurrentExecutions();
+						int t2Executing = t2.totalNumberOfCurrentExecutions();
+						if (t1Executing > t2Executing) {
 							return 1;
-						} else if (t1.numberOfAssignedPeers() < t2.numberOfAssignedPeers()) {
+						} else if (t1Executing < t2Executing) {
 							return -1;
 						} else {
 							return 0;
@@ -64,12 +64,12 @@ public class MinAssignedWorkersTaskScheduler implements ITaskScheduler {
 			}
 		});
 
-		String taskAssignments = "";
-		for (Task task : tasksToSchedule) {
-			taskAssignments += JobStatus.EXECUTING_TASK + ": " + task.numberOfPeersWithStatus(JobStatus.EXECUTING_TASK) + "; ";
-			taskAssignments += JobStatus.FINISHED_TASK + ": " + task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK)+"\n";
-		}
-		logger.warn("MinAssignedWorkersTaskScheduler::schedule(): Task assignments:" + taskAssignments);
+		// String taskAssignments = "";
+		// for (Task task : tasksToSchedule) {
+		// taskAssignments += JobStatus.EXECUTING_TASK + ": " + task.numberOfPeersWithStatus(JobStatus.EXECUTING_TASK) + "; ";
+		// taskAssignments += JobStatus.FINISHED_TASK + ": " + task.numberOfPeersWithStatus(JobStatus.FINISHED_TASK)+"\n";
+		// }
+		// logger.warn("MinAssignedWorkersTaskScheduler::schedule(): Task assignments:" + taskAssignments);
 
 		if (tasksToSchedule == null || tasksToSchedule.size() == 0) {
 			return null;

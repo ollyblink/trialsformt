@@ -73,18 +73,13 @@ public class MessageConsumer implements Runnable {
 		if (!jobs.contains(job)) {
 			jobs.add(job);
 		}
-	}
+	} 
 
 	public void updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus) {
 		logger.warn("Updating tasks");
 		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
-				BlockingQueue<Task> tasks = job.tasksFor(job.nextProcedure());
-				for (Task task : tasks) {
-					if (task.id().equals(taskId)) {
-						task.updateExecutingPeerStatus(peerAddress, currentStatus);
-					}
-				}
+				job.updateTaskStatus(taskId, peerAddress, currentStatus);
 			}
 		}
 	}
