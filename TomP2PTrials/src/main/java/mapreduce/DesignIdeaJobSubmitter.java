@@ -1,5 +1,6 @@
 package mapreduce;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -13,17 +14,37 @@ import mapreduce.client.MRJobSubmitter;
 import mapreduce.execution.broadcasthandler.MRBroadcastHandler;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
+import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.datasplitting.ITaskSplitter;
 import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.storage.DHTConnectionProvider;
+import mapreduce.utils.FileUtils;
 
 public class DesignIdeaJobSubmitter {
 	public static void main(String[] args)
-			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, InstantiationException {
-//
-//		String bootstrapIP = "192.168.43.234";
-//		int bootstrapPort = 4000;
+//			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, InstantiationException 
+	{
+		String bootstrapIP = "192.168.43.234";
+		int bootstrapPort = 4000;
+
+		MRJobSubmitter submitter = MRJobSubmitter
+				.newMapReduceJobSubmitter(DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
+
+
+		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
+		String inputPath = "/home/ozihler/Desktop/input_small";
+		if (new File(inputPath + "/tmp").exists()) {
+			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
+		}
+
+		long megaByte = 1024 * 1024;
+
+		int maxNumberOfFinishedPeers = 3;
+		Job job = Job.newJob().nextProcedure(new WordCountMapper(), null).maxNrOfFinishedPeers(maxNumberOfFinishedPeers).inputPath(inputPath)
+				.maxFileSize(megaByte);
+		submitter.submit(job);
+// 
 //
 //		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP)
 //				.bootstrapPort(bootstrapPort).broadcastDistributor(new MRBroadcastHandler());

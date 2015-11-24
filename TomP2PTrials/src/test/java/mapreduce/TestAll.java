@@ -36,44 +36,20 @@ public class TestAll {
 		String bootstrapIP = "192.168.43.234";
 		int bootstrapPort = 4000;
 
-		executors = new ArrayList<MRJobExecutor>();
-		for (int id = 1; id < 4; ++id) {
-			DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider();
-
-			if (id != 1) {
-				dhtConnectionProvider.bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
-			} else {
-				dhtConnectionProvider.port(bootstrapPort);
-			}
-
-			MRJobExecutor executor = MRJobExecutor.newJobExecutor(dhtConnectionProvider).context(NullContext.newNullContext());
-			executors.add(executor);
-
+		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider();
+		int id = 1;
+		if (id != 1) {
+			dhtConnectionProvider.bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
+		} else {
+			dhtConnectionProvider.port(bootstrapPort);
 		}
+
+		MRJobExecutor executor = MRJobExecutor.newJobExecutor(dhtConnectionProvider).context(NullContext.newNullContext());
+
+		executor.start();
 		submitter = MRJobSubmitter
 				.newMapReduceJobSubmitter(DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
 
-		server = Executors.newFixedThreadPool(3);
-
-		server.execute(new Runnable() {
-
-			@Override
-			public void run() {
-				executors.get(0).start(false);
-			}
-
-		});
-		for (int i = 1; i < executors.size(); ++i) {
-			final int index = i;
-			server.execute(new Runnable() {
-
-				@Override
-				public void run() {
-					executors.get(index).start(false);
-				}
-			});
-
-		}
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
 		String inputPath = "/home/ozihler/Desktop/input_small";

@@ -158,7 +158,7 @@ public class MRJobExecutor {
 		}
 	}
 
-	public void start(boolean useDiskStorage) {
+	public void start() {
 		logger.info("Try to connect.");
 		dhtConnectionProvider.connect();
 		startExecuting();
