@@ -1,6 +1,7 @@
 package mapreduce.execution.jobtask;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -281,22 +282,20 @@ public class Task implements Serializable {
 	public void synchronizeFinishedTaskStatiWith(Task receivedTask) {
 		Set<PeerAddress> allAssignedPeers = receivedTask.allAssignedPeers();
 		for (PeerAddress peerAddress : allAssignedPeers) {
-			Collection<JobStatus> statiForReceivedPeer = receivedTask.statiForPeer(peerAddress);
-			Collection<JobStatus> jobStatiForPeer = this.executingPeers.get(peerAddress);
-			if (jobStatiForPeer.size() == 0) {
-				synchronized (executingPeers) {
-					this.executingPeers.removeAll(peerAddress);
-					this.executingPeers.putAll(peerAddress, statiForReceivedPeer);
-				}
-			} else {
-				if (statiForReceivedPeer.size() != 0) {
-					if (jobStatiForPeer.size() < statiForReceivedPeer.size()) {
-						synchronized (executingPeers) {
-							this.executingPeers.removeAll(peerAddress);
-							this.executingPeers.putAll(peerAddress, statiForReceivedPeer);
-						}
+			ArrayList<JobStatus> statiForReceivedPeer = new ArrayList<JobStatus>(receivedTask.statiForPeer(peerAddress));
+			ArrayList<JobStatus> jobStatiForPeer = new ArrayList<JobStatus>(this.executingPeers.get(peerAddress));
+			if (jobStatiForPeer.size() == 0 || jobStatiForPeer.size() < statiForReceivedPeer.size()) {
+				jobStatiForPeer = statiForReceivedPeer;
+			} else if (jobStatiForPeer.size() == statiForReceivedPeer.size()) { // In that case, update all executing to finished...
+				for (int i = 0; i < jobStatiForPeer.size(); ++i) {
+					if (jobStatiForPeer.get(i).equals(JobStatus.EXECUTING_TASK) && statiForReceivedPeer.get(i).equals(JobStatus.FINISHED_TASK)) {
+						jobStatiForPeer.set(i, JobStatus.FINISHED_TASK);
 					}
-				}
+				} 
+			}
+			synchronized (executingPeers) {
+				this.executingPeers.removeAll(peerAddress);
+				this.executingPeers.putAll(peerAddress, jobStatiForPeer);
 			}
 		}
 	}
