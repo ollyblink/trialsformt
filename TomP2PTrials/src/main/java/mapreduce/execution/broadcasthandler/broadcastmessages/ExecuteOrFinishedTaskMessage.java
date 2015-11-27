@@ -1,6 +1,6 @@
 package mapreduce.execution.broadcasthandler.broadcastmessages;
 
-import mapreduce.execution.broadcasthandler.MessageConsumer;
+import mapreduce.execution.broadcasthandler.AbstractMessageConsumer;
 import mapreduce.server.MRJobExecutor;
 import net.tomp2p.peers.PeerAddress;
 
@@ -21,7 +21,7 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 	}
 
 	@Override
-	public void execute(MessageConsumer messageConsumer) {
+	public void execute(AbstractMessageConsumer messageConsumer) {
 		messageConsumer.updateTask(jobId, taskId, sender, status());
 	}
 
@@ -53,4 +53,11 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 	public ExecuteOrFinishedTaskMessage sender(PeerAddress peerAddress) {
 		return (ExecuteOrFinishedTaskMessage)super.sender(peerAddress); 
 	}
+
+	@Override
+	public String toString() {
+		return "ExecuteOrFinishedTaskMessage [taskId=" + taskId + ", jobId=" + jobId + ", status=" + status + "]";
+	}
+
+	 
 }

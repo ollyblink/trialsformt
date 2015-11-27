@@ -1,5 +1,6 @@
 package mapreduce.execution.computation.standardprocedures;
 
+import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 
 /**
@@ -8,7 +9,7 @@ import mapreduce.execution.computation.context.IContext;
  * @author ozihler
  *
  */
-public class NullMapReduceProcedure extends AbstractMapReduceProcedure<Object, Object, Object, Object> {
+public class NullMapReduceProcedure implements IMapReduceProcedure<Object, Object, Object, Object> {
 
 	/**
 	 * 

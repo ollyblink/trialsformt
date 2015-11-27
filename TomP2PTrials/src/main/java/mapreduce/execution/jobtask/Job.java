@@ -1,35 +1,46 @@
 package mapreduce.execution.jobtask;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
-import java.util.Random;
-import java.util.TreeMap;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.computation.IMapReduceProcedure;
+import mapreduce.execution.computation.ProcedureTaskTupel;
+import mapreduce.utils.IDCreator;
 import net.tomp2p.peers.PeerAddress;
 
 public class Job implements Serializable {
+	private static Logger logger = LoggerFactory.getLogger(Job.class);
+
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1152022246679324578L;
+
+	private String jobSubmitterID;
 	private long maxFileSize;
 	private String id;
-	private Map<IMapReduceProcedure<?, ?, ?, ?>, BlockingQueue<Task>> procedures;
+	private List<ProcedureTaskTupel> procedures;
 	private String inputPath;
-	private int maxNumberOfFinishedPeers;
+	private int maxNrOfFinishedWorkers;
+	private int currentProcedureIndex;
 
-	private Job() {
-		Random random = new Random();
-		id = "job" + "_" + System.currentTimeMillis() + "_" + random.nextLong();
-		this.procedures = Collections.synchronizedMap(new TreeMap<IMapReduceProcedure<?, ?, ?, ?>, BlockingQueue<Task>>());
+	private Job(String jobSubmitterID) {
+		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
+		this.procedures = Collections.synchronizedList(new ArrayList<ProcedureTaskTupel>());
+		this.currentProcedureIndex = 0;
 	}
 
-	public static Job newJob() {
-		return new Job();
+	public static Job newJob(String jobSubmitterID) {
+		return new Job(jobSubmitterID);
 	}
 
 	public Job inputPath(String inputPath) {
@@ -54,96 +65,153 @@ public class Job implements Serializable {
 		return this.id;
 	}
 
+	public String jobSubmitterID() {
+		return this.jobSubmitterID;
+	}
+
 	/**
-	 * Make sure to put "null" for all procedures that have no assigned tasks yet
 	 * 
 	 * @param procedure
-	 * @param tasksForProcedure
+	 * @param tasks
+	 *            for this procedure
 	 * @return
 	 */
-	public Job nextProcedure(IMapReduceProcedure<?, ?, ?, ?> procedure, BlockingQueue<Task> tasksForProcedure) {
-		IMapReduceProcedure<?, ?, ?, ?> nextProcedure = nextProcedure();
-		int procedureNr = 1;
-		if (nextProcedure != null) {
-			procedureNr = nextProcedure.procedureNr() + 1;
+	public Job nextProcedure(IMapReduceProcedure<?, ?, ?, ?> procedure, Task... tasks) {
+		List<Task> tasksAsList = new ArrayList<Task>();
+		if (tasks != null) {
+			Collections.addAll(tasksAsList, tasks);
 		}
-		procedure.procedureNr(procedureNr);
+		return nextProcedure(procedure, tasksAsList);
+	}
 
-		// Make sure the tasks have this procedure assigned...
-		if (tasksForProcedure != null) {
-			for (Task task : tasksForProcedure) {
-				if (task.procedure() == null) {
-					task.procedure(procedure);
-				}
+	public Job nextProcedure(IMapReduceProcedure<?, ?, ?, ?> procedure, List<Task> tasks) {
+		if (procedure == null) {
+			return this;
+		}
+
+		ProcedureTaskTupel procedureTasks = null;
+		for (ProcedureTaskTupel p : procedures) {
+			if (p.procedure().equals(procedure)) {
+				procedureTasks = p;
 			}
 		}
-		synchronized (procedures) {
-			this.procedures.put(procedure, tasksForProcedure);
+
+		if (procedureTasks == null) {
+			procedureTasks = ProcedureTaskTupel.newProcedureTaskTupel(procedure, new LinkedBlockingQueue<Task>());
 		}
+
+		if (tasks != null) {
+			procedureTasks.tasks().addAll(tasks);
+		}
+
+		synchronized (procedures) {
+			this.procedures.add(procedureTasks);
+		}
+
 		return this;
 	}
 
-	/**
-	 * Simply looks for the next procedure that has tasks assigned and returns those. If no tasks are assigned yet, the first procedure is returend.
-	 * Else, null is returned
-	 * 
-	 * @return
-	 */
-	public IMapReduceProcedure<?, ?, ?, ?> nextProcedure() {
-		IMapReduceProcedure<?, ?, ?, ?> nextProcedure = null;
-		int counter = 0;
-		synchronized (procedures) {
-			for (IMapReduceProcedure<?, ?, ?, ?> p : procedures.keySet()) {
-				if (counter++ == 0) {
-					nextProcedure = p;
-				} else if (procedures.get(p) != null) {
-					nextProcedure = p;
-				}
-			}
-		}
-		return nextProcedure;
-
+	public IMapReduceProcedure<?, ?, ?, ?> firstProcedure() {
+		return procedureTaskTupel(0).procedure();
 	}
 
-	public IMapReduceProcedure<?, ?, ?, ?> procedure(Integer procedureNr) {
-		synchronized (procedures) {
-			for (IMapReduceProcedure<?, ?, ?, ?> p : procedures.keySet()) {
-				if (p.procedureNr().equals(procedureNr)) {
-					return p;
-				}
+	public BlockingQueue<Task> firstTasks() {
+		return procedureTaskTupel(0).tasks();
+	}
+
+	public IMapReduceProcedure<?, ?, ?, ?> lastProcedure() {
+		return procedureTaskTupel(procedures.size() - 1).procedure();
+	}
+
+	public BlockingQueue<Task> lastTasks() {
+		return procedureTaskTupel(procedures.size() - 1).tasks();
+	}
+
+	public IMapReduceProcedure<?, ?, ?, ?> procedure(int index) {
+		return procedureTaskTupel(index).procedure();
+	}
+
+	public BlockingQueue<Task> tasks(int index) {
+		return procedureTaskTupel(index).tasks();
+	}
+
+	private ProcedureTaskTupel procedureTaskTupel(int index) {
+		return this.procedures.get(index);
+	}
+
+	public BlockingQueue<Task> tasksFor(IMapReduceProcedure<?, ?, ?, ?> procedure) {
+		for (ProcedureTaskTupel tupel : procedures) {
+			if (tupel.procedure().equals(procedure)) {
+				return tupel.tasks();
 			}
 		}
 		return null;
 	}
 
-	public BlockingQueue<Task> tasksFor(IMapReduceProcedure<?, ?, ?, ?> procedure) {
-		synchronized (procedures) {
-			return procedures.get(procedure);
+	public int maxNrOfFinishedWorkers() {
+		if (this.maxNrOfFinishedWorkers == 0) {
+			this.maxNrOfFinishedWorkers = 1;
 		}
+		return maxNrOfFinishedWorkers;
 	}
 
-	public int maxNrOfFinishedPeers() {
-		return this.maxNumberOfFinishedPeers;
-	}
+	public Job maxNrOfFinishedWorkersPerTask(int maxNrOfFinishedWorkers) {
+		if (maxNrOfFinishedWorkers < 1) {
+			return this;
+		}
+		this.maxNrOfFinishedWorkers = maxNrOfFinishedWorkers;
 
-	public Job maxNrOfFinishedPeers(int maxNumberOfFinishedPeers) {
-		this.maxNumberOfFinishedPeers = maxNumberOfFinishedPeers;
+		for (ProcedureTaskTupel tupel : procedures) {
+			BlockingQueue<Task> tasks = tupel.tasks();
+			if (tasks != null) {
+				for (Task task : tasks) {
+					task.maxNrOfFinishedWorkers(maxNrOfFinishedWorkers);
+				}
+			}
+		}
 		return this;
 	}
 
 	public void updateTaskStatus(String taskId, PeerAddress peerAddress, JobStatus currentStatus) {
-		synchronized (procedures) {
-			for (IMapReduceProcedure<?, ?, ?, ?> procedure : procedures.keySet()) {
-				BlockingQueue<Task> tasks = procedures.get(procedure);
-				if (tasks != null) {
-					for (Task task : tasks) {
-						if (task.id().equals(taskId)) {
-							task.updateExecutingPeerStatus(peerAddress, currentStatus);
-						}
+		for (ProcedureTaskTupel tupel : procedures) {
+			BlockingQueue<Task> tasks = tupel.tasks();
+			logger.warn(taskId + " to update, " + tasks);
+			if (tasks != null) {
+				for (Task task : tasks) {
+					if (task.id().equals(taskId)) {
+						task.updateExecutingPeerStatus(peerAddress, currentStatus);
 						break;
 					}
 				}
 			}
+		}
+	}
+
+	public void synchronizeFinishedTasksStati(Collection<Task> receivedSyncTasks) {
+		for (ProcedureTaskTupel tupel : procedures) {
+			BlockingQueue<Task> tasks = tupel.tasks();
+			if (tasks != null) {
+				for (Task task1 : tasks) {
+					for (Task task2 : receivedSyncTasks) {
+						if (task1.id().equals(task2.id())) {
+							task1.synchronizeFinishedTaskStatiWith(task2);
+							break;
+						} else {
+							continue;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public int currentProcedureIndex() {
+		return currentProcedureIndex;
+	}
+
+	public void incrementProcedureNumber() {
+		if (this.currentProcedureIndex < this.procedures.size() - 1) {
+			++this.currentProcedureIndex;
 		}
 	}
 }

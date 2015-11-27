@@ -3,28 +3,44 @@ package mapreduce.execution.computation.context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.execution.jobtask.Task;
+import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 
 public class DHTStorageContext implements IContext {
-	private static final String DEFAULT_TASK_ID = "0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0";
-
 	private static Logger logger = LoggerFactory.getLogger(DHTStorageContext.class);
 
 	private IDHTConnectionProvider dhtConnectionProvider;
-	private String taskId;
+
+	private Task task;
+
+	private DHTStorageContext(DHTConnectionProvider dhtConnectionProvider) {
+		this.dhtConnectionProvider = dhtConnectionProvider;
+	}
 
 	@Override
 	public void write(Object keyOut, Object valueOut) {
-		if (taskId == null) {
-			this.taskId = DEFAULT_TASK_ID;
-			logger.warn("DHTStorageContext::write::No task id set! Default task id used.");
+		if (task == null) {
+			logger.warn("No task id set!");
+			System.err.println("DHTStorageContext::write::No task id set! Default task id used.");
+			return;
 		}
-		dhtConnectionProvider.addDataForTask(taskId, keyOut, valueOut);
+
+		dhtConnectionProvider.addDataForTask(task.id(), keyOut, valueOut);
 	}
 
-	public DHTStorageContext taskId(String taskId) {
-		this.taskId = taskId;
+	public DHTStorageContext task(Task task) {
+		this.task = task;
 		return this;
+	}
+
+	public DHTStorageContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		this.dhtConnectionProvider = dhtConnectionProvider;
+		return this;
+	}
+
+	public static IContext newDHTStorageContext(DHTConnectionProvider dhtConnectionProvider) {
+		return new DHTStorageContext(dhtConnectionProvider);
 	}
 
 }

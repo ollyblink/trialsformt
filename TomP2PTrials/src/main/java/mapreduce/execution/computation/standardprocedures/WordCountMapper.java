@@ -2,9 +2,10 @@ package mapreduce.execution.computation.standardprocedures;
 
 import java.util.StringTokenizer;
 
+import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 
-public class WordCountMapper extends AbstractMapReduceProcedure<String, String, String, Integer> {
+public class WordCountMapper implements IMapReduceProcedure<String, String, String, Integer> {
 
 	/**
 	 * 

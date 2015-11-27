@@ -1,10 +1,9 @@
 package mapreduce.execution.broadcasthandler.broadcastmessages;
 
-import java.util.Comparator;
 import java.util.concurrent.PriorityBlockingQueue;
 
 public enum JobStatus {
-	FINISHED_JOB, FINISHED_ALL_TASKS,FINISHED_TASK,EXECUTING_TASK,TASK_FAILED,DISTRIBUTED_JOB;
+	FINISHED_JOB, FINISHED_ALL_TASKS, EXECUTING_TASK, FINISHED_TASK, TASK_FAILED,DISTRIBUTED_JOB;
 	
 
 	 

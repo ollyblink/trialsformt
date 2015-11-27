@@ -2,6 +2,7 @@ package mapreduce.client;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
@@ -12,28 +13,31 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.MessageConsumer;
+import mapreduce.execution.broadcasthandler.MRJobSubmitterMessageConsumer;
 import mapreduce.execution.datasplitting.ITaskSplitter;
 import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.utils.IDCreator;
 
-public class MRJobSubmitter  {
+public class MRJobSubmitter {
 	private static final ITaskSplitter DEFAULT_TASK_SPLITTER = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmitter.class);
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private ITaskSplitter taskSplitter;
+	private MRJobSubmitterMessageConsumer messageConsumer;
+	private String id;
 
 	private MRJobSubmitter(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
-
-		MessageConsumer messageConsumer = MessageConsumer.newMessageConsumer(jobs).canTake(true);
+		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
+		this.messageConsumer = MRJobSubmitterMessageConsumer.newMRJobSubmitterMessageConsumer(id, jobs).canTake(true);
 		new Thread(messageConsumer).start();
 		dhtConnectionProvider.broadcastHandler().queue(messageConsumer.queue());
 	}
 
-	public static MRJobSubmitter newMapReduceJobSubmitter(IDHTConnectionProvider dhtConnectionProvider ) {
+	public static MRJobSubmitter newMapReduceJobSubmitter(IDHTConnectionProvider dhtConnectionProvider) {
 		return new MRJobSubmitter(dhtConnectionProvider, new LinkedBlockingQueue<Job>());
 	}
 
@@ -50,7 +54,7 @@ public class MRJobSubmitter  {
 		logger.warn("Splitted tasks.");
 
 		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-		for (final Task task : job.tasksFor(job.nextProcedure())) {
+		for (final Task task : job.firstTasks()) {
 			server.submit(new Runnable() {
 
 				@Override
@@ -58,13 +62,7 @@ public class MRJobSubmitter  {
 					for (Object key : task.keys()) {
 						try {
 							String filePath = (String) key;
-							BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)));
-							String line = null;
-							String lines = "";
-							while ((line = reader.readLine()) != null) {
-								lines += line + "\n";
-							}
-							reader.close();
+							String lines = readLines(filePath);
 							dhtConnectionProvider.addDataForTask(task.id(), filePath, lines);
 							logger.warn("Added file with path " + filePath);
 						} catch (IOException e) {
@@ -72,8 +70,18 @@ public class MRJobSubmitter  {
 						}
 					}
 				}
-			});
 
+				private String readLines(String filePath) throws FileNotFoundException, IOException {
+					BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)));
+					String line = null;
+					String lines = "";
+					while ((line = reader.readLine()) != null) {
+						lines += line + "\n";
+					}
+					reader.close();
+					return lines;
+				}
+			});
 		}
 		server.shutdown();
 		while (!server.isTerminated()) {
@@ -107,10 +115,13 @@ public class MRJobSubmitter  {
 		}
 		return this.taskSplitter;
 	}
- 
 
 	public void shutdown() {
 		this.dhtConnectionProvider.shutdown();
+	}
+
+	public String id() {
+		return this.id;
 	}
 
 }

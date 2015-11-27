@@ -29,7 +29,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 
 	@Before
 	public void setUp() throws Exception {
-		this.taskScheduler = MinAssignedWorkersTaskScheduler.newRandomTaskScheduler();
+		this.taskScheduler = MinAssignedWorkersTaskScheduler.newMinAssignedWorkersTaskScheduler();
 
 		Task[] tasksToTest = new Task[10];
 
@@ -104,6 +104,9 @@ public class MinAssignedWorkersTaskSchedulerTest {
 	public void testScheduledTasks() {
 		// Test result should be the following order (task ids): 8,3,9,10,4,5,6,7,1,2
 		// List<Task> ts = new LinkedList<Task>(tasks);
+//		for(Task task: tasks){
+//			Mockito.when(task.isFinished()).thenReturn(true);
+//		}
 		Task task1 = this.taskScheduler.schedule(tasks);
  
 		assertTrue("task id 8", task1.id().equals("8"));

@@ -6,6 +6,7 @@ import mapreduce.execution.broadcasthandler.MRBroadcastHandler;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.KeyValuePair;
 import mapreduce.execution.jobtask.Task;
+import net.tomp2p.dht.PeerDHT;
 
 public interface IDHTConnectionProvider {
  
@@ -32,5 +33,8 @@ public interface IDHTConnectionProvider {
 	public MRBroadcastHandler broadcastHandler();
 	
 	public IDHTConnectionProvider useDiskStorage(boolean useDiskStorage);
+	
 	public boolean useDiskStorage();
+
+	public String peerAddressString();
 }

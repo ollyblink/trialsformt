@@ -27,8 +27,10 @@ public class Task implements Serializable {
 	private String id;
 	private String jobId;
 	private IMapReduceProcedure<?, ?, ?, ?> procedure;
-	private List<?> keys; 
+	private List<?> keys;
 	private Multimap<PeerAddress, JobStatus> executingPeers;
+	private boolean isFinished;
+	private int maxNrOfFinishedWorkers;
 
 	private Task() {
 		executingPeers = ArrayListMultimap.create();
@@ -69,6 +71,27 @@ public class Task implements Serializable {
 		return this;
 	}
 
+	public boolean isFinished() {
+		return this.isFinished;
+	}
+
+	public Task isFinished(boolean isFinished) {
+		this.isFinished = isFinished;
+		return this;
+	}
+
+	public int maxNrOfFinishedWorkers() {
+		if (this.maxNrOfFinishedWorkers == 0) {
+			this.maxNrOfFinishedWorkers = 1;
+		}
+		return maxNrOfFinishedWorkers;
+	}
+
+	public Task maxNrOfFinishedWorkers(int maxNrOfFinishedWorkers) {
+		this.maxNrOfFinishedWorkers = maxNrOfFinishedWorkers;
+		return this;
+	}
+
 	/**
 	 * 
 	 * @param procedure
@@ -89,21 +112,22 @@ public class Task implements Serializable {
 					int lastIndexOfExecuting = jobStati.lastIndexOf(JobStatus.EXECUTING_TASK);
 					if (lastIndexOfExecuting == -1) {// not yet executing this task
 						jobStati.addLast(currentStatus);
-						logger.info("if-if-if: " + peerAddress + " is now executing task " + id);
+						logger.info("if-if-if: " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + " is now executing task " + id);
 					} else {
 						// Already executing this task. Nothing to do until it finished
-						logger.warn("if-if-else: " + peerAddress + " is already executing task " + id + ". Update ignored.");
+						logger.warn("if-if-else: " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + " is already executing task " + id
+								+ ". Update ignored.");
 					}
 				} else if (currentStatus == JobStatus.FINISHED_TASK) {
 					int lastIndexOfExecuting = jobStati.lastIndexOf(JobStatus.EXECUTING_TASK);
 					if (lastIndexOfExecuting == -1) {// FINISHED_TASK arrived multiple times after another without an EXECUTING_TASK
 						// Something went wrong... Should first be Executing before it is Finished. Mark as Failed?
-						logger.warn("if-elseif-if: Something wrong: JobStatus was " + currentStatus + " but peer with " + peerAddress
-								+ " is already executing task " + id);
+						logger.warn("if-elseif-if: Something wrong: JobStatus was " + currentStatus + " but peer with " + peerAddress.inetAddress()
+								+ ":" + peerAddress.tcpPort() + " is already executing task " + id);
 					} else { // It was executing and now it finished. This should be the case
 						jobStati.removeLastOccurrence(JobStatus.EXECUTING_TASK);
 						jobStati.addLast(currentStatus);
-						logger.info("if-elseif-else: " + peerAddress + " finished executing task " + id);
+						logger.info("if-elseif-else: " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + " finished executing task " + id);
 					}
 				} else {
 					// Should never happen
@@ -112,11 +136,11 @@ public class Task implements Serializable {
 			} else { // task was not yet assigned to this peer.
 				if (currentStatus == JobStatus.EXECUTING_TASK) {
 					jobStati.addLast(currentStatus);
-					logger.info("else-if: " + peerAddress + " is now executing task " + id);
+					logger.info("else-if: " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + " is now executing task " + id);
 				} else if (currentStatus == JobStatus.FINISHED_TASK) {
 					// Something went wrong, shouldnt get a finished job before it even started
-					logger.warn("else-elseif: Something wrong: JobStatus was " + currentStatus + " but peer with " + peerAddress
-							+ " is not yet executing task " + id);
+					logger.warn("else-elseif: Something wrong: JobStatus was " + currentStatus + " but peer with " + peerAddress.inetAddress() + ":"
+							+ peerAddress.tcpPort() + " is not yet executing task " + id);
 				} else {
 					// Should never happen
 					logger.warn("else-else: Wrong JobStatus detected: JobStatus was " + currentStatus);
@@ -195,8 +219,8 @@ public class Task implements Serializable {
 	public int totalNumberOfFinishedExecutions() {
 		return countTotalNumber(JobStatus.FINISHED_TASK);
 	}
-	
-	public int totalNumberOfCurrentExecutions(){
+
+	public int totalNumberOfCurrentExecutions() {
 		return countTotalNumber(JobStatus.EXECUTING_TASK);
 	}
 
@@ -214,7 +238,6 @@ public class Task implements Serializable {
 		}
 		return nrOfFinishedExecutions;
 	}
-	 
 
 	public int numberOfSameStatiForPeer(PeerAddress peerAddress, JobStatus statusToCheck) {
 		int statiCount = 0;
@@ -249,7 +272,29 @@ public class Task implements Serializable {
 
 	@Override
 	public String toString() {
-		return id;
+		return "Task [id=" + id + ", jobId=" + jobId + ", procedure=" + procedure + ", keys=" + keys + ", executingPeers=" + executingPeers
+				+ ", isFinished=" + isFinished + "]";
+	}
+
+	public void synchronizeFinishedTaskStatiWith(Task receivedTask) {
+		Set<PeerAddress> allAssignedPeers = receivedTask.allAssignedPeers();
+		for (PeerAddress peerAddress : allAssignedPeers) {
+			Collection<JobStatus> statiForReceivedPeer = receivedTask.statiForPeer(peerAddress);
+			Collection<JobStatus> jobStatiForPeer = this.executingPeers.get(peerAddress);
+			if (jobStatiForPeer == null) {
+				synchronized (executingPeers) {
+					this.executingPeers.putAll(peerAddress, statiForReceivedPeer);
+				}
+			} else {
+				if (statiForReceivedPeer != null) {
+					if (jobStatiForPeer.size() > statiForReceivedPeer.size()) {
+						synchronized (executingPeers) {
+							this.executingPeers.putAll(peerAddress, statiForReceivedPeer);
+						}
+					}
+				}
+			}
+		}
 	}
 
 }

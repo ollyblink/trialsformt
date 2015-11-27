@@ -40,16 +40,19 @@ public class MaxFileSizeTaskSplitterTest {
 		System.out.println(new File(inputPath).exists());
 		maxFileSize = 1024 * 1024;
 		System.out.println(inputPath);
-		job = Job.newJob().inputPath(inputPath).maxFileSize(maxFileSize).nextProcedure(new NullMapReduceProcedure().procedureNr(1), null);
+		job = Job.newJob().inputPath(inputPath).maxFileSize(maxFileSize).nextProcedure(new NullMapReduceProcedure());
 		dataSplitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
 
 		originalFileAllLines = readFile(inputPath + "/trial.txt");
+		originalFileAllLines.addAll(readFile(inputPath + "/file1.txt"));
 		dataSplitter.split(job);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		FileUtils.INSTANCE.deleteTmpFolder(new File(outputPath));
+//		if (new File(outputFolder).exists()) {
+			FileUtils.INSTANCE.deleteTmpFolder(new File(outputPath));
+//		}
 
 	}
 
@@ -69,41 +72,41 @@ public class MaxFileSizeTaskSplitterTest {
 		}
 		return lines;
 	}
- 
 
 	@Test
 	public void testNumberOfLines() {
 		int sum = 0;
-		for (Task task : job.tasksFor(job.nextProcedure())) {
+		for (Task task : job.tasks(job.currentProcedureIndex())) {
 			for (Object key : task.keys()) {
 				String filePath = (String) key;
 				sum += readFile(filePath).size();
 			}
 		}
 		assertEquals(originalFileAllLines.size(), sum);
-		if(PRINT_RESULTS){
-			System.err.println(originalFileAllLines.size()+"=="+sum);
+		if (PRINT_RESULTS) {
+			System.err.println(originalFileAllLines.size() + "==" + sum);
 		}
 	}
 
 	@Test
 	public void testFileSize() {
 		long sum = 0;
-		for (Task task :job.tasksFor(job.nextProcedure())) {
+		for (Task task : job.tasks(job.currentProcedureIndex())) {
 			for (Object key : task.keys()) {
 				String filePath = (String) key;
 				sum += new File(filePath).length();
 			}
 		}
-		assertEquals(new File(inputPath + "/trial.txt").length(), sum);
+		long expected = new File(inputPath + "/trial.txt").length()+new File(inputPath +"/file1.txt").length();
+		assertEquals(expected, sum);
 		if (PRINT_RESULTS) {
-			System.err.println(new File(inputPath + "/trial.txt").length() + "==" + sum);
+			System.err.println(expected + "==" + sum);
 		}
 	}
 
 	@Test
 	public void testMaxFileSize() {
-		for (Task task : job.tasksFor(job.nextProcedure())) {
+		for (Task task : job.tasks(job.currentProcedureIndex())) {
 			for (Object key : task.keys()) {
 				String filePath = (String) key;
 				if (PRINT_RESULTS) {

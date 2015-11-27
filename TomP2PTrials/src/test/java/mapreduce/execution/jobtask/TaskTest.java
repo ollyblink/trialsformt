@@ -435,6 +435,7 @@ public class TaskTest {
 		assertEquals(6, task.totalNumberOfFinishedExecutions());
 		assertEquals(3, task.totalNumberOfCurrentExecutions());
 		assertEquals(2, task.numberOfPeersWithAtLeastOneFinishedExecution());
+		 
 	}
 
 }

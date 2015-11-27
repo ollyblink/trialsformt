@@ -50,7 +50,6 @@ public class TestAll {
 		submitter = MRJobSubmitter
 				.newMapReduceJobSubmitter(DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
 
-
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
 		String inputPath = "/home/ozihler/Desktop/input_small";
 		if (new File(inputPath + "/tmp").exists()) {
@@ -60,7 +59,7 @@ public class TestAll {
 		long megaByte = 1024 * 1024;
 
 		int maxNumberOfFinishedPeers = 3;
-		job = Job.newJob().nextProcedure(new WordCountMapper(), null).maxNrOfFinishedPeers(maxNumberOfFinishedPeers).inputPath(inputPath)
+		job = Job.newJob().nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers).inputPath(inputPath)
 				.maxFileSize(megaByte);
 
 	}
@@ -85,8 +84,8 @@ public class TestAll {
 		for (MRJobExecutor e : executors) {
 			Job job = e.getJob();
 			System.out.println("JOB: " + job.id());
-			System.out.println("Procedure: " + job.nextProcedure());
-			BlockingQueue<Task> tasksFor = job.tasksFor(job.nextProcedure());
+			System.out.println("Procedure: " + job.procedure(job.currentProcedureIndex()));
+			BlockingQueue<Task> tasksFor = job.tasks(job.currentProcedureIndex());
 			for (Task t : tasksFor) {
 				System.out.println("Task: " + t.id());
 				Set<PeerAddress> assignedPeers = t.allAssignedPeers();

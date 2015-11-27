@@ -14,12 +14,7 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	public int compareTo(IBCMessage o) {
 		return status().compareTo(o.status());
 	}
-
-	@Override
-	public String toString() {
-		return "Message with status: " + status();
-	}
-
+ 
 	@Override
 	public AbstractBCMessage sender(PeerAddress sender) {
 		this.sender = sender;

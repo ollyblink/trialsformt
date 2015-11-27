@@ -12,7 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.MessageConsumer;
+import mapreduce.execution.broadcasthandler.MRJobExecutorMessageConsumer;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.computation.context.NullContext;
@@ -24,7 +24,7 @@ import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
 import mapreduce.storage.IDHTConnectionProvider;
 
 public class MRJobExecutor {
-	private static final ITaskScheduler DEFAULT_TASK_SCHEDULER = MinAssignedWorkersTaskScheduler.newRandomTaskScheduler();
+	private static final ITaskScheduler DEFAULT_TASK_SCHEDULER = MinAssignedWorkersTaskScheduler.newMinAssignedWorkersTaskScheduler();
 	private static final IContext DEFAULT_CONTEXT = NullContext.newNullContext();
 	private static final long DEFAULT_SLEEPING_TIME = 100;
 
@@ -36,20 +36,22 @@ public class MRJobExecutor {
 	private IContext context;
 
 	private BlockingQueue<Job> jobs;
+	private MRJobExecutorMessageConsumer messageConsumer;
+	private boolean canExecute;
 
 	private MRJobExecutor(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
-		MessageConsumer messageConsumer = MessageConsumer.newMessageConsumer(jobs).canTake(true);
-		new Thread(messageConsumer).start();
-		dhtConnectionProvider.broadcastHandler().queue(messageConsumer.queue());
+		this.messageConsumer = MRJobExecutorMessageConsumer.newMRJobExecutorMessageConsumer(jobs).jobExecutor(this).canTake(true);
+		this.dhtConnectionProvider().broadcastHandler().queue(messageConsumer.queue());
 		this.jobs = messageConsumer.jobs();
-
+		new Thread(messageConsumer).start();
 	}
 
 	public static MRJobExecutor newJobExecutor(IDHTConnectionProvider dhtConnectionProvider) {
 		return new MRJobExecutor(dhtConnectionProvider, new LinkedBlockingQueue<Job>());
 	}
 
+	// Getter/Setter
 	private MRJobExecutor dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
 		return this;
@@ -83,43 +85,65 @@ public class MRJobExecutor {
 		return this.context;
 	}
 
+	public MRJobExecutor canExecute(boolean canExecute) {
+		this.canExecute = canExecute;
+		return this;
+	}
+
+	public boolean canExecute() {
+		return this.canExecute;
+	}
+
+	public Job getJob() {
+		return jobs.peek();
+	}
+
+	// END GETTER/SETTER
+
+	// Maintenance
+	public void start() {
+		logger.info("Try to connect.");
+		dhtConnectionProvider.connect();
+		startExecuting();
+	}
+
+	public void shutdown() {
+		dhtConnectionProvider.shutdown();
+	}
+	// End Maintenance
+
+	// Execution
+	private void startExecuting() {
+		while (jobs.isEmpty()) {
+			try {
+				// logger.warn("Job size: "+jobs.size());
+				Thread.sleep(DEFAULT_SLEEPING_TIME);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		executeJob(jobs.peek());
+	}
+
 	private void executeJob(Job job) {
-		logger.warn("executing job: " + job.id());
-		BlockingQueue<Task> tasks = job.tasksFor(job.nextProcedure());
-
-		executeTasksForJob(job, tasks);
-
-	}
-
-	private void executeTasksForJob(Job job, BlockingQueue<Task> tasks) {
-		int maxNrOfFinishedPeers = job.maxNrOfFinishedPeers();
-		Task task = this.taskScheduler().schedule(new LinkedList<Task>(tasks));
-		if (task.totalNumberOfFinishedExecutions() < maxNrOfFinishedPeers) {
+		List<Task> tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex()));
+		Task task = null;
+		while ((task = this.taskScheduler().schedule(tasks)) != null && canExecute()) {
 			this.dhtConnectionProvider().broadcastTaskSchedule(task);
-			executeTask(task);
+			this.executeTask(task);
 			this.dhtConnectionProvider().broadcastFinishedTask(task);
-			this.executeTasksForJob(job, tasks);
-		} else {// check if all tasks finished
-			boolean allHaveFinished = allTasksHaveFinished(maxNrOfFinishedPeers, tasks);
-			if (allHaveFinished) {
-				this.dhtConnectionProvider.broadcastFinishedAllTasks(job);
-			} else {
-				this.executeTasksForJob(job, tasks);
-			}
 		}
-	}
-
-	private boolean allTasksHaveFinished(int maxNrOfFinishedPeers, BlockingQueue<Task> tasks) {
-		boolean allHaveFinished = true;
-		for (Task t : tasks) {
-			if (t.totalNumberOfFinishedExecutions() < maxNrOfFinishedPeers) {
-				allHaveFinished = false;
-			}
+		if (!canExecute()) {
+			System.err.println("Cannot execute! use MRJobSubmitter::canExecute(true) to enable execution");
 		}
-		return allHaveFinished;
+		// all tasks finished, broadcast result
+		this.dhtConnectionProvider().broadcastFinishedAllTasks(job);
 	}
 
 	private void executeTask(final Task task) {
+		this.context.task(task);
 		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 		final List<KeyValuePair<Object, Object>> dataForTask = dhtConnectionProvider().getDataForTask(task);
@@ -158,32 +182,5 @@ public class MRJobExecutor {
 		}
 	}
 
-	public void start() {
-		logger.info("Try to connect.");
-		dhtConnectionProvider.connect();
-		startExecuting();
-	}
-
-	private void startExecuting() {
-		while (jobs.isEmpty()) {
-			try {
-				// logger.warn("Job size: "+jobs.size());
-				Thread.sleep(DEFAULT_SLEEPING_TIME);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-
-		executeJob(jobs.peek());
-	}
-
-	public void shutdown() {
-		dhtConnectionProvider.shutdown();
-	}
-
-	public Job getJob() {
-		return jobs.peek();
-	}
-
+	// End Execution
 }

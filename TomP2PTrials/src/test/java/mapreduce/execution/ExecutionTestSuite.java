@@ -3,6 +3,7 @@ package mapreduce.execution;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+import mapreduce.execution.computation.ProcedureTaskTupelTest;
 import mapreduce.execution.datasplitting.DataSplittingTestSuite;
 import mapreduce.execution.jobtask.JobTest;
 import mapreduce.execution.jobtask.TaskTest;
@@ -13,7 +14,8 @@ import mapreduce.execution.scheduling.SchedulingTestSuite;
 	DataSplittingTestSuite.class,
 	JobTest.class,
 	TaskTest.class,
-	SchedulingTestSuite.class
+	SchedulingTestSuite.class,
+	ProcedureTaskTupelTest.class
 })
 public class ExecutionTestSuite {
  
