@@ -13,7 +13,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.MRJobSubmitterMessageConsumer;
+import mapreduce.execution.broadcasthandler.messageconsumer.MRJobSubmitterMessageConsumer;
 import mapreduce.execution.datasplitting.ITaskSplitter;
 import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
 import mapreduce.execution.jobtask.Job;

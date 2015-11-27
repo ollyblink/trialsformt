@@ -105,6 +105,7 @@ public class Task implements Serializable {
 	}
 
 	public Task updateExecutingPeerStatus(PeerAddress peerAddress, JobStatus currentStatus) {
+
 		synchronized (executingPeers) {
 			LinkedList<JobStatus> jobStati = new LinkedList<JobStatus>(this.executingPeers.removeAll(peerAddress));
 			if (jobStati.size() > 0) {
@@ -146,6 +147,7 @@ public class Task implements Serializable {
 					logger.warn("else-else: Wrong JobStatus detected: JobStatus was " + currentStatus);
 				}
 			}
+			logger.warn("Current jobstati for peer " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + ": " + jobStati);
 			this.executingPeers.putAll(peerAddress, jobStati);
 		}
 		return this;
@@ -281,14 +283,16 @@ public class Task implements Serializable {
 		for (PeerAddress peerAddress : allAssignedPeers) {
 			Collection<JobStatus> statiForReceivedPeer = receivedTask.statiForPeer(peerAddress);
 			Collection<JobStatus> jobStatiForPeer = this.executingPeers.get(peerAddress);
-			if (jobStatiForPeer == null) {
+			if (jobStatiForPeer.size() == 0) {
 				synchronized (executingPeers) {
+					this.executingPeers.removeAll(peerAddress);
 					this.executingPeers.putAll(peerAddress, statiForReceivedPeer);
 				}
 			} else {
-				if (statiForReceivedPeer != null) {
-					if (jobStatiForPeer.size() > statiForReceivedPeer.size()) {
+				if (statiForReceivedPeer.size() != 0) {
+					if (jobStatiForPeer.size() < statiForReceivedPeer.size()) {
 						synchronized (executingPeers) {
+							this.executingPeers.removeAll(peerAddress);
 							this.executingPeers.putAll(peerAddress, statiForReceivedPeer);
 						}
 					}

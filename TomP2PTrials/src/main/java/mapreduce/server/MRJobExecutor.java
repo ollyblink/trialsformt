@@ -12,7 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.MRJobExecutorMessageConsumer;
+import mapreduce.execution.broadcasthandler.messageconsumer.MRJobExecutorMessageConsumer;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.computation.context.NullContext;
@@ -48,7 +48,7 @@ public class MRJobExecutor {
 	}
 
 	public static MRJobExecutor newJobExecutor(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobExecutor(dhtConnectionProvider, new LinkedBlockingQueue<Job>());
+		return new MRJobExecutor(dhtConnectionProvider, new LinkedBlockingQueue<Job>()).canExecute(true);
 	}
 
 	// Getter/Setter
@@ -116,10 +116,8 @@ public class MRJobExecutor {
 	private void startExecuting() {
 		while (jobs.isEmpty()) {
 			try {
-				// logger.warn("Job size: "+jobs.size());
 				Thread.sleep(DEFAULT_SLEEPING_TIME);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -130,7 +128,7 @@ public class MRJobExecutor {
 	private void executeJob(Job job) {
 		List<Task> tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex()));
 		Task task = null;
-		while ((task = this.taskScheduler().schedule(tasks)) != null && canExecute()) {
+		while ((task = this.taskScheduler().schedule(tasks)) != null && canExecute()) { 
 			this.dhtConnectionProvider().broadcastTaskSchedule(task);
 			this.executeTask(task);
 			this.dhtConnectionProvider().broadcastFinishedTask(task);
@@ -140,10 +138,12 @@ public class MRJobExecutor {
 		}
 		// all tasks finished, broadcast result
 		this.dhtConnectionProvider().broadcastFinishedAllTasks(job);
+//		jobs.poll();
+//		startExecuting();
 	}
 
 	private void executeTask(final Task task) {
-		this.context.task(task);
+		this.context().task(task);
 		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 		final List<KeyValuePair<Object, Object>> dataForTask = dhtConnectionProvider().getDataForTask(task);

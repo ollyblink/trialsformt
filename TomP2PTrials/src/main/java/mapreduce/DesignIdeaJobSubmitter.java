@@ -6,6 +6,7 @@ import mapreduce.client.MRJobSubmitter;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.storage.DHTConnectionProvider;
+import mapreduce.utils.FileSizes;
 import mapreduce.utils.FileUtils;
 
 public class DesignIdeaJobSubmitter {
@@ -24,11 +25,9 @@ public class DesignIdeaJobSubmitter {
 			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
 		}
 
-		long megaByte = 1024 * 1024;
-
-		int maxNumberOfFinishedPeers =1;
-		Job job = Job.newJob(submitter.id()).nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers).inputPath(inputPath)
-				.maxFileSize(megaByte);
+		int maxNumberOfFinishedPeers = 2;
+		Job job = Job.newJob(submitter.id()).nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+				.inputPath(inputPath).maxFileSize(FileSizes.THIRTY_TWO_KILO_BYTE.value());
 		submitter.submit(job);
 		//
 		//

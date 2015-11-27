@@ -26,7 +26,7 @@ public class JobTest {
 		tasksForProcedure.add(Task.newTask());
 		tasksForProcedure.add(Task.newTask());
 		tasksForProcedure.add(Task.newTask());
-		Job job = Job.newJob().maxNrOfFinishedWorkersPerTask(3).nextProcedure(new WordCountMapper(), tasksForProcedure);
+		Job job = Job.newJob("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(new WordCountMapper(), tasksForProcedure);
 		assertTrue(job.currentProcedureIndex() == 0);
 		job.incrementProcedureNumber();
 		assertTrue(job.currentProcedureIndex() == 0);
@@ -43,7 +43,7 @@ public class JobTest {
 		tasksForProcedure2.add(Task.newTask());
 		tasksForProcedure2.add(Task.newTask());
 		job.nextProcedure(new NullMapReduceProcedure(), tasksForProcedure2);
-		
+
 		assertTrue(job.currentProcedureIndex() == 0);
 		job.incrementProcedureNumber();
 		assertTrue(job.currentProcedureIndex() == 1);
@@ -62,7 +62,7 @@ public class JobTest {
 		List<Task> tasksForProcedure = new ArrayList<Task>();
 		tasksForProcedure.add(Task.newTask().id("TEST_TASK_1"));
 		tasksForProcedure.add(Task.newTask().id("TEST_TASK_2"));
-		Job job = Job.newJob().maxNrOfFinishedWorkersPerTask(3).nextProcedure(new WordCountMapper(), tasksForProcedure);
+		Job job = Job.newJob("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(new WordCountMapper(), tasksForProcedure);
 		ArrayList<Task> list = new ArrayList<Task>(tasksForProcedure);
 		PeerAddress[] peers = new PeerAddress[3];
 		peers[0] = new PeerAddress(Number160.createHash("1"));

@@ -3,9 +3,8 @@ package mapreduce.execution.broadcasthandler.broadcastmessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.AbstractMessageConsumer;
+import mapreduce.execution.broadcasthandler.messageconsumer.IMessageConsumer;
 import mapreduce.execution.jobtask.Job;
-import mapreduce.server.MRJobExecutor;
 import net.tomp2p.peers.PeerAddress;
 
 public class DistributedJobBCMessage extends AbstractBCMessage{
@@ -39,7 +38,7 @@ public class DistributedJobBCMessage extends AbstractBCMessage{
 	}
 
 	@Override
-	public void execute(AbstractMessageConsumer messageConsumer) {
+	public void execute(IMessageConsumer messageConsumer) {
 		logger.warn("DistributedJobBCMessage::execute()::added job");
 		messageConsumer.addJob(job);
 

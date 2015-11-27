@@ -1,4 +1,4 @@
-package mapreduce.execution.broadcasthandler;
+package mapreduce.execution.broadcasthandler.messageconsumer;
 
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;

@@ -2,7 +2,7 @@ package mapreduce.execution.broadcasthandler.broadcastmessages;
 
 import java.util.Collection;
 
-import mapreduce.execution.broadcasthandler.AbstractMessageConsumer;
+import mapreduce.execution.broadcasthandler.messageconsumer.IMessageConsumer;
 import mapreduce.execution.jobtask.Task;
 import net.tomp2p.peers.PeerAddress;
 
@@ -21,7 +21,7 @@ public class FinishedAllTasksBCMessage extends AbstractBCMessage {
 	}
 
 	@Override
-	public void execute(AbstractMessageConsumer messageConsumer) {
+	public void execute(IMessageConsumer messageConsumer) {
 		messageConsumer.handleFinishedTasks(jobId, tasks);
 	}
 

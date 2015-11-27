@@ -40,19 +40,19 @@ public class MaxFileSizeTaskSplitterTest {
 		System.out.println(new File(inputPath).exists());
 		maxFileSize = 1024 * 1024;
 		System.out.println(inputPath);
-		job = Job.newJob().inputPath(inputPath).maxFileSize(maxFileSize).nextProcedure(new NullMapReduceProcedure());
+		job = Job.newJob("ME").inputPath(inputPath).maxFileSize(maxFileSize).nextProcedure(new NullMapReduceProcedure());
 		dataSplitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
 
 		originalFileAllLines = readFile(inputPath + "/trial.txt");
-		originalFileAllLines.addAll(readFile(inputPath + "/file1.txt"));
+		// originalFileAllLines.addAll(readFile(inputPath + "/file1.txt"));
 		dataSplitter.split(job);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-//		if (new File(outputFolder).exists()) {
-			FileUtils.INSTANCE.deleteTmpFolder(new File(outputPath));
-//		}
+		// if (new File(outputFolder).exists()) {
+		FileUtils.INSTANCE.deleteTmpFolder(new File(outputPath));
+		// }
 
 	}
 
@@ -97,7 +97,7 @@ public class MaxFileSizeTaskSplitterTest {
 				sum += new File(filePath).length();
 			}
 		}
-		long expected = new File(inputPath + "/trial.txt").length()+new File(inputPath +"/file1.txt").length();
+		long expected = new File(inputPath + "/trial.txt").length();
 		assertEquals(expected, sum);
 		if (PRINT_RESULTS) {
 			System.err.println(expected + "==" + sum);

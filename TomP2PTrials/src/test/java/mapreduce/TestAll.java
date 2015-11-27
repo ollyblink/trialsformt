@@ -59,8 +59,8 @@ public class TestAll {
 		long megaByte = 1024 * 1024;
 
 		int maxNumberOfFinishedPeers = 3;
-		job = Job.newJob().nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers).inputPath(inputPath)
-				.maxFileSize(megaByte);
+		job = Job.newJob(submitter.id()).nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+				.inputPath(inputPath).maxFileSize(megaByte);
 
 	}
 

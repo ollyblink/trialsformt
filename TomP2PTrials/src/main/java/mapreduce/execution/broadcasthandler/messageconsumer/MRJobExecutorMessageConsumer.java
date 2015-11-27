@@ -1,4 +1,4 @@
-package mapreduce.execution.broadcasthandler;
+package mapreduce.execution.broadcasthandler.messageconsumer;
 
 import java.util.Collection;
 import java.util.Set;
@@ -17,7 +17,7 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 	private MRJobExecutor jobExecutor;
 
 	private MRJobExecutorMessageConsumer(BlockingQueue<IBCMessage> bcMessages, BlockingQueue<Job> jobs) {
-		super(bcMessages,jobs);
+		super(bcMessages, jobs);
 	}
 
 	public static MRJobExecutorMessageConsumer newMRJobExecutorMessageConsumer(BlockingQueue<Job> jobs) {
@@ -34,7 +34,7 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 		this.jobExecutor = mrJobExecutor;
 		return this;
 	}
-	
+
 	public void addJob(Job job) {
 		logger.warn("Adding new job " + job.id());
 		if (!jobs.contains(job)) {
@@ -53,28 +53,32 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 
 	public void handleFinishedTasks(String jobId, Collection<Task> tasks) {
 
-		logger.warn("NEXT JOB TO EXECUTE");
 		for (Job job : jobs) {
-			if (job.id().equals(jobId)) {
-				job.synchronizeFinishedTasksStati(tasks);
-			}
+
+			logger.info("before update");
 			BlockingQueue<Task> updatedTasks = job.tasks(job.currentProcedureIndex());
 			for (Task task : updatedTasks) {
 				Set<PeerAddress> allAssignedPeers = task.allAssignedPeers();
 				for (PeerAddress p : allAssignedPeers) {
-					logger.info("task " + task.id() + "<" + p.inetAddress() + ":" + p.tcpPort() + "," + task.statiForPeer(p));
+					logger.info("task " + task.id() + "<" + p.peerId() + ", "+p.inetAddress()+":"+p.tcpPort()+">," + task.statiForPeer(p));
+				}
+			}
+			if (job.id().equals(jobId)) {
+				job.synchronizeFinishedTasksStati(tasks);
+			}
+
+			logger.info("after update");
+			BlockingQueue<Task> updatedTasks2 = job.tasks(job.currentProcedureIndex());
+			for (Task task : updatedTasks2) {
+				Set<PeerAddress> allAssignedPeers = task.allAssignedPeers();
+				for (PeerAddress p : allAssignedPeers) {
+					logger.info("task " + task.id() + "<" + p.peerId() + ", "+p.inetAddress()+":"+p.tcpPort()+">," + task.statiForPeer(p));
 				}
 			}
 		}
-		
-		
 
 	}
 
-	public void handleFinishedJob(String jobId, String jobSubmitterId) {
-		logger.warn("FINISHED JOB WITH JOBID:" + jobId);
-	}
-	
 	@Override
 	public MRJobExecutorMessageConsumer canTake(boolean canTake) {
 		return (MRJobExecutorMessageConsumer) super.canTake(canTake);

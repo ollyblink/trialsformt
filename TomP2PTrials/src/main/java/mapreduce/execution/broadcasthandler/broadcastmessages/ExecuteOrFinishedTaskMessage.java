@@ -1,6 +1,6 @@
 package mapreduce.execution.broadcasthandler.broadcastmessages;
 
-import mapreduce.execution.broadcasthandler.AbstractMessageConsumer;
+import mapreduce.execution.broadcasthandler.messageconsumer.IMessageConsumer;
 import mapreduce.server.MRJobExecutor;
 import net.tomp2p.peers.PeerAddress;
 
@@ -11,8 +11,7 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 	 */
 	private static final long serialVersionUID = 7388714464226222965L;
 	private String taskId;
-	private String jobId;
-
+	private String jobId; 
 	private JobStatus status;
 
 	@Override
@@ -21,7 +20,7 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 	}
 
 	@Override
-	public void execute(AbstractMessageConsumer messageConsumer) {
+	public void execute(IMessageConsumer messageConsumer) {
 		messageConsumer.updateTask(jobId, taskId, sender, status());
 	}
 
@@ -37,7 +36,6 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 		this.status = status;
 	}
 
-
 	public ExecuteOrFinishedTaskMessage taskId(String taskId) {
 		this.taskId = taskId;
 		return this;
@@ -47,11 +45,10 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 		this.jobId = jobId;
 		return this;
 	}
-	
 
 	@Override
 	public ExecuteOrFinishedTaskMessage sender(PeerAddress peerAddress) {
-		return (ExecuteOrFinishedTaskMessage)super.sender(peerAddress); 
+		return (ExecuteOrFinishedTaskMessage) super.sender(peerAddress);
 	}
 
 	@Override
@@ -59,5 +56,22 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 		return "ExecuteOrFinishedTaskMessage [taskId=" + taskId + ", jobId=" + jobId + ", status=" + status + "]";
 	}
 
-	 
+	@Override
+	public int compareTo(IBCMessage o) {
+		if (!(o instanceof ExecuteOrFinishedTaskMessage)) {
+			return super.compareTo(o);
+		} else {
+			ExecuteOrFinishedTaskMessage other = (ExecuteOrFinishedTaskMessage) o;
+			if(sender().equals(sender)&&taskId.equals(other.taskId)&&jobId.equals(other.jobId)){
+				return creationTime().compareTo(other.creationTime());
+			}else{
+				return super.compareTo(o);
+			}
+		}
+	}
+
+ 
+ 
+	
+
 }

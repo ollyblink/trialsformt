@@ -2,7 +2,7 @@ package mapreduce;
 
 import java.io.IOException;
 
-import mapreduce.execution.computation.context.WaitingContext;
+import mapreduce.execution.computation.context.PrintContext;
 import mapreduce.server.MRJobExecutor;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.GetOwnIpAddressTest;
@@ -17,7 +17,7 @@ public class DesignIdeaJobExecutor {
 		int id = Integer.parseInt(args[0]);
 		String bootstrapIP = "192.168.43.234";
 		int bootstrapPort = 4000;
-		String storageFilePath ="/home/ozihler/git/trialsformt/TomP2PTrials/src/main/java/mapreduce/storage/";
+		String storageFilePath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/main/java/mapreduce/storage/";
 		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider();
 
 		if (id != 1) {
@@ -25,8 +25,7 @@ public class DesignIdeaJobExecutor {
 		} else {
 			dhtConnectionProvider.port(bootstrapPort);
 		}
-		MRJobExecutor jobExecutor = MRJobExecutor.newJobExecutor(dhtConnectionProvider)
-				.context(WaitingContext.newWaitingContext()).canExecute(true);
+		MRJobExecutor jobExecutor = MRJobExecutor.newJobExecutor(dhtConnectionProvider).context(PrintContext.newPrintContext()).canExecute(true);
 		jobExecutor.start();
 	}
 }

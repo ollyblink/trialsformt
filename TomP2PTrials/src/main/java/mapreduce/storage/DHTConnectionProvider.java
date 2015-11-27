@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Random;
@@ -20,7 +19,6 @@ import mapreduce.execution.broadcasthandler.broadcastmessages.ExecuteOrFinishedT
 import mapreduce.execution.broadcasthandler.broadcastmessages.FinishedAllTasksBCMessage;
 import mapreduce.execution.broadcasthandler.broadcastmessages.FinishedJobBCMessage;
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.exceptions.IncorrectFormatException;
 import mapreduce.execution.exceptions.NotSetException;
 import mapreduce.execution.jobtask.Job;
@@ -131,7 +129,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public void connect() {
 		try {
 			this.port = port();
-			Peer peer = new PeerBuilder(Number160.createHash(RND.nextLong())).ports(port).broadcastHandler(this.broadcastHandler).start();
+			Peer peer = new PeerBuilder(Number160.createHash("DHTConnectionProvider_"+RND.nextLong())).ports(port).broadcastHandler(this.broadcastHandler).start();
 			logger.warn("port: " + port);
 			if (bootstrapIP != null && bootstrapPort > 0) {
 				logger.warn(bootstrapIP + " " + bootstrapPort);
@@ -155,15 +153,15 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 				@Override
 				public void operationComplete(FutureBootstrap future) throws Exception {
 					if (future.isSuccess()) {
-						logger.debug("successfully bootstrapped to " + bootstrapIP + "/" + bootstrapPort);
+						logger.warn("successfully bootstrapped to " + bootstrapIP + "/" + bootstrapPort);
 					} else {
-						logger.debug("No success on bootstrapping: fail reason: " + future.failedReason());
+						logger.warn("No success on bootstrapping: fail reason: " + future.failedReason());
 					}
 				}
 
 				@Override
 				public void exceptionCaught(Throwable t) throws Exception {
-					logger.debug("Exception on bootstrapping", t);
+					logger.warn("Exception on bootstrapping", t);
 				}
 			});
 		} catch (IncorrectFormatException e) {

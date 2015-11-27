@@ -31,8 +31,6 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
 				bcMessages.add(bcMessage);
-				logger.info("Received message " + bcMessage.status() + " for task " + bcMessage.sender().inetAddress() + ":"
-						+ bcMessage.sender().tcpPort() + ", " + bcMessage);
 			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
