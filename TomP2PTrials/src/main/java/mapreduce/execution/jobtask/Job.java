@@ -18,6 +18,31 @@ import mapreduce.utils.IDCreator;
 import net.tomp2p.peers.PeerAddress;
 
 public class Job implements Serializable {
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Job other = (Job) obj;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
+		return true;
+	}
+
 	private static Logger logger = LoggerFactory.getLogger(Job.class);
 
 	/**
@@ -173,36 +198,36 @@ public class Job implements Serializable {
 	}
 
 	public void updateTaskStatus(String taskId, PeerAddress peerAddress, JobStatus currentStatus) {
-		for (ProcedureTaskTupel tupel : procedures) {
-			BlockingQueue<Task> tasks = tupel.tasks();
-			logger.warn(taskId + " to update, " + tasks);
-			if (tasks != null) {
-				for (Task task : tasks) {
-					if (task.id().equals(taskId)) {
-						task.updateExecutingPeerStatus(peerAddress, currentStatus);
-						break;
-					}
+		// for (ProcedureTaskTupel tupel : procedures) {
+		BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
+		logger.warn(taskId + " to update, " + tasks);
+		if (tasks != null) {
+			for (Task task : tasks) {
+				if (task.id().equals(taskId)) {
+					task.updateExecutingPeerStatus(peerAddress, currentStatus);
+					break;
 				}
 			}
 		}
+		// }
 	}
 
 	public void synchronizeFinishedTasksStati(Collection<Task> receivedSyncTasks) {
-		for (ProcedureTaskTupel tupel : procedures) {
-			BlockingQueue<Task> tasks = tupel.tasks();
-			if (tasks != null) {
-				for (Task task1 : tasks) {
-					for (Task task2 : receivedSyncTasks) {
-						if (task1.id().equals(task2.id())) {
-							task1.synchronizeFinishedTaskStatiWith(task2);
-							break;
-						} else {
-							continue;
-						}
+		// for (ProcedureTaskTupel tupel : procedures) {
+		BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
+		if (tasks != null) {
+			for (Task task1 : tasks) {
+				for (Task task2 : receivedSyncTasks) {
+					if (task1.id().equals(task2.id())) {
+						task1.synchronizeFinishedTaskStatiWith(task2);
+						break;
+					} else {
+						continue;
 					}
 				}
 			}
 		}
+		// }
 	}
 
 	public int currentProcedureIndex() {

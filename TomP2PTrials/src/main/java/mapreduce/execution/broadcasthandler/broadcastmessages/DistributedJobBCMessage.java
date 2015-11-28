@@ -39,7 +39,7 @@ public class DistributedJobBCMessage extends AbstractBCMessage{
 
 	@Override
 	public void execute(IMessageConsumer messageConsumer) {
-		logger.warn("DistributedJobBCMessage::execute()::added job");
+		logger.warn("DistributedJobBCMessage::execute()::received job from "+sender().inetAddress()+":"+sender().tcpPort()+", added job");
 		messageConsumer.addJob(job);
 
 	}

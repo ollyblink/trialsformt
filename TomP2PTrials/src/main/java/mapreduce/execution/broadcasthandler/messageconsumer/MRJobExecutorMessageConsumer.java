@@ -43,7 +43,8 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	public void updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus) {
-		logger.warn("Updating task " + taskId + ", " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + ", " + currentStatus);
+		logger.warn("Updating task " + taskId + ", " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + ", " + currentStatus + ", number of jobs: "
+				+ jobs.size());
 		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
 				job.updateTaskStatus(taskId, peerAddress, currentStatus);
@@ -52,31 +53,11 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	public void handleFinishedTasks(String jobId, Collection<Task> tasks) {
-
 		for (Job job : jobs) {
-
-			logger.info("before update");
-			BlockingQueue<Task> updatedTasks = job.tasks(job.currentProcedureIndex());
-			for (Task task : updatedTasks) {
-				Set<PeerAddress> allAssignedPeers = task.allAssignedPeers();
-				for (PeerAddress p : allAssignedPeers) {
-					logger.info("task " + task.id() + "<" + p.peerId() + ", "+p.inetAddress()+":"+p.tcpPort()+">," + task.statiForPeer(p));
-				}
-			}
 			if (job.id().equals(jobId)) {
 				job.synchronizeFinishedTasksStati(tasks);
 			}
-
-			logger.info("after update");
-			BlockingQueue<Task> updatedTasks2 = job.tasks(job.currentProcedureIndex());
-			for (Task task : updatedTasks2) {
-				Set<PeerAddress> allAssignedPeers = task.allAssignedPeers();
-				for (PeerAddress p : allAssignedPeers) {
-					logger.info("task " + task.id() + "<" + p.peerId() + ", "+p.inetAddress()+":"+p.tcpPort()+">," + task.statiForPeer(p));
-				}
-			}
 		}
-
 	}
 
 	@Override

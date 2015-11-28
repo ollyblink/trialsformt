@@ -11,7 +11,7 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 	 */
 	private static final long serialVersionUID = 7388714464226222965L;
 	private String taskId;
-	private String jobId; 
+	private String jobId;
 	private JobStatus status;
 
 	@Override
@@ -55,23 +55,5 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 	public String toString() {
 		return "ExecuteOrFinishedTaskMessage [taskId=" + taskId + ", jobId=" + jobId + ", status=" + status + "]";
 	}
-
-	@Override
-	public int compareTo(IBCMessage o) {
-		if (!(o instanceof ExecuteOrFinishedTaskMessage)) {
-			return super.compareTo(o);
-		} else {
-			ExecuteOrFinishedTaskMessage other = (ExecuteOrFinishedTaskMessage) o;
-			if(sender().equals(sender)&&taskId.equals(other.taskId)&&jobId.equals(other.jobId)){
-				return creationTime().compareTo(other.creationTime());
-			}else{
-				return super.compareTo(o);
-			}
-		}
-	}
-
- 
- 
-	
 
 }

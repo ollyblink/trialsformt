@@ -3,12 +3,13 @@ package mapreduce;
 import java.io.IOException;
 
 import mapreduce.execution.computation.context.PrintContext;
+import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
 import mapreduce.server.MRJobExecutor;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.GetOwnIpAddressTest;
 
 public class DesignIdeaJobExecutor {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		try {
 			GetOwnIpAddressTest.main(null);
 		} catch (IOException e) {
@@ -25,7 +26,10 @@ public class DesignIdeaJobExecutor {
 		} else {
 			dhtConnectionProvider.port(bootstrapPort);
 		}
-		MRJobExecutor jobExecutor = MRJobExecutor.newJobExecutor(dhtConnectionProvider).context(PrintContext.newPrintContext()).canExecute(true);
+		MRJobExecutor jobExecutor = MRJobExecutor.newJobExecutor(dhtConnectionProvider).taskScheduler(MinAssignedWorkersTaskScheduler.newMinAssignedWorkersTaskScheduler().randomizeFirstTask(true)).canExecute(true);
 		jobExecutor.start();
+		while(true){
+			Thread.sleep(100);
+		}
 	}
 }

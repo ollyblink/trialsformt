@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,10 +22,12 @@ import mapreduce.execution.jobtask.KeyValuePair;
 import mapreduce.execution.jobtask.Task;
 import mapreduce.execution.scheduling.ITaskScheduler;
 import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
+import mapreduce.execution.scheduling.RandomTaskScheduler;
 import mapreduce.storage.IDHTConnectionProvider;
+import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutor {
-	private static final ITaskScheduler DEFAULT_TASK_SCHEDULER = MinAssignedWorkersTaskScheduler.newMinAssignedWorkersTaskScheduler();
+	private static final ITaskScheduler DEFAULT_TASK_SCHEDULER = RandomTaskScheduler.newRandomTaskScheduler();
 	private static final IContext DEFAULT_CONTEXT = NullContext.newNullContext();
 	private static final long DEFAULT_SLEEPING_TIME = 100;
 
@@ -128,7 +131,7 @@ public class MRJobExecutor {
 	private void executeJob(Job job) {
 		List<Task> tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex()));
 		Task task = null;
-		while ((task = this.taskScheduler().schedule(tasks)) != null && canExecute()) { 
+		while ((task = this.taskScheduler().schedule(tasks)) != null && canExecute()) {
 			this.dhtConnectionProvider().broadcastTaskSchedule(task);
 			this.executeTask(task);
 			this.dhtConnectionProvider().broadcastFinishedTask(task);
@@ -138,8 +141,9 @@ public class MRJobExecutor {
 		}
 		// all tasks finished, broadcast result
 		this.dhtConnectionProvider().broadcastFinishedAllTasks(job);
-//		jobs.poll();
-//		startExecuting();
+		// jobs.poll();
+		// startExecuting();
+
 	}
 
 	private void executeTask(final Task task) {

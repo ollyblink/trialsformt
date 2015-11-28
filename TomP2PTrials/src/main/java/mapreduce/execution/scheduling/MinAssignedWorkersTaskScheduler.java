@@ -20,9 +20,12 @@ import mapreduce.execution.jobtask.Task;
  */
 public class MinAssignedWorkersTaskScheduler implements ITaskScheduler {
 	private static Logger logger = LoggerFactory.getLogger(MinAssignedWorkersTaskScheduler.class);
+	private boolean isFirstTaskRandom;
+	private Comparator<? super Task> comparator;
+	private RandomTaskScheduler randomTaskScheduler;
 
 	private MinAssignedWorkersTaskScheduler() {
-		// TODO Auto-generated constructor stub
+		this.comparator = newComparator();
 	}
 
 	public static MinAssignedWorkersTaskScheduler newMinAssignedWorkersTaskScheduler() {
@@ -30,64 +33,90 @@ public class MinAssignedWorkersTaskScheduler implements ITaskScheduler {
 	}
 
 	@Override
-	public Task schedule(List<Task> tasksToSchedule) { 
-		if (tasksToSchedule == null || tasksToSchedule.size() == 0) {
-			return null;
-		} else {
-			boolean allFinished = true;
-			for (Task task : tasksToSchedule) {
-				System.err.println("task.totalNumberOfFinishedExecutions() >= task.maxNrOfFinishedWorkers()"+task.totalNumberOfFinishedExecutions() +" >= "+task.maxNrOfFinishedWorkers());
-
-				if (task.totalNumberOfFinishedExecutions() >= task.maxNrOfFinishedWorkers()) {
-					task.isFinished(true);
-				}
-				if (!task.isFinished()) {
-					allFinished = false;
-					break;
-				}
-			}
-			if (allFinished) {
-				return null;
-			} else {
-				Collections.sort(tasksToSchedule, new Comparator<Task>() {
-
-					@Override
-					public int compare(Task t1, Task t2) {
-						int t1Finished = t1.totalNumberOfFinishedExecutions();
-						int t2Finished = t2.totalNumberOfFinishedExecutions();
-						if (t1Finished > t2Finished) {
-							return 1;
-						} else if (t1Finished < t2Finished) {
-							return -1;
-						} else {
-							int t1differentFinished = t1.numberOfDifferentPeersExecutingTask();
-							int t2differentFinished = t2.numberOfDifferentPeersExecutingTask();
-							if (t1differentFinished > t2differentFinished) {
-								return 1;
-							} else if (t1differentFinished < t2differentFinished) {
-								return -1;
-							} else {
-								int t1Executing = t1.totalNumberOfCurrentExecutions();
-								int t2Executing = t2.totalNumberOfCurrentExecutions();
-								if (t1Executing > t2Executing) {
-									return 1;
-								} else if (t1Executing < t2Executing) {
-									return -1;
-								} else {
-									return 0;
-								}
-							}
-						}
-					}
-				});
-
-				if (tasksToSchedule.get(0).isFinished()) {
-					return null;
+	public Task schedule(List<Task> tasksToSchedule) {
+		Task assignedTask = null;
+		if (tasksToSchedule != null && tasksToSchedule.size() > 0) {
+			if (!allTasksAreFinished(tasksToSchedule)) {
+				if (isFirstTaskRandom && NoTaskAssignedYet(tasksToSchedule)) {
+					assignedTask = randomTaskScheduler.schedule(tasksToSchedule);
 				} else {
-					return tasksToSchedule.get(0);
+					Collections.sort(tasksToSchedule, this.comparator);
+					if (!tasksToSchedule.get(0).isFinished()) {
+						assignedTask = tasksToSchedule.get(0);
+					}
 				}
 			}
 		}
+		return assignedTask;
+	}
+
+	private Comparator<Task> newComparator() {
+		return new Comparator<Task>() {
+
+			@Override
+			public int compare(Task t1, Task t2) {
+				int t1Finished = t1.totalNumberOfFinishedExecutions();
+				int t2Finished = t2.totalNumberOfFinishedExecutions();
+				if (t1Finished > t2Finished) {
+					return 1;
+				} else if (t1Finished < t2Finished) {
+					return -1;
+				} else {
+					int t1differentFinished = t1.numberOfDifferentPeersExecutingTask();
+					int t2differentFinished = t2.numberOfDifferentPeersExecutingTask();
+					if (t1differentFinished > t2differentFinished) {
+						return 1;
+					} else if (t1differentFinished < t2differentFinished) {
+						return -1;
+					} else {
+						int t1Executing = t1.totalNumberOfCurrentExecutions();
+						int t2Executing = t2.totalNumberOfCurrentExecutions();
+						if (t1Executing > t2Executing) {
+							return 1;
+						} else if (t1Executing < t2Executing) {
+							return -1;
+						} else {
+							return 0;
+						}
+					}
+				}
+			}
+		};
+	}
+
+	private boolean allTasksAreFinished(List<Task> tasksToSchedule) {
+		boolean allFinished = true;
+		for (Task task : tasksToSchedule) {
+			if (task.totalNumberOfFinishedExecutions() >= task.maxNrOfFinishedWorkers()) {
+				task.isFinished(true);
+			}
+			if (!task.isFinished()) {
+				allFinished = false;
+				break;
+			}
+		}
+		return allFinished;
+	}
+
+	private boolean NoTaskAssignedYet(List<Task> tasksToSchedule) {
+		boolean nonStartedYet = true;
+		for (Task task : tasksToSchedule) {
+			if (task != null && task.allAssignedPeers().size() > 0) {
+				nonStartedYet = false;
+				break;
+			}
+		}
+		return nonStartedYet;
+	}
+
+	public MinAssignedWorkersTaskScheduler randomizeFirstTask(boolean isFirstTaskRandom) {
+		this.isFirstTaskRandom = isFirstTaskRandom;
+		if (this.isFirstTaskRandom) {
+			this.randomTaskScheduler = RandomTaskScheduler.newRandomTaskScheduler();
+		} else {
+			this.randomTaskScheduler = null;
+		}
+		return this;
 	}
 
 }

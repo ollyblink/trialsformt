@@ -80,7 +80,7 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 				for (String location : locations) {
 					List<String> keys = new ArrayList<String>();
 					keys.add(location);
-					tasksForProcedure.add(Task.newTask().id((taskCounter++) + "").jobId(job.id()).keys(keys).procedure(procedure)
+					tasksForProcedure.add(Task.newTask(job.id()).keys(keys).procedure(procedure)
 							.maxNrOfFinishedWorkers(job.maxNrOfFinishedWorkers()));
 				}
 			}

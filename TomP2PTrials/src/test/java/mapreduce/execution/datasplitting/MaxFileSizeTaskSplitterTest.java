@@ -50,9 +50,7 @@ public class MaxFileSizeTaskSplitterTest {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		// if (new File(outputFolder).exists()) {
 		FileUtils.INSTANCE.deleteTmpFolder(new File(outputPath));
-		// }
 
 	}
 

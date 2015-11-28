@@ -12,8 +12,7 @@ public class RandomTaskScheduler implements ITaskScheduler {
 	private static final Random RND = new Random();
 	private static Logger logger = LoggerFactory.getLogger(RandomTaskScheduler.class);
 
-	private RandomTaskScheduler() {
-		// TODO Auto-generated constructor stub
+	private RandomTaskScheduler() { 
 	}
 
 	public static RandomTaskScheduler newRandomTaskScheduler() {

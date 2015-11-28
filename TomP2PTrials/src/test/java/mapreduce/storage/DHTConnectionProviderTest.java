@@ -10,8 +10,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
+import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.KeyValuePair;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.utils.IDCreator;
 
 public class DHTConnectionProviderTest {
 
@@ -41,8 +43,8 @@ public class DHTConnectionProviderTest {
 		keys.add(JobStatus.EXECUTING_TASK);
 		keys.add(JobStatus.FINISHED_ALL_TASKS);
 		keys.add(JobStatus.DISTRIBUTED_JOB);
-		Task task = Task.newTask().id("1").keys(keys);
-		for (Object o : keys) { 
+		Task task = Task.newTask(IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName())).keys(keys);
+		for (Object o : keys) {
 			dhtConnectionProvider.addDataForTask(task.id(), o, 1);
 		}
 

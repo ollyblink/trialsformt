@@ -4,6 +4,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import mapreduce.execution.broadcasthandler.messageconsumer.MRJobExecutorMessageConsumer;
+import mapreduce.execution.broadcasthandler.messageconsumer.MRJobExecutorMessageConsumerTest;
 import mapreduce.execution.broadcasthandler.messageconsumer.MessageSortingTest;
 import mapreduce.execution.computation.ProcedureTaskTupelTest;
 import mapreduce.execution.datasplitting.DataSplittingTestSuite;
@@ -19,7 +20,7 @@ import mapreduce.execution.scheduling.SchedulingTestSuite;
 	SchedulingTestSuite.class,
 	ProcedureTaskTupelTest.class,
 	MessageSortingTest.class,
-	MRJobExecutorMessageConsumer.class
+	MRJobExecutorMessageConsumerTest.class
 })
 public class ExecutionTestSuite {
  
