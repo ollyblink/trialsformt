@@ -126,7 +126,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	 * connected to a DHT), it will be bootstrap to that node.
 	 */
 	@Override
-	public void connect() {
+	public DHTConnectionProvider connect() {
 		try {
 			this.port = port();
 			Peer peer = new PeerBuilder(Number160.createHash("DHTConnectionProvider_"+RND.nextLong())).ports(port).broadcastHandler(this.broadcastHandler).start();
@@ -143,6 +143,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		} catch (IOException e) {
 			logger.debug("Exception on bootstrapping", e);
 		}
+		return this;
 	}
 
 	private void doBootstrapping(Peer peer) throws UnknownHostException {

@@ -6,6 +6,11 @@ import java.util.concurrent.BlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.TreeMultimap;
+
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.jobtask.Job;
@@ -22,23 +27,28 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	protected static Logger logger = LoggerFactory.getLogger(AbstractMessageConsumer.class);
 
+	/* These two blocking queues are used for seemless interaction between classes */
 	protected BlockingQueue<IBCMessage> bcMessages;
 	protected BlockingQueue<Job> jobs;
 
 	private boolean canTake;
 
+	private MessageConsumerBCMessageHelper helper;
+
 	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, BlockingQueue<Job> jobs) {
 		this.bcMessages = bcMessages;
 		this.jobs = jobs;
-
+		this.helper = MessageConsumerBCMessageHelper.newInstance();
+		this.helper.start();
 	}
 
 	@Override
 	public void run() {
 		try {
-			while (canTake()) {
+			while (canTake()) { 
 				final IBCMessage nextMessage = bcMessages.take();
-				nextMessage.execute(this);
+				// nextMessage.execute(this);
+				helper.manageMessage(nextMessage);
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -65,8 +75,8 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	public BlockingQueue<Job> jobs() {
 		return jobs;
 	}
-	
-	//Dummy implementations
+
+	// Dummy implementations
 
 	@Override
 	public void addJob(Job job) {
