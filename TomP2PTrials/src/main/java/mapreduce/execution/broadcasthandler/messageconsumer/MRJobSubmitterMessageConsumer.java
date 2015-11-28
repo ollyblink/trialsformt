@@ -30,4 +30,10 @@ public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
 		return (MRJobSubmitterMessageConsumer) super.canTake(canTake);
 	}
 
+	@Override
+	protected void handleBCMessage(IBCMessage nextMessage) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

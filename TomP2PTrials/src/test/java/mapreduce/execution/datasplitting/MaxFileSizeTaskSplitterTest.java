@@ -40,7 +40,7 @@ public class MaxFileSizeTaskSplitterTest {
 		System.out.println(new File(inputPath).exists());
 		maxFileSize = 1024 * 1024;
 		System.out.println(inputPath);
-		job = Job.newJob("ME").inputPath(inputPath).maxFileSize(maxFileSize).nextProcedure(new NullMapReduceProcedure());
+		job = Job.newInstance("ME").inputPath(inputPath).maxFileSize(maxFileSize).nextProcedure(new NullMapReduceProcedure());
 		dataSplitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
 
 		originalFileAllLines = readFile(inputPath + "/trial.txt");

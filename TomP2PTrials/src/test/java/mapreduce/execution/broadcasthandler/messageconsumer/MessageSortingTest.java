@@ -42,11 +42,11 @@ public class MessageSortingTest {
 				public void run() {
 					if ((in) % ((int) in) == 0.5) {
 						System.err.println((in) % ((int) in));
-						trial.add(ExecuteOrFinishedTaskMessage.newFinishedTaskBCMessage().sender(new PeerAddress(Number160.createHash((1))))
+						trial.add(ExecuteOrFinishedTaskMessage.newFinishedTaskInstance().sender(new PeerAddress(Number160.createHash((1))))
 								.jobId("1").taskId("1"));
 					} else {
 						System.err.println((in) % ((int) in));
-						trial.add(ExecuteOrFinishedTaskMessage.newTaskAssignedBCMessage().sender(new PeerAddress(Number160.createHash((1))))
+						trial.add(ExecuteOrFinishedTaskMessage.newExecutingTaskInstance().sender(new PeerAddress(Number160.createHash((1))))
 								.jobId("1").taskId("1"));
 					}
 				}

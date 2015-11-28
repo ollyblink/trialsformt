@@ -174,13 +174,13 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastNewJob(Job job) {
-		IBCMessage message = DistributedJobBCMessage.newDistributedTaskBCMessage().job(job).sender(this.connectionPeer.peerAddress());
+		IBCMessage message = DistributedJobBCMessage.newInstance().job(job).sender(this.connectionPeer.peerAddress());
 		broadcastJob(job, message);
 	}
 
 	@Override
 	public void broadcastFinishedAllTasks(Job job) {
-		IBCMessage message = FinishedAllTasksBCMessage.newFinishedAllTasksBCMessage().jobId(job.id()).tasks(job.tasks(job.currentProcedureIndex()))
+		IBCMessage message = FinishedAllTasksBCMessage.newInstance().jobId(job.id()).tasks(job.tasks(job.currentProcedureIndex()))
 				.sender(this.connectionPeer.peerAddress());
 
 		// TODO: SYNCHRONIZE TASK RESULT LISTS
@@ -189,7 +189,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastFinishedJob(Job job) {
-		IBCMessage message = FinishedJobBCMessage.newFinishedJobBCMessage().jobId(job.id()).jobSubmitterId(job.jobSubmitterID())
+		IBCMessage message = FinishedJobBCMessage.newInstance().jobId(job.id()).jobSubmitterId(job.jobSubmitterID())
 				.sender(this.connectionPeer.peerAddress());
 		broadcastJob(job, message);
 	}
@@ -207,12 +207,12 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastFinishedTask(Task task) {
-		broadcastTask(task, ExecuteOrFinishedTaskMessage.newFinishedTaskBCMessage().sender(this.connectionPeer.peerAddress()));
+		broadcastTask(task, ExecuteOrFinishedTaskMessage.newFinishedTaskInstance().sender(this.connectionPeer.peerAddress()));
 	}
 
 	@Override
-	public void broadcastTaskSchedule(Task task) {
-		broadcastTask(task, ExecuteOrFinishedTaskMessage.newTaskAssignedBCMessage().sender(this.connectionPeer.peerAddress()));
+	public void broadcastExecutingTask(Task task) {
+		broadcastTask(task, ExecuteOrFinishedTaskMessage.newExecutingTaskInstance().sender(this.connectionPeer.peerAddress()));
 
 	}
 

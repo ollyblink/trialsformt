@@ -18,30 +18,7 @@ import mapreduce.utils.IDCreator;
 import net.tomp2p.peers.PeerAddress;
 
 public class Job implements Serializable {
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Job other = (Job) obj;
-		if (id == null) {
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
-		return true;
-	}
+	
 
 	private static Logger logger = LoggerFactory.getLogger(Job.class);
 
@@ -64,7 +41,7 @@ public class Job implements Serializable {
 		this.currentProcedureIndex = 0;
 	}
 
-	public static Job newJob(String jobSubmitterID) {
+	public static Job newInstance(String jobSubmitterID) {
 		return new Job(jobSubmitterID);
 	}
 
@@ -238,5 +215,35 @@ public class Job implements Serializable {
 		if (this.currentProcedureIndex < this.procedures.size() - 1) {
 			++this.currentProcedureIndex;
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return "Job [jobSubmitterID=" + jobSubmitterID + ", id=" + id + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Job other = (Job) obj;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
+		return true;
 	}
 }

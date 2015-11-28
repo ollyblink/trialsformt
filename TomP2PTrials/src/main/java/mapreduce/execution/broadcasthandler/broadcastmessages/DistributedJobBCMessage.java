@@ -19,7 +19,7 @@ public class DistributedJobBCMessage extends AbstractBCMessage{
 	private DistributedJobBCMessage() {
 	}
 
-	public static DistributedJobBCMessage newDistributedTaskBCMessage() {
+	public static DistributedJobBCMessage newInstance() {
 		return new DistributedJobBCMessage();
 	}
 
@@ -49,4 +49,11 @@ public class DistributedJobBCMessage extends AbstractBCMessage{
 	public DistributedJobBCMessage sender(PeerAddress peerAddress) {
 		return (DistributedJobBCMessage)super.sender(peerAddress); 
 	}
+
+	@Override
+	public String toString() {
+		return "DistributedJobBCMessage [job=" + job + ", sender=" + sender + "]";
+	}
+	
+	
 }

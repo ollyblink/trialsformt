@@ -1,7 +1,6 @@
 package mapreduce.execution.broadcasthandler.broadcastmessages;
 
 import mapreduce.execution.broadcasthandler.messageconsumer.IMessageConsumer;
-import mapreduce.server.MRJobExecutor;
 import net.tomp2p.peers.PeerAddress;
 
 public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
@@ -24,11 +23,11 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 		messageConsumer.updateTask(jobId, taskId, sender, status());
 	}
 
-	public static ExecuteOrFinishedTaskMessage newTaskAssignedBCMessage() {
+	public static ExecuteOrFinishedTaskMessage newExecutingTaskInstance() {
 		return new ExecuteOrFinishedTaskMessage(JobStatus.EXECUTING_TASK);
 	}
 
-	public static ExecuteOrFinishedTaskMessage newFinishedTaskBCMessage() {
+	public static ExecuteOrFinishedTaskMessage newFinishedTaskInstance() {
 		return new ExecuteOrFinishedTaskMessage(JobStatus.FINISHED_TASK);
 	}
 

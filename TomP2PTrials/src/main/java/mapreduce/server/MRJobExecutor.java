@@ -132,7 +132,7 @@ public class MRJobExecutor {
 		List<Task> tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex()));
 		Task task = null;
 		while ((task = this.taskScheduler().schedule(tasks)) != null && canExecute()) {
-			this.dhtConnectionProvider().broadcastTaskSchedule(task);
+			this.dhtConnectionProvider().broadcastExecutingTask(task);
 			this.executeTask(task);
 			this.dhtConnectionProvider().broadcastFinishedTask(task);
 		}

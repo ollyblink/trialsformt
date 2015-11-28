@@ -26,7 +26,7 @@ public class DesignIdeaJobSubmitter {
 		}
 
 		int maxNumberOfFinishedPeers = 2;
-		Job job = Job.newJob(submitter.id()).nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+		Job job = Job.newInstance(submitter.id()).nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(FileSizes.THIRTY_TWO_KILO_BYTE.value());
 		submitter.submit(job);
 		//

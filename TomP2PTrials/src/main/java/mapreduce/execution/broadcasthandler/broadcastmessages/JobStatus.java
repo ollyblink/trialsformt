@@ -7,19 +7,19 @@ public enum JobStatus {
 
 	public static void main(String[] args) {
 		PriorityBlockingQueue<IBCMessage> stati = new PriorityBlockingQueue<IBCMessage>();
-		stati.add(FinishedAllTasksBCMessage.newFinishedAllTasksBCMessage());
-		stati.add(DistributedJobBCMessage.newDistributedTaskBCMessage());
-		stati.add(FinishedJobBCMessage.newFinishedJobBCMessage());
-		stati.add(ExecuteOrFinishedTaskMessage.newFinishedTaskBCMessage());
-		stati.add(ExecuteOrFinishedTaskMessage.newTaskAssignedBCMessage());
-		stati.add(FinishedAllTasksBCMessage.newFinishedAllTasksBCMessage());
-		stati.add(DistributedJobBCMessage.newDistributedTaskBCMessage());
-		stati.add(FinishedJobBCMessage.newFinishedJobBCMessage());
-		stati.add(ExecuteOrFinishedTaskMessage.newFinishedTaskBCMessage());
-		stati.add(ExecuteOrFinishedTaskMessage.newTaskAssignedBCMessage());
-		stati.add(FinishedAllTasksBCMessage.newFinishedAllTasksBCMessage());
-		stati.add(DistributedJobBCMessage.newDistributedTaskBCMessage());
-		stati.add(FinishedJobBCMessage.newFinishedJobBCMessage());
+		stati.add(FinishedAllTasksBCMessage.newInstance());
+		stati.add(DistributedJobBCMessage.newInstance());
+		stati.add(FinishedJobBCMessage.newInstance());
+		stati.add(ExecuteOrFinishedTaskMessage.newFinishedTaskInstance());
+		stati.add(ExecuteOrFinishedTaskMessage.newExecutingTaskInstance());
+		stati.add(FinishedAllTasksBCMessage.newInstance());
+		stati.add(DistributedJobBCMessage.newInstance());
+		stati.add(FinishedJobBCMessage.newInstance());
+		stati.add(ExecuteOrFinishedTaskMessage.newFinishedTaskInstance());
+		stati.add(ExecuteOrFinishedTaskMessage.newExecutingTaskInstance());
+		stati.add(FinishedAllTasksBCMessage.newInstance());
+		stati.add(DistributedJobBCMessage.newInstance());
+		stati.add(FinishedJobBCMessage.newInstance());
 
 		while (!stati.isEmpty()) {
 			System.out.println(stati.poll());

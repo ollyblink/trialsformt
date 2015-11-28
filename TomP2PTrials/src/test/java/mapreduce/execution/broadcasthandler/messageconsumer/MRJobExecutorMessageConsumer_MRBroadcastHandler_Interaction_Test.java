@@ -11,6 +11,8 @@ import org.junit.Test;
 
 import mapreduce.execution.broadcasthandler.MRBroadcastHandler;
 import mapreduce.execution.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
+import mapreduce.execution.broadcasthandler.broadcastmessages.ExecuteOrFinishedTaskMessage;
+import mapreduce.execution.broadcasthandler.broadcastmessages.FinishedAllTasksBCMessage;
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.storage.DHTConnectionProvider;
@@ -30,25 +32,36 @@ public class MRJobExecutorMessageConsumer_MRBroadcastHandler_Interaction_Test {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		messageConsumer = MRJobExecutorMessageConsumer.newMRJobExecutorMessageConsumer(new LinkedBlockingQueue<Job>()).canTake(true);
-		new Thread(messageConsumer).start();
-
-		dht = DHTConnectionProvider.newDHTConnectionProvider().port(4000).connect();
-		dht.broadcastHandler().broadcastListener().queue(messageConsumer.queue());
+		// new Thread(messageConsumer).start();
+		//
+		// dht = DHTConnectionProvider.newDHTConnectionProvider().port(4000).connect();
+		// dht.broadcastHandler().broadcastListener().queue(messageConsumer.queue());
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		dht.shutdown();
+		// dht.shutdown();
 
 	}
 
+	// @Test
+	// public void testCancelJob() throws IOException, InterruptedException {
+	// Job job = Job.newJob("ME");
+	// dht.broadcastNewJob(job);
+	// dht.broadcastNewJob(job);
+	// dht.broadcastNewJob(job);
+	// dht.broadcastNewJob(job);
+	// Thread.sleep(Long.MAX_VALUE);
+	// }
+
 	@Test
-	public void testCancelJob() throws IOException, InterruptedException {
-		Job job = Job.newJob("ME");
-		dht.broadcastNewJob(job); 
-		dht.broadcastNewJob(job); 
-		dht.broadcastNewJob(job); 
-		dht.broadcastNewJob(job);  
+	public void testManagers() {
+		Job job = Job.newInstance("ME");
+		messageConsumer.handleBCMessage(DistributedJobBCMessage.newInstance().job(job).sender(new PeerAddress(new Number160(1))));
+		messageConsumer.handleBCMessage(DistributedJobBCMessage.newInstance().job(job).sender(new PeerAddress(new Number160(2))));
+		messageConsumer.handleBCMessage(DistributedJobBCMessage.newInstance().job(job).sender(new PeerAddress(new Number160(3))));
+		messageConsumer.handleBCMessage(DistributedJobBCMessage.newInstance().job(job).sender(new PeerAddress(new Number160(4))));
+
 	}
 
 }

@@ -22,7 +22,7 @@ public class FinishedJobBCMessage extends AbstractBCMessage {
 		messageConsumer.handleFinishedJob(jobId, jobSubmitterId);
 	}
 
-	public static FinishedJobBCMessage newFinishedJobBCMessage() {
+	public static FinishedJobBCMessage newInstance() {
 		return new FinishedJobBCMessage();
 	}
 

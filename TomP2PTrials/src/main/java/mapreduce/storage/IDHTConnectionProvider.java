@@ -17,7 +17,7 @@ public interface IDHTConnectionProvider {
 
 	public void broadcastNewJob(Job job);
 
-	public void broadcastTaskSchedule(Task task);
+	public void broadcastExecutingTask(Task task);
 
 	public void broadcastFinishedTask(Task task);
 

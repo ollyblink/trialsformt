@@ -30,7 +30,7 @@ public class FinishedAllTasksBCMessage extends AbstractBCMessage {
 		return this;
 	}
 
-	public static FinishedAllTasksBCMessage newFinishedAllTasksBCMessage() {
+	public static FinishedAllTasksBCMessage newInstance() {
 		return new FinishedAllTasksBCMessage();
 	}
 

@@ -50,7 +50,7 @@ public class MRJobExecutorMessageConsumerTest {
 		long megaByte = 1024 * 1024;
 
 		int maxNumberOfFinishedPeers = 3;
-		Job job = Job.newJob("TEST").nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers).inputPath(inputPath)
+		Job job = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers).inputPath(inputPath)
 				.maxFileSize(megaByte);
 
 		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
