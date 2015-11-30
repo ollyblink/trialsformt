@@ -148,6 +148,7 @@ public class MRJobExecutor {
 		if (!this.abortedTaskExecution) { // this means that this executor is actually the one that is going to abort the others...
 			this.dhtConnectionProvider().broadcastFinishedAllTasks(job);
 			// abortTaskExecution();
+			System.err.println("Aborted Tasks!!");
 			messageConsumer.removeRemainingMessagesForThisTask(job.id());
 			BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
 			for (Task t : ts) {

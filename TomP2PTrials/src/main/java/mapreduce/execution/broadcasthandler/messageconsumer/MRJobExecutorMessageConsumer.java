@@ -85,11 +85,6 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 				job.synchronizeFinishedTasksStati(tasks);
 			}
 			removeRemainingMessagesForThisTask(jobId);
-			// this.jobExecutor.dhtConnectionProvider().broadcastFinishedAllTasks(job);
-
-		}
-
-		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
 				BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
 				for (Task t : ts) {
