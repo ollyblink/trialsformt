@@ -23,6 +23,7 @@ import mapreduce.execution.computation.context.NullContext;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
 import mapreduce.execution.scheduling.ITaskScheduler;
+import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
 import mapreduce.execution.scheduling.RandomTaskScheduler;
 import mapreduce.storage.IDHTConnectionProvider;
 import net.tomp2p.peers.PeerAddress;
@@ -42,8 +43,6 @@ public class MRJobExecutor {
 	private BlockingQueue<Job> jobs;
 	private MRJobExecutorMessageConsumer messageConsumer;
 	private boolean canExecute;
-	private boolean canExecuteSameTaskMultipleTimes;
-	private boolean isExecutingTask;
 	private ThreadPoolExecutor server;
 	private List<Future<?>> currentThreads = new ArrayList<Future<?>>();
 	private boolean abortedTaskExecution;
@@ -56,8 +55,8 @@ public class MRJobExecutor {
 		new Thread(messageConsumer).start();
 	}
 
-	public static MRJobExecutor newJobExecutor(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobExecutor(dhtConnectionProvider, new LinkedBlockingQueue<Job>()).canExecute(true);
+	public static MRJobExecutor newInstance(IDHTConnectionProvider dhtConnectionProvider) {
+		return new MRJobExecutor(dhtConnectionProvider, new LinkedBlockingQueue<Job>()).taskScheduler(DEFAULT_TASK_SCHEDULER).canExecute(true);
 	}
 
 	// Getter/Setter
@@ -103,15 +102,6 @@ public class MRJobExecutor {
 		return this.canExecute;
 	}
 
-	public MRJobExecutor canExecuteSameTaskMultipleTimes(boolean canExecuteSameTaskMultipleTimes) {
-		this.canExecuteSameTaskMultipleTimes = canExecuteSameTaskMultipleTimes;
-		return this;
-	}
-
-	public boolean canExecuteSameTaskMultipleTimes() {
-		return this.canExecuteSameTaskMultipleTimes;
-	}
-
 	public Job getJob() {
 		return jobs.peek();
 	}
@@ -148,20 +138,14 @@ public class MRJobExecutor {
 		List<Task> tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex()));
 		Task task = null;
 		while ((task = this.taskScheduler().schedule(tasks)) != null && canExecute()) {
-			// if(!canExecuteSameTaskMultipleTimes()){ TODO
-			// while(task.all)
-			// }
-			this.isExecutingTask = true;
 			this.dhtConnectionProvider().broadcastExecutingTask(task);
 			this.executeTask(task);
-			this.isExecutingTask = false;
 			this.dhtConnectionProvider().broadcastFinishedTask(task);
 		}
 		if (!canExecute()) {
 			System.err.println("Cannot execute! use MRJobSubmitter::canExecute(true) to enable execution");
 		}
-
-		if (!this.abortedTaskExecution) { //this means that this executor is actually the one that aborted the others...
+		if (!this.abortedTaskExecution) { // this means that this executor is actually the one that is going to abort the others...
 			this.dhtConnectionProvider().broadcastFinishedAllTasks(job);
 			// abortTaskExecution();
 			messageConsumer.removeRemainingMessagesForThisTask(job.id());

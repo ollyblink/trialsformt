@@ -19,16 +19,15 @@ public class DesignIdeaJobExecutor {
 		String bootstrapIP = "192.168.43.234";
 		int bootstrapPort = 4000;
 		String storageFilePath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/main/java/mapreduce/storage/";
-		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider();
+		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance();
 
 		if (id != 1) {
 			dhtConnectionProvider.bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
 		} else {
 			dhtConnectionProvider.port(bootstrapPort);
 		}
-		MRJobExecutor jobExecutor = MRJobExecutor.newJobExecutor(dhtConnectionProvider)
-				.taskScheduler(MinAssignedWorkersTaskScheduler.newMinAssignedWorkersTaskScheduler().randomizeFirstTask(true)).canExecute(true)
-				.canExecuteSameTaskMultipleTimes(true);
+		MRJobExecutor jobExecutor = MRJobExecutor.newInstance(dhtConnectionProvider).taskScheduler(MinAssignedWorkersTaskScheduler.newInstance());
+
 		jobExecutor.start();
 
 	}

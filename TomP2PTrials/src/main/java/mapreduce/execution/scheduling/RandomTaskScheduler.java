@@ -3,16 +3,13 @@ package mapreduce.execution.scheduling;
 import java.util.List;
 import java.util.Random;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import mapreduce.execution.jobtask.Task;
 
-public class RandomTaskScheduler implements ITaskScheduler {
+public class RandomTaskScheduler extends AbstractTaskScheduler {
 	private static final Random RND = new Random();
-	private static Logger logger = LoggerFactory.getLogger(RandomTaskScheduler.class);
+	// private static Logger logger = LoggerFactory.getLogger(RandomTaskScheduler.class);
 
-	private RandomTaskScheduler() { 
+	private RandomTaskScheduler() {
 	}
 
 	public static RandomTaskScheduler newRandomTaskScheduler() {
@@ -21,11 +18,16 @@ public class RandomTaskScheduler implements ITaskScheduler {
 
 	@Override
 	public Task schedule(List<Task> tasksToSchedule) {
-
 		if (tasksToSchedule == null || tasksToSchedule.size() == 0) {
 			return null;
 		} else {
-			return tasksToSchedule.get(RND.nextInt(tasksToSchedule.size()));
+			Task assignedTask = null;
+			if (!allTasksAreFinished(tasksToSchedule)) {
+				do {
+					assignedTask = tasksToSchedule.get(RND.nextInt(tasksToSchedule.size()));
+				} while (assignedTask.isFinished());
+			}
+			return assignedTask;
 		}
 	}
 }

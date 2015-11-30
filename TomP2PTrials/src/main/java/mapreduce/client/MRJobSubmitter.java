@@ -42,7 +42,7 @@ public class MRJobSubmitter {
 		dhtConnectionProvider.broadcastHandler().queue(messageConsumer.queue());
 	}
 
-	public static MRJobSubmitter newMapReduceJobSubmitter(IDHTConnectionProvider dhtConnectionProvider) {
+	public static MRJobSubmitter newInstance(IDHTConnectionProvider dhtConnectionProvider) {
 		return new MRJobSubmitter(dhtConnectionProvider, new LinkedBlockingQueue<Job>());
 	}
 

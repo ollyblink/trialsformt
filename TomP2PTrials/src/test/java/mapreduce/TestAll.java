@@ -36,7 +36,7 @@ public class TestAll {
 		String bootstrapIP = "192.168.43.234";
 		int bootstrapPort = 4000;
 
-		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider();
+		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance();
 		int id = 1;
 		if (id != 1) {
 			dhtConnectionProvider.bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
@@ -44,11 +44,11 @@ public class TestAll {
 			dhtConnectionProvider.port(bootstrapPort);
 		}
 
-		MRJobExecutor executor = MRJobExecutor.newJobExecutor(dhtConnectionProvider).context(NullContext.newNullContext());
+		MRJobExecutor executor = MRJobExecutor.newInstance(dhtConnectionProvider).context(NullContext.newNullContext());
 
 		executor.start();
 		submitter = MRJobSubmitter
-				.newMapReduceJobSubmitter(DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
+				.newInstance(DHTConnectionProvider.newInstance().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
 		String inputPath = "/home/ozihler/Desktop/input_small";

@@ -17,7 +17,7 @@ public class DesignIdeaJobSubmitter {
 		int bootstrapPort = 4000;
 
 		MRJobSubmitter submitter = MRJobSubmitter
-				.newMapReduceJobSubmitter(DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
+				.newInstance(DHTConnectionProvider.newInstance().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
 		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/datasplitting/testfile";
@@ -27,7 +27,7 @@ public class DesignIdeaJobSubmitter {
 
 		int maxNumberOfFinishedPeers = 3;
 		Job job = Job.newInstance(submitter.id()).nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
-				.inputPath(inputPath).maxFileSize(2*FileSizes.SIXTY_FOUR_KILO_BYTE.value());
+				.inputPath(inputPath).maxFileSize(2 * FileSizes.SIXTY_FOUR_KILO_BYTE.value());
 		submitter.submit(job);
 		//
 		//

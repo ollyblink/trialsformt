@@ -64,7 +64,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		this.broadcastHandler = new MRBroadcastHandler();
 	}
 
-	public static DHTConnectionProvider newDHTConnectionProvider() {
+	public static DHTConnectionProvider newInstance() {
 		return new DHTConnectionProvider();
 	}
 

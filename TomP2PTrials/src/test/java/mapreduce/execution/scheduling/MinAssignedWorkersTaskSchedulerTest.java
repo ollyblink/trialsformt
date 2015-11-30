@@ -25,7 +25,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 
 	@Before
 	public void setUpBeforeTest() throws Exception {
-		taskScheduler = MinAssignedWorkersTaskScheduler.newMinAssignedWorkersTaskScheduler();
+		taskScheduler = MinAssignedWorkersTaskScheduler.newInstance();
 
 		Task[] tasksToTest = new Task[10];
 
@@ -77,7 +77,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		Mockito.when(tasksToTest[7].totalNumberOfFinishedExecutions()).thenReturn(0);
 		Mockito.when(tasksToTest[7].totalNumberOfCurrentExecutions()).thenReturn(2);
 		Mockito.when(tasksToTest[7].numberOfDifferentPeersExecutingTask()).thenReturn(1);
-//
+		//
 		tasksToTest[8] = Mockito.mock(Task.class);
 		Mockito.when(tasksToTest[8].id()).thenReturn("9");
 		Mockito.when(tasksToTest[8].totalNumberOfFinishedExecutions()).thenReturn(1);
@@ -92,7 +92,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		Mockito.when(tasksToTest[9].numberOfDifferentPeersExecutingTask()).thenReturn(1);
 
 		tasks = new LinkedList<Task>();
-		Collections.addAll(tasks, tasksToTest); 
+		Collections.addAll(tasks, tasksToTest);
 	}
 
 	@Test
@@ -121,11 +121,11 @@ public class MinAssignedWorkersTaskSchedulerTest {
 	public void testRandomised() {
 		taskScheduler.randomizeFirstTask(true);
 		/*
-		 * Let's count some occurrences... If it is uniformly distributed, the larger the iterations, the more the proportions should come to a ratio of
-		 * 1/#tasks
+		 * Let's count some occurrences... If it is uniformly distributed, the larger the iterations, the more the proportions should come to a ratio
+		 * of 1/#tasks
 		 */
 		Map<Task, Double> taskOccurrenceCounter = new HashMap<Task, Double>();
-		for (Task task : tasks) { 
+		for (Task task : tasks) {
 			taskOccurrenceCounter.put(task, 0.0);
 		}
 		int numberOfIterations = 10000;

@@ -25,9 +25,9 @@ public class DHTConnectionProviderTest {
 		String bootstrapIP = "192.168.43.234";
 		int bootstrapPort = 4000;
 		// String storageFilePath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/main/java/mapreduce/storage/";
-		dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider().port(bootstrapPort);
+		dhtConnectionProvider = DHTConnectionProvider.newInstance().port(bootstrapPort);
 		dhtConnectionProvider.connect();
-		dhtConnectionProvider2 = DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
+		dhtConnectionProvider2 = DHTConnectionProvider.newInstance().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
 		dhtConnectionProvider2.connect();
 	}
 
