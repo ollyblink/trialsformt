@@ -36,7 +36,7 @@ public class TestAll {
 		String bootstrapIP = "192.168.43.234";
 		int bootstrapPort = 4000;
 
-		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider();
+		DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance();
 		int id = 1;
 		if (id != 1) {
 			dhtConnectionProvider.bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
@@ -44,12 +44,11 @@ public class TestAll {
 			dhtConnectionProvider.port(bootstrapPort);
 		}
 
-		MRJobExecutor executor = MRJobExecutor.newJobExecutor(dhtConnectionProvider).context(NullContext.newNullContext());
+		MRJobExecutor executor = MRJobExecutor.newInstance(dhtConnectionProvider).context(NullContext.newNullContext());
 
 		executor.start();
 		submitter = MRJobSubmitter
-				.newMapReduceJobSubmitter(DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
-
+				.newInstance(DHTConnectionProvider.newInstance().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
 		String inputPath = "/home/ozihler/Desktop/input_small";
@@ -60,8 +59,8 @@ public class TestAll {
 		long megaByte = 1024 * 1024;
 
 		int maxNumberOfFinishedPeers = 3;
-		job = Job.newJob().nextProcedure(new WordCountMapper(), null).maxNrOfFinishedPeers(maxNumberOfFinishedPeers).inputPath(inputPath)
-				.maxFileSize(megaByte);
+		job = Job.newInstance(submitter.id()).nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+				.inputPath(inputPath).maxFileSize(megaByte);
 
 	}
 
@@ -85,8 +84,8 @@ public class TestAll {
 		for (MRJobExecutor e : executors) {
 			Job job = e.getJob();
 			System.out.println("JOB: " + job.id());
-			System.out.println("Procedure: " + job.nextProcedure());
-			BlockingQueue<Task> tasksFor = job.tasksFor(job.nextProcedure());
+			System.out.println("Procedure: " + job.procedure(job.currentProcedureIndex()));
+			BlockingQueue<Task> tasksFor = job.tasks(job.currentProcedureIndex());
 			for (Task t : tasksFor) {
 				System.out.println("Task: " + t.id());
 				Set<PeerAddress> assignedPeers = t.allAssignedPeers();

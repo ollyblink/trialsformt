@@ -10,19 +10,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
+
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
-import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileUtils;
 
 public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
@@ -31,6 +32,8 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 	private static final String ENDCODING = "UTF-8";
 
 	private String tempFolderName;
+
+	private Multimap<Task, Comparable> keysForEachTask = TreeMultimap.create();
 
 	private MaxFileSizeTaskSplitter() {
 
@@ -75,19 +78,23 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 	}
 
 	private void createFinalTaskSplits(Job job, Collection<List<String>> allNewFileLocations) {
+		IMapReduceProcedure procedure = job.procedure(job.currentProcedureIndex());
 
-		int taskCounter = 1;
-		IMapReduceProcedure<?, ?, ?, ?> procedure = job.nextProcedure();
 		if (procedure != null) {
-			BlockingQueue<Task> tasksForProcedure = new LinkedBlockingQueue<Task>();
+			List<Task> tasksForProcedure = new ArrayList<Task>();
 			for (List<String> locations : allNewFileLocations) {
-				for (String location : locations) {
-					List<String> keys = new ArrayList<String>();
-					keys.add(location);
-					tasksForProcedure.add(Task.newTask().id((taskCounter++) + "").jobId(job.id()).keys(keys).procedure(procedure));
+
+				for (int i = 0; i < locations.size(); ++i) {
+					Task task = Task.newInstance(job.id()).procedure(procedure).maxNrOfFinishedWorkers(job.maxNrOfFinishedWorkers());
+					tasksForProcedure.add(task);
+					keysForEachTask.put(task, locations.get(i));
 				}
+
 			}
+
 			job.nextProcedure(procedure, tasksForProcedure);
+			System.err.println(job.currentProcedureIndex());
+			System.err.println(job.tasks(job.currentProcedureIndex()));
 		} else {
 			logger.error("Could not put job due to no procedure specified.");
 		}
@@ -130,7 +137,7 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 
 		for (String filePath : pathVisitor) {
 			File file = new File(filePath);
- 
+
 			String fileName = file.getName().substring(0, (file.getName().lastIndexOf(".")));
 			String extension = file.getName().replace(fileName, "");
 
@@ -167,16 +174,6 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 	}
 
 	@Override
-	public void splitAndEmit(final Job job, DHTConnectionProvider dhtConnectionProvider) {
-
-		// // Finally, create tasks and emit all to the DHT
-		// addToDHT(dhtConnectionProvider, job, oldAndNew.values());
-		//
-		// // Delete the temp folder after emission?
-		// deleteTmpFolder(shouldDeleteAfterEmission, folder);
-	}
-
-	@Override
 	public void split(Job job) {
 		// Make a tmp folder for the copied files
 		createTmpFolder(job);
@@ -206,4 +203,10 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 			return this.tempFolderName;
 		}
 	}
+
+	@Override
+	public Multimap<Task, Comparable> keysForEachTask() {
+		return this.keysForEachTask;
+	}
+
 }

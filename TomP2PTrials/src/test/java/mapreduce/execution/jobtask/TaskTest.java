@@ -7,6 +7,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
+import mapreduce.utils.IDCreator;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -16,7 +17,9 @@ public class TaskTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		task = Task.newTask().id("TEST_TASK");
+		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
+
+		task = Task.newInstance(jobId);
 	}
 
 	@AfterClass
@@ -411,7 +414,7 @@ public class TaskTest {
 		assertEquals(6, task.totalNumberOfFinishedExecutions());
 		assertEquals(1, task.totalNumberOfCurrentExecutions());
 		assertEquals(2, task.numberOfPeersWithAtLeastOneFinishedExecution());
-		
+
 		task.updateExecutingPeerStatus(peerAddress2, JobStatus.EXECUTING_TASK);
 		assertEquals(3, task.numberOfDifferentPeersExecutingTask());
 		assertEquals(2, task.numberOfPeersWithSingleStatus(JobStatus.EXECUTING_TASK));
@@ -423,7 +426,7 @@ public class TaskTest {
 		assertEquals(6, task.totalNumberOfFinishedExecutions());
 		assertEquals(2, task.totalNumberOfCurrentExecutions());
 		assertEquals(2, task.numberOfPeersWithAtLeastOneFinishedExecution());
-		
+
 		task.updateExecutingPeerStatus(peerAddress, JobStatus.EXECUTING_TASK);
 		assertEquals(3, task.numberOfDifferentPeersExecutingTask());
 		assertEquals(3, task.numberOfPeersWithSingleStatus(JobStatus.EXECUTING_TASK));
@@ -435,6 +438,7 @@ public class TaskTest {
 		assertEquals(6, task.totalNumberOfFinishedExecutions());
 		assertEquals(3, task.totalNumberOfCurrentExecutions());
 		assertEquals(2, task.numberOfPeersWithAtLeastOneFinishedExecution());
+
 	}
 
 }

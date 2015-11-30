@@ -3,12 +3,11 @@ package mapreduce.execution.broadcasthandler.broadcastmessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.MessageConsumer;
+import mapreduce.execution.broadcasthandler.messageconsumer.IMessageConsumer;
 import mapreduce.execution.jobtask.Job;
-import mapreduce.server.MRJobExecutor;
 import net.tomp2p.peers.PeerAddress;
 
-public class DistributedJobBCMessage extends AbstractBCMessage{
+public class DistributedJobBCMessage extends AbstractBCMessage {
 	private static Logger logger = LoggerFactory.getLogger(DistributedJobBCMessage.class);
 
 	/**
@@ -20,7 +19,7 @@ public class DistributedJobBCMessage extends AbstractBCMessage{
 	private DistributedJobBCMessage() {
 	}
 
-	public static DistributedJobBCMessage newDistributedTaskBCMessage() {
+	public static DistributedJobBCMessage newInstance() {
 		return new DistributedJobBCMessage();
 	}
 
@@ -39,15 +38,24 @@ public class DistributedJobBCMessage extends AbstractBCMessage{
 	}
 
 	@Override
-	public void execute(MessageConsumer messageConsumer) {
-		logger.warn("DistributedJobBCMessage::execute()::added job");
+	public void execute(IMessageConsumer messageConsumer) {
+		logger.warn("DistributedJobBCMessage::execute()::received job from " + sender().inetAddress() + ":" + sender().tcpPort() + ", added job");
 		messageConsumer.addJob(job);
 
 	}
-	
 
 	@Override
 	public DistributedJobBCMessage sender(PeerAddress peerAddress) {
-		return (DistributedJobBCMessage)super.sender(peerAddress); 
+		return (DistributedJobBCMessage) super.sender(peerAddress);
+	}
+
+	@Override
+	public String toString() {
+		return "DistributedJobBCMessage [job=" + job + ", sender=" + sender + "]";
+	}
+
+	@Override
+	public String jobId() {
+		return job.id();
 	}
 }

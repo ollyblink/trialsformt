@@ -1,6 +1,10 @@
 package mapreduce.utils;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.List;
 
 public enum FileUtils {
@@ -30,4 +34,14 @@ public enum FileUtils {
 		}
 	}
 
+	public String readLines(String filePath) throws FileNotFoundException, IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)));
+		String line = null;
+		String lines = "";
+		while ((line = reader.readLine()) != null) {
+			lines += line + "\n";
+		}
+		reader.close();
+		return lines;
+	}
 }

@@ -1,5 +1,7 @@
 package mapreduce.execution.computation.context;
 
+import mapreduce.execution.jobtask.Task;
+
 public class NullContext implements IContext {
 
 	@Override
@@ -13,6 +15,12 @@ public class NullContext implements IContext {
 
 	public static NullContext newNullContext() {
 		return new NullContext();
+	}
+
+	@Override
+	public NullContext task(Task task) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
