@@ -112,7 +112,7 @@ public class MRJobExecutorMessageConsumerTest {
 				.equals(JobStatus.EXECUTING_TASK));
 		assertTrue(new ArrayList<JobStatus>(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(3)))).get(0)
 				.equals(JobStatus.FINISHED_TASK));
-		m.handleFinishedTasks(jobId, tasks2);
+		m.handleFinishedAllTasks(jobId, tasks2);
 
 		BlockingQueue<Task> tasks3 = new LinkedBlockingQueue<Task>();
 		for (Task task : tasks) {
@@ -126,7 +126,7 @@ public class MRJobExecutorMessageConsumerTest {
 			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.FINISHED_TASK);
 		}
 
-		m.handleFinishedTasks(jobId, tasks3);
+		m.handleFinishedAllTasks(jobId, tasks3);
 
 		for (Task task : m.jobs().peek().tasks(0)) {
 			assertTrue(task.allAssignedPeers().size() == 3);

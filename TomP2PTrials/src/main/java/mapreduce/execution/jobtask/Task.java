@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,7 @@ import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.utils.IDCreator;
 import net.tomp2p.peers.PeerAddress;
 
-public class Task implements Serializable {
+public class Task implements Serializable, Comparable<Task> {
 
 	/**
 	 * 
@@ -30,11 +29,15 @@ public class Task implements Serializable {
 
 	private String id;
 	private String jobId;
-	private IMapReduceProcedure<?, ?, ?, ?> procedure;
-	private List<?> keys;
+	private IMapReduceProcedure procedure;
+	// private List<Object> keys;
 	private Multimap<PeerAddress, JobStatus> executingPeers;
 	private boolean isFinished;
 	private int maxNrOfFinishedWorkers;
+	/** This address is the one from the multi map that remains after evaluation of which task result to keep (if there are multiple task results) */
+	private PeerAddress finalPeerAddress;
+	/** this index is the location in the executingPeers multimap above of the JobStatus that is chosen to be kept */
+	private int finalJobStatusIndex;
 
 	private Task(String jobId) {
 		Multimap<PeerAddress, JobStatus> tmp = ArrayListMultimap.create();
@@ -43,7 +46,7 @@ public class Task implements Serializable {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName()) + "_" + jobId;
 	}
 
-	public static Task newTask(String jobId) {
+	public static Task newInstance(String jobId) {
 		return new Task(jobId);
 	}
 
@@ -55,18 +58,18 @@ public class Task implements Serializable {
 		return jobId;
 	}
 
-	public IMapReduceProcedure<?, ?, ?, ?> procedure() {
+	public IMapReduceProcedure procedure() {
 		return this.procedure;
 	}
 
-	public List<?> keys() {
-		return this.keys;
-	}
-
-	public Task keys(List<?> keys) {
-		this.keys = Collections.synchronizedList(keys);
-		return this;
-	}
+	// public List<Object> keys() {
+	// return this.keys;
+	// }
+	//
+	// public Task keys(List<Object> keys) {
+	// this.keys = Collections.synchronizedList(keys);
+	// return this;
+	// }
 
 	public boolean isFinished() {
 		return this.isFinished;
@@ -96,8 +99,26 @@ public class Task implements Serializable {
 	 *            specifies which procedure in the queue it is, used for task id
 	 * @return
 	 */
-	public Task procedure(IMapReduceProcedure<?, ?, ?, ?> procedure) {
+	public Task procedure(IMapReduceProcedure procedure) {
 		this.procedure = procedure;
+		return this;
+	}
+
+	public PeerAddress finalPeerAddress() {
+		return this.finalPeerAddress;
+	}
+
+	public Task finalPeerAddress(PeerAddress finalPeerAddress) {
+		this.finalPeerAddress = finalPeerAddress;
+		return this;
+	}
+
+	public int finalJobStatusIndex() {
+		return this.finalJobStatusIndex;
+	}
+
+	public Task finalJobStatusIndex(int finalJobStatusIndex) {
+		this.finalJobStatusIndex = finalJobStatusIndex;
 		return this;
 	}
 
@@ -257,21 +278,21 @@ public class Task implements Serializable {
 		}
 	}
 
-	public Collection<JobStatus> statiForPeer(PeerAddress peerAddress) {
+	public ArrayList<JobStatus> statiForPeer(PeerAddress peerAddress) {
 		synchronized (executingPeers) {
-			return this.executingPeers.get(peerAddress);
+			return new ArrayList<JobStatus>(this.executingPeers.get(peerAddress));
 		}
 	}
 
-	public Set<PeerAddress> allAssignedPeers() {
+	public ArrayList<PeerAddress> allAssignedPeers() {
 		synchronized (executingPeers) {
-			return executingPeers.keySet();
+			return new ArrayList<PeerAddress>(executingPeers.keySet());
 		}
 	}
 
 	@Override
 	public String toString() {
-		return "Task [id=" + id + ", jobId=" + jobId + ", procedure=" + procedure + ", keys=" + keys + ", executingPeers=" + executingPeers
+		return "Task [id=" + id + ", jobId=" + jobId + ", procedure=" + procedure + /* ", keys=" + keys + */", executingPeers=" + executingPeers
 				+ ", isFinished=" + isFinished + "]";
 	}
 
@@ -283,7 +304,7 @@ public class Task implements Serializable {
 
 		synchronized (executingPeers) {
 			synchronized (receivedTask) {
-				Set<PeerAddress> allAssignedPeers = receivedTask.allAssignedPeers();
+				ArrayList<PeerAddress> allAssignedPeers = receivedTask.allAssignedPeers();
 				for (PeerAddress peerAddress : allAssignedPeers) {
 					ArrayList<JobStatus> statiForReceivedPeer = new ArrayList<JobStatus>(receivedTask.statiForPeer(peerAddress));
 					ArrayList<JobStatus> jobStatiForPeer = new ArrayList<JobStatus>(this.executingPeers.get(peerAddress));
@@ -340,6 +361,7 @@ public class Task implements Serializable {
 
 	/**
 	 * WARNING only use this for testing purposes
+	 * 
 	 * @return
 	 */
 	public Task copyWithoutExecutingPeers() {
@@ -348,7 +370,7 @@ public class Task implements Serializable {
 		taskCopy.id = id;
 		taskCopy.jobId = jobId;
 		taskCopy.isFinished = isFinished;
-		taskCopy.keys = keys;// Shallow copy...
+		// taskCopy.keys = keys;// Shallow copy...
 		taskCopy.maxNrOfFinishedWorkers = maxNrOfFinishedWorkers;
 		taskCopy.procedure = procedure;
 		Multimap<PeerAddress, JobStatus> tmp = ArrayListMultimap.create();
@@ -357,6 +379,11 @@ public class Task implements Serializable {
 		// taskCopy.executingPeers.putAll(new PeerAddress(peerAddress.peerId()), executingPeers.get(peerAddress));
 		// }
 		return taskCopy;
+	}
+
+	@Override
+	public int compareTo(Task o) {
+		return this.id.compareTo(o.id);
 	}
 
 }

@@ -2,9 +2,9 @@ package mapreduce.server;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,18 +13,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Multimap;
+
 import mapreduce.execution.broadcasthandler.messageconsumer.MRJobExecutorMessageConsumer;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.computation.context.NullContext;
 import mapreduce.execution.jobtask.Job;
-import mapreduce.execution.jobtask.KeyValuePair;
 import mapreduce.execution.jobtask.Task;
 import mapreduce.execution.scheduling.ITaskScheduler;
-import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
 import mapreduce.execution.scheduling.RandomTaskScheduler;
 import mapreduce.storage.IDHTConnectionProvider;
-import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutor {
 	private static final ITaskScheduler DEFAULT_TASK_SCHEDULER = RandomTaskScheduler.newRandomTaskScheduler();
@@ -41,6 +40,7 @@ public class MRJobExecutor {
 	private BlockingQueue<Job> jobs;
 	private MRJobExecutorMessageConsumer messageConsumer;
 	private boolean canExecute;
+	private boolean canExecuteSameTaskMultipleTimes;
 
 	private MRJobExecutor(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
@@ -97,6 +97,15 @@ public class MRJobExecutor {
 		return this.canExecute;
 	}
 
+	public MRJobExecutor canExecuteSameTaskMultipleTimes(boolean canExecuteSameTaskMultipleTimes) {
+		this.canExecuteSameTaskMultipleTimes = canExecuteSameTaskMultipleTimes;
+		return this;
+	}
+
+	public boolean canExecuteSameTaskMultipleTimes() {
+		return this.canExecuteSameTaskMultipleTimes;
+	}
+
 	public Job getJob() {
 		return jobs.peek();
 	}
@@ -132,6 +141,9 @@ public class MRJobExecutor {
 		List<Task> tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex()));
 		Task task = null;
 		while ((task = this.taskScheduler().schedule(tasks)) != null && canExecute()) {
+			// if(!canExecuteSameTaskMultipleTimes()){ TODO
+			// while(task.all)
+			// }
 			this.dhtConnectionProvider().broadcastExecutingTask(task);
 			this.executeTask(task);
 			this.dhtConnectionProvider().broadcastFinishedTask(task);
@@ -150,15 +162,13 @@ public class MRJobExecutor {
 		this.context().task(task);
 		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-		final List<KeyValuePair<Object, Object>> dataForTask = dhtConnectionProvider().getDataForTask(task);
-		for (final Object key : task.keys()) {
+		final Multimap<Object, Object> dataForTask = dhtConnectionProvider().getDataForTask(task);
+		for (final Object key : dataForTask.keySet()) {
 			server.execute(new Runnable() {
 
 				@Override
 				public void run() {
-					for (KeyValuePair<Object, Object> kvPair : dataForTask) {
-						callProcedure(key, kvPair.value(), task.procedure());
-					}
+					callProcedure(key, dataForTask.get(key), task.procedure());
 				}
 			});
 		}
@@ -173,15 +183,12 @@ public class MRJobExecutor {
 
 	}
 
-	private void callProcedure(Object key, Object value, IMapReduceProcedure<?, ?, ?, ?> procedure) {
-		Method process = procedure.getClass().getMethods()[0];
+	private void callProcedure(Object key, Collection<Object> values, IMapReduceProcedure procedure) {
+
 		try {
-			process.invoke(procedure, new Object[] { key, value, context() });
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
+			Method process = procedure.getClass().getMethods()[0];
+			process.invoke(procedure, new Object[] { key, values, this.context() });
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

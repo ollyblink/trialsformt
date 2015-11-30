@@ -15,22 +15,22 @@ public final class ProcedureTaskTupel implements Comparable<ProcedureTaskTupel>,
 	public static final Integer DEFAULT_PROCEDURE_NUMBER_INCREMENT = 1;
 	private static Integer currentProcedureNumber = DEFAULT_FIRST_PROCEDURE_NUMBER;
 
-	private IMapReduceProcedure<?, ?, ?, ?> procedure;
+	private IMapReduceProcedure procedure;
 	private BlockingQueue<Task> tasks;
 	private Integer procedureNumber;
 
-	private ProcedureTaskTupel(IMapReduceProcedure<?, ?, ?, ?> procedure, BlockingQueue<Task> tasks) {
+	private ProcedureTaskTupel(IMapReduceProcedure procedure, BlockingQueue<Task> tasks) {
 		this.procedure = procedure;
 		this.tasks = tasks;
 		this.procedureNumber = currentProcedureNumber;
 		currentProcedureNumber += DEFAULT_PROCEDURE_NUMBER_INCREMENT;
 	}
 
-	public static ProcedureTaskTupel newProcedureTaskTupel(IMapReduceProcedure<?, ?, ?, ?> procedure, BlockingQueue<Task> tasks) {
+	public static ProcedureTaskTupel newProcedureTaskTupel(IMapReduceProcedure procedure, BlockingQueue<Task> tasks) {
 		return new ProcedureTaskTupel(procedure, tasks);
 	}
 
-	public IMapReduceProcedure<?, ?, ?, ?> procedure() {
+	public IMapReduceProcedure procedure() {
 		return procedure;
 	}
 

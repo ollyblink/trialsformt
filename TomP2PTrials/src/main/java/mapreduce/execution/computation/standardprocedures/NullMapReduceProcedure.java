@@ -1,5 +1,7 @@
 package mapreduce.execution.computation.standardprocedures;
 
+import java.util.Collection;
+
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 
@@ -9,7 +11,7 @@ import mapreduce.execution.computation.context.IContext;
  * @author ozihler
  *
  */
-public class NullMapReduceProcedure implements IMapReduceProcedure<Object, Object, Object, Object> {
+public class NullMapReduceProcedure implements IMapReduceProcedure {
 
 	/**
 	 * 
@@ -17,8 +19,8 @@ public class NullMapReduceProcedure implements IMapReduceProcedure<Object, Objec
 	private static final long serialVersionUID = -2732769543535949510L;
 
 	@Override
-	public void process(Object key, Object value, IContext context) {
-		context.write(key, value);
+	public void process(Object key, Collection<Object> values, IContext context) {
+		context.write(key, values);
 	}
 
 	@Override

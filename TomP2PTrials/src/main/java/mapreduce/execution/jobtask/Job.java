@@ -18,7 +18,6 @@ import mapreduce.utils.IDCreator;
 import net.tomp2p.peers.PeerAddress;
 
 public class Job implements Serializable {
-	
 
 	private static Logger logger = LoggerFactory.getLogger(Job.class);
 
@@ -78,7 +77,7 @@ public class Job implements Serializable {
 	 *            for this procedure
 	 * @return
 	 */
-	public Job nextProcedure(IMapReduceProcedure<?, ?, ?, ?> procedure, Task... tasks) {
+	public Job nextProcedure(IMapReduceProcedure procedure, Task... tasks) {
 		List<Task> tasksAsList = new ArrayList<Task>();
 		if (tasks != null) {
 			Collections.addAll(tasksAsList, tasks);
@@ -86,7 +85,7 @@ public class Job implements Serializable {
 		return nextProcedure(procedure, tasksAsList);
 	}
 
-	public Job nextProcedure(IMapReduceProcedure<?, ?, ?, ?> procedure, List<Task> tasks) {
+	public Job nextProcedure(IMapReduceProcedure procedure, List<Task> tasks) {
 		if (procedure == null) {
 			return this;
 		}
@@ -113,7 +112,7 @@ public class Job implements Serializable {
 		return this;
 	}
 
-	public IMapReduceProcedure<?, ?, ?, ?> firstProcedure() {
+	public IMapReduceProcedure firstProcedure() {
 		return procedureTaskTupel(0).procedure();
 	}
 
@@ -121,7 +120,7 @@ public class Job implements Serializable {
 		return procedureTaskTupel(0).tasks();
 	}
 
-	public IMapReduceProcedure<?, ?, ?, ?> lastProcedure() {
+	public IMapReduceProcedure lastProcedure() {
 		return procedureTaskTupel(procedures.size() - 1).procedure();
 	}
 
@@ -129,7 +128,7 @@ public class Job implements Serializable {
 		return procedureTaskTupel(procedures.size() - 1).tasks();
 	}
 
-	public IMapReduceProcedure<?, ?, ?, ?> procedure(int index) {
+	public IMapReduceProcedure procedure(int index) {
 		return procedureTaskTupel(index).procedure();
 	}
 
@@ -141,7 +140,7 @@ public class Job implements Serializable {
 		return this.procedures.get(index);
 	}
 
-	public BlockingQueue<Task> tasksFor(IMapReduceProcedure<?, ?, ?, ?> procedure) {
+	public BlockingQueue<Task> tasksFor(IMapReduceProcedure procedure) {
 		for (ProcedureTaskTupel tupel : procedures) {
 			if (tupel.procedure().equals(procedure)) {
 				return tupel.tasks();
@@ -216,7 +215,7 @@ public class Job implements Serializable {
 			++this.currentProcedureIndex;
 		}
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Job [jobSubmitterID=" + jobSubmitterID + ", id=" + id + "]";

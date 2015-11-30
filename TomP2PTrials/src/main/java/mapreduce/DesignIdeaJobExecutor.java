@@ -26,10 +26,10 @@ public class DesignIdeaJobExecutor {
 		} else {
 			dhtConnectionProvider.port(bootstrapPort);
 		}
-		MRJobExecutor jobExecutor = MRJobExecutor.newJobExecutor(dhtConnectionProvider).taskScheduler(MinAssignedWorkersTaskScheduler.newMinAssignedWorkersTaskScheduler().randomizeFirstTask(true)).canExecute(true);
+		MRJobExecutor jobExecutor = MRJobExecutor.newJobExecutor(dhtConnectionProvider)
+				.taskScheduler(MinAssignedWorkersTaskScheduler.newMinAssignedWorkersTaskScheduler().randomizeFirstTask(true)).canExecute(true)
+				.canExecuteSameTaskMultipleTimes(true);
 		jobExecutor.start();
-		while(true){
-			Thread.sleep(100);
-		}
+
 	}
 }

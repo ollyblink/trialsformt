@@ -79,7 +79,7 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 		}
 	}
 
-	public void handleFinishedTasks(String jobId, Collection<Task> tasks) {
+	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks) {
 		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
 				job.synchronizeFinishedTasksStati(tasks);

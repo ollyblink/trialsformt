@@ -22,7 +22,7 @@ public class FinishedAllTasksBCMessage extends AbstractBCMessage {
 
 	@Override
 	public void execute(IMessageConsumer messageConsumer) {
-		messageConsumer.handleFinishedTasks(jobId, tasks);
+		messageConsumer.handleFinishedAllTasks(jobId, tasks);
 	}
 
 	public FinishedAllTasksBCMessage jobId(String jobId) {

@@ -43,7 +43,7 @@ public class DHTConnectionProviderTest {
 		keys.add(JobStatus.EXECUTING_TASK);
 		keys.add(JobStatus.FINISHED_ALL_TASKS);
 		keys.add(JobStatus.DISTRIBUTED_JOB);
-		Task task = Task.newTask(IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName())).keys(keys);
+		Task task = Task.newInstance(IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName())).keys(keys);
 		for (Object o : keys) {
 			dhtConnectionProvider.addDataForTask(task.id(), o, 1);
 		}

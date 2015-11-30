@@ -3,27 +3,27 @@ package mapreduce.execution.jobtask;
 import java.io.Serializable;
 import java.util.Random;
 
-public class KeyValuePair<KEY, VALUE> implements Serializable {
+public class KeyValuePair implements Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -6638101010868136679L;
 	private static final Random RND = new Random();
 	private long id;
-	private KEY key;
-	private VALUE value;
+	private Object key;
+	private Object value;
 
-	public KeyValuePair(KEY key, VALUE value) {
+	public KeyValuePair(Object key, Object value) {
 		this.key = key;
 		this.value = value;
 		this.id = RND.nextLong();
 	}
 
-	public KEY key() {
+	public Object key() {
 		return this.key;
 	}
 
-	public VALUE value() {
+	public Object value() {
 		return this.value;
 	}
 
@@ -31,6 +31,5 @@ public class KeyValuePair<KEY, VALUE> implements Serializable {
 	public String toString() {
 		return "<" + id + ", " + key + ", " + value + ">";
 	}
- 
 
 }

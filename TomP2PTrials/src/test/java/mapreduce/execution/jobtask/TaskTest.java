@@ -19,7 +19,7 @@ public class TaskTest {
 	public static void setUpBeforeClass() throws Exception {
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
 
-		task = Task.newTask(jobId);
+		task = Task.newInstance(jobId);
 	}
 
 	@AfterClass

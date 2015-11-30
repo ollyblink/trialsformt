@@ -10,12 +10,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.jobtask.Job;
@@ -28,6 +32,8 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 	private static final String ENDCODING = "UTF-8";
 
 	private String tempFolderName;
+
+	private Multimap<Task, Comparable> keysForEachTask = TreeMultimap.create();
 
 	private MaxFileSizeTaskSplitter() {
 
@@ -72,18 +78,20 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 	}
 
 	private void createFinalTaskSplits(Job job, Collection<List<String>> allNewFileLocations) {
-		int taskCounter = 1;
-		IMapReduceProcedure<?, ?, ?, ?> procedure = job.procedure(job.currentProcedureIndex());
+		IMapReduceProcedure procedure = job.procedure(job.currentProcedureIndex());
+
 		if (procedure != null) {
 			List<Task> tasksForProcedure = new ArrayList<Task>();
 			for (List<String> locations : allNewFileLocations) {
-				for (String location : locations) {
-					List<String> keys = new ArrayList<String>();
-					keys.add(location);
-					tasksForProcedure.add(Task.newTask(job.id()).keys(keys).procedure(procedure)
-							.maxNrOfFinishedWorkers(job.maxNrOfFinishedWorkers()));
+
+				for (int i = 0; i < locations.size(); ++i) {
+					Task task = Task.newInstance(job.id()).procedure(procedure).maxNrOfFinishedWorkers(job.maxNrOfFinishedWorkers());
+					tasksForProcedure.add(task);
+					keysForEachTask.put(task, locations.get(i));
 				}
+
 			}
+
 			job.nextProcedure(procedure, tasksForProcedure);
 			System.err.println(job.currentProcedureIndex());
 			System.err.println(job.tasks(job.currentProcedureIndex()));
@@ -195,4 +203,10 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 			return this.tempFolderName;
 		}
 	}
+
+	@Override
+	public Multimap<Task, Comparable> keysForEachTask() {
+		return this.keysForEachTask;
+	}
+
 }

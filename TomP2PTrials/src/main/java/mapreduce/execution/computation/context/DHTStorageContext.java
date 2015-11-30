@@ -26,7 +26,7 @@ public class DHTStorageContext implements IContext {
 			return;
 		}
 
-		dhtConnectionProvider.addDataForTask(task.id(), keyOut, valueOut);
+		dhtConnectionProvider.addDataForTask(task, keyOut, valueOut);
 	}
 
 	public DHTStorageContext task(Task task) {

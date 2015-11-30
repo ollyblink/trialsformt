@@ -5,6 +5,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,6 +23,7 @@ import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
 
 public class MRJobSubmitter {
@@ -55,15 +60,22 @@ public class MRJobSubmitter {
 
 		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		for (final Task task : job.firstTasks()) {
+			// The next 2 lines are needed to keep the addDataForTask method generic and such that the job submitter acts similar to a job executor
+			// --------------------------------------------------------------
+			task.finalPeerAddress(this.dhtConnectionProvider().peerAddress());
+			task.finalJobStatusIndex(0);
+			// --------------------------------------------------------------
+
 			server.submit(new Runnable() {
 
 				@Override
 				public void run() {
-					for (Object key : task.keys()) {
+
+					for (final Comparable key : taskSplitter.keysForEachTask().get(task)) {
 						try {
 							String filePath = (String) key;
-							String lines = readLines(filePath);
-							dhtConnectionProvider.addDataForTask(task.id(), filePath, lines);
+							String lines = FileUtils.INSTANCE.readLines(filePath);
+							dhtConnectionProvider.addDataForTask(task, filePath, lines);
 							logger.warn("Added file with path " + filePath);
 						} catch (IOException e) {
 							logger.error("Exception", e);
@@ -71,16 +83,6 @@ public class MRJobSubmitter {
 					}
 				}
 
-				private String readLines(String filePath) throws FileNotFoundException, IOException {
-					BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)));
-					String line = null;
-					String lines = "";
-					while ((line = reader.readLine()) != null) {
-						lines += line + "\n";
-					}
-					reader.close();
-					return lines;
-				}
 			});
 		}
 		server.shutdown();
@@ -94,6 +96,8 @@ public class MRJobSubmitter {
 		dhtConnectionProvider.broadcastNewJob(job);
 		logger.info("broadcased job");
 	}
+
+	
 
 	public MRJobSubmitter dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
@@ -124,4 +128,13 @@ public class MRJobSubmitter {
 		return this.id;
 	}
 
+	public static void main(String[] args) {
+		Set<Object> set = new TreeSet<Object>();
+		List<String> vals = new ArrayList<String>();
+		vals.add("Hello");
+		vals.add("Hello");
+		vals.add("Hello");
+		set.addAll(vals);
+		System.err.println(set.size());
+	}
 }

@@ -85,7 +85,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleFinishedTasks(String jobId, Collection<Task> tasks) {
+	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks) {
 	}
 
 	@Override

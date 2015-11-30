@@ -13,6 +13,9 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+
 import mapreduce.execution.broadcasthandler.MRBroadcastHandler;
 import mapreduce.execution.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
 import mapreduce.execution.broadcasthandler.broadcastmessages.ExecuteOrFinishedTaskMessage;
@@ -36,10 +39,12 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageDisk;
 
 public class DHTConnectionProvider implements IDHTConnectionProvider {
+	private static final String KEY_LOCATION_PREAMBLE = "KEYS_FOR_";
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
 	private static final Random RND = new Random();
 
@@ -129,7 +134,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public DHTConnectionProvider connect() {
 		try {
 			this.port = port();
-			Peer peer = new PeerBuilder(Number160.createHash("DHTConnectionProvider_"+RND.nextLong())).ports(port).broadcastHandler(this.broadcastHandler).start();
+			Peer peer = new PeerBuilder(Number160.createHash("DHTConnectionProvider_" + RND.nextLong())).ports(port)
+					.broadcastHandler(this.broadcastHandler).start();
 			logger.warn("port: " + port);
 			if (bootstrapIP != null && bootstrapPort > 0) {
 				logger.warn(bootstrapIP + " " + bootstrapPort);
@@ -183,7 +189,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		IBCMessage message = FinishedAllTasksBCMessage.newInstance().jobId(job.id()).tasks(job.tasks(job.currentProcedureIndex()))
 				.sender(this.connectionPeer.peerAddress());
 
-		// TODO: SYNCHRONIZE TASK RESULT LISTS
 		broadcastJob(job, message);
 	}
 
@@ -231,12 +236,20 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public <KEY, VALUE> void addDataForTask(String taskId, final KEY key, final VALUE value) {
+	public void addDataForTask(Task task, final Object key, final Object value) {
 		try {
-			KeyValuePair<KEY, VALUE> taskResultTupel = new KeyValuePair<KEY, VALUE>(key, value);
-			FuturePut addData = this.connectionPeer.add(Number160.createHash(key.toString())).data(new Data(taskResultTupel))
-					.domainKey(Number160.createHash(taskId)).versionKey(connectionPeer.peerID()).start();
-			addData.addListener(new BaseFutureListener<FuturePut>() {
+			KeyValuePair taskResultTupel = new KeyValuePair(key, value);
+			PeerAddress peerAddress = connectionPeer.peerAddress();
+
+			String domain = domain(task, peerAddress);
+
+			Number160 domainKey = Number160.createHash(domain);
+
+			Number160 keyHash = Number160.createHash(key.toString());
+
+			Data valueData = new Data(taskResultTupel);
+
+			this.connectionPeer.add(keyHash).data(valueData).domainKey(domainKey).start().addListener(new BaseFutureListener<FuturePut>() {
 
 				@Override
 				public void operationComplete(FuturePut future) throws Exception {
@@ -253,22 +266,68 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 				}
 
 			});
+
+			addTaskKey(task, key);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	@Override
-	public <KEY, VALUE> List<KeyValuePair<KEY, VALUE>> getDataForTask(Task task) {
-		final List<KeyValuePair<KEY, VALUE>> values = new ArrayList<KeyValuePair<KEY, VALUE>>();
-		for (int i = 0; i < task.keys().size(); ++i) {
-			FutureGet getFuture = connectionPeer.get(Number160.createHash(task.keys().get(i).toString())).domainKey(Number160.createHash(task.id()))
-					.versionKey(connectionPeer.peerID()).all().start();
+	public void addTaskKey(final Task task, final Object key) {
+		try {
+			String domain = domain(task, connectionPeer.peerAddress());
+
+			Number160 domainKey = Number160.createHash(domain);
+
+			Number160 keyLocationHash = Number160.createHash(KEY_LOCATION_PREAMBLE + domain);
+
+			this.connectionPeer.add(keyLocationHash).data(new Data(key.toString())).domainKey(domainKey).start()
+					.addListener(new BaseFutureListener<FuturePut>() {
+
+						@Override
+						public void operationComplete(FuturePut future) throws Exception {
+							if (future.isSuccess()) {
+								logger.debug("Successfully added key " + key);
+							} else {
+								logger.error("Could not put key " + key);
+							}
+						}
+
+						@Override
+						public void exceptionCaught(Throwable t) throws Exception {
+							logger.debug("Exception caught", t);
+						}
+
+					});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private String domain(Task task, PeerAddress peerAddress) {
+		Number160 peerId = peerAddress.peerId();
+		int jobStatusIndex = task.statiForPeer(peerAddress).size() - 1;
+		String domain = task.id() + task.procedure().getClass().getSimpleName() + peerId + jobStatusIndex;
+		return domain;
+	}
+
+	@Override
+	public Multimap<Object, Object> getDataForTask(Task task) {
+		final Multimap<Object, Object> taskKeyValues = ArrayListMultimap.create();
+
+		String domain = domain(task, task.finalPeerAddress());
+		Number160 domainKey = Number160.createHash(domain);
+		List<Object> taskKeys = getTaskKeys(task);
+
+		for (int i = 0; i < taskKeys.size(); ++i) {
+			FutureGet getFuture = connectionPeer.get(Number160.createHash(taskKeys.get(i).toString())).domainKey(domainKey).all().start();
 			getFuture.awaitUninterruptibly();
 			if (getFuture.isSuccess()) {
 				try {
 					if (getFuture.data() != null) {
-						values.add((KeyValuePair<KEY, VALUE>) getFuture.data().object());
+						KeyValuePair kvPair = (KeyValuePair) getFuture.data().object();
+						taskKeyValues.put(kvPair.key(), kvPair.value());
 					} else {
 						logger.warn("future data is null!");
 					}
@@ -279,7 +338,31 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 				}
 			}
 		}
-		return values;
+		return taskKeyValues;
+	}
+
+	@Override
+	public List<Object> getTaskKeys(Task task) {
+		List<Object> keys = new ArrayList<Object>();
+		String domain = domain(task, task.finalPeerAddress());
+		Number160 domainKey = Number160.createHash(domain);
+		Number160 keyLocationHash = Number160.createHash(KEY_LOCATION_PREAMBLE + domain);
+		FutureGet getFuture = connectionPeer.get(keyLocationHash).domainKey(domainKey).all().start();
+		getFuture.awaitUninterruptibly();
+		if (getFuture.isSuccess()) {
+			try {
+				if (getFuture.data() != null) {
+					keys.add((Object) getFuture.data().object());
+				} else {
+					logger.warn("future task key data is null!");
+				}
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return keys;
 	}
 
 	@Override
@@ -323,6 +406,11 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public String peerAddressString() {
 		return connectionPeer.peerAddress().inetAddress() + ":" + connectionPeer.peerAddress().tcpPort();
+	}
+
+	@Override
+	public PeerAddress peerAddress() {
+		return connectionPeer.peerAddress();
 	}
 
 }

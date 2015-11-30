@@ -12,7 +12,7 @@ import net.tomp2p.peers.PeerAddress;
 public interface IMessageConsumer extends Runnable {
 	public void addJob(Job job);
 	public void updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus);
-	public void handleFinishedTasks(String jobId, Collection<Task> tasks); 
+	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks); 
 	public void handleFinishedJob(String jobId, String jobSubmitterId);
 	public BlockingQueue<IBCMessage> queue();
 	public BlockingQueue<Job> jobs();

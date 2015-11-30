@@ -24,10 +24,10 @@ public class JobTest {
 	public void testNextProcedure() {
 		List<Task> tasksForProcedure = new ArrayList<Task>();
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
-		tasksForProcedure.add(Task.newTask(jobId));
-		tasksForProcedure.add(Task.newTask(jobId));
-		tasksForProcedure.add(Task.newTask(jobId));
-		tasksForProcedure.add(Task.newTask(jobId));
+		tasksForProcedure.add(Task.newInstance(jobId));
+		tasksForProcedure.add(Task.newInstance(jobId));
+		tasksForProcedure.add(Task.newInstance(jobId));
+		tasksForProcedure.add(Task.newInstance(jobId));
 		Job job = Job.newInstance("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(new WordCountMapper(), tasksForProcedure);
 		assertTrue(job.currentProcedureIndex() == 0);
 		job.incrementProcedureNumber();
@@ -42,8 +42,8 @@ public class JobTest {
 		assertTrue(job.currentProcedureIndex() == 0);
 
 		List<Task> tasksForProcedure2 = new ArrayList<Task>();
-		tasksForProcedure2.add(Task.newTask(jobId));
-		tasksForProcedure2.add(Task.newTask(jobId));
+		tasksForProcedure2.add(Task.newInstance(jobId));
+		tasksForProcedure2.add(Task.newInstance(jobId));
 		job.nextProcedure(new NullMapReduceProcedure(), tasksForProcedure2);
 
 		assertTrue(job.currentProcedureIndex() == 0);
@@ -63,8 +63,8 @@ public class JobTest {
 	public void testUpdateTaskStati() {
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
 		List<Task> tasksForProcedure = new ArrayList<Task>();
-		tasksForProcedure.add(Task.newTask(jobId));
-		tasksForProcedure.add(Task.newTask(jobId));
+		tasksForProcedure.add(Task.newInstance(jobId));
+		tasksForProcedure.add(Task.newInstance(jobId));
 		Job job = Job.newInstance("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(new WordCountMapper(), tasksForProcedure);
 		ArrayList<Task> list = new ArrayList<Task>(tasksForProcedure);
 		PeerAddress[] peers = new PeerAddress[3];
