@@ -1,7 +1,6 @@
 package mapreduce.execution.broadcasthandler.messageconsumer;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -9,10 +8,6 @@ import java.util.concurrent.PriorityBlockingQueue;
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
 import mapreduce.execution.broadcasthandler.messageconsumer.jobstatusmanager.AbstractJobStatusManager;
-import mapreduce.execution.broadcasthandler.messageconsumer.jobstatusmanager.DistributedJobJobStatusManager;
-import mapreduce.execution.broadcasthandler.messageconsumer.jobstatusmanager.ExecutingAndFinishedJobJobStatusManager;
-import mapreduce.execution.broadcasthandler.messageconsumer.jobstatusmanager.FinishedAllTasksJobStatusManager;
-import mapreduce.execution.broadcasthandler.messageconsumer.jobstatusmanager.FinishedTaskJobStatusManager;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
 import mapreduce.server.MRJobExecutor;
@@ -70,8 +65,8 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	public void updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus) {
-		logger.warn("Updating task " + taskId + ", " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + ", " + currentStatus
-				+ ", number of jobs: " + jobs.size());
+		// logger.warn("Updating task " + taskId + ", " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + ", " + currentStatus
+		// + ", number of jobs: " + jobs.size());
 		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
 				job.updateTaskStatus(taskId, peerAddress, currentStatus);
@@ -79,11 +74,47 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 		}
 	}
 
-	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks) {
+	@Override
+	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender) {
+		if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
+			return;
+		}
+		jobExecutor.abortTaskExecution();
 		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
 				job.synchronizeFinishedTasksStati(tasks);
 			}
+			removeRemainingMessagesForThisTask(jobId);
+			// this.jobExecutor.dhtConnectionProvider().broadcastFinishedAllTasks(job);
+
+		}
+
+		for (Job job : jobs) {
+			if (job.id().equals(jobId)) {
+				BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
+				for (Task t : ts) {
+					System.err.println("Task " + t.id());
+					for (PeerAddress pAddress : t.allAssignedPeers()) {
+						System.err.println(pAddress.inetAddress() + ":" + pAddress.tcpPort() + ": " + t.statiForPeer(pAddress));
+					}
+				}
+			}
+		}
+	}
+
+	public void removeRemainingMessagesForThisTask(String jobId) {
+		synchronized (bcMessages) {
+			BlockingQueue<IBCMessage> remainingBCMessages = new PriorityBlockingQueue<IBCMessage>();
+
+			for (IBCMessage message : bcMessages) {
+				if (!message.jobId().equals(jobId)) {
+					remainingBCMessages.add(message);
+					logger.warn("Kept message: " + message);
+				} else {
+					logger.warn("Removed message: " + message);
+				}
+			}
+			this.bcMessages = remainingBCMessages;
 		}
 	}
 

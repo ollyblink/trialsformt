@@ -1,10 +1,13 @@
 package mapreduce.execution.broadcasthandler.messageconsumer;
 
+import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.execution.jobtask.Job;
+import mapreduce.execution.jobtask.Task;
+import net.tomp2p.peers.PeerAddress;
 
 public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
 	private String jobSubmitterID;
@@ -32,6 +35,12 @@ public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
 
 	@Override
 	protected void handleBCMessage(IBCMessage nextMessage) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender) {
 		// TODO Auto-generated method stub
 		
 	}

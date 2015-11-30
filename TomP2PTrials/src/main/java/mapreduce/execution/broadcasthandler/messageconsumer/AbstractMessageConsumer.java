@@ -32,17 +32,16 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	protected BlockingQueue<Job> jobs;
 
 	private boolean canTake;
- 
 
 	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, BlockingQueue<Job> jobs) {
 		this.bcMessages = bcMessages;
-		this.jobs = jobs; 
+		this.jobs = jobs;
 	}
 
 	@Override
 	public void run() {
 		try {
-			while (canTake()) { 
+			while (canTake()) {
 				final IBCMessage nextMessage = bcMessages.take();
 				handleBCMessage(nextMessage);
 			}
@@ -85,10 +84,12 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks) {
+	public void handleFinishedJob(String jobId, String jobSubmitterId) {
 	}
 
 	@Override
-	public void handleFinishedJob(String jobId, String jobSubmitterId) {
+	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender) {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -16,4 +16,6 @@ public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
 
 	public Long creationTime();
 
+	public String jobId();
+
 }

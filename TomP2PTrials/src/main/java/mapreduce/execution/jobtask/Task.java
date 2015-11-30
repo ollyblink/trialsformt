@@ -3,9 +3,8 @@ package mapreduce.execution.jobtask;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -286,7 +285,8 @@ public class Task implements Serializable, Comparable<Task> {
 
 	public ArrayList<PeerAddress> allAssignedPeers() {
 		synchronized (executingPeers) {
-			return new ArrayList<PeerAddress>(executingPeers.keySet());
+			Set<PeerAddress> peers = executingPeers.keySet();
+			return new ArrayList<PeerAddress>(peers);
 		}
 	}
 
@@ -297,40 +297,32 @@ public class Task implements Serializable, Comparable<Task> {
 	}
 
 	public void synchronizeFinishedTaskStatiWith(Task receivedTask) {
-		logger.info("before update");
-		for (PeerAddress p : allAssignedPeers()) {
-			logger.info("task " + id() + "<" + p.peerId() + ", " + p.inetAddress() + ":" + p.tcpPort() + ">," + statiForPeer(p));
-		}
 
 		synchronized (executingPeers) {
 			synchronized (receivedTask) {
 				ArrayList<PeerAddress> allAssignedPeers = receivedTask.allAssignedPeers();
 				for (PeerAddress peerAddress : allAssignedPeers) {
-					ArrayList<JobStatus> statiForReceivedPeer = new ArrayList<JobStatus>(receivedTask.statiForPeer(peerAddress));
-					ArrayList<JobStatus> jobStatiForPeer = new ArrayList<JobStatus>(this.executingPeers.get(peerAddress));
-					if (jobStatiForPeer.size() < statiForReceivedPeer.size()) {
-						jobStatiForPeer = new ArrayList<JobStatus>();
-						for (int i = 0; i < statiForReceivedPeer.size(); ++i) {
-							jobStatiForPeer.add(statiForReceivedPeer.get(i));
-						}
-					} else if (jobStatiForPeer.size() == statiForReceivedPeer.size()) { // In that case, update all executing to finished...
-
-						for (int i = 0; i < jobStatiForPeer.size(); ++i) {
-							if (jobStatiForPeer.get(i).equals(JobStatus.EXECUTING_TASK)
-									&& statiForReceivedPeer.get(i).equals(JobStatus.FINISHED_TASK)) {
-								jobStatiForPeer.set(i, JobStatus.FINISHED_TASK);
-							}
-						}
-					}
+					// ArrayList<JobStatus> statiForReceivedPeer = new ArrayList<JobStatus>(receivedTask.statiForPeer(peerAddress));
+					// ArrayList<JobStatus> jobStatiForPeer = new ArrayList<JobStatus>(this.executingPeers.get(peerAddress));
+					// if (jobStatiForPeer.size() > statiForReceivedPeer.size()) {
+					// jobStatiForPeer = new ArrayList<JobStatus>();
+					// for (int i = 0; i < statiForReceivedPeer.size(); ++i) {
+					// jobStatiForPeer.add(statiForReceivedPeer.get(i));
+					// }
+					// } else if (jobStatiForPeer.size() == statiForReceivedPeer.size()) { // In that case, update all executing to finished...
+					//
+					// for (int i = 0; i < jobStatiForPeer.size(); ++i) {
+					// if (jobStatiForPeer.get(i).equals(JobStatus.FINISHED_TASK)
+					// && statiForReceivedPeer.get(i).equals(JobStatus.EXECUTING_TASK)) {
+					// jobStatiForPeer.set(i, JobStatus.FINISHED_TASK);
+					// }
+					// }
+					// }
 					this.executingPeers.removeAll(peerAddress);
-					this.executingPeers.putAll(peerAddress, jobStatiForPeer);
+					this.executingPeers.putAll(peerAddress, receivedTask.statiForPeer(peerAddress));
 				}
 			}
 
-			logger.info("after update");
-			for (PeerAddress p : allAssignedPeers()) {
-				logger.info("task " + id() + "<" + p.peerId() + ", " + p.inetAddress() + ":" + p.tcpPort() + ">," + statiForPeer(p));
-			}
 		}
 	}
 

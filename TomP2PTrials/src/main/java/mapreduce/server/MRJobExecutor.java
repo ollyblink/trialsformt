@@ -1,14 +1,15 @@
 package mapreduce.server;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ import mapreduce.execution.jobtask.Task;
 import mapreduce.execution.scheduling.ITaskScheduler;
 import mapreduce.execution.scheduling.RandomTaskScheduler;
 import mapreduce.storage.IDHTConnectionProvider;
+import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutor {
 	private static final ITaskScheduler DEFAULT_TASK_SCHEDULER = RandomTaskScheduler.newRandomTaskScheduler();
@@ -41,6 +43,10 @@ public class MRJobExecutor {
 	private MRJobExecutorMessageConsumer messageConsumer;
 	private boolean canExecute;
 	private boolean canExecuteSameTaskMultipleTimes;
+	private boolean isExecutingTask;
+	private ThreadPoolExecutor server;
+	private List<Future<?>> currentThreads = new ArrayList<Future<?>>();
+	private boolean abortedTaskExecution;
 
 	private MRJobExecutor(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
@@ -138,21 +144,36 @@ public class MRJobExecutor {
 	}
 
 	private void executeJob(Job job) {
+		this.abortedTaskExecution = false;
 		List<Task> tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex()));
 		Task task = null;
 		while ((task = this.taskScheduler().schedule(tasks)) != null && canExecute()) {
 			// if(!canExecuteSameTaskMultipleTimes()){ TODO
 			// while(task.all)
 			// }
+			this.isExecutingTask = true;
 			this.dhtConnectionProvider().broadcastExecutingTask(task);
 			this.executeTask(task);
+			this.isExecutingTask = false;
 			this.dhtConnectionProvider().broadcastFinishedTask(task);
 		}
 		if (!canExecute()) {
 			System.err.println("Cannot execute! use MRJobSubmitter::canExecute(true) to enable execution");
 		}
+
+		if (!this.abortedTaskExecution) { //this means that this executor is actually the one that aborted the others...
+			this.dhtConnectionProvider().broadcastFinishedAllTasks(job);
+			// abortTaskExecution();
+			messageConsumer.removeRemainingMessagesForThisTask(job.id());
+			BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
+			for (Task t : ts) {
+				System.err.println("Task " + t.id());
+				for (PeerAddress pAddress : t.allAssignedPeers()) {
+					System.err.println(pAddress.inetAddress() + ":" + pAddress.tcpPort() + ": " + t.statiForPeer(pAddress));
+				}
+			}
+		}
 		// all tasks finished, broadcast result
-		this.dhtConnectionProvider().broadcastFinishedAllTasks(job);
 		// jobs.poll();
 		// startExecuting();
 
@@ -160,17 +181,20 @@ public class MRJobExecutor {
 
 	private void executeTask(final Task task) {
 		this.context().task(task);
-		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		int nThreads = Runtime.getRuntime().availableProcessors();
+		this.server = new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
 		final Multimap<Object, Object> dataForTask = dhtConnectionProvider().getDataForTask(task);
 		for (final Object key : dataForTask.keySet()) {
-			server.execute(new Runnable() {
+			Runnable run = new Runnable() {
 
 				@Override
 				public void run() {
 					callProcedure(key, dataForTask.get(key), task.procedure());
 				}
-			});
+			};
+			Future<?> submit = server.submit(run);
+			this.currentThreads.add(submit);
 		}
 		server.shutdown();
 		while (!server.isTerminated()) {
@@ -191,6 +215,25 @@ public class MRJobExecutor {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void abortTaskExecution() {
+		this.abortedTaskExecution = true;
+		System.err.println("Aborting task");
+		if (!server.isTerminated() && server.getActiveCount() > 0) {
+			for (Future<?> run : this.currentThreads) {
+				run.cancel(true);
+			}
+			server.shutdown();
+			while (!server.isTerminated()) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		System.err.println("Task aborted");
 	}
 
 	// End Execution

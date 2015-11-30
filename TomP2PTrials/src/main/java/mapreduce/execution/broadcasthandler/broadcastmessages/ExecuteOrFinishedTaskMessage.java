@@ -55,4 +55,9 @@ public class ExecuteOrFinishedTaskMessage extends AbstractBCMessage {
 		return "ExecuteOrFinishedTaskMessage [taskId=" + taskId + ", jobId=" + jobId + ", status=" + status + "]";
 	}
 
+	@Override
+	public String jobId() {
+		return jobId;
+	}
+
 }

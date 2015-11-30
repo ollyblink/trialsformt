@@ -40,4 +40,9 @@ public class FinishedJobBCMessage extends AbstractBCMessage {
 	public FinishedJobBCMessage sender(PeerAddress peerAddress) {
 		return (FinishedJobBCMessage) super.sender(peerAddress);
 	}
+
+	@Override
+	public String jobId() {
+		return jobId;
+	}	
 }
