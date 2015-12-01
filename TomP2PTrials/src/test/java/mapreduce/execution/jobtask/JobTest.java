@@ -10,7 +10,7 @@ import java.util.concurrent.BlockingQueue;
 
 import org.junit.Test;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
+import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.execution.computation.ProcedureTaskTupel;
 import mapreduce.execution.computation.standardprocedures.NullMapReduceProcedure;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
@@ -71,21 +71,21 @@ public class JobTest {
 		peers[0] = new PeerAddress(Number160.createHash("1"));
 		peers[1] = new PeerAddress(Number160.createHash("2"));
 
-		job.updateTaskStatus(tasksForProcedure.get(0).id(), peers[0], JobStatus.EXECUTING_TASK);
+		job.updateTaskExecutionStatus(tasksForProcedure.get(0).id(), peers[0], BCStatusType.EXECUTING_TASK);
 		assertTrue(list.get(0).allAssignedPeers().contains(peers[0]));
-		assertTrue(list.get(0).statiForPeer(peers[0]).contains(JobStatus.EXECUTING_TASK));
+		assertTrue(list.get(0).statiForPeer(peers[0]).contains(BCStatusType.EXECUTING_TASK));
 
-		job.updateTaskStatus(tasksForProcedure.get(0).id(), peers[0], JobStatus.FINISHED_TASK);
+		job.updateTaskExecutionStatus(tasksForProcedure.get(0).id(), peers[0], BCStatusType.FINISHED_TASK);
 		assertTrue(list.get(0).allAssignedPeers().contains(peers[0]));
-		assertTrue(list.get(0).statiForPeer(peers[0]).contains(JobStatus.FINISHED_TASK));
+		assertTrue(list.get(0).statiForPeer(peers[0]).contains(BCStatusType.FINISHED_TASK));
 
-		job.updateTaskStatus(tasksForProcedure.get(1).id(), peers[1], JobStatus.EXECUTING_TASK);
+		job.updateTaskExecutionStatus(tasksForProcedure.get(1).id(), peers[1], BCStatusType.EXECUTING_TASK);
 		assertTrue(list.get(1).allAssignedPeers().contains(peers[1]));
-		assertTrue(list.get(1).statiForPeer(peers[1]).contains(JobStatus.EXECUTING_TASK));
+		assertTrue(list.get(1).statiForPeer(peers[1]).contains(BCStatusType.EXECUTING_TASK));
 
-		job.updateTaskStatus(tasksForProcedure.get(1).id(), peers[1], JobStatus.FINISHED_TASK);
+		job.updateTaskExecutionStatus(tasksForProcedure.get(1).id(), peers[1], BCStatusType.FINISHED_TASK);
 		assertTrue(list.get(1).allAssignedPeers().contains(peers[1]));
-		assertTrue(list.get(1).statiForPeer(peers[1]).contains(JobStatus.FINISHED_TASK));
+		assertTrue(list.get(1).statiForPeer(peers[1]).contains(BCStatusType.FINISHED_TASK));
 
 	}
 

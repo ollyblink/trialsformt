@@ -17,7 +17,7 @@ public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
 		this.jobSubmitterID = jobSubmitterID;
 	}
 
-	public static MRJobSubmitterMessageConsumer newMRJobSubmitterMessageConsumer(String jobSubmitterID, BlockingQueue<Job> jobs) {
+	public static MRJobSubmitterMessageConsumer newInstance(String jobSubmitterID, BlockingQueue<Job> jobs) {
 		return new MRJobSubmitterMessageConsumer(jobSubmitterID, new PriorityBlockingQueue<IBCMessage>(), jobs);
 	}
 

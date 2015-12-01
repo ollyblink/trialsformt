@@ -1,4 +1,4 @@
-package mapreduce.execution.taskcomparison;
+package mapreduce.execution.taskresultcomparison;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,8 +10,8 @@ import org.junit.Test;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import mapreduce.execution.taskcomparison.HashTaskResultComparisonStrategy;
-import mapreduce.execution.taskcomparison.ITaskResultComparisonStrategy;
+import mapreduce.execution.taskresultcomparison.HashTaskResultComparator;
+import mapreduce.execution.taskresultcomparison.ITaskResultComparator;
 
 public class CompareResultsHashMajorityVoteTest {
 
@@ -27,22 +27,21 @@ public class CompareResultsHashMajorityVoteTest {
 	public void test() {
 //		ITaskResultComparisonStrategy<> comparator = HashTaskResultComparisonStrategy.newInstance();
 
-		List<String> results = new ArrayList<String>();
+		List<Integer> results = new ArrayList<Integer>();
 
-		results.add("1 1 1 1 1");
-		results.add("1 1 1 1 1 1");
-		results.add("1 1 1 1");
-		results.add("1 1 1 1 1 1");
-		results.add("1 1 1 1");
+		results.add(6+2+3+2);
+		results.add(13);
+		results.add(10+1+1+1);
+		results.add(4+4+4+1); 
 		
 //		comparator.evaluateFinalResult();
 
-		Multimap<String, Integer> hash = ArrayListMultimap.create();
-		for (String s : results) {
+		Multimap<Integer, Integer> hash = ArrayListMultimap.create();
+		for (Integer s : results) {
 			hash.put(s, 1);
 		}
 
-		for (String s : hash.keySet()) {
+		for (Integer s : hash.keySet()) {
 			System.out.println(s + ": " + hash.get(s).size());
 			System.err.println(hash.get(s));
 		}

@@ -9,12 +9,11 @@ public class FinishedJobBCMessage extends AbstractBCMessage {
 	 * 
 	 */
 	private static final long serialVersionUID = 7088496407737205759L;
-	private String jobId;
 	private String jobSubmitterId;
 
 	@Override
-	public JobStatus status() {
-		return JobStatus.FINISHED_JOB;
+	public BCStatusType status() {
+		return BCStatusType.FINISHED_JOB;
 	}
 
 	@Override

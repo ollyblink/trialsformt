@@ -102,9 +102,10 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		// for(Task task: tasks){
 		// Mockito.when(task.isFinished()).thenReturn(true);
 		// }
+		taskScheduler.randomizeFirstTask(false);
 		Task task1 = taskScheduler.schedule(tasks);
 
-		assertTrue("task id 8", task1.id().equals("8"));
+		assertEquals(task1.id(), ("8"));
 		assertTrue("task id 8", tasks.get(0).id().equals("8"));
 		assertTrue("task id 3", tasks.get(1).id().equals("3"));
 		assertTrue("task id 9", tasks.get(2).id().equals("9"));
@@ -115,7 +116,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		assertTrue("task id 7", tasks.get(7).id().equals("7"));
 		assertTrue("task id 1", tasks.get(8).id().equals("1"));
 		assertTrue("task id 2", tasks.get(9).id().equals("2"));
-	}
+ 	}
 
 	@Test
 	public void testRandomised() {

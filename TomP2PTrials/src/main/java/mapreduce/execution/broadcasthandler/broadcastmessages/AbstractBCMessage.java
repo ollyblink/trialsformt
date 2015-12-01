@@ -9,6 +9,8 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	 */
 	private static final long serialVersionUID = -2040511707608747442L;
 	protected PeerAddress sender;
+	protected String jobId;
+
 	private Long creationTime = System.currentTimeMillis();;
 
 	@Override
@@ -39,5 +41,14 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	public Long creationTime() {
 		return this.creationTime;
 	}
+	
+	public AbstractBCMessage jobId(String jobId){
+		this.jobId = jobId;
+		return this;
+	}
 
+	@Override
+	public String jobId() {
+		return jobId;
+	}
 }

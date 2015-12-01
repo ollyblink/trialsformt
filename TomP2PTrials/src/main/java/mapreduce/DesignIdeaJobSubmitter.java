@@ -2,7 +2,7 @@ package mapreduce;
 
 import java.io.File;
 
-import mapreduce.client.MRJobSubmitter;
+import mapreduce.client.MRJobSubmissionManager;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.storage.DHTConnectionProvider;
@@ -16,7 +16,7 @@ public class DesignIdeaJobSubmitter {
 		String bootstrapIP = "192.168.43.234";
 		int bootstrapPort = 4000;
 
-		MRJobSubmitter submitter = MRJobSubmitter
+		MRJobSubmissionManager submitter = MRJobSubmissionManager
 				.newInstance(DHTConnectionProvider.newInstance().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
@@ -28,7 +28,7 @@ public class DesignIdeaJobSubmitter {
 		int maxNumberOfFinishedPeers = 3;
 		Job job = Job.newInstance(submitter.id()).nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(FileSizes.THIRTY_TWO_KILO_BYTE.value());
-		submitter.submit(job);
+		submitter.submit(job, true);
 		//
 		//
 		// DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP)

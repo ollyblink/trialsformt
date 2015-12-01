@@ -1,49 +1,27 @@
 package mapreduce.execution.broadcasthandler.messageconsumer;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
-import mapreduce.execution.broadcasthandler.messageconsumer.jobstatusmanager.AbstractJobStatusManager;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
-import mapreduce.server.MRJobExecutor;
+import mapreduce.server.MRJobExecutionManager;
 import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 
-	private MRJobExecutor jobExecutor;
-	private Map<JobStatus, AbstractJobStatusManager> managers;
+	private MRJobExecutionManager jobExecutor;
 
 	private MRJobExecutorMessageConsumer(BlockingQueue<IBCMessage> bcMessages, BlockingQueue<Job> jobs) {
 		super(bcMessages, jobs);
-		// managers = new HashMap<JobStatus, AbstractJobStatusManager>();
-		// AbstractJobStatusManager manager = ExecutingAndFinishedJobJobStatusManager.newInstance();
-		// managers.put(JobStatus.EXECUTING_TASK, manager);
-		// managers.put(JobStatus.FINISHED_TASK, manager);
-		// managers.put(JobStatus.TASK_FAILED, manager);
-		// manager.start();
-		// manager = DistributedJobJobStatusManager.newInstance();
-		// managers.put(JobStatus.DISTRIBUTED_JOB, manager);
-		// manager = FinishedAllTasksJobStatusManager.newInstance();
-		// manager.start();
-		// managers.put(JobStatus.FINISHED_ALL_TASKS, manager);
-		// manager = FinishedTaskJobStatusManager.newInstance();
-		// manager.start();
-		// managers.put(JobStatus.FINISHED_JOB, manager);
 
 	}
 
-	public static MRJobExecutorMessageConsumer newMRJobExecutorMessageConsumer(BlockingQueue<Job> jobs) {
+	public static MRJobExecutorMessageConsumer newInstance(BlockingQueue<Job> jobs) {
 		return new MRJobExecutorMessageConsumer(new PriorityBlockingQueue<IBCMessage>(), jobs);
-	}
-
-	@Override
-	protected void handleBCMessage(IBCMessage message) {
-		message.execute(this);
 	}
 
 	/**
@@ -52,24 +30,34 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 	 * @param mrJobExecutor
 	 * @return
 	 */
-	public MRJobExecutorMessageConsumer jobExecutor(MRJobExecutor mrJobExecutor) {
+	public MRJobExecutorMessageConsumer jobExecutor(MRJobExecutionManager mrJobExecutor) {
 		this.jobExecutor = mrJobExecutor;
 		return this;
 	}
 
-	public void addJob(Job job) {
+	@Override
+	public MRJobExecutorMessageConsumer canTake(boolean canTake) {
+		return (MRJobExecutorMessageConsumer) super.canTake(canTake);
+	}
+
+	@Override
+	protected void handleBCMessage(IBCMessage message) {
+		message.execute(this);
+	}
+
+	@Override
+	public void handleReceivedJob(Job job) {
 		logger.warn("Adding new job " + job.id());
 		if (!jobs.contains(job)) {
 			jobs.add(job);
 		}
 	}
 
-	public void updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus) {
-		// logger.warn("Updating task " + taskId + ", " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + ", " + currentStatus
-		// + ", number of jobs: " + jobs.size());
+	@Override
+	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, PeerAddress peerAddress, BCStatusType currentStatus) {
 		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
-				job.updateTaskStatus(taskId, peerAddress, currentStatus);
+				job.updateTaskExecutionStatus(taskId, peerAddress, currentStatus);
 			}
 		}
 	}
@@ -79,20 +67,25 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 		if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
 			return;
 		}
+		logger.info("This executor has its task execution aborted!");
+
 		jobExecutor.abortTaskExecution();
 		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
+				this.isBusy(true);
 				job.synchronizeFinishedTasksStati(tasks);
-			}
-			removeRemainingMessagesForThisTask(jobId);
-			if (job.id().equals(jobId)) {
+
+				removeRemainingMessagesForThisTask(jobId);
+
+				// Only printing
 				BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
 				for (Task t : ts) {
-					System.err.println("Task " + t.id());
+					logger.info("Task " + t.id());
 					for (PeerAddress pAddress : t.allAssignedPeers()) {
-						System.err.println(pAddress.inetAddress() + ":" + pAddress.tcpPort() + ": " + t.statiForPeer(pAddress));
+						logger.info(pAddress.inetAddress() + ":" + pAddress.tcpPort() + ": " + t.statiForPeer(pAddress));
 					}
 				}
+				this.isBusy(false);
 			}
 		}
 	}
@@ -111,11 +104,6 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 			}
 			this.bcMessages = remainingBCMessages;
 		}
-	}
-
-	@Override
-	public MRJobExecutorMessageConsumer canTake(boolean canTake) {
-		return (MRJobExecutorMessageConsumer) super.canTake(canTake);
 	}
 
 }

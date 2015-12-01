@@ -11,8 +11,7 @@ import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {
 
-	public IDHTConnectionProvider connect();
-
+	// DHT access
 	/**
 	 * to store the data for each key produced by this peer
 	 * 
@@ -20,7 +19,7 @@ public interface IDHTConnectionProvider {
 	 * @param key
 	 * @param value
 	 */
-	public void addDataForTask(Task task, final Object key, final Object value);
+	public void addTaskData(Task task, final Object key, final Object value, boolean awaitUninterruptibly);
 
 	/**
 	 * to store the keys produced for this task by this peer
@@ -28,7 +27,7 @@ public interface IDHTConnectionProvider {
 	 * @param task
 	 * @param key
 	 */
-	public void addTaskKey(final Task task, final Object key);
+	public void addTaskKey(final Task task, final Object key, boolean awaitUninterruptibly);
 
 	/**
 	 * 
@@ -37,9 +36,12 @@ public interface IDHTConnectionProvider {
 	 *            represents the index in task.executingPeers for which the data should be collected
 	 * @return
 	 */
-	public Multimap<Object, Object> getDataForTask(Task task);
+	public Multimap<Object, Object> getTaskData(Task task, LocationBean locationBean);
 
-	public List<Object> getTaskKeys(Task task);
+	public List<Object> getTaskKeys(Task task, LocationBean locationBean);
+
+	// Broadcasts
+	public MRBroadcastHandler broadcastHandler();
 
 	public void broadcastNewJob(Job job);
 
@@ -47,15 +49,20 @@ public interface IDHTConnectionProvider {
 
 	public void broadcastFinishedTask(Task task);
 
-	public boolean alreadyExecuted(Task task);
+	public void broadcastExecutingCompareTaskResults(Task task);
 
-	public void shutdown();
+	public void broadcastFinishedCompareTaskResults(Task task);
 
 	public void broadcastFinishedAllTasks(Job job);
 
 	public void broadcastFinishedJob(Job job);
 
-	public MRBroadcastHandler broadcastHandler();
+	// Maintenance
+	public IDHTConnectionProvider connect();
+
+	public boolean alreadyExecuted(Task task);
+
+	public void shutdown();
 
 	public IDHTConnectionProvider useDiskStorage(boolean useDiskStorage);
 
@@ -64,4 +71,5 @@ public interface IDHTConnectionProvider {
 	public String peerAddressString();
 
 	public PeerAddress peerAddress();
+
 }

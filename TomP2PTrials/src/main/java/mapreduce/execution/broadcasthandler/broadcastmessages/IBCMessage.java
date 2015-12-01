@@ -6,7 +6,7 @@ import mapreduce.execution.broadcasthandler.messageconsumer.IMessageConsumer;
 import net.tomp2p.peers.PeerAddress;
 
 public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
-	public JobStatus status();
+	public BCStatusType status();
 
 	public void execute(IMessageConsumer messageConsumer);
 

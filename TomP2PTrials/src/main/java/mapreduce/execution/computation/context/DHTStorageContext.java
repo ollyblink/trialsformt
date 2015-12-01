@@ -14,6 +14,8 @@ public class DHTStorageContext implements IContext {
 
 	private Task task;
 
+	private boolean awaitOnAdd;
+
 	private DHTStorageContext(DHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
 	}
@@ -26,11 +28,16 @@ public class DHTStorageContext implements IContext {
 			return;
 		}
 
-		dhtConnectionProvider.addDataForTask(task, keyOut, valueOut);
+		dhtConnectionProvider.addTaskData(task, keyOut, valueOut, awaitOnAdd);
 	}
 
 	public DHTStorageContext task(Task task) {
 		this.task = task;
+		return this;
+	}
+
+	public DHTStorageContext awaitOnAdd(boolean awaitOnAdd) {
+		this.awaitOnAdd = awaitOnAdd;
 		return this;
 	}
 

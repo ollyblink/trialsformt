@@ -24,8 +24,8 @@ public class DistributedJobBCMessage extends AbstractBCMessage {
 	}
 
 	@Override
-	public JobStatus status() {
-		return JobStatus.DISTRIBUTED_JOB;
+	public BCStatusType status() {
+		return BCStatusType.DISTRIBUTED_JOB;
 	}
 
 	public Job job() {
@@ -40,7 +40,7 @@ public class DistributedJobBCMessage extends AbstractBCMessage {
 	@Override
 	public void execute(IMessageConsumer messageConsumer) {
 		logger.warn("DistributedJobBCMessage::execute()::received job from " + sender().inetAddress() + ":" + sender().tcpPort() + ", added job");
-		messageConsumer.addJob(job);
+		messageConsumer.handleReceivedJob(job);
 
 	}
 
@@ -52,10 +52,5 @@ public class DistributedJobBCMessage extends AbstractBCMessage {
 	@Override
 	public String toString() {
 		return "DistributedJobBCMessage [job=" + job + ", sender=" + sender + "]";
-	}
-
-	@Override
-	public String jobId() {
-		return job.id();
 	}
 }

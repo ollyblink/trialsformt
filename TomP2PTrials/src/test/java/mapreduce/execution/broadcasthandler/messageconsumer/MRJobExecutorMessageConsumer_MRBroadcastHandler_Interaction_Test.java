@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import mapreduce.execution.broadcasthandler.MRBroadcastHandler;
 import mapreduce.execution.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.ExecuteOrFinishedTaskMessage;
+import mapreduce.execution.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.execution.broadcasthandler.broadcastmessages.FinishedAllTasksBCMessage;
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.execution.jobtask.Job;
@@ -31,7 +31,7 @@ public class MRJobExecutorMessageConsumer_MRBroadcastHandler_Interaction_Test {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		messageConsumer = MRJobExecutorMessageConsumer.newMRJobExecutorMessageConsumer(new LinkedBlockingQueue<Job>()).canTake(true);
+		messageConsumer = MRJobExecutorMessageConsumer.newInstance(new LinkedBlockingQueue<Job>()).canTake(true);
 		// new Thread(messageConsumer).start();
 		//
 		// dht = DHTConnectionProvider.newDHTConnectionProvider().port(4000).connect();

@@ -12,7 +12,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.ExecuteOrFinishedTaskMessage;
+import mapreduce.execution.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -42,11 +42,11 @@ public class MessageSortingTest {
 				public void run() {
 					if ((in) % ((int) in) == 0.5) {
 						System.err.println((in) % ((int) in));
-						trial.add(ExecuteOrFinishedTaskMessage.newFinishedTaskInstance().sender(new PeerAddress(Number160.createHash((1))))
+						trial.add(TaskUpdateBCMessage.newFinishedTaskInstance().sender(new PeerAddress(Number160.createHash((1))))
 								.jobId("1").taskId("1"));
 					} else {
 						System.err.println((in) % ((int) in));
-						trial.add(ExecuteOrFinishedTaskMessage.newExecutingTaskInstance().sender(new PeerAddress(Number160.createHash((1))))
+						trial.add(TaskUpdateBCMessage.newExecutingTaskInstance().sender(new PeerAddress(Number160.createHash((1))))
 								.jobId("1").taskId("1"));
 					}
 				}

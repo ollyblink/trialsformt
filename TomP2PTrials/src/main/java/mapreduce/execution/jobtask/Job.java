@@ -11,7 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
+import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureTaskTupel;
 import mapreduce.utils.IDCreator;
@@ -173,14 +173,14 @@ public class Job implements Serializable {
 		return this;
 	}
 
-	public void updateTaskStatus(String taskId, PeerAddress peerAddress, JobStatus currentStatus) {
+	public void updateTaskExecutionStatus(String taskId, PeerAddress peerAddress, BCStatusType currentStatus) {
 		// for (ProcedureTaskTupel tupel : procedures) {
 		BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
 		logger.warn(taskId + " to update, " + tasks);
 		if (tasks != null) {
 			for (Task task : tasks) {
 				if (task.id().equals(taskId)) {
-					task.updateExecutingPeerStatus(peerAddress, currentStatus);
+					task.updateStati(peerAddress, currentStatus);
 					break;
 				}
 			}

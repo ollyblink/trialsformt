@@ -13,9 +13,10 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
+import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.utils.IDCreator;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
 
 public class Task implements Serializable, Comparable<Task> {
@@ -29,18 +30,23 @@ public class Task implements Serializable, Comparable<Task> {
 	private String id;
 	private String jobId;
 	private IMapReduceProcedure procedure;
-	// private List<Object> keys;
-	private Multimap<PeerAddress, JobStatus> executingPeers;
+	private Multimap<PeerAddress, BCStatusType> executingPeers;
+	private Multimap<PeerAddress, BCStatusType> comparingPeers;
+
 	private boolean isFinished;
 	private int maxNrOfFinishedWorkers;
+
+	// CONSIDER ONLY STORING THERE HASH REPRESENTATION FOR THE DOMAIN AND OTHER KEYS
 	/** This address is the one from the multi map that remains after evaluation of which task result to keep (if there are multiple task results) */
-	private PeerAddress finalPeerAddress;
+	private PeerAddress dataLocationHashPeerAddress;
 	/** this index is the location in the executingPeers multimap above of the JobStatus that is chosen to be kept */
-	private int finalJobStatusIndex;
+	private int dataLocationHashJobStatusIndex;
 
 	private Task(String jobId) {
-		Multimap<PeerAddress, JobStatus> tmp = ArrayListMultimap.create();
-		executingPeers = Multimaps.synchronizedMultimap(tmp);
+		Multimap<PeerAddress, BCStatusType> tmp = ArrayListMultimap.create();
+		this.executingPeers = Multimaps.synchronizedMultimap(tmp);
+		tmp = ArrayListMultimap.create();
+		this.comparingPeers = Multimaps.synchronizedMultimap(tmp);
 		this.jobId = jobId;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName()) + "_" + jobId;
 	}
@@ -60,15 +66,6 @@ public class Task implements Serializable, Comparable<Task> {
 	public IMapReduceProcedure procedure() {
 		return this.procedure;
 	}
-
-	// public List<Object> keys() {
-	// return this.keys;
-	// }
-	//
-	// public Task keys(List<Object> keys) {
-	// this.keys = Collections.synchronizedList(keys);
-	// return this;
-	// }
 
 	public boolean isFinished() {
 		return this.isFinished;
@@ -103,31 +100,52 @@ public class Task implements Serializable, Comparable<Task> {
 		return this;
 	}
 
-	public PeerAddress finalPeerAddress() {
-		return this.finalPeerAddress;
+	public PeerAddress dataLocationHashPeerAddress() {
+		return this.dataLocationHashPeerAddress;
 	}
 
-	public Task finalPeerAddress(PeerAddress finalPeerAddress) {
-		this.finalPeerAddress = finalPeerAddress;
+	public Task dataLocationHashPeerAddress(PeerAddress dataLocationHashPeerAddress) {
+		this.dataLocationHashPeerAddress = dataLocationHashPeerAddress;
 		return this;
 	}
 
-	public int finalJobStatusIndex() {
-		return this.finalJobStatusIndex;
+	public int dataLocationHashJobStatusIndex() {
+		return this.dataLocationHashJobStatusIndex;
 	}
 
-	public Task finalJobStatusIndex(int finalJobStatusIndex) {
-		this.finalJobStatusIndex = finalJobStatusIndex;
+	public Task dataLocationHashJobStatusIndex(int dataLocationHashJobStatusIndex) {
+		this.dataLocationHashJobStatusIndex = dataLocationHashJobStatusIndex;
 		return this;
 	}
 
-	public Task updateExecutingPeerStatus(PeerAddress peerAddress, JobStatus currentStatus) {
+	public void updateStati(PeerAddress peerAddress, BCStatusType currentStatus) {
+		switch (currentStatus) {
+		case EXECUTING_TASK:
+		case FINISHED_TASK:
+			updateTaskStati(peerAddress, currentStatus, executingPeers, Tuple.newInstance(BCStatusType.EXECUTING_TASK, BCStatusType.FINISHED_TASK));
+			break;
+		case EXECUTING_TASK_COMPARISON:
+			updateTaskStati(peerAddress, currentStatus, comparingPeers,
+					Tuple.newInstance(BCStatusType.EXECUTING_TASK_COMPARISON, BCStatusType.FINISHED_TASK_COMPARISON));
+			break;
+		case FINISHED_TASK_COMPARISON:
+			updateTaskStati(peerAddress, currentStatus, comparingPeers,
+					Tuple.newInstance(BCStatusType.EXECUTING_TASK_COMPARISON, BCStatusType.FINISHED_TASK_COMPARISON));
+			break;
+		default:
+			logger.warn("updateStati(peerAddress, currentStatus): Something wrong in switch: PeerAddress: " + peerAddress + ", current status: "
+					+ currentStatus);
+			break;
+		}
+	}
 
-		synchronized (executingPeers) {
-			LinkedList<JobStatus> jobStati = new LinkedList<JobStatus>(this.executingPeers.removeAll(peerAddress));
+	private void updateTaskStati(PeerAddress peerAddress, BCStatusType currentStatus, Multimap<PeerAddress, BCStatusType> peers,
+			Tuple<BCStatusType, BCStatusType> toCheck) {
+		synchronized (peers) {
+			LinkedList<BCStatusType> jobStati = new LinkedList<BCStatusType>(this.executingPeers.removeAll(peerAddress));
 			if (jobStati.size() > 0) {
-				if (currentStatus == JobStatus.EXECUTING_TASK) {
-					int lastIndexOfExecuting = jobStati.lastIndexOf(JobStatus.EXECUTING_TASK);
+				if (currentStatus == toCheck.first()) {
+					int lastIndexOfExecuting = jobStati.lastIndexOf(toCheck.first());
 					if (lastIndexOfExecuting == -1) {// not yet executing this task
 						jobStati.addLast(currentStatus);
 						logger.info("if-if-if: " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + " is now executing task " + id);
@@ -136,14 +154,14 @@ public class Task implements Serializable, Comparable<Task> {
 						logger.warn("if-if-else: " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + " is already executing task " + id
 								+ ". Update ignored.");
 					}
-				} else if (currentStatus == JobStatus.FINISHED_TASK) {
-					int lastIndexOfExecuting = jobStati.lastIndexOf(JobStatus.EXECUTING_TASK);
+				} else if (currentStatus == toCheck.second()) {
+					int lastIndexOfExecuting = jobStati.lastIndexOf(toCheck.first());
 					if (lastIndexOfExecuting == -1) {// FINISHED_TASK arrived multiple times after another without an EXECUTING_TASK
 						// Something went wrong... Should first be Executing before it is Finished. Mark as Failed?
 						logger.warn("if-elseif-if: Something wrong: JobStatus was " + currentStatus + " but peer with " + peerAddress.inetAddress()
 								+ ":" + peerAddress.tcpPort() + " is already executing task " + id);
 					} else { // It was executing and now it finished. This should be the case
-						jobStati.removeLastOccurrence(JobStatus.EXECUTING_TASK);
+						jobStati.removeLastOccurrence(toCheck.first());
 						jobStati.addLast(currentStatus);
 						logger.info("if-elseif-else: " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + " finished executing task " + id);
 					}
@@ -152,10 +170,10 @@ public class Task implements Serializable, Comparable<Task> {
 					logger.warn("if-else: Wrong JobStatus detected: JobStatus was " + currentStatus);
 				}
 			} else { // task was not yet assigned to this peer.
-				if (currentStatus == JobStatus.EXECUTING_TASK) {
+				if (currentStatus == toCheck.first()) {
 					jobStati.addLast(currentStatus);
 					logger.info("else-if: " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + " is now executing task " + id);
-				} else if (currentStatus == JobStatus.FINISHED_TASK) {
+				} else if (currentStatus == toCheck.second()) {
 					// Something went wrong, shouldnt get a finished job before it even started
 					logger.warn("else-elseif: Something wrong: JobStatus was " + currentStatus + " but peer with " + peerAddress.inetAddress() + ":"
 							+ peerAddress.tcpPort() + " is not yet executing task " + id);
@@ -167,7 +185,6 @@ public class Task implements Serializable, Comparable<Task> {
 			logger.warn("Current jobstati for peer " + peerAddress.inetAddress() + ":" + peerAddress.tcpPort() + ": " + jobStati);
 			this.executingPeers.putAll(peerAddress, jobStati);
 		}
-		return this;
 	}
 
 	/**
@@ -177,13 +194,13 @@ public class Task implements Serializable, Comparable<Task> {
 	 *            <code>JobStatus</code> to check how many peers for this task are currently holding it
 	 * @return number of peers that were assigned this task and currently hold the specified <code>JobStatus</code>
 	 */
-	public int numberOfPeersWithMultipleSameStati(JobStatus statusToCheck) {
+	public int numberOfPeersWithMultipleSameStati(BCStatusType statusToCheck) {
 		int nrOfPeers = 0;
 		synchronized (executingPeers) {
 			for (PeerAddress executingPeer : this.executingPeers.keySet()) {
 				int nrOfStatus = 0;
-				Collection<JobStatus> stati = this.executingPeers.get(executingPeer);
-				for (JobStatus status : stati) {
+				Collection<BCStatusType> stati = this.executingPeers.get(executingPeer);
+				for (BCStatusType status : stati) {
 					if (status.equals(statusToCheck)) {
 						++nrOfStatus;
 					}
@@ -196,13 +213,13 @@ public class Task implements Serializable, Comparable<Task> {
 		return nrOfPeers;
 	}
 
-	public int numberOfPeersWithSingleStatus(JobStatus statusToCheck) {
+	public int numberOfPeersWithSingleStatus(BCStatusType statusToCheck) {
 		int nrOfPeers = 0;
 		synchronized (executingPeers) {
 			for (PeerAddress executingPeer : this.executingPeers.keySet()) {
 				int nrOfStatus = 0;
-				Collection<JobStatus> stati = this.executingPeers.get(executingPeer);
-				for (JobStatus status : stati) {
+				Collection<BCStatusType> stati = this.executingPeers.get(executingPeer);
+				for (BCStatusType status : stati) {
 					if (status.equals(statusToCheck)) {
 						++nrOfStatus;
 					}
@@ -220,9 +237,9 @@ public class Task implements Serializable, Comparable<Task> {
 		synchronized (executingPeers) {
 			for (PeerAddress executingPeer : this.executingPeers.keySet()) {
 				int nrOfStatus = 0;
-				Collection<JobStatus> stati = this.executingPeers.get(executingPeer);
-				for (JobStatus status : stati) {
-					if (status.equals(JobStatus.FINISHED_TASK)) {
+				Collection<BCStatusType> stati = this.executingPeers.get(executingPeer);
+				for (BCStatusType status : stati) {
+					if (status.equals(BCStatusType.FINISHED_TASK)) {
 						++nrOfStatus;
 						break;
 					}
@@ -236,19 +253,19 @@ public class Task implements Serializable, Comparable<Task> {
 	}
 
 	public int totalNumberOfFinishedExecutions() {
-		return countTotalNumber(JobStatus.FINISHED_TASK);
+		return countTotalNumber(BCStatusType.FINISHED_TASK);
 	}
 
 	public int totalNumberOfCurrentExecutions() {
-		return countTotalNumber(JobStatus.EXECUTING_TASK);
+		return countTotalNumber(BCStatusType.EXECUTING_TASK);
 	}
 
-	private int countTotalNumber(JobStatus statusToCheck) {
+	private int countTotalNumber(BCStatusType statusToCheck) {
 		int nrOfFinishedExecutions = 0;
 		synchronized (executingPeers) {
 			for (PeerAddress executingPeer : this.executingPeers.keySet()) {
-				Collection<JobStatus> stati = this.executingPeers.get(executingPeer);
-				for (JobStatus status : stati) {
+				Collection<BCStatusType> stati = this.executingPeers.get(executingPeer);
+				for (BCStatusType status : stati) {
 					if (status.equals(statusToCheck)) {
 						++nrOfFinishedExecutions;
 					}
@@ -258,11 +275,11 @@ public class Task implements Serializable, Comparable<Task> {
 		return nrOfFinishedExecutions;
 	}
 
-	public int numberOfSameStatiForPeer(PeerAddress peerAddress, JobStatus statusToCheck) {
+	public int numberOfSameStatiForPeer(PeerAddress peerAddress, BCStatusType statusToCheck) {
 		int statiCount = 0;
 		synchronized (executingPeers) {
-			Collection<JobStatus> stati = this.executingPeers.get(peerAddress);
-			for (JobStatus status : stati) {
+			Collection<BCStatusType> stati = this.executingPeers.get(peerAddress);
+			for (BCStatusType status : stati) {
 				if (status.equals(statusToCheck)) {
 					++statiCount;
 				}
@@ -277,9 +294,9 @@ public class Task implements Serializable, Comparable<Task> {
 		}
 	}
 
-	public ArrayList<JobStatus> statiForPeer(PeerAddress peerAddress) {
+	public ArrayList<BCStatusType> statiForPeer(PeerAddress peerAddress) {
 		synchronized (executingPeers) {
-			return new ArrayList<JobStatus>(this.executingPeers.get(peerAddress));
+			return new ArrayList<BCStatusType>(this.executingPeers.get(peerAddress));
 		}
 	}
 
@@ -365,7 +382,7 @@ public class Task implements Serializable, Comparable<Task> {
 		// taskCopy.keys = keys;// Shallow copy...
 		taskCopy.maxNrOfFinishedWorkers = maxNrOfFinishedWorkers;
 		taskCopy.procedure = procedure;
-		Multimap<PeerAddress, JobStatus> tmp = ArrayListMultimap.create();
+		Multimap<PeerAddress, BCStatusType> tmp = ArrayListMultimap.create();
 		taskCopy.executingPeers = Multimaps.synchronizedMultimap(tmp);
 		// for(PeerAddress peerAddress: executingPeers.keySet()){
 		// taskCopy.executingPeers.putAll(new PeerAddress(peerAddress.peerId()), executingPeers.get(peerAddress));

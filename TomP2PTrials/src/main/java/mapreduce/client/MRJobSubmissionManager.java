@@ -1,9 +1,5 @@
 package mapreduce.client;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,24 +22,24 @@ import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
 
-public class MRJobSubmitter {
+public class MRJobSubmissionManager {
 	private static final ITaskSplitter DEFAULT_TASK_SPLITTER = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
-	private static Logger logger = LoggerFactory.getLogger(MRJobSubmitter.class);
+	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManager.class);
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private ITaskSplitter taskSplitter;
 	private MRJobSubmitterMessageConsumer messageConsumer;
 	private String id;
 
-	private MRJobSubmitter(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
+	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
-		this.messageConsumer = MRJobSubmitterMessageConsumer.newMRJobSubmitterMessageConsumer(id, jobs).canTake(true);
+		this.messageConsumer = MRJobSubmitterMessageConsumer.newInstance(id, jobs).canTake(true);
 		new Thread(messageConsumer).start();
 		dhtConnectionProvider.broadcastHandler().queue(messageConsumer.queue());
 	}
 
-	public static MRJobSubmitter newInstance(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobSubmitter(dhtConnectionProvider, new LinkedBlockingQueue<Job>());
+	public static MRJobSubmissionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
+		return new MRJobSubmissionManager(dhtConnectionProvider, new LinkedBlockingQueue<Job>());
 	}
 
 	/**
@@ -51,7 +47,7 @@ public class MRJobSubmitter {
 	 * @param job
 	 * @return
 	 */
-	public void submit(final Job job) {
+	public void submit(final Job job, final boolean awaitOnAdd) {
 		dhtConnectionProvider().connect();
 		logger.warn("Connected.");
 		// Split into specified file sizes
@@ -62,8 +58,8 @@ public class MRJobSubmitter {
 		for (final Task task : job.firstTasks()) {
 			// The next 2 lines are needed to keep the addDataForTask method generic and such that the job submitter acts similar to a job executor
 			// --------------------------------------------------------------
-			task.finalPeerAddress(this.dhtConnectionProvider().peerAddress());
-			task.finalJobStatusIndex(0);
+			task.dataLocationHashPeerAddress(this.dhtConnectionProvider().peerAddress());
+			task.dataLocationHashJobStatusIndex(0);
 			// --------------------------------------------------------------
 
 			server.submit(new Runnable() {
@@ -75,7 +71,7 @@ public class MRJobSubmitter {
 						try {
 							String filePath = (String) key;
 							String lines = FileUtils.INSTANCE.readLines(filePath);
-							dhtConnectionProvider.addDataForTask(task, filePath, lines);
+							dhtConnectionProvider.addTaskData(task, filePath, lines, awaitOnAdd);
 							logger.warn("Added file with path " + filePath);
 						} catch (IOException e) {
 							logger.error("Exception", e);
@@ -97,9 +93,7 @@ public class MRJobSubmitter {
 		logger.info("broadcased job");
 	}
 
-	
-
-	public MRJobSubmitter dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+	public MRJobSubmissionManager dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
 		return this;
 	}
@@ -108,7 +102,7 @@ public class MRJobSubmitter {
 		return this.dhtConnectionProvider;
 	}
 
-	public MRJobSubmitter taskSplitter(ITaskSplitter taskSplitter) {
+	public MRJobSubmissionManager taskSplitter(ITaskSplitter taskSplitter) {
 		this.taskSplitter = taskSplitter;
 		return this;
 	}
@@ -128,13 +122,4 @@ public class MRJobSubmitter {
 		return this.id;
 	}
 
-	public static void main(String[] args) {
-		Set<Object> set = new TreeSet<Object>();
-		List<String> vals = new ArrayList<String>();
-		vals.add("Hello");
-		vals.add("Hello");
-		vals.add("Hello");
-		set.addAll(vals);
-		System.err.println(set.size());
-	}
 }

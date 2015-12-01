@@ -4,7 +4,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ DHTConnectionProvider.class })
+@Suite.SuiteClasses({ DHTConnectionProviderTest.class })
 public class StorageTestSuite {
 
 }

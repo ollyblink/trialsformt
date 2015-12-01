@@ -16,8 +16,8 @@ public class FinishedAllTasksBCMessage extends AbstractBCMessage {
 	private Collection<Task> tasks;
 
 	@Override
-	public JobStatus status() {
-		return JobStatus.FINISHED_ALL_TASKS;
+	public BCStatusType status() {
+		return BCStatusType.FINISHED_ALL_TASKS;
 	}
 
 	@Override

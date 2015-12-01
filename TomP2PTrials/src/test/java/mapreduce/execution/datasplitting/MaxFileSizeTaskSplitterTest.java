@@ -75,7 +75,7 @@ public class MaxFileSizeTaskSplitterTest {
 	public void testNumberOfLines() {
 		int sum = 0;
 		for (Task task : job.tasks(job.currentProcedureIndex())) {
-			for (Object key : task.keys()) {
+			for (Object key : dataSplitter.keysForEachTask().get(task)) {
 				String filePath = (String) key;
 				sum += readFile(filePath).size();
 			}
@@ -90,7 +90,7 @@ public class MaxFileSizeTaskSplitterTest {
 	public void testFileSize() {
 		long sum = 0;
 		for (Task task : job.tasks(job.currentProcedureIndex())) {
-			for (Object key : task.keys()) {
+			for (Object key : dataSplitter.keysForEachTask().get(task)) {
 				String filePath = (String) key;
 				sum += new File(filePath).length();
 			}
@@ -105,7 +105,7 @@ public class MaxFileSizeTaskSplitterTest {
 	@Test
 	public void testMaxFileSize() {
 		for (Task task : job.tasks(job.currentProcedureIndex())) {
-			for (Object key : task.keys()) {
+			for (Object key : dataSplitter.keysForEachTask().get(task)) {
 				String filePath = (String) key;
 				if (PRINT_RESULTS) {
 					System.err.println(new File(filePath).length() + "<=" + maxFileSize);

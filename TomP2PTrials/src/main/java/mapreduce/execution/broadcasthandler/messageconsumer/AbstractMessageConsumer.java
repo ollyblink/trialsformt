@@ -12,7 +12,7 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.TreeMultimap;
 
 import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
+import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
 import net.tomp2p.peers.PeerAddress;
@@ -32,6 +32,8 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	protected BlockingQueue<Job> jobs;
 
 	private boolean canTake;
+	/** Used to signal e.g. the job executor that currently this message consumer is busy */
+	private boolean isBusy;
 
 	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, BlockingQueue<Job> jobs) {
 		this.bcMessages = bcMessages;
@@ -76,11 +78,11 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	// Dummy implementations
 
 	@Override
-	public void addJob(Job job) {
+	public void handleReceivedJob(Job job) {
 	}
 
 	@Override
-	public void updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus) {
+	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, PeerAddress peerAddress, BCStatusType currentStatus) {
 	}
 
 	@Override
@@ -89,7 +91,20 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	@Override
 	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender) {
-		// TODO Auto-generated method stub
-		
+
+	}
+
+	@Override
+	public void handleNewExecutorOnline() {
+
+	}
+
+	public AbstractMessageConsumer isBusy(boolean isBusy) {
+		this.isBusy = isBusy;
+		return this;
+	}
+
+	public boolean isBusy() {
+		return this.isBusy;
 	}
 }

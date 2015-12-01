@@ -5,7 +5,7 @@ import java.io.IOException;
 import mapreduce.execution.computation.context.PrintContext;
 import mapreduce.execution.computation.context.WaitingContext;
 import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
-import mapreduce.server.MRJobExecutor;
+import mapreduce.server.MRJobExecutionManager;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.GetOwnIpAddressTest;
 
@@ -28,7 +28,8 @@ public class DesignIdeaJobExecutor {
 			dhtConnectionProvider.port(bootstrapPort);
 			waitingTime = 1;
 		}
-		MRJobExecutor jobExecutor = MRJobExecutor.newInstance(dhtConnectionProvider).context(WaitingContext.newInstance().waitingTime(waitingTime)).taskScheduler(MinAssignedWorkersTaskScheduler.newInstance());
+		MRJobExecutionManager jobExecutor = MRJobExecutionManager.newInstance(dhtConnectionProvider).context(WaitingContext.newInstance().waitingTime(waitingTime))
+				.taskScheduler(MinAssignedWorkersTaskScheduler.newInstance());
 
 		jobExecutor.start();
 

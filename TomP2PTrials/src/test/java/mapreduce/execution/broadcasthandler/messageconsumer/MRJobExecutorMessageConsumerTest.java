@@ -10,13 +10,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.JobStatus;
+import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.datasplitting.ITaskSplitter;
 import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.server.MRJobExecutionManager;
+import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileUtils;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -28,7 +31,11 @@ public class MRJobExecutorMessageConsumerTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		BlockingQueue<Job> jobs = new LinkedBlockingQueue<Job>();
-		m = MRJobExecutorMessageConsumer.newMRJobExecutorMessageConsumer(jobs);
+		MRJobExecutionManager jobExecutor = Mockito.mock(MRJobExecutionManager.class);
+		DHTConnectionProvider dhtConnectionProvider = Mockito.mock(DHTConnectionProvider.class);
+		Mockito.when(jobExecutor.dhtConnectionProvider()).thenReturn(dhtConnectionProvider);
+		Mockito.when(dhtConnectionProvider.peerAddress()).thenReturn(new PeerAddress(new Number160(1)));
+		m = MRJobExecutorMessageConsumer.newInstance(jobs).jobExecutor(jobExecutor);
 
 		// m.updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus);
 		// public void handleFinishedJob(String jobId, String jobSubmitterId);
@@ -50,20 +57,20 @@ public class MRJobExecutorMessageConsumerTest {
 		long megaByte = 1024 * 1024;
 
 		int maxNumberOfFinishedPeers = 3;
-		Job job = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers).inputPath(inputPath)
-				.maxFileSize(megaByte);
+		Job job = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+				.inputPath(inputPath).maxFileSize(megaByte);
 
 		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
 		splitter.split(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
 
 		for (Task task : tasks) {
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(1)), JobStatus.EXECUTING_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(1)), JobStatus.FINISHED_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.EXECUTING_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.FINISHED_TASK);
+			task.updateStati(new PeerAddress(new Number160(1)), BCStatusType.EXECUTING_TASK);
+			task.updateStati(new PeerAddress(new Number160(1)), BCStatusType.FINISHED_TASK);
+			task.updateStati(new PeerAddress(new Number160(2)), BCStatusType.EXECUTING_TASK);
+			task.updateStati(new PeerAddress(new Number160(2)), BCStatusType.FINISHED_TASK);
 		}
-		m.addJob(job);
+		m.handleReceivedJob(job);
 
 		String jobId = job.id();
 		//
@@ -78,25 +85,25 @@ public class MRJobExecutorMessageConsumerTest {
 
 		}
 		for (Task task : tasks2) {
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(1)), JobStatus.EXECUTING_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(1)), JobStatus.FINISHED_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(1)), JobStatus.EXECUTING_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(1)), JobStatus.FINISHED_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.EXECUTING_TASK);
+			task.updateStati(new PeerAddress(new Number160(1)), BCStatusType.EXECUTING_TASK);
+			task.updateStati(new PeerAddress(new Number160(1)), BCStatusType.FINISHED_TASK);
+			task.updateStati(new PeerAddress(new Number160(1)), BCStatusType.EXECUTING_TASK);
+			task.updateStati(new PeerAddress(new Number160(1)), BCStatusType.FINISHED_TASK);
+			task.updateStati(new PeerAddress(new Number160(2)), BCStatusType.EXECUTING_TASK);
 
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.FINISHED_TASK);
-			m.updateTask(jobId, task.id(), new PeerAddress(new Number160(2)), JobStatus.FINISHED_TASK);
+			task.updateStati(new PeerAddress(new Number160(2)), BCStatusType.FINISHED_TASK);
+			m.handleTaskExecutionStatusUpdate(jobId, task.id(), new PeerAddress(new Number160(2)), BCStatusType.FINISHED_TASK);
 
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.EXECUTING_TASK);
-			m.updateTask(jobId, task.id(), new PeerAddress(new Number160(2)), JobStatus.EXECUTING_TASK);
+			task.updateStati(new PeerAddress(new Number160(2)), BCStatusType.EXECUTING_TASK);
+			m.handleTaskExecutionStatusUpdate(jobId, task.id(), new PeerAddress(new Number160(2)), BCStatusType.EXECUTING_TASK);
 
 			// task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.FINISHED_TASK);
 
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(3)), JobStatus.EXECUTING_TASK);
-			m.updateTask(jobId, task.id(), new PeerAddress(new Number160(3)), JobStatus.EXECUTING_TASK);
+			task.updateStati(new PeerAddress(new Number160(3)), BCStatusType.EXECUTING_TASK);
+			m.handleTaskExecutionStatusUpdate(jobId, task.id(), new PeerAddress(new Number160(3)), BCStatusType.EXECUTING_TASK);
 
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(3)), JobStatus.FINISHED_TASK);
-			m.updateTask(jobId, task.id(), new PeerAddress(new Number160(3)), JobStatus.FINISHED_TASK);
+			task.updateStati(new PeerAddress(new Number160(3)), BCStatusType.FINISHED_TASK);
+			m.handleTaskExecutionStatusUpdate(jobId, task.id(), new PeerAddress(new Number160(3)), BCStatusType.FINISHED_TASK);
 		}
 
 		assertTrue(m.jobs().peek().tasks(0).peek().allAssignedPeers().size() == 3);
@@ -104,15 +111,15 @@ public class MRJobExecutorMessageConsumerTest {
 		assertTrue(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(1))).size() == 1);
 		assertTrue(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(2))).size() == 2);
 		assertTrue(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(3))).size() == 1);
-		assertTrue(new ArrayList<JobStatus>(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(1)))).get(0)
-				.equals(JobStatus.FINISHED_TASK));
-		assertTrue(new ArrayList<JobStatus>(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(2)))).get(0)
-				.equals(JobStatus.FINISHED_TASK));
-		assertTrue(new ArrayList<JobStatus>(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(2)))).get(1)
-				.equals(JobStatus.EXECUTING_TASK));
-		assertTrue(new ArrayList<JobStatus>(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(3)))).get(0)
-				.equals(JobStatus.FINISHED_TASK));
-		m.handleFinishedAllTasks(jobId, tasks2);
+		assertTrue(new ArrayList<BCStatusType>(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(1)))).get(0)
+				.equals(BCStatusType.FINISHED_TASK));
+		assertTrue(new ArrayList<BCStatusType>(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(2)))).get(0)
+				.equals(BCStatusType.FINISHED_TASK));
+		assertTrue(new ArrayList<BCStatusType>(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(2)))).get(1)
+				.equals(BCStatusType.EXECUTING_TASK));
+		assertTrue(new ArrayList<BCStatusType>(m.jobs().peek().tasks(0).peek().statiForPeer(new PeerAddress(new Number160(3)))).get(0)
+				.equals(BCStatusType.FINISHED_TASK));
+		m.handleFinishedAllTasks(jobId, tasks2, new PeerAddress(new Number160(2)));
 
 		BlockingQueue<Task> tasks3 = new LinkedBlockingQueue<Task>();
 		for (Task task : tasks) {
@@ -120,13 +127,13 @@ public class MRJobExecutorMessageConsumerTest {
 			tasks3.add(task.copyWithoutExecutingPeers());
 		}
 		for (Task task : tasks3) {
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.EXECUTING_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.FINISHED_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.EXECUTING_TASK);
-			task.updateExecutingPeerStatus(new PeerAddress(new Number160(2)), JobStatus.FINISHED_TASK);
+			task.updateStati(new PeerAddress(new Number160(2)), BCStatusType.EXECUTING_TASK);
+			task.updateStati(new PeerAddress(new Number160(2)), BCStatusType.FINISHED_TASK);
+			task.updateStati(new PeerAddress(new Number160(2)), BCStatusType.EXECUTING_TASK);
+			task.updateStati(new PeerAddress(new Number160(2)), BCStatusType.FINISHED_TASK);
 		}
 
-		m.handleFinishedAllTasks(jobId, tasks3);
+		m.handleFinishedAllTasks(jobId, tasks3, new PeerAddress(new Number160(3)));
 
 		for (Task task : m.jobs().peek().tasks(0)) {
 			assertTrue(task.allAssignedPeers().size() == 3);
@@ -138,8 +145,8 @@ public class MRJobExecutorMessageConsumerTest {
 				} else if (i == 3)
 					number = 1;
 				assertTrue(task.statiForPeer(new PeerAddress(new Number160(i))).size() == number);
-				for (JobStatus s : task.statiForPeer(new PeerAddress(new Number160(i)))) {
-					assertTrue(s.equals(JobStatus.FINISHED_TASK));
+				for (BCStatusType s : task.statiForPeer(new PeerAddress(new Number160(i)))) {
+					assertTrue(s.equals(BCStatusType.FINISHED_TASK));
 					System.err.println(s);
 				}
 			}
