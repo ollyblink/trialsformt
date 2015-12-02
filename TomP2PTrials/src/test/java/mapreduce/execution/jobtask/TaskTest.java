@@ -6,7 +6,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.utils.IDCreator;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;

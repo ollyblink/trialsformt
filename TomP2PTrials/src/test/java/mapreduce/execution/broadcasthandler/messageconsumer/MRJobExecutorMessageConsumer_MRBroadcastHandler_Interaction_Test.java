@@ -9,12 +9,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import mapreduce.execution.broadcasthandler.MRBroadcastHandler;
-import mapreduce.execution.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.FinishedAllTasksBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.execution.jobtask.Job;
+import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
+import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutorMessageConsumer;
+import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedAllTasksBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.DHTConnectionProviderTest;
 import net.tomp2p.message.DataMap;

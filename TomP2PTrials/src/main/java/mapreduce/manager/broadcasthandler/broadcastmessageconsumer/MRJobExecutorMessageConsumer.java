@@ -1,14 +1,15 @@
-package mapreduce.execution.broadcasthandler.messageconsumer;
+package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
-import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
-import mapreduce.server.MRJobExecutionManager;
+import mapreduce.manager.MRJobExecutionManager;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
+import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
@@ -54,10 +55,19 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	@Override
-	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, PeerAddress peerAddress, BCStatusType currentStatus) {
+	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, Tuple<PeerAddress, BCStatusType> toUpdate) {
 		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
-				job.updateTaskExecutionStatus(taskId, peerAddress, currentStatus);
+				job.updateTaskExecutionStatus(taskId, toUpdate);
+			}
+		}
+	}
+
+	@Override
+	public void handleFinishedTaskComparion(String jobId, String taskId, Tuple<PeerAddress, Integer> finalDataLocation) {
+		for (Job job : jobs) {
+			if (job.id().equals(jobId)) {
+				job.updateTaskFinalDataLocation(taskId, finalDataLocation);
 			}
 		}
 	}
@@ -75,7 +85,7 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 				this.isBusy(true);
 				job.synchronizeFinishedTasksStati(tasks);
 
-				removeRemainingMessagesForThisTask(jobId);
+				removeRemainingExecutionMessagesForThisTask(jobId);
 
 				// Only printing
 				BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
@@ -90,7 +100,7 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 		}
 	}
 
-	public void removeRemainingMessagesForThisTask(String jobId) {
+	public void removeRemainingExecutionMessagesForThisTask(String jobId) {
 		synchronized (bcMessages) {
 			BlockingQueue<IBCMessage> remainingBCMessages = new PriorityBlockingQueue<IBCMessage>();
 

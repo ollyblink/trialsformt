@@ -3,8 +3,8 @@ package mapreduce.execution.computation.context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.messageconsumer.AbstractMessageConsumer;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.AbstractMessageConsumer;
 
 public class WaitingContext implements IContext {
 	private static final int DEFAULT_WAITING_TIME = 1;

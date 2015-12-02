@@ -1,12 +1,14 @@
-package mapreduce.execution.broadcasthandler.messageconsumer;
+package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
+import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
 
 public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
@@ -41,6 +43,18 @@ public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
 
 	@Override
 	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, Tuple<PeerAddress, BCStatusType> toUpdate) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void handleFinishedTaskComparion(String jobId, String taskId, Tuple<PeerAddress, Integer> finalDataLocation) {
 		// TODO Auto-generated method stub
 		
 	}

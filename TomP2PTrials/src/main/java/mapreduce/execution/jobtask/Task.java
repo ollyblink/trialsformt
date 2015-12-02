@@ -3,7 +3,10 @@ package mapreduce.execution.jobtask;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -13,8 +16,8 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.execution.computation.IMapReduceProcedure;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
@@ -31,22 +34,24 @@ public class Task implements Serializable, Comparable<Task> {
 	private String jobId;
 	private IMapReduceProcedure procedure;
 	private Multimap<PeerAddress, BCStatusType> executingPeers;
-	private Multimap<PeerAddress, BCStatusType> comparingPeers;
+	private Map<PeerAddress, BCStatusType> comparingPeers;
 
 	private boolean isFinished;
 	private int maxNrOfFinishedWorkers;
 
 	// CONSIDER ONLY STORING THERE HASH REPRESENTATION FOR THE DOMAIN AND OTHER KEYS
-	/** This address is the one from the multi map that remains after evaluation of which task result to keep (if there are multiple task results) */
-	private PeerAddress dataLocationHashPeerAddress;
-	/** this index is the location in the executingPeers multimap above of the JobStatus that is chosen to be kept */
-	private int dataLocationHashJobStatusIndex;
+	/** Data location to retrieve the data from for this task */
+	private Tuple<PeerAddress, Integer> initialDataLocation;
+	/**
+	 * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
+	 * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
+	 */
+	private Tuple<PeerAddress, Integer> finalDataLocation;
 
 	private Task(String jobId) {
 		Multimap<PeerAddress, BCStatusType> tmp = ArrayListMultimap.create();
 		this.executingPeers = Multimaps.synchronizedMultimap(tmp);
-		tmp = ArrayListMultimap.create();
-		this.comparingPeers = Multimaps.synchronizedMultimap(tmp);
+		this.comparingPeers = Collections.synchronizedMap(new HashMap<PeerAddress, BCStatusType>());
 		this.jobId = jobId;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName()) + "_" + jobId;
 	}
@@ -100,49 +105,51 @@ public class Task implements Serializable, Comparable<Task> {
 		return this;
 	}
 
-	public PeerAddress dataLocationHashPeerAddress() {
-		return this.dataLocationHashPeerAddress;
-	}
-
-	public Task dataLocationHashPeerAddress(PeerAddress dataLocationHashPeerAddress) {
-		this.dataLocationHashPeerAddress = dataLocationHashPeerAddress;
+	public Task initialDataLocation(Tuple<PeerAddress, Integer> initialDataLocation) {
+		this.initialDataLocation = initialDataLocation;
 		return this;
 	}
 
-	public int dataLocationHashJobStatusIndex() {
-		return this.dataLocationHashJobStatusIndex;
-	}
-
-	public Task dataLocationHashJobStatusIndex(int dataLocationHashJobStatusIndex) {
-		this.dataLocationHashJobStatusIndex = dataLocationHashJobStatusIndex;
+	public Task finalDataLocation(Tuple<PeerAddress, Integer> finalDataLocation) {
+		this.finalDataLocation = finalDataLocation;
 		return this;
 	}
 
-	public void updateStati(PeerAddress peerAddress, BCStatusType currentStatus) {
-		switch (currentStatus) {
+	public Tuple<PeerAddress, Integer> initialDataLocation() {
+		return initialDataLocation;
+	}
+
+	public Tuple<PeerAddress, Integer> finalDataLocation() {
+		return finalDataLocation;
+	}
+
+	public boolean taskComparisonAssigned() {
+		return this.comparingPeers.values().contains(BCStatusType.EXECUTING_TASK_COMPARISON);
+	}
+
+	public void updateStati(Tuple<PeerAddress, BCStatusType> toUpdate) {
+		switch (toUpdate.second()) {
 		case EXECUTING_TASK:
 		case FINISHED_TASK:
-			updateTaskStati(peerAddress, currentStatus, executingPeers, Tuple.newInstance(BCStatusType.EXECUTING_TASK, BCStatusType.FINISHED_TASK));
+			updateTaskStati(toUpdate, executingPeers, Tuple.newInstance(BCStatusType.EXECUTING_TASK, BCStatusType.FINISHED_TASK));
 			break;
 		case EXECUTING_TASK_COMPARISON:
-			updateTaskStati(peerAddress, currentStatus, comparingPeers,
-					Tuple.newInstance(BCStatusType.EXECUTING_TASK_COMPARISON, BCStatusType.FINISHED_TASK_COMPARISON));
-			break;
-		case FINISHED_TASK_COMPARISON:
-			updateTaskStati(peerAddress, currentStatus, comparingPeers,
-					Tuple.newInstance(BCStatusType.EXECUTING_TASK_COMPARISON, BCStatusType.FINISHED_TASK_COMPARISON));
+			this.comparingPeers.put(toUpdate.first(), toUpdate.second());
 			break;
 		default:
-			logger.warn("updateStati(peerAddress, currentStatus): Something wrong in switch: PeerAddress: " + peerAddress + ", current status: "
-					+ currentStatus);
+			logger.warn("updateStati(peerAddress, currentStatus): Something wrong in switch: PeerAddress: " + toUpdate.first() + ", current status: "
+					+ toUpdate.second());
 			break;
 		}
 	}
 
-	private void updateTaskStati(PeerAddress peerAddress, BCStatusType currentStatus, Multimap<PeerAddress, BCStatusType> peers,
+	private void updateTaskStati(Tuple<PeerAddress, BCStatusType> toUpdate, Multimap<PeerAddress, BCStatusType> peers,
 			Tuple<BCStatusType, BCStatusType> toCheck) {
 		synchronized (peers) {
+			PeerAddress peerAddress = toUpdate.first();
+			BCStatusType currentStatus = toUpdate.second();
 			LinkedList<BCStatusType> jobStati = new LinkedList<BCStatusType>(this.executingPeers.removeAll(peerAddress));
+
 			if (jobStati.size() > 0) {
 				if (currentStatus == toCheck.first()) {
 					int lastIndexOfExecuting = jobStati.lastIndexOf(toCheck.first());

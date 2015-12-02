@@ -12,13 +12,14 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.datasplitting.ITaskSplitter;
 import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
-import mapreduce.server.MRJobExecutionManager;
+import mapreduce.manager.MRJobExecutionManager;
+import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutorMessageConsumer;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileUtils;
 import net.tomp2p.peers.Number160;

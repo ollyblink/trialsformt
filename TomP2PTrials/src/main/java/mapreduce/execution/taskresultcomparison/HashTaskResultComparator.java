@@ -3,18 +3,16 @@ package mapreduce.execution.taskresultcomparison;
 import java.util.ArrayList;
 
 import mapreduce.execution.jobtask.Task;
-import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
 
 public class HashTaskResultComparator implements ITaskResultComparator {
-	private IDHTConnectionProvider dhtConnectionProvider;
 
-	public static HashTaskResultComparator newInstance(IDHTConnectionProvider dhtConnectionProvider) {
-		return new HashTaskResultComparator(dhtConnectionProvider);
+	public static HashTaskResultComparator newInstance() {
+		return new HashTaskResultComparator();
 	}
 
-	private HashTaskResultComparator(IDHTConnectionProvider dhtConnectionProvider) {
+	private HashTaskResultComparator() {
 
 	}
 
@@ -27,6 +25,11 @@ public class HashTaskResultComparator implements ITaskResultComparator {
 			task.statiForPeer(peerAddress);
 		}
 		return tuple;
+	}
+
+	@Override
+	public void abortTaskComparison() {
+		//Ja nie snaiu, ja nitschewo nie ponimaju
 	}
 
 }

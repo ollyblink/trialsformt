@@ -1,6 +1,7 @@
-package mapreduce.execution.broadcasthandler.broadcastmessages;
+package mapreduce.manager.broadcasthandler.broadcastmessages;
 
-import mapreduce.execution.broadcasthandler.messageconsumer.IMessageConsumer;
+import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
 
 public class TaskUpdateBCMessage extends AbstractBCMessage {
@@ -20,7 +21,7 @@ public class TaskUpdateBCMessage extends AbstractBCMessage {
 
 	@Override
 	public void execute(IMessageConsumer messageConsumer) {
-		messageConsumer.handleTaskExecutionStatusUpdate(jobId, taskId, sender, status());
+		messageConsumer.handleTaskExecutionStatusUpdate(jobId, taskId, Tuple.newInstance(sender, status()));
 	}
 
 	public static TaskUpdateBCMessage newExecutingTaskInstance() {
@@ -30,13 +31,9 @@ public class TaskUpdateBCMessage extends AbstractBCMessage {
 	public static TaskUpdateBCMessage newFinishedTaskInstance() {
 		return new TaskUpdateBCMessage(BCStatusType.FINISHED_TASK);
 	}
-	
+
 	public static TaskUpdateBCMessage newExecutingCompareTaskResults() {
 		return new TaskUpdateBCMessage(BCStatusType.EXECUTING_TASK_COMPARISON);
-	}
-	
-	public static TaskUpdateBCMessage newFinishedCompareTaskResults() {
-		return new TaskUpdateBCMessage(BCStatusType.FINISHED_TASK_COMPARISON);
 	}
 
 	private TaskUpdateBCMessage(BCStatusType status) {
@@ -62,6 +59,5 @@ public class TaskUpdateBCMessage extends AbstractBCMessage {
 	public String toString() {
 		return "ExecuteOrFinishedTaskMessage [taskId=" + taskId + ", jobId=" + jobId + ", status=" + status + "]";
 	}
-
 
 }

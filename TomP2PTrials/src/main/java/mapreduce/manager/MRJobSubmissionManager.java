@@ -1,10 +1,6 @@
-package mapreduce.client;
+package mapreduce.manager;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,14 +9,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.messageconsumer.MRJobSubmitterMessageConsumer;
 import mapreduce.execution.datasplitting.ITaskSplitter;
 import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmitterMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
+import mapreduce.utils.Tuple;
 
 public class MRJobSubmissionManager {
 	private static final ITaskSplitter DEFAULT_TASK_SPLITTER = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
@@ -56,11 +53,8 @@ public class MRJobSubmissionManager {
 
 		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		for (final Task task : job.firstTasks()) {
-			// The next 2 lines are needed to keep the addDataForTask method generic and such that the job submitter acts similar to a job executor
-			// --------------------------------------------------------------
-			task.dataLocationHashPeerAddress(this.dhtConnectionProvider().peerAddress());
-			task.dataLocationHashJobStatusIndex(0);
-			// --------------------------------------------------------------
+			//Set the initial data location for the first task set
+			task.initialDataLocation(Tuple.newInstance(this.dhtConnectionProvider().peerAddress(), 0));
 
 			server.submit(new Runnable() {
 

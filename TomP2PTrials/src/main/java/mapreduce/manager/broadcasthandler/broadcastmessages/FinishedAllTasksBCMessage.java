@@ -1,9 +1,9 @@
-package mapreduce.execution.broadcasthandler.broadcastmessages;
+package mapreduce.manager.broadcasthandler.broadcastmessages;
 
 import java.util.Collection;
 
-import mapreduce.execution.broadcasthandler.messageconsumer.IMessageConsumer;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
 import net.tomp2p.peers.PeerAddress;
 
 public class FinishedAllTasksBCMessage extends AbstractBCMessage {

@@ -15,17 +15,18 @@ import org.mockito.Mockito;
 
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 
 public class MinAssignedWorkersTaskSchedulerTest {
 
 	private static final Random RND = new Random();
-	private static MinAssignedWorkersTaskScheduler taskScheduler;
+	private static MinAssignedWorkersTaskExecutionScheduler taskScheduler;
 	private Job job;
 	private static LinkedList<Task> tasks;
 
 	@Before
 	public void setUpBeforeTest() throws Exception {
-		taskScheduler = MinAssignedWorkersTaskScheduler.newInstance();
+		taskScheduler = MinAssignedWorkersTaskExecutionScheduler.newInstance();
 
 		Task[] tasksToTest = new Task[10];
 

@@ -4,9 +4,9 @@ import java.util.List;
 
 import com.google.common.collect.Multimap;
 
-import mapreduce.execution.broadcasthandler.MRBroadcastHandler;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
 import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {

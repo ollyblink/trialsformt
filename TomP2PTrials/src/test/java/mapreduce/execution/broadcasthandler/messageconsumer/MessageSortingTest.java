@@ -12,8 +12,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 

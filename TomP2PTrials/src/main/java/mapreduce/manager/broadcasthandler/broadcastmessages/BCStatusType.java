@@ -1,4 +1,4 @@
-package mapreduce.execution.broadcasthandler.broadcastmessages;
+package mapreduce.manager.broadcasthandler.broadcastmessages;
 
 import java.util.concurrent.PriorityBlockingQueue;
 

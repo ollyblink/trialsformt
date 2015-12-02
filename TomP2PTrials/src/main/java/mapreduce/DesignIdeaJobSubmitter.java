@@ -2,9 +2,9 @@ package mapreduce;
 
 import java.io.File;
 
-import mapreduce.client.MRJobSubmissionManager;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.jobtask.Job;
+import mapreduce.manager.MRJobSubmissionManager;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileSizes;
 import mapreduce.utils.FileUtils;

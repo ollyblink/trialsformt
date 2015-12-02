@@ -1,4 +1,4 @@
-package mapreduce.execution.broadcasthandler.messageconsumer;
+package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
@@ -6,15 +6,11 @@ import java.util.concurrent.BlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.TreeMultimap;
-
-import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.execution.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
+import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -75,14 +71,19 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 		return jobs;
 	}
 
+	public AbstractMessageConsumer isBusy(boolean isBusy) {
+		this.isBusy = isBusy;
+		return this;
+	}
+
+	public boolean isBusy() {
+		return this.isBusy;
+	}
+
 	// Dummy implementations
 
 	@Override
 	public void handleReceivedJob(Job job) {
-	}
-
-	@Override
-	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, PeerAddress peerAddress, BCStatusType currentStatus) {
 	}
 
 	@Override
@@ -99,12 +100,15 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	}
 
-	public AbstractMessageConsumer isBusy(boolean isBusy) {
-		this.isBusy = isBusy;
-		return this;
+	@Override
+	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, Tuple<PeerAddress, BCStatusType> toUpdate) {
+		// TODO Auto-generated method stub
+
 	}
 
-	public boolean isBusy() {
-		return this.isBusy;
+	@Override
+	public void handleFinishedTaskComparion(String jobId, String taskId, Tuple<PeerAddress, Integer> finalDataLocation) {
+		// TODO Auto-generated method stub
+
 	}
 }

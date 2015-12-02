@@ -1,4 +1,4 @@
-package mapreduce.execution.broadcasthandler;
+package mapreduce.manager.broadcasthandler;
 
 import java.io.IOException;
 import java.util.NavigableMap;
@@ -7,7 +7,7 @@ import java.util.concurrent.BlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.StructuredBroadcastHandler;

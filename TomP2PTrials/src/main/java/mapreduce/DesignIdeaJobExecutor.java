@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import mapreduce.execution.computation.context.PrintContext;
 import mapreduce.execution.computation.context.WaitingContext;
-import mapreduce.execution.scheduling.MinAssignedWorkersTaskScheduler;
-import mapreduce.server.MRJobExecutionManager;
+import mapreduce.execution.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
+import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.GetOwnIpAddressTest;
 
@@ -29,7 +29,7 @@ public class DesignIdeaJobExecutor {
 			waitingTime = 1;
 		}
 		MRJobExecutionManager jobExecutor = MRJobExecutionManager.newInstance(dhtConnectionProvider).context(WaitingContext.newInstance().waitingTime(waitingTime))
-				.taskScheduler(MinAssignedWorkersTaskScheduler.newInstance());
+				.taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.newInstance());
 
 		jobExecutor.start();
 

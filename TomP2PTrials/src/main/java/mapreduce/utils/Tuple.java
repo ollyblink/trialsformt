@@ -16,23 +16,23 @@ public final class Tuple<A, B> implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 7791705958098258390L;
-	private A first;
-	private B second;
+	private final A first;
+	private final B second;
 
-	private Tuple(A first, B second) {
+	private Tuple(final A first, final B second) {
 		this.first = first;
 		this.second = second;
 	}
 
-	public static <A, B> Tuple<A, B> newInstance(A first, B second) {
+	public static <A, B> Tuple<A, B> newInstance(final A first, final B second) {
 		return new Tuple<A, B>(first, second);
 	}
 
-	public A first() {
+	public final A first() {
 		return first;
 	}
 
-	public B second() {
+	public final B second() {
 		return second;
 	}
 
