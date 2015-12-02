@@ -32,8 +32,8 @@ public final class LocationBean {
 		return this;
 	}
 
-	public String domain(final Task task) {
-		return task.id() + procedureSimpleName + peerId + jobStatusIndex;
+	public String domain(String taskId) {
+		return taskId + procedureSimpleName + peerId + jobStatusIndex;
 	}
 
 }

@@ -4,7 +4,7 @@ import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsu
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
 
-public class FinishedTaskComparionsBCMessage extends AbstractBCMessage {
+public class FinishedTaskComparionsBCMessage extends TaskUpdateBCMessage {
 
 	/**
 	 * 
@@ -12,11 +12,7 @@ public class FinishedTaskComparionsBCMessage extends AbstractBCMessage {
 	private static final long serialVersionUID = -6193571212837570134L;
 	private Tuple<PeerAddress, Integer> finalDataLocation;
 	private String taskId;
-
-	@Override
-	public BCStatusType status() {
-		return BCStatusType.FINISHED_TASK_COMPARISON;
-	}
+ 
 
 	@Override
 	public void execute(IMessageConsumer messageConsumer) {
@@ -24,7 +20,7 @@ public class FinishedTaskComparionsBCMessage extends AbstractBCMessage {
 	}
 
 	private FinishedTaskComparionsBCMessage() {
-
+		super(BCStatusType.FINISHED_TASK_COMPARISON);
 	}
 
 	public static FinishedTaskComparionsBCMessage newInstance() {

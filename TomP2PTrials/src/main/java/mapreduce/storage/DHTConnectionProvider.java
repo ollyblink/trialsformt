@@ -25,12 +25,14 @@ import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
 import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedAllTasksBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedJobBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedTaskComparionsBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.utils.FormatUtils;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.FutureRemove;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFuture;
@@ -230,13 +232,21 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastFinishedCompareTaskResults(Task task) {
-		broadcastTask(task, TaskUpdateBCMessage.newExecutingTaskInstance().sender(this.connectionPeer.peerAddress()));
+		broadcastTask(task,
+				FinishedTaskComparionsBCMessage.newInstance().finalDataLocation(task.finalDataLocation()).sender(this.connectionPeer.peerAddress()));
 
 	}
+	
+
+	@Override
+	public void broadcastFinishedAllTaskComparisons(Job job) {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 	private void broadcastTask(Task task, TaskUpdateBCMessage message) {
-		// task.updateExecutingPeerStatus(message.sender(), message.status());
-		try {
+ 		try {
 			Number160 taskHash = Number160.createHash(task.id() + message.sender().toString() + message.status());
 			message.taskId(task.id()).jobId(task.jobId()).sender(this.connectionPeer.peerAddress());
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
@@ -329,8 +339,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		final Multimap<Object, Object> taskKeyValues = ArrayListMultimap.create();
 
 		// String domain = domain(task, task.finalPeerAddress());
-		Number160 domainKey = Number160.createHash(locationBean.domain(task));
-		logger.info("getTaskData: Domain: " + locationBean.domain(task));
+		Number160 domainKey = Number160.createHash(locationBean.domain(task.id()));
+		logger.info("getTaskData: Domain: " + locationBean.domain(task.id()));
 		logger.info("getTaskData: Domainkey: " + domainKey);
 		List<Object> taskKeys = getTaskKeys(task, locationBean);
 		logger.info("getTaskData: taskkeys: " + taskKeys);
@@ -363,7 +373,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public List<Object> getTaskKeys(Task task, LocationBean locationBean) {
 		List<Object> keys = new ArrayList<Object>();
 		// String domain = domain(task, task.finalPeerAddress());
-		String domain = locationBean.domain(task);
+		String domain = locationBean.domain(task.id());
 		Number160 domainKey = Number160.createHash(domain);
 		Number160 keyLocationHash = Number160.createHash(KEY_LOCATION_PREAMBLE + domain);
 		FutureGet getFuture = connectionPeer.get(keyLocationHash).domainKey(domainKey).all().start();
@@ -385,6 +395,62 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 			}
 		}
 		return keys;
+	}
+
+	@Override
+	public void removeTaskResultsFor(Task task, LocationBean locationBean) {
+		List<Object> keys = getTaskKeys(task, locationBean);
+		// String domain = domain(task, task.finalPeerAddress());
+		String domain = locationBean.domain(task.id());
+		Number160 domainKey = Number160.createHash(domain);
+		for (final Object key : keys) {
+			connectionPeer.remove(Number160.createHash(key.toString())).domainKey(domainKey).all().start()
+					.addListener(new BaseFutureListener<FutureRemove>() {
+
+						@Override
+						public void operationComplete(FutureRemove future) throws Exception {
+							if (future.isSuccess()) {
+								logger.warn("Successfully removed data");
+							} else {
+								logger.warn("No success on trying to remove data for key " + key + ".");
+							}
+						}
+
+						@Override
+						public void exceptionCaught(Throwable t) throws Exception {
+							logger.debug("Exception caught", t);
+						}
+					}
+
+			);
+		}
+	}
+
+	@Override
+	public void removeTaskKeysFor(Task task, LocationBean locationBean) {
+
+		String domain = locationBean.domain(task.id());
+		Number160 domainKey = Number160.createHash(domain);
+		Number160 keyLocationHash = Number160.createHash(KEY_LOCATION_PREAMBLE + domain);
+		connectionPeer.remove(keyLocationHash).domainKey(domainKey).all().start().addListener(new BaseFutureListener<FutureRemove>() {
+
+			@Override
+			public void operationComplete(FutureRemove removeFuture) throws Exception {
+				if (removeFuture.isSuccess()) {
+					logger.warn("Successfully removed data");
+				} else {
+					logger.warn("Something wrong trying to remove keys.");
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.debug("Exception caught", t);
+
+			}
+		}
+
+		);
 	}
 
 	@Override

@@ -10,9 +10,9 @@ public class TaskUpdateBCMessage extends AbstractBCMessage {
 	 * 
 	 */
 	private static final long serialVersionUID = 7388714464226222965L;
-	private String taskId;
-	private String jobId;
-	private BCStatusType status;
+	protected String taskId;
+	protected String jobId;
+	protected BCStatusType status;
 
 	@Override
 	public BCStatusType status() {
@@ -36,7 +36,7 @@ public class TaskUpdateBCMessage extends AbstractBCMessage {
 		return new TaskUpdateBCMessage(BCStatusType.EXECUTING_TASK_COMPARISON);
 	}
 
-	private TaskUpdateBCMessage(BCStatusType status) {
+	protected TaskUpdateBCMessage(BCStatusType status) {
 		this.status = status;
 	}
 

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import mapreduce.execution.jobtask.Task;
 import mapreduce.utils.Tuple;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 public class HashTaskResultComparator implements ITaskResultComparator {
@@ -23,13 +24,20 @@ public class HashTaskResultComparator implements ITaskResultComparator {
 		ArrayList<PeerAddress> allAssignedPeers = task.allAssignedPeers();
 		for (PeerAddress peerAddress : allAssignedPeers) {
 			task.statiForPeer(peerAddress);
+
 		}
 		return tuple;
 	}
 
 	@Override
 	public void abortTaskComparison() {
-		//Ja nie snaiu, ja nitschewo nie ponimaju
+		// Ja nie snaiu, ja nitschewo nie ponimaju
+
 	}
 
+	public static void main(String[] args) {
+		Number160 hash1 = Number160.createHash("Hello world this is me");
+		Number160 hash2 = Number160.createHash("Hello world this is me");
+		System.out.println(hash1.xor(hash2)); 
+	}
 }

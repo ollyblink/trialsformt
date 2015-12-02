@@ -14,5 +14,9 @@ public interface ITaskResultComparator {
 	public Tuple<PeerAddress, Integer> evaluateTaskResults(Task task);
 
 	public void abortTaskComparison();
- 
+
+	public boolean abortedTaskComparisons();
+
+	public void abortedTaskComparisons(boolean abortedTaskComparisons);
+
 }

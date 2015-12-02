@@ -192,18 +192,20 @@ public class Job implements Serializable {
 	public void synchronizeFinishedTasksStati(Collection<Task> receivedSyncTasks) {
 		// for (ProcedureTaskTupel tupel : procedures) {
 		BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
-		if (tasks != null) {
-			for (Task task1 : tasks) {
-				for (Task task2 : receivedSyncTasks) {
-					if (task1.id().equals(task2.id())) {
-						task1.synchronizeFinishedTaskStatiWith(task2);
-						break;
-					} else {
-						continue;
-					}
-				}
-			}
-		}
+		// if (tasks != null) {
+		// for (Task task1 : tasks) {
+		// for (Task task2 : receivedSyncTasks) {
+		// if (task1.id().equals(task2.id())) {
+		// task1.synchronizeFinishedTaskStatiWith(task2);
+		// break;
+		// } else {
+		// continue;
+		// }
+		// }
+		// }
+		// }
+		tasks.clear();
+		tasks.addAll(receivedSyncTasks);
 	}
 
 	public void updateTaskFinalDataLocation(String taskId, Tuple<PeerAddress, Integer> finalDataLocation) {

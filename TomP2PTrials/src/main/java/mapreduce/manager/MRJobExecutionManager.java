@@ -21,6 +21,7 @@ import mapreduce.execution.scheduling.taskexecutionscheduling.RandomTaskExecutio
 import mapreduce.execution.taskresultcomparison.HashTaskResultComparator;
 import mapreduce.execution.taskresultcomparison.ITaskResultComparator;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutorMessageConsumer;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.storage.LocationBean;
 import mapreduce.utils.Tuple;
@@ -162,10 +163,12 @@ public class MRJobExecutionManager {
 			this.dhtConnectionProvider.broadcastFinishedTask(task);
 		}
 		if (!this.taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
+			// Clean up all "executing" tasks
+			cleanUp(job);
 			this.dhtConnectionProvider.broadcastFinishedAllTasks(job);
 			// abortTaskExecution();
 			logger.info("This executor aborts task execution!");
-			this.messageConsumer.removeRemainingExecutionMessagesForThisTask(job.id());
+			this.messageConsumer.removeMessagesFromJobWithStati(job.id());
 
 			// Only printing
 			// BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
@@ -184,10 +187,8 @@ public class MRJobExecutionManager {
 			}
 		}
 		// Task Comparison & new task creation
-		tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex())); // Eventually can also reuse it directly from above?
+		tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex())); // Hypothetically, can also reuse it directly from above?
 
-		// Simpler, just check if finalDataLocation is null or not
-		tasks = new LinkedList<Task>(job.tasks(job.currentProcedureIndex()));
 		task = null;
 		while ((task = this.taskResultComparisonScheduler.schedule(tasks)) != null && canExecute()) {
 			this.dhtConnectionProvider.broadcastExecutingCompareTaskResults(task);
@@ -195,7 +196,56 @@ public class MRJobExecutionManager {
 			task.finalDataLocation(taskResultEvaluationResult);
 			this.dhtConnectionProvider.broadcastFinishedCompareTaskResults(task);
 		}
+		if (!this.taskResultComparator.abortedTaskComparisons()) { // this means that this executor is actually the one that is going to abort the
+																	// others...
+			// Clean up all "executing" tasks
+			cleanUp(job);
+			this.dhtConnectionProvider.broadcastFinishedAllTaskComparisons(job);
+			// abortTaskExecution();
+			logger.info("This executor aborts task comparisons!");
+			this.messageConsumer.removeMessagesFromJobWithStati(job.id());
 
+			// Only printing
+			// BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
+			// for (Task t : ts) {
+			// logger.info("Task " + t.id());
+			// for (PeerAddress pAddress : t.allAssignedPeers()) {
+			// logger.info(pAddress.inetAddress() + ":" + pAddress.tcpPort() + ": " + t.statiForPeer(pAddress));
+			// }
+			// }
+		}
+
+		while (this.messageConsumer.isBusy()) {
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		// Create new tasks
+		// submit new tasks
+
+	}
+
+	private void cleanUp(final Job job) {
+		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
+		for (final Task task : tasks) {
+			for (final PeerAddress peerAddress : task.allAssignedPeers()) {
+				final int jobStatusIndex = task.statiForPeer(peerAddress).indexOf(BCStatusType.EXECUTING_TASK); // there is at most one
+																												// "EXECUTING_TASK" per PeerAddress
+				task.statiForPeer(peerAddress).remove(jobStatusIndex);
+				new Thread(new Runnable() {
+
+					@Override
+					public void run() {
+						dhtConnectionProvider.removeTaskResultsFor(task,
+								LocationBean.newInstance(Tuple.newInstance(peerAddress, jobStatusIndex), task.procedure()));
+					}
+
+				}).start();
+
+			}
+		}
 	}
 
 	public void abortTaskExecution() {

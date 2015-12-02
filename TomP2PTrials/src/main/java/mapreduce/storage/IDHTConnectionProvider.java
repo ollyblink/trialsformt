@@ -40,6 +40,10 @@ public interface IDHTConnectionProvider {
 
 	public List<Object> getTaskKeys(Task task, LocationBean locationBean);
 
+	public void removeTaskResultsFor(Task task, LocationBean locationBean);
+
+	void removeTaskKeysFor(Task task, LocationBean locationBean);
+
 	// Broadcasts
 	public MRBroadcastHandler broadcastHandler();
 
@@ -49,11 +53,13 @@ public interface IDHTConnectionProvider {
 
 	public void broadcastFinishedTask(Task task);
 
+	public void broadcastFinishedAllTasks(Job job);
+
 	public void broadcastExecutingCompareTaskResults(Task task);
 
 	public void broadcastFinishedCompareTaskResults(Task task);
 
-	public void broadcastFinishedAllTasks(Job job);
+	public void broadcastFinishedAllTaskComparisons(Job job);
 
 	public void broadcastFinishedJob(Job job);
 

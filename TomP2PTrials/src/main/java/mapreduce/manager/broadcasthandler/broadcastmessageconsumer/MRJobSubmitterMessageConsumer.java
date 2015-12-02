@@ -38,25 +38,31 @@ public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
 	@Override
 	protected void handleBCMessage(IBCMessage nextMessage) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, Tuple<PeerAddress, BCStatusType> toUpdate) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void handleFinishedTaskComparion(String jobId, String taskId, Tuple<PeerAddress, Integer> finalDataLocation) {
 		// TODO Auto-generated method stub
-		
+
+	}
+
+	@Override
+	public void handleFinishedAllTaskComparisons(String jobId, Collection<Task> tasks, PeerAddress sender) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

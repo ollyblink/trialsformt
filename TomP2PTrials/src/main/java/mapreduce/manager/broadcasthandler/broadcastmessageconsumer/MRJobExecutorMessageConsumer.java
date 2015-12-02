@@ -1,8 +1,13 @@
 package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
+
+import com.google.common.reflect.TypeToken.TypeSet;
 
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
@@ -64,15 +69,6 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	@Override
-	public void handleFinishedTaskComparion(String jobId, String taskId, Tuple<PeerAddress, Integer> finalDataLocation) {
-		for (Job job : jobs) {
-			if (job.id().equals(jobId)) {
-				job.updateTaskFinalDataLocation(taskId, finalDataLocation);
-			}
-		}
-	}
-
-	@Override
 	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender) {
 		if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
 			return;
@@ -80,32 +76,37 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 		logger.info("This executor has its task execution aborted!");
 
 		jobExecutor.abortTaskExecution();
+		syncTasks(jobId, tasks);
+	}
+
+	private void syncTasks(String jobId, Collection<Task> tasks) {
 		for (Job job : jobs) {
 			if (job.id().equals(jobId)) {
 				this.isBusy(true);
 				job.synchronizeFinishedTasksStati(tasks);
-
-				removeRemainingExecutionMessagesForThisTask(jobId);
-
-				// Only printing
-				BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
-				for (Task t : ts) {
-					logger.info("Task " + t.id());
-					for (PeerAddress pAddress : t.allAssignedPeers()) {
-						logger.info(pAddress.inetAddress() + ":" + pAddress.tcpPort() + ": " + t.statiForPeer(pAddress));
-					}
-				}
+				removeMessagesFromJobWithStati(jobId);
 				this.isBusy(false);
 			}
 		}
 	}
 
-	public void removeRemainingExecutionMessagesForThisTask(String jobId) {
+	@Override
+	public void handleFinishedAllTaskComparisons(String jobId, Collection<Task> tasks, PeerAddress sender) {
+		if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
+			return;
+		}
+		logger.info("This executor has its task comparisons aborted!");
+		jobExecutor.abortTaskComparison();
+		syncTasks(jobId, tasks);
+	}
+
+	public void removeMessagesFromJobWithStati(String jobId, BCStatusType... stati) {
+		Set<BCStatusType> typesSet = new HashSet<BCStatusType>();
+		Collections.addAll(typesSet, stati);
 		synchronized (bcMessages) {
 			BlockingQueue<IBCMessage> remainingBCMessages = new PriorityBlockingQueue<IBCMessage>();
-
 			for (IBCMessage message : bcMessages) {
-				if (!message.jobId().equals(jobId)) {
+				if (!message.jobId().equals(jobId) && !typesSet.contains(message.status())) {
 					remainingBCMessages.add(message);
 					logger.warn("Kept message: " + message);
 				} else {
@@ -113,6 +114,15 @@ public class MRJobExecutorMessageConsumer extends AbstractMessageConsumer {
 				}
 			}
 			this.bcMessages = remainingBCMessages;
+		}
+	}
+
+	@Override
+	public void handleFinishedTaskComparion(String jobId, String taskId, Tuple<PeerAddress, Integer> finalDataLocation) {
+		for (Job job : jobs) {
+			if (job.id().equals(jobId)) {
+				job.updateTaskFinalDataLocation(taskId, finalDataLocation);
+			}
 		}
 	}
 

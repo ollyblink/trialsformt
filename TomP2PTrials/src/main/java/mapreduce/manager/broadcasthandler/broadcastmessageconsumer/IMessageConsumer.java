@@ -18,9 +18,11 @@ public interface IMessageConsumer extends Runnable {
 
 	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, Tuple<PeerAddress, BCStatusType> toUpdate);
 
+	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender);
+
 	public void handleFinishedTaskComparion(String jobId, String taskId, Tuple<PeerAddress, Integer> finalDataLocation);
 
-	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender);
+	public void handleFinishedAllTaskComparisons(String jobId, Collection<Task> tasks, PeerAddress sender);
 
 	public void handleFinishedJob(String jobId, String jobSubmitterId);
 
