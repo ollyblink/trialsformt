@@ -17,7 +17,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
@@ -33,8 +33,8 @@ public class Task implements Serializable, Comparable<Task> {
 	private String id;
 	private String jobId;
 	private IMapReduceProcedure procedure;
-	private Multimap<PeerAddress, BCStatusType> executingPeers;
-	private Map<PeerAddress, BCStatusType> comparingPeers;
+	private Multimap<PeerAddress, BCMessageStatus> executingPeers;
+	private Map<PeerAddress, BCMessageStatus> comparingPeers;
 
 	private boolean isFinished;
 	private int maxNrOfFinishedWorkers;
@@ -49,9 +49,9 @@ public class Task implements Serializable, Comparable<Task> {
 	private Tuple<PeerAddress, Integer> finalDataLocation;
 
 	private Task(String jobId) {
-		Multimap<PeerAddress, BCStatusType> tmp = ArrayListMultimap.create();
+		Multimap<PeerAddress, BCMessageStatus> tmp = ArrayListMultimap.create();
 		this.executingPeers = Multimaps.synchronizedMultimap(tmp);
-		this.comparingPeers = Collections.synchronizedMap(new HashMap<PeerAddress, BCStatusType>());
+		this.comparingPeers = Collections.synchronizedMap(new HashMap<PeerAddress, BCMessageStatus>());
 		this.jobId = jobId;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName()) + "_" + jobId;
 	}
@@ -124,14 +124,14 @@ public class Task implements Serializable, Comparable<Task> {
 	}
 
 	public boolean taskComparisonAssigned() {
-		return this.comparingPeers.values().contains(BCStatusType.EXECUTING_TASK_COMPARISON);
+		return this.comparingPeers.values().contains(BCMessageStatus.EXECUTING_TASK_COMPARISON);
 	}
 
-	public void updateStati(Tuple<PeerAddress, BCStatusType> toUpdate) {
+	public void updateStati(Tuple<PeerAddress, BCMessageStatus> toUpdate) {
 		switch (toUpdate.second()) {
 		case EXECUTING_TASK:
 		case FINISHED_TASK:
-			updateTaskStati(toUpdate, executingPeers, Tuple.newInstance(BCStatusType.EXECUTING_TASK, BCStatusType.FINISHED_TASK));
+			updateTaskStati(toUpdate, executingPeers, Tuple.create(BCMessageStatus.EXECUTING_TASK, BCMessageStatus.FINISHED_TASK));
 			break;
 		case EXECUTING_TASK_COMPARISON:
 			this.comparingPeers.put(toUpdate.first(), toUpdate.second());
@@ -143,12 +143,12 @@ public class Task implements Serializable, Comparable<Task> {
 		}
 	}
 
-	private void updateTaskStati(Tuple<PeerAddress, BCStatusType> toUpdate, Multimap<PeerAddress, BCStatusType> peers,
-			Tuple<BCStatusType, BCStatusType> toCheck) {
+	private void updateTaskStati(Tuple<PeerAddress, BCMessageStatus> toUpdate, Multimap<PeerAddress, BCMessageStatus> peers,
+			Tuple<BCMessageStatus, BCMessageStatus> toCheck) {
 		synchronized (peers) {
 			PeerAddress peerAddress = toUpdate.first();
-			BCStatusType currentStatus = toUpdate.second();
-			LinkedList<BCStatusType> jobStati = new LinkedList<BCStatusType>(this.executingPeers.removeAll(peerAddress));
+			BCMessageStatus currentStatus = toUpdate.second();
+			LinkedList<BCMessageStatus> jobStati = new LinkedList<BCMessageStatus>(this.executingPeers.removeAll(peerAddress));
 
 			if (jobStati.size() > 0) {
 				if (currentStatus == toCheck.first()) {
@@ -201,13 +201,13 @@ public class Task implements Serializable, Comparable<Task> {
 	 *            <code>JobStatus</code> to check how many peers for this task are currently holding it
 	 * @return number of peers that were assigned this task and currently hold the specified <code>JobStatus</code>
 	 */
-	public int numberOfPeersWithMultipleSameStati(BCStatusType statusToCheck) {
+	public int numberOfPeersWithMultipleSameStati(BCMessageStatus statusToCheck) {
 		int nrOfPeers = 0;
 		synchronized (executingPeers) {
 			for (PeerAddress executingPeer : this.executingPeers.keySet()) {
 				int nrOfStatus = 0;
-				Collection<BCStatusType> stati = this.executingPeers.get(executingPeer);
-				for (BCStatusType status : stati) {
+				Collection<BCMessageStatus> stati = this.executingPeers.get(executingPeer);
+				for (BCMessageStatus status : stati) {
 					if (status.equals(statusToCheck)) {
 						++nrOfStatus;
 					}
@@ -220,13 +220,13 @@ public class Task implements Serializable, Comparable<Task> {
 		return nrOfPeers;
 	}
 
-	public int numberOfPeersWithSingleStatus(BCStatusType statusToCheck) {
+	public int numberOfPeersWithSingleStatus(BCMessageStatus statusToCheck) {
 		int nrOfPeers = 0;
 		synchronized (executingPeers) {
 			for (PeerAddress executingPeer : this.executingPeers.keySet()) {
 				int nrOfStatus = 0;
-				Collection<BCStatusType> stati = this.executingPeers.get(executingPeer);
-				for (BCStatusType status : stati) {
+				Collection<BCMessageStatus> stati = this.executingPeers.get(executingPeer);
+				for (BCMessageStatus status : stati) {
 					if (status.equals(statusToCheck)) {
 						++nrOfStatus;
 					}
@@ -244,9 +244,9 @@ public class Task implements Serializable, Comparable<Task> {
 		synchronized (executingPeers) {
 			for (PeerAddress executingPeer : this.executingPeers.keySet()) {
 				int nrOfStatus = 0;
-				Collection<BCStatusType> stati = this.executingPeers.get(executingPeer);
-				for (BCStatusType status : stati) {
-					if (status.equals(BCStatusType.FINISHED_TASK)) {
+				Collection<BCMessageStatus> stati = this.executingPeers.get(executingPeer);
+				for (BCMessageStatus status : stati) {
+					if (status.equals(BCMessageStatus.FINISHED_TASK)) {
 						++nrOfStatus;
 						break;
 					}
@@ -260,19 +260,19 @@ public class Task implements Serializable, Comparable<Task> {
 	}
 
 	public int totalNumberOfFinishedExecutions() {
-		return countTotalNumber(BCStatusType.FINISHED_TASK);
+		return countTotalNumber(BCMessageStatus.FINISHED_TASK);
 	}
 
 	public int totalNumberOfCurrentExecutions() {
-		return countTotalNumber(BCStatusType.EXECUTING_TASK);
+		return countTotalNumber(BCMessageStatus.EXECUTING_TASK);
 	}
 
-	private int countTotalNumber(BCStatusType statusToCheck) {
+	private int countTotalNumber(BCMessageStatus statusToCheck) {
 		int nrOfFinishedExecutions = 0;
 		synchronized (executingPeers) {
 			for (PeerAddress executingPeer : this.executingPeers.keySet()) {
-				Collection<BCStatusType> stati = this.executingPeers.get(executingPeer);
-				for (BCStatusType status : stati) {
+				Collection<BCMessageStatus> stati = this.executingPeers.get(executingPeer);
+				for (BCMessageStatus status : stati) {
 					if (status.equals(statusToCheck)) {
 						++nrOfFinishedExecutions;
 					}
@@ -282,11 +282,11 @@ public class Task implements Serializable, Comparable<Task> {
 		return nrOfFinishedExecutions;
 	}
 
-	public int numberOfSameStatiForPeer(PeerAddress peerAddress, BCStatusType statusToCheck) {
+	public int numberOfSameStatiForPeer(PeerAddress peerAddress, BCMessageStatus statusToCheck) {
 		int statiCount = 0;
 		synchronized (executingPeers) {
-			Collection<BCStatusType> stati = this.executingPeers.get(peerAddress);
-			for (BCStatusType status : stati) {
+			Collection<BCMessageStatus> stati = this.executingPeers.get(peerAddress);
+			for (BCMessageStatus status : stati) {
 				if (status.equals(statusToCheck)) {
 					++statiCount;
 				}
@@ -301,9 +301,9 @@ public class Task implements Serializable, Comparable<Task> {
 		}
 	}
 
-	public ArrayList<BCStatusType> statiForPeer(PeerAddress peerAddress) {
+	public ArrayList<BCMessageStatus> statiForPeer(PeerAddress peerAddress) {
 		synchronized (executingPeers) {
-			return new ArrayList<BCStatusType>(this.executingPeers.get(peerAddress));
+			return new ArrayList<BCMessageStatus>(this.executingPeers.get(peerAddress));
 		}
 	}
 
@@ -316,8 +316,9 @@ public class Task implements Serializable, Comparable<Task> {
 
 	@Override
 	public String toString() {
-		return "Task [id=" + id + ", jobId=" + jobId + ", procedure=" + procedure + /* ", keys=" + keys + */", executingPeers=" + executingPeers
-				+ ", isFinished=" + isFinished + "]";
+		return "Task [id=" + id + ", jobId=" + jobId + ", procedure=" + procedure + ", executingPeers=" + executingPeers + ", comparingPeers="
+				+ comparingPeers + ", isFinished=" + isFinished + ", maxNrOfFinishedWorkers=" + maxNrOfFinishedWorkers + ", initialDataLocation="
+				+ initialDataLocation + ", finalDataLocation=" + finalDataLocation + "]";
 	}
 
 	public void synchronizeFinishedTaskStatiWith(Task receivedTask) {
@@ -364,13 +365,13 @@ public class Task implements Serializable, Comparable<Task> {
 			return true;
 		if (obj == null)
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
+		// if (getClass() != obj.getClass())
+		// return false;
 		Task other = (Task) obj;
 		if (id == null) {
-			if (other.id != null)
+			if (other.id() != null)
 				return false;
-		} else if (!id.equals(other.id))
+		} else if (!id.equals(other.id()))
 			return false;
 		return true;
 	}
@@ -389,7 +390,7 @@ public class Task implements Serializable, Comparable<Task> {
 		// taskCopy.keys = keys;// Shallow copy...
 		taskCopy.maxNrOfFinishedWorkers = maxNrOfFinishedWorkers;
 		taskCopy.procedure = procedure;
-		Multimap<PeerAddress, BCStatusType> tmp = ArrayListMultimap.create();
+		Multimap<PeerAddress, BCMessageStatus> tmp = ArrayListMultimap.create();
 		taskCopy.executingPeers = Multimaps.synchronizedMultimap(tmp);
 		// for(PeerAddress peerAddress: executingPeers.keySet()){
 		// taskCopy.executingPeers.putAll(new PeerAddress(peerAddress.peerId()), executingPeers.get(peerAddress));

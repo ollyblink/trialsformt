@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureTaskTupel;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
@@ -174,7 +174,7 @@ public class Job implements Serializable {
 		return this;
 	}
 
-	public void updateTaskExecutionStatus(String taskId, Tuple<PeerAddress, BCStatusType> toUpdate) {
+	public void updateTaskExecutionStatus(String taskId, Tuple<PeerAddress, BCMessageStatus> toUpdate) {
 		// for (ProcedureTaskTupel tupel : procedures) {
 		BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
 		logger.warn(taskId + " to update, " + tasks);
@@ -208,12 +208,12 @@ public class Job implements Serializable {
 		tasks.addAll(receivedSyncTasks);
 	}
 
-	public void updateTaskFinalDataLocation(String taskId, Tuple<PeerAddress, Integer> finalDataLocation) {
+	public void updateTaskFinalDataLocation(Task receivedTask) {
 		BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
 		if (tasks != null) {
 			for (Task task : tasks) {
-				if (task.id().equals(taskId)) {
-					task.finalDataLocation(finalDataLocation);
+				if (task.equals(receivedTask)) {
+					task.finalDataLocation(receivedTask.finalDataLocation());
 				}
 			}
 		}
@@ -248,13 +248,13 @@ public class Job implements Serializable {
 			return true;
 		if (obj == null)
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
+		// if (getClass() != obj.getClass())
+		// return false;
 		Job other = (Job) obj;
 		if (id == null) {
-			if (other.id != null)
+			if (other.id() != null)
 				return false;
-		} else if (!id.equals(other.id))
+		} else if (!id.equals(other.id()))
 			return false;
 		return true;
 	}

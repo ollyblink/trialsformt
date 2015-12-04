@@ -46,5 +46,12 @@ public final class ProcedureTaskTupel implements Comparable<ProcedureTaskTupel>,
 	public int compareTo(ProcedureTaskTupel o) {
 		return procedureNumber.compareTo(o.procedureNumber);
 	}
+ 
+	@Override
+	public String toString() {
+		return this.procedure+", "+this.procedureNumber+", "+this.tasks;
+	}
+
+ 
 
 }

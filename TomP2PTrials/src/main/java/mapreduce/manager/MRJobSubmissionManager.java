@@ -54,7 +54,7 @@ public class MRJobSubmissionManager {
 		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		for (final Task task : job.firstTasks()) {
 			//Set the initial data location for the first task set
-			task.initialDataLocation(Tuple.newInstance(this.dhtConnectionProvider().peerAddress(), 0));
+			task.initialDataLocation(Tuple.create(this.dhtConnectionProvider().peerAddress(), 0));
 
 			server.submit(new Runnable() {
 

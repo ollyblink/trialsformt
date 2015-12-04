@@ -1,11 +1,10 @@
 package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
-import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
@@ -16,15 +15,13 @@ public interface IMessageConsumer extends Runnable {
 
 	public void handleReceivedJob(Job job);
 
-	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, Tuple<PeerAddress, BCStatusType> toUpdate);
+	public void handleTaskExecutionStatusUpdate(Task task, Tuple<PeerAddress, BCMessageStatus> toUpdate);
 
-	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender);
+	public void handleFinishedTaskComparion(Task task);
 
-	public void handleFinishedTaskComparion(String jobId, String taskId, Tuple<PeerAddress, Integer> finalDataLocation);
+	public void updateJob(Job job, BCMessageStatus status, PeerAddress sender);
 
-	public void handleFinishedAllTaskComparisons(String jobId, Collection<Task> tasks, PeerAddress sender);
-
-	public void handleFinishedJob(String jobId, String jobSubmitterId);
+	public void handleFinishedJob(Job job, String jobSubmitterId);
 
 	public BlockingQueue<IBCMessage> queue();
 

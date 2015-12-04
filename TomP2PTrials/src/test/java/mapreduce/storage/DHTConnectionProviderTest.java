@@ -1,6 +1,7 @@
 package mapreduce.storage;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,7 @@ import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.jobtask.Task;
+import mapreduce.utils.Tuple;
 
 public class DHTConnectionProviderTest {
 
@@ -62,7 +64,7 @@ public class DHTConnectionProviderTest {
 		}
 		// Thread.sleep(1000);
 
-		LocationBean location = LocationBean.newInstance(connectionProviders.get(putter).peerAddress(), -1, procedure);
+		LocationBean location = LocationBean.newInstance(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
 		System.err.println(dataForTask.keySet().size());
 
@@ -100,7 +102,7 @@ public class DHTConnectionProviderTest {
 			connectionProviders.get(putter).addTaskData(task, o, new Integer(1), true);
 		}
 		// Thread.sleep(1000);
-		LocationBean location = LocationBean.newInstance(connectionProviders.get(putter).peerAddress(), -1, procedure);
+		LocationBean location = LocationBean.newInstance(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
 
 		System.err.println(dataForTask);
@@ -145,7 +147,7 @@ public class DHTConnectionProviderTest {
 			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr), true);
 		}
 		// Thread.sleep(1000);
-		LocationBean location = LocationBean.newInstance(connectionProviders.get(putter).peerAddress(), -1, procedure);
+		LocationBean location = LocationBean.newInstance(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
 
 		System.err.println(dataForTask);

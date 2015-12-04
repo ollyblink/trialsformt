@@ -24,7 +24,7 @@ public final class Tuple<A, B> implements Serializable {
 		this.second = second;
 	}
 
-	public static <A, B> Tuple<A, B> newInstance(final A first, final B second) {
+	public static <A, B> Tuple<A, B> create(final A first, final B second) {
 		return new Tuple<A, B>(first, second);
 	}
 

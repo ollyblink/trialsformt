@@ -40,4 +40,16 @@ public class HashTaskResultComparator implements ITaskResultComparator {
 		Number160 hash2 = Number160.createHash("Hello world this is me");
 		System.out.println(hash1.xor(hash2)); 
 	}
+
+	@Override
+	public boolean abortedTaskComparisons() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void abortedTaskComparisons(boolean abortedTaskComparisons) {
+		// TODO Auto-generated method stub
+		
+	}
 }

@@ -6,16 +6,17 @@ import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsu
 import net.tomp2p.peers.PeerAddress;
 
 public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
-	public BCStatusType status();
+	public BCMessageStatus status();
 
-	public void execute(IMessageConsumer messageConsumer);
+	/**
+	 * @return Unix timestamp of when the message was created
+	 */
+	public Long creationTime();
 
-	public IBCMessage sender(PeerAddress sender);
+	public IBCMessage sender(final PeerAddress sender);
 
 	public PeerAddress sender();
 
-	public Long creationTime();
-
-	public String jobId();
+	public void execute(final IMessageConsumer messageConsumer);
 
 }

@@ -1,6 +1,5 @@
 package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
-import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 
 import org.slf4j.Logger;
@@ -8,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.jobtask.Job;
 import mapreduce.execution.jobtask.Task;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
@@ -41,14 +40,12 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 		try {
 			while (canTake()) {
 				final IBCMessage nextMessage = bcMessages.take();
-				handleBCMessage(nextMessage);
+				nextMessage.execute(this);
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
-
-	protected abstract void handleBCMessage(IBCMessage nextMessage);
 
 	@Override
 	public AbstractMessageConsumer canTake(boolean canTake) {
@@ -81,18 +78,8 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	// Dummy implementations
-
 	@Override
-	public void handleReceivedJob(Job job) {
-	}
-
-	@Override
-	public void handleFinishedJob(String jobId, String jobSubmitterId) {
-	}
-
-	@Override
-	public void handleFinishedAllTasks(String jobId, Collection<Task> tasks, PeerAddress sender) {
-
+	public void handleFinishedJob(Job job, String jobSubmitterId) {
 	}
 
 	@Override
@@ -101,14 +88,20 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleTaskExecutionStatusUpdate(String jobId, String taskId, Tuple<PeerAddress, BCStatusType> toUpdate) {
-		// TODO Auto-generated method stub
+	public void handleReceivedJob(Job job) {
+	}
+
+	@Override
+	public void handleTaskExecutionStatusUpdate(Task task, Tuple<PeerAddress, BCMessageStatus> toUpdate) {
 
 	}
 
 	@Override
-	public void handleFinishedTaskComparion(String jobId, String taskId, Tuple<PeerAddress, Integer> finalDataLocation) {
-		// TODO Auto-generated method stub
+	public void handleFinishedTaskComparion(Task task) {
+	}
+
+	@Override
+	public void updateJob(Job job, BCMessageStatus status, PeerAddress sender) {
 
 	}
 }

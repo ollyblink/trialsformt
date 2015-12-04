@@ -1,4 +1,6 @@
-package mapreduce.server;
+package mapreduce.manager;
+
+import static org.junit.Assert.*;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -6,7 +8,7 @@ import org.junit.Test;
 
 import mapreduce.manager.MRJobExecutionManager;
 
-public class MRJobExecutorTest {
+public class MRJobExecutionManagerTest {
 
 	private static MRJobExecutionManager executor;
 
@@ -14,19 +16,13 @@ public class MRJobExecutorTest {
 	public static void setUpBeforeClass() throws Exception {
 	}
 
-	/*
-	 *  
-	 * 
-	 */
-
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
 	}
 
 	@Test
 	public void test() {
-
-		executor.start();
+		fail();
 	}
 
 }

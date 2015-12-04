@@ -1,9 +1,13 @@
 package mapreduce.manager;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +24,11 @@ import mapreduce.execution.scheduling.ITaskScheduler;
 import mapreduce.execution.scheduling.taskexecutionscheduling.RandomTaskExecutionScheduler;
 import mapreduce.execution.taskresultcomparison.HashTaskResultComparator;
 import mapreduce.execution.taskresultcomparison.ITaskResultComparator;
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutorMessageConsumer;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCStatusType;
+import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
+import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.conditions.ICondition;
+import mapreduce.manager.conditions.JobBCMessageUpdateCondition;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.storage.LocationBean;
 import mapreduce.utils.Tuple;
@@ -45,12 +52,12 @@ public class MRJobExecutionManager {
 	private ITaskResultComparator taskResultComparator;
 
 	private BlockingQueue<Job> jobs;
-	private MRJobExecutorMessageConsumer messageConsumer;
+	private MRJobExecutionManagerMessageConsumer messageConsumer;
 	private boolean canExecute;
 
 	private MRJobExecutionManager(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
-		this.messageConsumer = MRJobExecutorMessageConsumer.newInstance(jobs).jobExecutor(this).canTake(true);
+		this.messageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(this).canTake(true);
 		this.dhtConnectionProvider().broadcastHandler().queue(messageConsumer.queue());
 		this.jobs = messageConsumer.jobs();
 		new Thread(messageConsumer).start();
@@ -164,11 +171,10 @@ public class MRJobExecutionManager {
 		}
 		if (!this.taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
 			// Clean up all "executing" tasks
-			cleanUp(job);
-			this.dhtConnectionProvider.broadcastFinishedAllTasks(job);
-			// abortTaskExecution();
+			this.cleanUp(job);
+			this.dhtConnectionProvider.broadcastFinishedAllTasks(job); 
 			logger.info("This executor aborts task execution!");
-			this.messageConsumer.removeMessagesFromJobWithStati(job.id());
+			this.messageConsumer.updateMessagesFromJobUpdate(job.id(), BCMessageStatus.FINISHED_ALL_TASKS);
 
 			// Only printing
 			// BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
@@ -203,7 +209,7 @@ public class MRJobExecutionManager {
 			this.dhtConnectionProvider.broadcastFinishedAllTaskComparisons(job);
 			// abortTaskExecution();
 			logger.info("This executor aborts task comparisons!");
-			this.messageConsumer.removeMessagesFromJobWithStati(job.id());
+			this.messageConsumer.updateMessagesFromJobUpdate(job.id(), BCMessageStatus.FINISHED_ALL_TASK_COMPARIONS);
 
 			// Only printing
 			// BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
@@ -227,19 +233,24 @@ public class MRJobExecutionManager {
 
 	}
 
+	/**
+	 * Makes sue that the data for the not kept task results is deleted
+	 * @param job
+	 */
 	private void cleanUp(final Job job) {
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
 		for (final Task task : tasks) {
 			for (final PeerAddress peerAddress : task.allAssignedPeers()) {
-				final int jobStatusIndex = task.statiForPeer(peerAddress).indexOf(BCStatusType.EXECUTING_TASK); // there is at most one
-																												// "EXECUTING_TASK" per PeerAddress
+				final int jobStatusIndex = task.statiForPeer(peerAddress).indexOf(BCMessageStatus.EXECUTING_TASK); // there is at most one
+																													// "EXECUTING_TASK" per
+																													// PeerAddress
 				task.statiForPeer(peerAddress).remove(jobStatusIndex);
 				new Thread(new Runnable() {
 
 					@Override
 					public void run() {
 						dhtConnectionProvider.removeTaskResultsFor(task,
-								LocationBean.newInstance(Tuple.newInstance(peerAddress, jobStatusIndex), task.procedure()));
+								LocationBean.newInstance(Tuple.create(peerAddress, jobStatusIndex), task.procedure()));
 					}
 
 				}).start();
@@ -248,12 +259,18 @@ public class MRJobExecutionManager {
 		}
 	}
 
-	public void abortTaskExecution() {
-		this.taskExecutor.abortTaskExecution();
-	}
 
-	public void abortTaskComparison() {
-		this.taskResultComparator.abortTaskComparison();
+	public void abortExecution(BCMessageStatus messageType) {
+		switch (messageType) {
+		case FINISHED_ALL_TASKS:
+			this.taskExecutor.abortedTaskExecution();
+			break;
+		case FINISHED_ALL_TASK_COMPARIONS:
+			this.taskResultComparator.abortedTaskComparisons();
+			break;
+		default:
+			break;
+		}
 	}
 
 	// End Execution
