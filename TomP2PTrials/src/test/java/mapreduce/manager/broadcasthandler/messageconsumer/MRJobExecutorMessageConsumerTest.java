@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.AfterClass;
@@ -45,7 +46,7 @@ public class MRJobExecutorMessageConsumerTest {
 		peer1 = new PeerAddress(new Number160(1));
 		peer2 = new PeerAddress(new Number160(2));
 		peer3 = new PeerAddress(new Number160(3));
-		BlockingQueue<Job> jobs = new LinkedBlockingQueue<Job>();
+		CopyOnWriteArrayList<Job> jobs = new CopyOnWriteArrayList<Job>();
 		MRJobExecutionManager jobExecutor = Mockito.mock(MRJobExecutionManager.class);
 		DHTConnectionProvider dhtConnectionProvider = Mockito.mock(DHTConnectionProvider.class);
 		Mockito.when(jobExecutor.dhtConnectionProvider()).thenReturn(dhtConnectionProvider);
@@ -67,10 +68,10 @@ public class MRJobExecutorMessageConsumerTest {
 		Job job = Job.newInstance("TEST");
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
-		assertEquals(job.id(), testMessageConsumer.jobs().peek().id());
+		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
-		assertEquals(job.id(), testMessageConsumer.jobs().peek().id());
+		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
 	}
 
 	@Test
@@ -109,7 +110,7 @@ public class MRJobExecutorMessageConsumerTest {
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
 				TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
 
-		Job job1 = testMessageConsumer.jobs().peek();
+		Job job1 = testMessageConsumer.jobs().get(0);
 		assertEquals(2, job1.tasks(job1.currentProcedureIndex()).peek().allAssignedPeers().size());
 		assertEquals(peer1, job1.tasks(job1.currentProcedureIndex()).peek().allAssignedPeers().get(0));
 		assertEquals(2, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer1).size());
@@ -152,8 +153,8 @@ public class MRJobExecutorMessageConsumerTest {
 		}
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
-		assertEquals(job.id(), testMessageConsumer.jobs().peek().id());
-		BlockingQueue<Task> setTasks = testMessageConsumer.jobs().peek().tasks(testMessageConsumer.jobs().peek().currentProcedureIndex());
+		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
+		BlockingQueue<Task> setTasks = testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex());
 		for (Task task : setTasks) {
 			assertEquals(peer1, task.allAssignedPeers().get(0));
 			assertEquals(BCMessageStatus.FINISHED_TASK, task.statiForPeer(task.allAssignedPeers().get(0)).get(0));
@@ -196,14 +197,14 @@ public class MRJobExecutorMessageConsumerTest {
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 		}
 
-		assertEquals(3, testMessageConsumer.jobs().peek().tasks(0).peek().allAssignedPeers().size());
-		assertEquals(1, testMessageConsumer.jobs().peek().tasks(0).peek().statiForPeer(peer1).size());
-		assertEquals(2, testMessageConsumer.jobs().peek().tasks(0).peek().statiForPeer(peer2).size());
-		assertEquals(1, testMessageConsumer.jobs().peek().tasks(0).peek().statiForPeer(peer3).size());
-		assertEquals(BCMessageStatus.FINISHED_TASK, testMessageConsumer.jobs().peek().tasks(0).peek().statiForPeer(peer1).get(0));
-		assertEquals(BCMessageStatus.FINISHED_TASK, testMessageConsumer.jobs().peek().tasks(0).peek().statiForPeer(peer2).get(0));
-		assertEquals(BCMessageStatus.EXECUTING_TASK, testMessageConsumer.jobs().peek().tasks(0).peek().statiForPeer(peer2).get(1));
-		assertEquals(BCMessageStatus.FINISHED_TASK, testMessageConsumer.jobs().peek().tasks(0).peek().statiForPeer(peer3).get(0));
+		assertEquals(3, testMessageConsumer.jobs().get(0).tasks(0).peek().allAssignedPeers().size());
+		assertEquals(1, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer1).size());
+		assertEquals(2, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer2).size());
+		assertEquals(1, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer3).size());
+		assertEquals(BCMessageStatus.FINISHED_TASK, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer1).get(0));
+		assertEquals(BCMessageStatus.FINISHED_TASK, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer2).get(0));
+		assertEquals(BCMessageStatus.EXECUTING_TASK, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer2).get(1));
+		assertEquals(BCMessageStatus.FINISHED_TASK, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer3).get(0));
 
 		testMessageConsumer.updateJob(jobCopy, peer2);
 
@@ -227,7 +228,7 @@ public class MRJobExecutorMessageConsumerTest {
 		}
 
 		testMessageConsumer.updateJob(jobCopy2, peer3);
-		BlockingQueue<Task> tasks2 = testMessageConsumer.jobs().peek().tasks(0);
+		BlockingQueue<Task> tasks2 = testMessageConsumer.jobs().get(0).tasks(0);
 		int cntr = 0;
 		for (Task task : tasks2) {
 			assertEquals(1, task.allAssignedPeers().size());
@@ -252,7 +253,7 @@ public class MRJobExecutorMessageConsumerTest {
 	public void testHandleFinishedTaskComparion() {
 		prepare(testMessageConsumer);
 		ArrayList<Task> tasks2 = new ArrayList<Task>(
-				testMessageConsumer.jobs().peek().tasks(testMessageConsumer.jobs().peek().currentProcedureIndex()));
+				testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()));
 		assertEquals(peer1, tasks2.get(0).finalDataLocation().dataLocation().first());
 		assertEquals(new Integer(2), tasks2.get(0).finalDataLocation().dataLocation().second());
 
@@ -310,7 +311,7 @@ public class MRJobExecutorMessageConsumerTest {
 	@Ignore
 	public void testHandleFinishedAllTaskComparion() {
 		testMessageConsumer.jobs().clear();
-		BlockingQueue<Job> jobs = new LinkedBlockingQueue<Job>();
+		CopyOnWriteArrayList<Job> jobs = new CopyOnWriteArrayList<Job>();
 		MRJobExecutionManager jobExecutor = Mockito.mock(MRJobExecutionManager.class);
 		DHTConnectionProvider dhtConnectionProvider = Mockito.mock(DHTConnectionProvider.class);
 		Mockito.when(jobExecutor.dhtConnectionProvider()).thenReturn(dhtConnectionProvider);
@@ -318,9 +319,9 @@ public class MRJobExecutorMessageConsumerTest {
 		MRJobExecutionManagerMessageConsumer consumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(jobExecutor);
 		prepare(consumer);
 
-		ArrayList<Task> taskList = new ArrayList<Task>(consumer.jobs().peek().tasks(consumer.jobs().peek().currentProcedureIndex()));
+		ArrayList<Task> taskList = new ArrayList<Task>(consumer.jobs().get(0).tasks(consumer.jobs().get(0).currentProcedureIndex()));
 		Job mockJob = Mockito.mock(Job.class);
-		Mockito.when(mockJob.id()).thenReturn(jobs.peek().id());
+		Mockito.when(mockJob.id()).thenReturn(jobs.get(0).id());
 		BlockingQueue<Task> mockTasks = new LinkedBlockingQueue<Task>();
 		for (Task task : taskList) {
 			Task tCopy = Mockito.mock(Task.class);
@@ -334,18 +335,18 @@ public class MRJobExecutorMessageConsumerTest {
 		Mockito.when(mockJob.tasks(0)).thenReturn(mockTasks);
 		testMessageConsumer.handleReceivedJob(mockJob);
 
-		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().peek().tasks(testMessageConsumer.jobs().peek().currentProcedureIndex()))
+		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
 				.get(0).finalDataLocation().dataLocation());
-		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().peek().tasks(testMessageConsumer.jobs().peek().currentProcedureIndex()))
+		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
 				.get(1).finalDataLocation().dataLocation());
-		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().peek().tasks(testMessageConsumer.jobs().peek().currentProcedureIndex()))
+		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
 				.get(2).finalDataLocation().dataLocation());
-		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().peek().tasks(testMessageConsumer.jobs().peek().currentProcedureIndex()))
+		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
 				.get(3).finalDataLocation().dataLocation());
-		testMessageConsumer.updateJob(consumer.jobs().peek(), peer2);
+		testMessageConsumer.updateJob(consumer.jobs().get(0), peer2);
 
 		ArrayList<Task> tasks2 = new ArrayList<Task>(
-				testMessageConsumer.jobs().peek().tasks(testMessageConsumer.jobs().peek().currentProcedureIndex()));
+				testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()));
 		assertEquals(peer1, tasks2.get(0).finalDataLocation().dataLocation().first());
 		assertEquals(new Integer(2), tasks2.get(0).finalDataLocation().dataLocation().second());
 

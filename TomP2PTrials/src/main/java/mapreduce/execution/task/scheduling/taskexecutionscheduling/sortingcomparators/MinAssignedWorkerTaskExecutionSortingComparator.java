@@ -8,28 +8,36 @@ public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparat
 
 	@Override
 	public int compare(Task t1, Task t2) {
-		int t1Finished = t1.totalNumberOfFinishedExecutions();
-		int t2Finished = t2.totalNumberOfFinishedExecutions();
-		if (t1Finished > t2Finished) {
-			return 1;
-		} else if (t1Finished < t2Finished) {
+		if (t1.isFinished() && t2.isFinished()) {
+			return 0;
+		} else if (!t1.isFinished() && t2.isFinished()) {
 			return -1;
+		} else if (t1.isFinished() && !t2.isFinished()) {
+			return 1;
 		} else {
-			int t1differentFinished = t1.numberOfDifferentPeersExecutingTask();
-			int t2differentFinished = t2.numberOfDifferentPeersExecutingTask();
-			if (t1differentFinished > t2differentFinished) {
+			int t1Finished = t1.totalNumberOfFinishedExecutions();
+			int t2Finished = t2.totalNumberOfFinishedExecutions();
+			if (t1Finished > t2Finished) {
 				return 1;
-			} else if (t1differentFinished < t2differentFinished) {
+			} else if (t1Finished < t2Finished) {
 				return -1;
 			} else {
-				int t1Executing = t1.totalNumberOfCurrentExecutions();
-				int t2Executing = t2.totalNumberOfCurrentExecutions();
-				if (t1Executing > t2Executing) {
+				int t1differentFinished = t1.numberOfDifferentPeersExecutingTask();
+				int t2differentFinished = t2.numberOfDifferentPeersExecutingTask();
+				if (t1differentFinished > t2differentFinished) {
 					return 1;
-				} else if (t1Executing < t2Executing) {
+				} else if (t1differentFinished < t2differentFinished) {
 					return -1;
 				} else {
-					return 0;
+					int t1Executing = t1.totalNumberOfCurrentExecutions();
+					int t2Executing = t2.totalNumberOfCurrentExecutions();
+					if (t1Executing > t2Executing) {
+						return 1;
+					} else if (t1Executing < t2Executing) {
+						return -1;
+					} else {
+						return 0;
+					}
 				}
 			}
 		}

@@ -190,8 +190,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void broadcastFinishedAllTasks(Job job) {
 		broadcastJobUpdate(job, JobUpdateBCMessage.newFinishedAllTasksBCMessage().job(job).sender(this.connectionPeer.peerAddress()));
+
 	}
- 
 
 	@Override
 	public void broadcastFinishedJob(Job job) {
@@ -218,8 +218,9 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastFinishedTask(Task task, Number160 resultHash) {
-		broadcastTask(task, TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.connectionPeer.peerAddress()));
-	} 
+		broadcastTask(task,
+				TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.connectionPeer.peerAddress()));
+	}
 
 	private void broadcastTask(Task task, IBCMessage message) {
 		try {

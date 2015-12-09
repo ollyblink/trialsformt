@@ -1,11 +1,10 @@
 package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import mapreduce.execution.job.Job;
@@ -26,7 +25,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	private JobBCMessageUpdateCondition jobBCMessageUpdateCondition;
 	private MRJobExecutionManager jobExecutor;
 
-	private MRJobExecutionManagerMessageConsumer(BlockingQueue<IBCMessage> bcMessages, BlockingQueue<Job> jobs) {
+	private MRJobExecutionManagerMessageConsumer(BlockingQueue<IBCMessage> bcMessages, CopyOnWriteArrayList<Job> jobs) {
 		super(bcMessages, jobs);
 
 		this.finishedAllTasksMessagesToRemove = new HashSet<BCMessageStatus>();
@@ -35,7 +34,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		this.jobBCMessageUpdateCondition = JobBCMessageUpdateCondition.newInstance();
 	}
 
-	public static MRJobExecutionManagerMessageConsumer newInstance(BlockingQueue<Job> jobs) {
+	public static MRJobExecutionManagerMessageConsumer newInstance(CopyOnWriteArrayList<Job> jobs) {
 		return new MRJobExecutionManagerMessageConsumer(new PriorityBlockingQueue<IBCMessage>(), jobs);
 	}
 
@@ -71,34 +70,19 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		}
 	}
 
-	// @Override
-	// public void handleFinishedTaskComparion(Task task) {
-	// for (Job job : jobs) {
-	// if (job.id().equals(task.jobId())) {
-	// job.updateTaskFinalDataLocation(task);
-	// }
-	// }
-	// }
-
 	@Override
 	public void updateJob(Job job, PeerAddress sender) {
-		if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
-			return;
-		} 
-		this.isBusy(true);
-		this.jobExecutor.abortExecution(job);
-		this.syncJob(job);
-		this.updateMessagesFromJobUpdate(job.id());
-		this.isBusy(false);
-	}
-
-	private void syncJob(Job job) {
-		List<Job> jobsList = Collections.synchronizedList(new ArrayList<Job>(jobs));
-		synchronized (jobsList) {
-			jobsList.set(jobsList.indexOf(job), job);
-			this.jobs.clear();
-			this.jobs.addAll(jobsList);
+		// if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
+		// return;
+		// }
+		if (!sender.equals(this.jobExecutor.dhtConnectionProvider().peerAddress())) {
+			this.jobExecutor.abortExecution(job);
 		}
+		logger.info("Sync job");
+		this.jobs.set(this.jobs.indexOf(job), job);
+		logger.info("Synced job");
+		this.updateMessagesFromJobUpdate(job.id());
+		logger.info("removed messages for job");
 	}
 
 	public void updateMessagesFromJobUpdate(String jobId) {

@@ -1,6 +1,7 @@
 package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,9 +9,7 @@ import org.slf4j.LoggerFactory;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -25,13 +24,13 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	/* These two blocking queues are used for seemless interaction between classes */
 	protected BlockingQueue<IBCMessage> bcMessages;
-	protected BlockingQueue<Job> jobs;
+	protected CopyOnWriteArrayList<Job> jobs;
 
 	private boolean canTake;
 	/** Used to signal e.g. the job executor that currently this message consumer is busy */
 	private boolean isBusy;
 
-	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, BlockingQueue<Job> jobs) {
+	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, CopyOnWriteArrayList<Job> jobs) {
 		this.bcMessages = bcMessages;
 		this.jobs = jobs;
 	}
@@ -65,7 +64,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public BlockingQueue<Job> jobs() {
+	public CopyOnWriteArrayList<Job> jobs() {
 		return jobs;
 	}
 

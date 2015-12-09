@@ -1,10 +1,9 @@
 package mapreduce.manager;
 
 import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,7 @@ public class MRJobSubmissionManager {
 	private MRJobSubmitterMessageConsumer messageConsumer;
 	private String id;
 
-	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
+	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, CopyOnWriteArrayList<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.messageConsumer = MRJobSubmitterMessageConsumer.newInstance(id, jobs).canTake(true);
@@ -37,7 +36,7 @@ public class MRJobSubmissionManager {
 	}
 
 	public static MRJobSubmissionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobSubmissionManager(dhtConnectionProvider, new LinkedBlockingQueue<Job>());
+		return new MRJobSubmissionManager(dhtConnectionProvider, new CopyOnWriteArrayList<Job>());
 	}
 
 	/**

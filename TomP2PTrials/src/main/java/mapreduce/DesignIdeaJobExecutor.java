@@ -3,6 +3,7 @@ package mapreduce;
 import java.io.IOException;
 
 import mapreduce.execution.computation.context.PrintContext;
+import mapreduce.execution.computation.context.PseudoStoreContext;
 import mapreduce.execution.computation.context.WaitingContext;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 import mapreduce.manager.MRJobExecutionManager;
@@ -28,8 +29,7 @@ public class DesignIdeaJobExecutor {
 			dhtConnectionProvider.port(bootstrapPort);
 			// waitingTime = 1;
 		}
-		MRJobExecutionManager jobExecutor = MRJobExecutionManager.newInstance(dhtConnectionProvider)
-				// .context(WaitingContext.newInstance().shouldPrint(false).waitingTime(waitingTime))
+		MRJobExecutionManager jobExecutor = MRJobExecutionManager.newInstance(dhtConnectionProvider).context(PseudoStoreContext.newInstance())
 				.taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.newInstance());
 
 		jobExecutor.start();

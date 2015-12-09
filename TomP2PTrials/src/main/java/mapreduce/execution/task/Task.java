@@ -92,16 +92,6 @@ public class Task implements Serializable, Comparable<Task> {
 		return this.isFinished;
 	}
 
-	public Task isFinished(boolean isFinished) {
-		this.isFinished = isFinished;
-		return this;
-	}
-
-	public int maxNrOfFinishedWorkers() {
-
-		return maxNrOfFinishedWorkers;
-	}
-
 	public Task maxNrOfFinishedWorkers(int maxNrOfFinishedWorkers) {
 		if (maxNrOfFinishedWorkers < 1) {
 			maxNrOfFinishedWorkers = 1;
@@ -147,10 +137,10 @@ public class Task implements Serializable, Comparable<Task> {
 		return finalDataLocation;
 	}
 
-//	public boolean taskComparisonAssigned() {
-//		// return this.comparingPeers.values().contains(BCMessageStatus.EXECUTING_TASK_COMPARISON);
-//		return false;
-//	}
+	// public boolean taskComparisonAssigned() {
+	// // return this.comparingPeers.values().contains(BCMessageStatus.EXECUTING_TASK_COMPARISON);
+	// return false;
+	// }
 
 	public void updateStati(TaskResult toUpdate) {
 		synchronized (executingPeers) {

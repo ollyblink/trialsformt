@@ -1,24 +1,21 @@
 package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import mapreduce.execution.job.Job;
-import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.utils.Tuple;
-import net.tomp2p.peers.PeerAddress;
 
 public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
 	private String jobSubmitterID;
 
-	private MRJobSubmitterMessageConsumer(String jobSubmitterID, BlockingQueue<IBCMessage> bcMessages, BlockingQueue<Job> jobs) {
+	private MRJobSubmitterMessageConsumer(String jobSubmitterID, BlockingQueue<IBCMessage> bcMessages, CopyOnWriteArrayList<Job> jobs) {
 		super(bcMessages, jobs);
 		this.jobSubmitterID = jobSubmitterID;
 	}
 
-	public static MRJobSubmitterMessageConsumer newInstance(String jobSubmitterID, BlockingQueue<Job> jobs) {
+	public static MRJobSubmitterMessageConsumer newInstance(String jobSubmitterID, CopyOnWriteArrayList<Job> jobs) {
 		return new MRJobSubmitterMessageConsumer(jobSubmitterID, new PriorityBlockingQueue<IBCMessage>(), jobs);
 	}
 
