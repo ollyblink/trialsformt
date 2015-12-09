@@ -3,7 +3,7 @@ package mapreduce.execution.computation;
 import java.io.Serializable;
 import java.util.concurrent.BlockingQueue;
 
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.task.Task;
 
 public final class ProcedureTaskTupel implements Comparable<ProcedureTaskTupel>, Serializable {
 

@@ -10,7 +10,7 @@ import java.io.Serializable;
  * @param <A>
  * @param <B>
  */
-public final class Tuple<A, B> implements Serializable {
+public final class Tuple<A extends Comparable<A>, B> implements Serializable, Comparable<Tuple<A, B>> {
 
 	/**
 	 * 
@@ -24,7 +24,7 @@ public final class Tuple<A, B> implements Serializable {
 		this.second = second;
 	}
 
-	public static <A, B> Tuple<A, B> create(final A first, final B second) {
+	public static <A extends Comparable<A>, B> Tuple<A, B> create(final A first, final B second) {
 		return new Tuple<A, B>(first, second);
 	}
 
@@ -65,6 +65,16 @@ public final class Tuple<A, B> implements Serializable {
 		} else if (!second.equals(other.second))
 			return false;
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "Tuple [first=" + first + ", second=" + second + "]";
+	}
+
+	@Override
+	public int compareTo(Tuple<A, B> o) {
+		return first.compareTo(o.first);
 	}
 
 }

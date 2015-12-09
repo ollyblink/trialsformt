@@ -6,7 +6,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import mapreduce.execution.jobtask.Job;
+import mapreduce.execution.job.Job;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.storage.DHTConnectionProvider;
 

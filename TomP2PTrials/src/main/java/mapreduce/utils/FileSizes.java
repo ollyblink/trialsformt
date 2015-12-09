@@ -16,9 +16,9 @@ public enum FileSizes {
 
 	public long value() {
 		return value;
-	}
+	} 
 
-	public static void main(String[] args) {
+	public static void main(String[] args) { 
 		System.out.println(BYTE.value());
 		System.out.println(KILO_BYTE.value());
 		System.out.println(TWO_KILO_BYTE.value());

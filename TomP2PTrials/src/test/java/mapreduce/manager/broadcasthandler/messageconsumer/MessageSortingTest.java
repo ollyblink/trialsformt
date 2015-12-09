@@ -13,7 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import net.tomp2p.peers.Number160;

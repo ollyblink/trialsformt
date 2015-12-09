@@ -1,19 +1,18 @@
 package mapreduce.manager;
 
-import static org.junit.Assert.*;
+import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import mapreduce.manager.MRJobExecutionManager;
-
 public class MRJobExecutionManagerTest {
 
-	private static MRJobExecutionManager executor;
+	private static List<MRJobExecutionManager> jobExecutors;
 
 	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
+	public static void setUpBeforeClass() throws Exception { 
+	 
 	}
 
 	@AfterClass
@@ -21,8 +20,12 @@ public class MRJobExecutionManagerTest {
 	}
 
 	@Test
-	public void test() {
-		fail();
+	public void test() throws Exception {
+//		MRJobSubmissionManager submitter = MRJobSubmissionManager
+//				.newInstance(DHTConnectionProvider.newInstance().bootstrapIP("192.168.43.234").bootstrapPort(4000));
+//		Job testJob = TestUtils.testJobWO(new WordCountMapper());
+//		submitter.submit(testJob, true);
+		// fail();
 	}
 
 }

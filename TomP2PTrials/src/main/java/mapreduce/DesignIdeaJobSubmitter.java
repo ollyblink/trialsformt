@@ -3,7 +3,7 @@ package mapreduce;
 import java.io.File;
 
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
-import mapreduce.execution.jobtask.Job;
+import mapreduce.execution.job.Job;
 import mapreduce.manager.MRJobSubmissionManager;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileSizes;
@@ -20,7 +20,7 @@ public class DesignIdeaJobSubmitter {
 				.newInstance(DHTConnectionProvider.newInstance().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort));
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
-		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/datasplitting/testfile";
+		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/task/tasksplitting/testfile";
 		if (new File(inputPath + "/tmp").exists()) {
 			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
 		}

@@ -4,9 +4,10 @@ import java.util.List;
 
 import com.google.common.collect.Multimap;
 
-import mapreduce.execution.jobtask.Job;
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.job.Job;
+import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {
@@ -51,13 +52,13 @@ public interface IDHTConnectionProvider {
 
 	public void broadcastExecutingTask(Task task);
 
-	public void broadcastFinishedTask(Task task);
+	public void broadcastFinishedTask(Task task, Number160 resultHash);
 
 	public void broadcastFinishedAllTasks(Job job);
 
 	public void broadcastExecutingCompareTaskResults(Task task);
 
-	public void broadcastFinishedCompareTaskResults(Task task);
+	public void broadcastFinishedTaskComparison(Task task);
 
 	public void broadcastFinishedAllTaskComparisons(Job job);
 

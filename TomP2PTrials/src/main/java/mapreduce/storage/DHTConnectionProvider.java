@@ -19,14 +19,15 @@ import com.google.common.collect.Multimap;
 
 import mapreduce.execution.exceptions.IncorrectFormatException;
 import mapreduce.execution.exceptions.NotSetException;
-import mapreduce.execution.jobtask.Job;
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.job.Job;
+import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
 import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedJobBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.JobUpdateBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
+import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FormatUtils;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
@@ -192,6 +193,11 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
+	public void broadcastFinishedAllTaskComparisons(Job job) {
+		broadcastJobUpdate(job, JobUpdateBCMessage.newFinishedAllTaskComparisonsBCMessage().job(job).sender(this.connectionPeer.peerAddress()));
+	}
+
+	@Override
 	public void broadcastFinishedJob(Job job) {
 		broadcastJobUpdate(job,
 				FinishedJobBCMessage.newInstance().jobSubmitterId(job.jobSubmitterID()).job(job).sender(this.connectionPeer.peerAddress()));
@@ -215,24 +221,19 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public void broadcastFinishedTask(Task task) {
-		broadcastTask(task, TaskUpdateBCMessage.newFinishedTaskInstance().task(task).sender(this.connectionPeer.peerAddress()));
+	public void broadcastFinishedTask(Task task, Number160 resultHash) {
+		broadcastTask(task, TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.connectionPeer.peerAddress()));
 	}
 
 	@Override
 	public void broadcastExecutingCompareTaskResults(Task task) {
-		broadcastTask(task, TaskUpdateBCMessage.newExecutingCompareTaskResultsInstance().task(task).sender(this.connectionPeer.peerAddress()));
+		// broadcastTask(task,
+		// ExecutingTaskBCMessage.newExecutingTaskResultComparisonInstance().task(task).sender(this.connectionPeer.peerAddress()));
 	}
 
 	@Override
-	public void broadcastFinishedCompareTaskResults(Task task) {
-		broadcastTask(task, TaskUpdateBCMessage.newFinishedCompareTaskResultsInstance().task(task).sender(this.connectionPeer.peerAddress()));
-	}
-
-	@Override
-	public void broadcastFinishedAllTaskComparisons(Job job) {
-		// TODO Auto-generated method stub
-
+	public void broadcastFinishedTaskComparison(Task task) {
+		// broadcastTask(task, ExecutingTaskBCMessage.newFinishedTaskResultComparisonInstance().task(task).sender(this.connectionPeer.peerAddress()));
 	}
 
 	private void broadcastTask(Task task, IBCMessage message) {
@@ -250,8 +251,15 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public void addTaskData(Task task, final Object key, final Object value, boolean awaitUninterruptibly) {
 		try {
 
-			FuturePut await = this.connectionPeer.add(Number160.createHash(key.toString())).data(new Data(new Value(value)))
-					.domainKey(Number160.createHash(domain(task, connectionPeer.peerAddress()))).start();
+			String domain = DomainProvider.INSTANCE.domain(task, connectionPeer.peerAddress());
+
+			Number160 domainKey = Number160.createHash(domain);
+			Number160 keyHash = Number160.createHash(key.toString());
+			logger.info("addTaskData: Domain: " + domain);
+			logger.info("addTaskData: Domainkey: " + domainKey);
+			logger.info("addTaskData: Key:" + keyHash);
+
+			FuturePut await = this.connectionPeer.add(keyHash).data(new Data(new Value(value))).domainKey(domainKey).start();
 			await.addListener(new BaseFutureListener<FuturePut>() {
 
 				@Override
@@ -282,7 +290,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void addTaskKey(final Task task, final Object key, boolean awaitUninterruptibly) {
 		try {
-			String domain = domain(task, connectionPeer.peerAddress());
+			String domain = DomainProvider.INSTANCE.domain(task, connectionPeer.peerAddress());
 
 			Number160 domainKey = Number160.createHash(domain);
 
@@ -295,7 +303,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 				@Override
 				public void operationComplete(FuturePut future) throws Exception {
 					if (future.isSuccess()) {
-						logger.debug("Successfully added key " + key);
+						logger.info("Successfully added key " + key);
 					} else {
 						logger.error("Could not put key " + key);
 					}
@@ -313,13 +321,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	private String domain(Task task, PeerAddress peerAddress) {
-		Number160 peerId = peerAddress.peerId();
-		int jobStatusIndex = task.statiForPeer(peerAddress).size() - 1;
-		String domain = task.id() + task.procedure().getClass().getSimpleName() + peerId + jobStatusIndex;
-		return domain;
 	}
 
 	@Override

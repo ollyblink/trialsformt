@@ -3,8 +3,9 @@ package mapreduce.execution.computation.context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.AbstractMessageConsumer;
+import net.tomp2p.peers.Number160;
 
 public class WaitingContext implements IContext {
 	private static final int DEFAULT_WAITING_TIME = 1;
@@ -47,6 +48,12 @@ public class WaitingContext implements IContext {
 	public WaitingContext waitingTime(long waitingTime) {
 		this.waitingTime = waitingTime;
 		return this;
+	}
+
+	@Override
+	public Number160 resultHash() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

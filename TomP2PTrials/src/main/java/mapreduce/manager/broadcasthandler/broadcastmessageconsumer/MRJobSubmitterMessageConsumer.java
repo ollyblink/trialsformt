@@ -3,8 +3,12 @@ package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
-import mapreduce.execution.jobtask.Job;
+import mapreduce.execution.job.Job;
+import mapreduce.execution.task.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.utils.Tuple;
+import net.tomp2p.peers.PeerAddress;
 
 public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
 	private String jobSubmitterID;
@@ -29,5 +33,7 @@ public class MRJobSubmitterMessageConsumer extends AbstractMessageConsumer {
 	public MRJobSubmitterMessageConsumer canTake(boolean canTake) {
 		return (MRJobSubmitterMessageConsumer) super.canTake(canTake);
 	}
+
+	 
 
 }

@@ -3,9 +3,10 @@ package mapreduce.execution.computation.context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.task.Task;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
+import net.tomp2p.peers.Number160;
 
 public class DHTStorageContext implements IContext {
 	private static Logger logger = LoggerFactory.getLogger(DHTStorageContext.class);
@@ -16,9 +17,26 @@ public class DHTStorageContext implements IContext {
 
 	private boolean awaitOnAdd;
 
+//	private ITaskResultComparator taskResultComparator;
+
+	/**
+	 * 
+	 * @param dhtConnectionProvider
+	 * @param taskResultComparator
+	 *            may add certain speed ups such that the task result comparison afterwards becomes faster
+	 */
 	private DHTStorageContext(DHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
 	}
+
+	public static IContext newDHTStorageContext(DHTConnectionProvider dhtConnectionProvider) {
+		return new DHTStorageContext(dhtConnectionProvider);
+	}
+
+//	public DHTStorageContext taskResultComparator(ITaskResultComparator taskResultComparator) {
+//		this.taskResultComparator = taskResultComparator;
+//		return this;
+//	}
 
 	@Override
 	public void write(Object keyOut, Object valueOut) {
@@ -28,7 +46,10 @@ public class DHTStorageContext implements IContext {
 			return;
 		}
 
-		dhtConnectionProvider.addTaskData(task, keyOut, valueOut, awaitOnAdd);
+		this.dhtConnectionProvider.addTaskData(task, keyOut, valueOut, awaitOnAdd);
+//		if (this.taskResultComparator != null) {
+//			taskResultComparator.enableSpeedUp(this.dhtConnectionProvider, task, keyOut, valueOut, awaitOnAdd);
+//		}
 	}
 
 	public DHTStorageContext task(Task task) {
@@ -46,8 +67,10 @@ public class DHTStorageContext implements IContext {
 		return this;
 	}
 
-	public static IContext newDHTStorageContext(DHTConnectionProvider dhtConnectionProvider) {
-		return new DHTStorageContext(dhtConnectionProvider);
+	@Override
+	public Number160 resultHash() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

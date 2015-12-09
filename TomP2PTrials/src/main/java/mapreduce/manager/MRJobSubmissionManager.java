@@ -9,10 +9,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.datasplitting.ITaskSplitter;
-import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
-import mapreduce.execution.jobtask.Job;
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.job.Job;
+import mapreduce.execution.task.Task;
+import mapreduce.execution.task.tasksplitting.ITaskSplitter;
+import mapreduce.execution.task.tasksplitting.MaxFileSizeTaskSplitter;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmitterMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.FileUtils;
@@ -20,7 +20,7 @@ import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 
 public class MRJobSubmissionManager {
-	private static final ITaskSplitter DEFAULT_TASK_SPLITTER = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
+	private static final ITaskSplitter DEFAULT_TASK_SPLITTER = MaxFileSizeTaskSplitter.newInstance();
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManager.class);
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private ITaskSplitter taskSplitter;

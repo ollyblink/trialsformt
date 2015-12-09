@@ -1,6 +1,6 @@
 package mapreduce.manager.broadcasthandler.broadcastmessages;
 
-import mapreduce.execution.jobtask.Job;
+import mapreduce.execution.job.Job;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
 
 /**

@@ -1,6 +1,7 @@
 package mapreduce.execution.computation.context;
 
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.task.Task;
+import net.tomp2p.peers.Number160;
 
 public class NullContext implements IContext {
 
@@ -19,6 +20,12 @@ public class NullContext implements IContext {
 
 	@Override
 	public NullContext task(Task task) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Number160 resultHash() {
 		// TODO Auto-generated method stub
 		return null;
 	}

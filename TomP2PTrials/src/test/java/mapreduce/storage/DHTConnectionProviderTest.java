@@ -14,7 +14,7 @@ import org.mockito.Mockito;
 import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.task.Task;
 import mapreduce.utils.Tuple;
 
 public class DHTConnectionProviderTest {
@@ -56,7 +56,7 @@ public class DHTConnectionProviderTest {
 
 		Task task = Mockito.mock(Task.class);
 		Mockito.when(task.id()).thenReturn("1");
-		Mockito.when(task.jobId()).thenReturn("1");
+		Mockito.when(task.jobId()).thenReturn("1"); 
 		IMapReduceProcedure procedure = Mockito.mock(IMapReduceProcedure.class);
 		Mockito.when(task.procedure()).thenReturn(procedure);
 		for (Object o : keys) {
@@ -64,7 +64,7 @@ public class DHTConnectionProviderTest {
 		}
 		// Thread.sleep(1000);
 
-		LocationBean location = LocationBean.newInstance(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
+		LocationBean location = LocationBean.create(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
 		System.err.println(dataForTask.keySet().size());
 
@@ -102,7 +102,7 @@ public class DHTConnectionProviderTest {
 			connectionProviders.get(putter).addTaskData(task, o, new Integer(1), true);
 		}
 		// Thread.sleep(1000);
-		LocationBean location = LocationBean.newInstance(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
+		LocationBean location = LocationBean.create(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
 
 		System.err.println(dataForTask);
@@ -147,7 +147,7 @@ public class DHTConnectionProviderTest {
 			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr), true);
 		}
 		// Thread.sleep(1000);
-		LocationBean location = LocationBean.newInstance(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
+		LocationBean location = LocationBean.create(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
 
 		System.err.println(dataForTask);
@@ -165,5 +165,56 @@ public class DHTConnectionProviderTest {
 		assertTrue((dataForTask.get("test")).contains(new Integer(3)));
 		assertTrue((dataForTask.get("test")).contains(new Integer(6)));
 		assertTrue((dataForTask.get("test")).contains(new Integer(9)));
+	}
+
+	@Test
+	public void testRemoveData() {
+		int putter = 8;
+		int getter = 2;
+		List<Object> keys = new ArrayList<Object>();
+		keys.add("this");
+		keys.add("is");
+		keys.add("test");
+		keys.add("this");
+		keys.add("is");
+		keys.add("test");
+		keys.add("this");
+		keys.add("is");
+		keys.add("test");
+
+		Task task = Mockito.mock(Task.class);
+		Mockito.when(task.id()).thenReturn("1");
+		Mockito.when(task.jobId()).thenReturn("1");
+		IMapReduceProcedure procedure = Mockito.mock(IMapReduceProcedure.class);
+		Mockito.when(task.procedure()).thenReturn(procedure);
+		int cntr = 0;
+		for (Object o : keys) {
+			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr), true);
+		}
+		LocationBean location = LocationBean.create(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
+		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
+
+		System.err.println(dataForTask);
+		assertEquals(3, dataForTask.keySet().size());
+		assertEquals(9, dataForTask.values().size());
+		assertTrue(dataForTask.keySet().contains("this"));
+		assertTrue((dataForTask.get("this")).contains(new Integer(1)));
+		assertTrue((dataForTask.get("this")).contains(new Integer(4)));
+		assertTrue((dataForTask.get("this")).contains(new Integer(7)));
+		assertTrue(dataForTask.keySet().contains("is"));
+		assertTrue((dataForTask.get("is")).contains(new Integer(2)));
+		assertTrue((dataForTask.get("is")).contains(new Integer(5)));
+		assertTrue((dataForTask.get("is")).contains(new Integer(8)));
+		assertTrue(dataForTask.keySet().contains("test"));
+		assertTrue((dataForTask.get("test")).contains(new Integer(3)));
+		assertTrue((dataForTask.get("test")).contains(new Integer(6)));
+		assertTrue((dataForTask.get("test")).contains(new Integer(9)));
+
+		connectionProviders.get(0).removeTaskResultsFor(task, location);
+		dataForTask = connectionProviders.get(getter).getTaskData(task, location);
+
+		System.err.println(dataForTask);
+		assertEquals(0, dataForTask.keySet().size());
+		assertEquals(0, dataForTask.values().size());
 	}
 }

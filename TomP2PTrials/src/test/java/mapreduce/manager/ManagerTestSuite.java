@@ -8,7 +8,8 @@ import mapreduce.manager.broadcasthandler.messageconsumer.MessageConsumerTestSui
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ 
 	MessageConsumerTestSuite.class,
-	MRJobExecutionManagerTest.class })
+	MRJobExecutionManagerTest.class,
+	MRJobSubmissionManagerTest.class})
 public class ManagerTestSuite {
 
 }

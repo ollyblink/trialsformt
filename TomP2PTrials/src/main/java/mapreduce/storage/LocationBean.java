@@ -1,7 +1,7 @@
 package mapreduce.storage;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.task.Task;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -12,7 +12,7 @@ public final class LocationBean {
 	private String procedureSimpleName;
 	private Number160 peerId;
 
-	public static LocationBean newInstance(final Tuple<PeerAddress, Integer> initialDataLocation, final IMapReduceProcedure procedure) {
+	public static LocationBean create(final Tuple<PeerAddress, Integer> initialDataLocation, final IMapReduceProcedure procedure) {
 		return new LocationBean().peerId(initialDataLocation.first().peerId()).jobStatusIndex(initialDataLocation.second())
 				.procedureSimpleName(procedure.getClass().getSimpleName());
 	}
@@ -34,6 +34,11 @@ public final class LocationBean {
 
 	public String domain(String taskId) {
 		return taskId + procedureSimpleName + peerId + jobStatusIndex;
+	}
+
+	@Override
+	public String toString() {
+		return "LocationBean [jobStatusIndex=" + jobStatusIndex + ", procedureSimpleName=" + procedureSimpleName + ", peerId=" + peerId + "]";
 	}
 
 }

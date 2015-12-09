@@ -1,8 +1,8 @@
 package mapreduce.manager.broadcasthandler.broadcastmessages;
 
+import mapreduce.execution.task.TaskResult;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
-import mapreduce.utils.Tuple;
-import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.Number160;
 
 public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 
@@ -11,6 +11,7 @@ public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 	 */
 	private static final long serialVersionUID = 7388714464226222965L;
 	protected BCMessageStatus status;
+	private Number160 resultHash;
 
 	@Override
 	public BCMessageStatus status() {
@@ -19,7 +20,9 @@ public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 
 	@Override
 	public void execute(final IMessageConsumer messageConsumer) {
-		messageConsumer.handleTaskExecutionStatusUpdate(task, Tuple.create(sender, status()));
+		TaskResult taskResult = TaskResult.newInstance().sender(sender).status(status).resultHash(resultHash);
+		messageConsumer.handleTaskExecutionStatusUpdate(task, taskResult);
+
 	}
 
 	public static TaskUpdateBCMessage newExecutingTaskInstance() {
@@ -30,16 +33,25 @@ public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 		return new TaskUpdateBCMessage(BCMessageStatus.FINISHED_TASK);
 	}
 
-	public static TaskUpdateBCMessage newExecutingCompareTaskResultsInstance() {
-		return new TaskUpdateBCMessage(BCMessageStatus.EXECUTING_TASK_COMPARISON);
-	}
+	// public static TaskUpdateBCMessage newExecutingTaskResultComparisonInstance() {
+	// return new TaskUpdateBCMessage(BCMessageStatus.EXECUTING_TASK_COMPARISON);
+	// }
+	//
+	// public static TaskUpdateBCMessage newFinishedTaskResultComparisonInstance() {
+	// return new TaskUpdateBCMessage(BCMessageStatus.FINISHED_TASK_COMPARISON);
+	// }
 
-	public static TaskUpdateBCMessage newFinishedCompareTaskResultsInstance() {
-		return new TaskUpdateBCMessage(BCMessageStatus.FINISHED_TASK_COMPARISON);
-	}
-
-	protected TaskUpdateBCMessage(BCMessageStatus status) {
+	private TaskUpdateBCMessage(BCMessageStatus status) {
 		this.status = status;
+	}
+
+	public Number160 resultHash() {
+		return this.resultHash;
+	}
+
+	public TaskUpdateBCMessage resultHash(Number160 resultHash) {
+		this.resultHash = resultHash;
+		return this;
 	}
 
 }

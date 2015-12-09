@@ -28,4 +28,12 @@ public class NullMapReduceProcedure implements IMapReduceProcedure {
 		return "NullMapReduceProcedure";
 	}
 
+	private NullMapReduceProcedure() {
+	}
+
+	public static IMapReduceProcedure newInstance() {
+		// TODO Auto-generated method stub
+		return new NullMapReduceProcedure();
+	}
+
 }

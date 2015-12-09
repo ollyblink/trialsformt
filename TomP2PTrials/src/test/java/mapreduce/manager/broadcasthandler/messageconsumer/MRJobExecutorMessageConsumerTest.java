@@ -17,15 +17,17 @@ import org.junit.runners.Parameterized.Parameter;
 import org.mockito.Mockito;
 
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
-import mapreduce.execution.datasplitting.ITaskSplitter;
-import mapreduce.execution.datasplitting.MaxFileSizeTaskSplitter;
-import mapreduce.execution.jobtask.Job;
-import mapreduce.execution.jobtask.Task;
+import mapreduce.execution.job.Job;
+import mapreduce.execution.task.Task;
+import mapreduce.execution.task.TaskResult;
+import mapreduce.execution.task.tasksplitting.ITaskSplitter;
+import mapreduce.execution.task.tasksplitting.MaxFileSizeTaskSplitter;
 import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.DHTConnectionProvider;
+import mapreduce.testutils.TestUtils;
 import mapreduce.utils.FileSizes;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.Tuple;
@@ -75,14 +77,14 @@ public class MRJobExecutorMessageConsumerTest {
 	@Test
 	public void testHandleTaskExecutionStatusUpdate() {
 		testMessageConsumer.jobs().clear();
-		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/datasplitting/testfile";
+		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/task/tasksplitting/testfile";
 		if (new File(inputPath + "/tmp").exists()) {
 			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
 		}
 
-		Job job = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).inputPath(inputPath).maxFileSize(FileSizes.KILO_BYTE.value());
+		Job job = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).inputPath(inputPath).maxFileSize(FileSizes.KILO_BYTE.value()).maxNrOfFinishedWorkersPerTask(5);
 
-		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
+		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
 		splitter.split(job);
 		testMessageConsumer.handleReceivedJob(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
@@ -94,12 +96,12 @@ public class MRJobExecutorMessageConsumerTest {
 			copy.add(tCopy);
 		}
 
-		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), Tuple.create(peer1, BCMessageStatus.EXECUTING_TASK));
-		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), Tuple.create(peer1, BCMessageStatus.FINISHED_TASK));
-		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), Tuple.create(peer2, BCMessageStatus.EXECUTING_TASK));
-		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), Tuple.create(peer2, BCMessageStatus.FINISHED_TASK));
-		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), Tuple.create(peer1, BCMessageStatus.EXECUTING_TASK));
-		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), Tuple.create(peer1, BCMessageStatus.EXECUTING_TASK));
+		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
+		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK));
+		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
+		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK));
+		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
+		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
 
 		Job job1 = testMessageConsumer.jobs().peek();
 		assertEquals(2, job1.tasks(job1.currentProcedureIndex()).peek().allAssignedPeers().size());
@@ -107,7 +109,7 @@ public class MRJobExecutorMessageConsumerTest {
 		assertEquals(2, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer1).size());
 		assertEquals(BCMessageStatus.FINISHED_TASK, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer1).get(0));
 		assertEquals(BCMessageStatus.EXECUTING_TASK, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer1).get(1));
-		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), Tuple.create(peer1, BCMessageStatus.FINISHED_TASK));
+		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0), TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK));
 		assertEquals(BCMessageStatus.FINISHED_TASK, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer1).get(1));
 
 		assertEquals(peer2, job1.tasks(job1.currentProcedureIndex()).peek().allAssignedPeers().get(1));
@@ -120,26 +122,26 @@ public class MRJobExecutorMessageConsumerTest {
 			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 
 		testMessageConsumer.jobs().clear();
-		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/datasplitting/testfile";
+		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/task/tasksplitting/testfile";
 		if (new File(inputPath + "/tmp").exists()) {
 			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
 		}
 
 		long megaByte = FileSizes.MEGA_BYTE.value();
 
-		int maxNumberOfFinishedPeers = 3;
+		int maxNumberOfFinishedPeers = 5;
 		Job job = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(megaByte);
 
-		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
+		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
 		splitter.split(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
 
 		for (Task task : tasks) {
-			task.updateStati(Tuple.create(peer1, BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(Tuple.create(peer1, BCMessageStatus.FINISHED_TASK));
-			task.updateStati(Tuple.create(peer2, BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(Tuple.create(peer2, BCMessageStatus.FINISHED_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK));
 		}
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
@@ -164,25 +166,25 @@ public class MRJobExecutorMessageConsumerTest {
 			jobCopy.tasks(jobCopy.currentProcedureIndex()).add(task.copyWithoutExecutingPeers());
 		}
 		for (Task task : jobCopy.tasks(jobCopy.currentProcedureIndex())) {
-			task.updateStati(Tuple.create(peer1, BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(Tuple.create(peer1, BCMessageStatus.FINISHED_TASK));
-			task.updateStati(Tuple.create(peer1, BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(Tuple.create(peer1, BCMessageStatus.FINISHED_TASK));
-			task.updateStati(Tuple.create(peer2, BCMessageStatus.EXECUTING_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
 
-			Tuple<PeerAddress, BCMessageStatus> next = Tuple.create(peer2, BCMessageStatus.FINISHED_TASK);
+			TaskResult next = TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK);
 			task.updateStati(next);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 
-			next = Tuple.create(peer2, BCMessageStatus.EXECUTING_TASK);
+			next = TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK);
 			task.updateStati(next);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 
-			next = Tuple.create(peer3, BCMessageStatus.EXECUTING_TASK);
+			next = TaskResult.newInstance().sender(peer3).status(BCMessageStatus.EXECUTING_TASK);
 			task.updateStati(next);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 
-			next = Tuple.create(peer3, BCMessageStatus.FINISHED_TASK);
+			next = TaskResult.newInstance().sender(peer3).status(BCMessageStatus.FINISHED_TASK);
 			task.updateStati(next);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 		}
@@ -210,17 +212,17 @@ public class MRJobExecutorMessageConsumerTest {
 			jobCopy2.tasks(jobCopy2.currentProcedureIndex()).add(task.copyWithoutExecutingPeers());
 		}
 		for (Task task : jobCopy2.tasks(jobCopy2.currentProcedureIndex())) {
-			task.updateStati(Tuple.create(peer2, BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(Tuple.create(peer2, BCMessageStatus.FINISHED_TASK));
-			task.updateStati(Tuple.create(peer2, BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(Tuple.create(peer2, BCMessageStatus.FINISHED_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
+			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK));
 		}
 
 		testMessageConsumer.updateJob(jobCopy2, BCMessageStatus.FINISHED_ALL_TASKS, peer3);
 
 		for (Task task : testMessageConsumer.jobs().peek().tasks(0)) {
 			assertEquals(1, task.allAssignedPeers().size());
-			System.err.println(task.allAssignedPeers());
+			System.err.println(task.allAssignedPeers().size());
 			int number = 0;
 			for (int i = 1; i <= 3; ++i) {
 				if (i == 1 || i == 3) {
@@ -230,7 +232,7 @@ public class MRJobExecutorMessageConsumerTest {
 				assertEquals(number, task.statiForPeer(new PeerAddress(new Number160(i))).size());
 				for (BCMessageStatus s : task.statiForPeer(new PeerAddress(new Number160(i)))) {
 					assertEquals(BCMessageStatus.FINISHED_TASK, s);
-					System.err.println(s);
+//					System.err.println(s);
 				}
 			}
 		}
@@ -256,15 +258,10 @@ public class MRJobExecutorMessageConsumerTest {
 
 	private void prepare(MRJobExecutionManagerMessageConsumer consumer) {
 		consumer.jobs().clear();
-		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/datasplitting/testfile";
-		if (new File(inputPath + "/tmp").exists()) {
-			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
-		}
 
-		Job job = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).inputPath(inputPath)
-				.maxFileSize(FileSizes.SIXTY_FOUR_KILO_BYTE.value());
+		Job job = TestUtils.testJob();
 
-		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newMaxFileSizeTaskSplitter();
+		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
 		splitter.split(job);
 		consumer.handleReceivedJob(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
