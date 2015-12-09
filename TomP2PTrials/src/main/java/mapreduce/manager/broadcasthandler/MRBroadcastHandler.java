@@ -15,14 +15,16 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
-public class MRBroadcastHandler extends StructuredBroadcastHandler {
+public class MRBroadcastHandler extends StructuredBroadcastHandler   {
 	private static Logger logger = LoggerFactory.getLogger(MRBroadcastHandler.class);
 
 	private BlockingQueue<IBCMessage> bcMessages;
 	private PeerAddress owner;
 
 	public MRBroadcastHandler() {
+		
 	}
+	 
 
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
@@ -30,6 +32,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
+				System.err.println("Broadcasthandler invoked: " + bcMessage);
 				bcMessages.add(bcMessage);
 			}
 		} catch (ClassNotFoundException e) {
@@ -60,4 +63,5 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	public MRBroadcastHandler broadcastListener() {
 		return this;
 	}
+
 }

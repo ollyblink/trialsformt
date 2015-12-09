@@ -1,5 +1,6 @@
 package mapreduce.manager.broadcasthandler.messageconsumer;
 
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.AfterClass;
@@ -17,7 +18,7 @@ public class MRJobExecutorMessageConsumer_MRBroadcastHandler_Interaction_Test {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		messageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(new LinkedBlockingQueue<Job>()).canTake(true);
+		messageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(new CopyOnWriteArrayList<Job>()).canTake(true);
 		// new Thread(messageConsumer).start();
 		//
 		// dht = DHTConnectionProvider.newDHTConnectionProvider().port(4000).connect();

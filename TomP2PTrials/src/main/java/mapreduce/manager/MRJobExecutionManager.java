@@ -1,10 +1,9 @@
 package mapreduce.manager;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,32 +20,31 @@ import mapreduce.execution.task.taskexecutor.ITaskExecutor;
 import mapreduce.execution.task.taskexecutor.ParallelTaskExecutor;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
-import mapreduce.storage.LocationBean;
 import net.tomp2p.peers.Number160;
 
 public class MRJobExecutionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobExecutionManager.class);
 
 	private static final long DEFAULT_SLEEPING_TIME = 100;
-	private static final BlockingQueue<Job> DEFAULT_BLOCKING_QUEUE = new LinkedBlockingQueue<Job>();
+	private static final CopyOnWriteArrayList<Job> DEFAULT_BLOCKING_QUEUE = new CopyOnWriteArrayList<Job>();
 	private static final ITaskExecutor DEFAULT_TASK_EXCECUTOR = ParallelTaskExecutor.newInstance();
 	private static final ITaskScheduler DEFAULT_TASK_EXECUTION_SCHEDULER = MinAssignedWorkersTaskExecutionScheduler.newInstance();
-	private static final IContext DEFAULT_CONTEXT = PseudoStoreContext.newInstance(); 
+	private static final IContext DEFAULT_CONTEXT = PseudoStoreContext.newInstance();
 
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private IContext context;
 	private ITaskScheduler taskExecutionScheduler;
 	private ITaskExecutor taskExecutor;
 
-	private BlockingQueue<Job> jobs;
+	private CopyOnWriteArrayList<Job> jobs;
 	private MRJobExecutionManagerMessageConsumer messageConsumer;
 	private boolean canExecute;
 
-	private MRJobExecutionManager(IDHTConnectionProvider dhtConnectionProvider, BlockingQueue<Job> jobs) {
+	private MRJobExecutionManager(IDHTConnectionProvider dhtConnectionProvider, CopyOnWriteArrayList<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
 		this.messageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(this).canTake(true);
 		this.dhtConnectionProvider().broadcastHandler().queue(messageConsumer.queue());
-		this.jobs = messageConsumer.jobs();
+		this.jobs = jobs;
 		new Thread(messageConsumer).start();
 	}
 
@@ -102,7 +100,7 @@ public class MRJobExecutionManager {
 	}
 
 	public Job getJob() {
-		return jobs.peek();
+		return jobs.get(0);
 	}
 
 	// END GETTER/SETTER
@@ -129,15 +127,15 @@ public class MRJobExecutionManager {
 			}
 		}
 
-		executeJob(jobs.peek());
+		executeJob();
 	}
 
-	private void executeJob(Job job) {
+	private void executeJob() {
 		if (!canExecute()) {
 			System.err.println("Cannot execute! use MRJobSubmitter::canExecute(true) to enable execution");
 		}
 		this.taskExecutor.abortedTaskExecution(false);
-		List<Task> tasks = new ArrayList<Task>(job.tasks(job.currentProcedureIndex()));
+		List<Task> tasks = new ArrayList<Task>(jobs.get(0).tasks(jobs.get(0).currentProcedureIndex()));
 		Task task = null;
 		while ((task = this.taskExecutionScheduler.schedule(tasks)) != null && !this.taskExecutor.abortedTaskExecution() && canExecute()) {
 			this.dhtConnectionProvider.broadcastExecutingTask(task);
@@ -151,14 +149,24 @@ public class MRJobExecutionManager {
 			// Clean up all "executing" tasks
 			// Multimap<Task, LocationBean> dataToRemove = job.taskDataToRemove(job.currentProcedureIndex());
 			// this.removeDataFromDHT(dataToRemove);
-			this.dhtConnectionProvider.broadcastFinishedAllTasks(job);
-			this.messageConsumer.updateMessagesFromJobUpdate(job.id());
+			logger.info("clean up"); 
+			dhtConnectionProvider.broadcastFinishedAllTasks(jobs.get(0));
+
+			// this.messageConsumer.isBusy(true);
 
 		}
-		awaitMessageConsumerCompletion();
 
-		printResults(job);
-
+		// awaitMessageConsumerCompletion();
+		while (!jobs.get(0).isFinishedFor(jobs.get(0).procedure(jobs.get(0).currentProcedureIndex()))) {
+			System.err.println("Waitng... Waiting...");
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		printResults(jobs.get(0));
 		// Create new tasks
 
 		// submit new tasks
@@ -166,26 +174,10 @@ public class MRJobExecutionManager {
 	}
 
 	public void abortExecution(Job job) {
-		if (job.id().equals(jobs.peek().id())) {
+		if (job.id().equals(jobs.get(0).id())) {
 			this.taskExecutor.abortTaskExecution();
 		}
 
-	}
-
-	private void removeDataFromDHT(final Multimap<Task, LocationBean> dataToRemove) {
-		for (final Task task : dataToRemove.keySet()) {
-			Collection<LocationBean> locationBeans = dataToRemove.get(task);
-			for (final LocationBean b : locationBeans) {
-				new Thread(new Runnable() {
-
-					@Override
-					public void run() {
-						dhtConnectionProvider.removeTaskResultsFor(task, b);
-					}
-
-				}).start();
-			}
-		}
 	}
 
 	private void awaitMessageConsumerCompletion() {
@@ -202,6 +194,7 @@ public class MRJobExecutionManager {
 		// Only printing
 		BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
 		for (Task t : ts) {
+			logger.info(t+"");
 			logger.info(t.finalDataLocation().procedure().getClass().getSimpleName() + ": " + t.finalDataLocation().dataLocation().first() + ", "
 					+ t.finalDataLocation().dataLocation().second());
 		}
