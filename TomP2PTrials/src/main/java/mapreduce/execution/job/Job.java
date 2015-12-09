@@ -11,15 +11,19 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+
 import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.computation.ProcedureTaskTupel;
+import mapreduce.execution.computation.ProcedureTaskTuple;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
+import mapreduce.storage.LocationBean;
 import mapreduce.utils.IDCreator;
 
 public class Job implements Serializable {
 
-	private static Logger logger = LoggerFactory.getLogger(Job.class);
+	// private static Logger logger = LoggerFactory.getLogger(Job.class);
 
 	/**
 	 * 
@@ -29,7 +33,7 @@ public class Job implements Serializable {
 	private String jobSubmitterID;
 	private long maxFileSize;
 	private String id;
-	private List<ProcedureTaskTupel> procedures;
+	private List<ProcedureTaskTuple> procedures;
 	private String inputPath;
 	private int maxNrOfFinishedWorkers;
 	private int currentProcedureIndex;
@@ -37,7 +41,7 @@ public class Job implements Serializable {
 	private Job(String jobSubmitterID) {
 		this.jobSubmitterID = jobSubmitterID;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
-		this.procedures = Collections.synchronizedList(new ArrayList<ProcedureTaskTupel>());
+		this.procedures = Collections.synchronizedList(new ArrayList<ProcedureTaskTuple>());
 		this.currentProcedureIndex = 0;
 	}
 
@@ -91,15 +95,15 @@ public class Job implements Serializable {
 			return this;
 		}
 
-		ProcedureTaskTupel procedureTasks = null;
-		for (ProcedureTaskTupel p : procedures) {
+		ProcedureTaskTuple procedureTasks = null;
+		for (ProcedureTaskTuple p : procedures) {
 			if (p.procedure().equals(procedure)) {
 				procedureTasks = p;
 			}
 		}
 
 		if (procedureTasks == null) {
-			procedureTasks = ProcedureTaskTupel.newProcedureTaskTupel(procedure, new LinkedBlockingQueue<Task>());
+			procedureTasks = ProcedureTaskTuple.create(procedure, new LinkedBlockingQueue<Task>());
 		}
 
 		if (tasks != null) {
@@ -137,12 +141,12 @@ public class Job implements Serializable {
 		return procedureTaskTupel(index).tasks();
 	}
 
-	private ProcedureTaskTupel procedureTaskTupel(int index) {
+	private ProcedureTaskTuple procedureTaskTupel(int index) {
 		return this.procedures.get(index);
 	}
 
 	public BlockingQueue<Task> tasksFor(IMapReduceProcedure procedure) {
-		for (ProcedureTaskTupel tupel : procedures) {
+		for (ProcedureTaskTuple tupel : procedures) {
 			if (tupel.procedure().equals(procedure)) {
 				return tupel.tasks();
 			}
@@ -163,7 +167,7 @@ public class Job implements Serializable {
 		}
 		this.maxNrOfFinishedWorkers = maxNrOfFinishedWorkers;
 
-		for (ProcedureTaskTupel tupel : procedures) {
+		for (ProcedureTaskTuple tupel : procedures) {
 			BlockingQueue<Task> tasks = tupel.tasks();
 			if (tasks != null) {
 				for (Task task : tasks) {
@@ -193,16 +197,16 @@ public class Job implements Serializable {
 		tasks.addAll(receivedSyncTasks);
 	}
 
-	public void updateTaskFinalDataLocation(Task receivedTask) {
-		BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
-		if (tasks != null) {
-			for (Task task : tasks) {
-				if (task.equals(receivedTask)) {
-					task.finalDataLocation(receivedTask.finalDataLocation());
-				}
-			}
-		}
-	}
+	// public void updateTaskFinalDataLocation(Task receivedTask) {
+	// BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
+	// if (tasks != null) {
+	// for (Task task : tasks) {
+	// if (task.equals(receivedTask)) {
+	// task.finalDataLocation(receivedTask.finalDataLocation());
+	// }
+	// }
+	// }
+	// }
 
 	public int currentProcedureIndex() {
 		return currentProcedureIndex;
@@ -242,6 +246,33 @@ public class Job implements Serializable {
 		} else if (!id.equals(other.id()))
 			return false;
 		return true;
+	}
+
+	public Multimap<Task, LocationBean> taskDataToRemove(int currentProcedureIndex) {
+		Multimap<Task, LocationBean> toRemove = ArrayListMultimap.create();
+		BlockingQueue<Task> tasks = tasks(currentProcedureIndex);
+		for (Task task : tasks) {
+			toRemove.putAll(task, task.dataToRemove());
+		}
+		return toRemove;
+	}
+
+	public boolean isFinishedFor(IMapReduceProcedure procedure) {
+		for (ProcedureTaskTuple tuple : procedures) {
+			if (tuple.procedure().equals(procedure)) {
+				return tuple.isFinished();
+			}
+		}
+		return false;
+	}
+
+	public void isFinishedFor(IMapReduceProcedure procedure, boolean isFinished) {
+		for (ProcedureTaskTuple tuple : procedures) {
+			if (tuple.procedure().equals(procedure)) {
+				tuple.isFinished(isFinished);
+				break;
+			}
+		}
 	}
 
 }

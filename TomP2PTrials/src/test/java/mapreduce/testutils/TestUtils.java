@@ -85,7 +85,7 @@ public class TestUtils {
 		for (int i = 1; i <= 5; ++i) {
 			pAds.add(new PeerAddress(new Number160(i)));
 		}
-		int maxNumberOfFinishedPeers = 3;
+		int maxNumberOfFinishedPeers = 5;
 		Job job = Job.newInstance("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
 				.maxFileSize(2 * FileSizes.EIGHT_KILO_BYTE.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
@@ -117,7 +117,8 @@ public class TestUtils {
 		for (int i = 1; i <= 5; ++i) {
 			pAds.add(new PeerAddress(new Number160(i)));
 		}
-		int maxNumberOfFinishedPeers = 3;
+
+		int maxNumberOfFinishedPeers = 10;
 		Job job = Job.newInstance("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
 				.maxFileSize(2 * FileSizes.EIGHT_KILO_BYTE.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();

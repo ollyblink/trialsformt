@@ -2,9 +2,7 @@ package mapreduce.manager;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -14,24 +12,17 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.context.IContext;
-import mapreduce.execution.computation.context.NullContext;
 import mapreduce.execution.computation.context.PseudoStoreContext;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
-import mapreduce.execution.task.scheduling.taskresultcomparisonscheduling.MinAssignedWorkersTaskResultComparisonScheduler;
 import mapreduce.execution.task.taskexecutor.ITaskExecutor;
 import mapreduce.execution.task.taskexecutor.ParallelTaskExecutor;
-import mapreduce.execution.task.taskexecutorscleaner.IJobCleaner;
-import mapreduce.execution.task.taskexecutorscleaner.TaskExecutorsCleaner;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.storage.LocationBean;
-import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobExecutionManager.class);
@@ -40,16 +31,12 @@ public class MRJobExecutionManager {
 	private static final BlockingQueue<Job> DEFAULT_BLOCKING_QUEUE = new LinkedBlockingQueue<Job>();
 	private static final ITaskExecutor DEFAULT_TASK_EXCECUTOR = ParallelTaskExecutor.newInstance();
 	private static final ITaskScheduler DEFAULT_TASK_EXECUTION_SCHEDULER = MinAssignedWorkersTaskExecutionScheduler.newInstance();
-	private static final IContext DEFAULT_CONTEXT = PseudoStoreContext.newInstance();
-	private static final ITaskScheduler DEFAULT_TASK_COMPARISON_SCHEDULER = MinAssignedWorkersTaskResultComparisonScheduler.newInstance();
-	private static final IJobCleaner DEFAULT_TASK_EXECUTORS_CLEANER = TaskExecutorsCleaner.newInstance();
+	private static final IContext DEFAULT_CONTEXT = PseudoStoreContext.newInstance(); 
 
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private IContext context;
 	private ITaskScheduler taskExecutionScheduler;
 	private ITaskExecutor taskExecutor;
-	private IJobCleaner taskExecutorsClearner;
-	private ITaskScheduler taskResultComparisonScheduler;
 
 	private BlockingQueue<Job> jobs;
 	private MRJobExecutionManagerMessageConsumer messageConsumer;
@@ -65,23 +52,11 @@ public class MRJobExecutionManager {
 
 	public static MRJobExecutionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
 		return new MRJobExecutionManager(dhtConnectionProvider, DEFAULT_BLOCKING_QUEUE).taskExecutor(DEFAULT_TASK_EXCECUTOR)
-				.taskExecutionScheduler(DEFAULT_TASK_EXECUTION_SCHEDULER).context(DEFAULT_CONTEXT)
-				.taskResultComparisonScheduler(DEFAULT_TASK_COMPARISON_SCHEDULER).taskExecutorsClearner(DEFAULT_TASK_EXECUTORS_CLEANER)
-				.canExecute(true);
-	}
-
-	public MRJobExecutionManager taskResultComparisonScheduler(ITaskScheduler taskResultComparisonScheduler) {
-		this.taskResultComparisonScheduler = taskResultComparisonScheduler;
-		return this;
+				.taskExecutionScheduler(DEFAULT_TASK_EXECUTION_SCHEDULER).context(DEFAULT_CONTEXT).canExecute(true);
 	}
 
 	public MRJobExecutionManager taskExecutor(ITaskExecutor taskExecutor) {
 		this.taskExecutor = taskExecutor;
-		return this;
-	}
-
-	public MRJobExecutionManager taskExecutorsClearner(IJobCleaner taskExecutorsClearner) {
-		this.taskExecutorsClearner = taskExecutorsClearner;
 		return this;
 	}
 
@@ -166,8 +141,7 @@ public class MRJobExecutionManager {
 		Task task = null;
 		while ((task = this.taskExecutionScheduler.schedule(tasks)) != null && !this.taskExecutor.abortedTaskExecution() && canExecute()) {
 			this.dhtConnectionProvider.broadcastExecutingTask(task);
-			final Multimap<Object, Object> dataForTask = dhtConnectionProvider.getTaskData(task,
-					LocationBean.create(task.initialDataLocation(), task.procedure()));
+			final Multimap<Object, Object> dataForTask = dhtConnectionProvider.getTaskData(task, task.initialDataLocation());
 
 			this.taskExecutor.executeTask(task, context, dataForTask);// Non-blocking!
 			Number160 resultHash = this.context.resultHash();
@@ -175,13 +149,15 @@ public class MRJobExecutionManager {
 		}
 		if (!this.taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
 			// Clean up all "executing" tasks
-			Multimap<Task, LocationBean> dataToRemove = this.taskExecutorsClearner.cleanUp(job);
-			this.removeDataFromDHT(dataToRemove);
+			// Multimap<Task, LocationBean> dataToRemove = job.taskDataToRemove(job.currentProcedureIndex());
+			// this.removeDataFromDHT(dataToRemove);
 			this.dhtConnectionProvider.broadcastFinishedAllTasks(job);
 			this.messageConsumer.updateMessagesFromJobUpdate(job.id());
 
-			printResults(job);
 		}
+		awaitMessageConsumerCompletion();
+
+		printResults(job);
 
 		// Create new tasks
 
@@ -226,14 +202,13 @@ public class MRJobExecutionManager {
 		// Only printing
 		BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
 		for (Task t : ts) {
-			logger.info("Task " + t.id());
-			for (PeerAddress pAddress : t.allAssignedPeers()) {
-				int cntr = 0;
-				while (cntr++ < t.statiForPeer(pAddress).size()) {
-					logger.info(pAddress.inetAddress() + ":" + pAddress.tcpPort() + ":  " + t.resultHash(pAddress, cntr));
-				}
-			}
+			logger.info(t.finalDataLocation().procedure().getClass().getSimpleName() + ": " + t.finalDataLocation().dataLocation().first() + ", "
+					+ t.finalDataLocation().dataLocation().second());
 		}
+	}
+
+	public boolean isExecutionAborted() {
+		return this.taskExecutor.abortedTaskExecution();
 	}
 
 	// End Execution

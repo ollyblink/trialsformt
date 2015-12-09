@@ -56,12 +56,6 @@ public interface IDHTConnectionProvider {
 
 	public void broadcastFinishedAllTasks(Job job);
 
-	public void broadcastExecutingCompareTaskResults(Task task);
-
-	public void broadcastFinishedTaskComparison(Task task);
-
-	public void broadcastFinishedAllTaskComparisons(Job job);
-
 	public void broadcastFinishedJob(Job job);
 
 	// Maintenance

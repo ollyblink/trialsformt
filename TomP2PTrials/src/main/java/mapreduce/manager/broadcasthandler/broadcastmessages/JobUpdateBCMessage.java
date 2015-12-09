@@ -18,10 +18,7 @@ public class JobUpdateBCMessage extends AbstractJobBCMessage {
 	private JobUpdateBCMessage(BCMessageStatus status) {
 		this.status = status;
 	}
-
-	public static JobUpdateBCMessage newFinishedAllTaskComparisonsBCMessage() {
-		return new JobUpdateBCMessage(BCMessageStatus.FINISHED_ALL_TASK_COMPARIONS);
-	}
+ 
 
 	public static JobUpdateBCMessage newFinishedAllTasksBCMessage() {
 		return new JobUpdateBCMessage(BCMessageStatus.FINISHED_ALL_TASKS);
@@ -29,7 +26,7 @@ public class JobUpdateBCMessage extends AbstractJobBCMessage {
 
 	@Override
 	public void execute(final IMessageConsumer messageConsumer) {
-		messageConsumer.updateJob(job, status(), sender);
+		messageConsumer.updateJob(job, sender);
 	}
 
 }

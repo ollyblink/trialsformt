@@ -15,7 +15,6 @@ import mapreduce.execution.task.Task;
 import mapreduce.execution.task.tasksplitting.MaxFileSizeTaskSplitter;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
-import mapreduce.storage.LocationBean;
 import mapreduce.testutils.TestUtils;
 
 public class MRJobSubmissionManagerTest {
@@ -32,8 +31,7 @@ public class MRJobSubmissionManagerTest {
 		jobSubmissionManager.submit(job, true);
 		Multimap<Task, Comparable> keysForEachTask = splitter.keysForEachTask();
 		for (Task task : keysForEachTask.keySet()) {
-			Multimap<Object, Object> taskData = dhtConnectionProvider.getTaskData(task,
-					LocationBean.create(task.initialDataLocation(), task.procedure()));
+			Multimap<Object, Object> taskData = dhtConnectionProvider.getTaskData(task, task.initialDataLocation());
 
 			for (Object key : taskData.keySet()) {
 				// System.err.println(job.maxFileSize() + " " + new ArrayList<Object>(taskData.get(key)).get(0).toString().getBytes("UTF-8").length);

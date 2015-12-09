@@ -11,7 +11,7 @@ public enum DomainProvider {
 		int jobStatusIndex = task.statiForPeer(peerAddress).size() - 1;
 		if (jobStatusIndex == -1 && task.initialDataLocation() != null) { // means there's none assigned for that peer... either a problem, or take
 																			// initial data location instead
-			jobStatusIndex = task.initialDataLocation().second();
+			jobStatusIndex = task.initialDataLocation().jobStatusIndex();
 		}
 		String domain = task.id() + task.procedure().getClass().getSimpleName() + peerId + jobStatusIndex;
 		return domain;

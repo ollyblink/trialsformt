@@ -1,7 +1,6 @@
 package mapreduce.manager.broadcasthandler.broadcastmessages;
 
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
-import net.tomp2p.peers.PeerAddress;
 
 public class FinishedJobBCMessage extends AbstractJobBCMessage {
 

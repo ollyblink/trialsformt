@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -11,11 +12,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
+import mapreduce.storage.LocationBean;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
@@ -42,12 +43,13 @@ public class Task implements Serializable, Comparable<Task> {
 
 	// CONSIDER ONLY STORING THEIR HASH REPRESENTATION FOR THE DOMAIN AND OTHER KEYS
 	/** Data location to retrieve the data from for this task */
-	private Tuple<PeerAddress, Integer> initialDataLocation;
+	private LocationBean initialDataLocation;
 	/**
 	 * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
 	 * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
 	 */
-	private Tuple<PeerAddress, Integer> finalDataLocation;
+	private LocationBean finalDataLocation;
+	private List<LocationBean> dataToRemove;
 
 	private Task(String jobId) {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName()) + "_" + jobId;
@@ -63,6 +65,7 @@ public class Task implements Serializable, Comparable<Task> {
 		this.isFinished = false;
 		this.initialDataLocation = null;
 		this.finalDataLocation = null;
+		this.dataToRemove = new ArrayList<>();
 	}
 
 	private int bestOfMaxNrOfFinishedWorkersWithSameResultHash(int maxNrOfFinishedWorkers) {
@@ -126,28 +129,28 @@ public class Task implements Serializable, Comparable<Task> {
 		return this;
 	}
 
-	public Task initialDataLocation(Tuple<PeerAddress, Integer> initialDataLocation) {
+	public Task initialDataLocation(LocationBean initialDataLocation) {
 		this.initialDataLocation = initialDataLocation;
 		return this;
 	}
 
-	public Task finalDataLocation(Tuple<PeerAddress, Integer> finalDataLocation) {
+	public Task finalDataLocation(LocationBean finalDataLocation) {
 		this.finalDataLocation = finalDataLocation;
 		return this;
 	}
 
-	public Tuple<PeerAddress, Integer> initialDataLocation() {
+	public LocationBean initialDataLocation() {
 		return initialDataLocation;
 	}
 
-	public Tuple<PeerAddress, Integer> finalDataLocation() {
+	public LocationBean finalDataLocation() {
 		return finalDataLocation;
 	}
 
-	public boolean taskComparisonAssigned() {
-		// return this.comparingPeers.values().contains(BCMessageStatus.EXECUTING_TASK_COMPARISON);
-		return false;
-	}
+//	public boolean taskComparisonAssigned() {
+//		// return this.comparingPeers.values().contains(BCMessageStatus.EXECUTING_TASK_COMPARISON);
+//		return false;
+//	}
 
 	public void updateStati(TaskResult toUpdate) {
 		synchronized (executingPeers) {
@@ -161,11 +164,23 @@ public class Task implements Serializable, Comparable<Task> {
 			if (currentStatus == BCMessageStatus.FINISHED_TASK && containsExecuting) {
 				jobStati.removeLastOccurrence(BCMessageStatus.EXECUTING_TASK);
 				jobStati.addLast(currentStatus);
-				double nrOfResultsWithHash = this.updateResultHash(peerAddress, jobStati.size() - 1, toUpdate.resultHash);
-				if (nrOfResultsWithHash == this.bestOfMaxNrOfFinishedWorkersWithSameResultHash
-						|| totalNumberOfFinishedExecutions() >= maxNrOfFinishedWorkers) {
-					isFinished = true;
-					this.finalDataLocation = Tuple.create(peerAddress, jobStati.size() - 1);
+				int locationIndex = jobStati.size() - 1;
+				int nrOfResultsWithHash = this.updateResultHash(peerAddress, locationIndex, toUpdate.resultHash);
+				boolean bestOfAchieved = nrOfResultsWithHash == this.bestOfMaxNrOfFinishedWorkersWithSameResultHash;
+				boolean enoughWorkersFinished = totalNumberOfFinishedExecutions() >= maxNrOfFinishedWorkers;
+
+				if (bestOfAchieved || enoughWorkersFinished) {
+					this.isFinished = true;
+					this.finalDataLocation = LocationBean.create(Tuple.create(peerAddress, locationIndex), procedure);
+					for (PeerAddress p : executingPeers.keySet()) {
+						List<BCMessageStatus> list = executingPeers.get(p);
+						for (int i = 0; i < list.size(); ++i) {
+							LocationBean lB = LocationBean.create(Tuple.create(p, i), procedure);
+							if (!lB.equals(finalDataLocation)) {
+								this.dataToRemove.add(lB);
+							}
+						}
+					}
 				}
 			} else if (currentStatus == BCMessageStatus.EXECUTING_TASK && !containsExecuting && !isFinished) {
 				jobStati.addLast(currentStatus);
@@ -186,7 +201,7 @@ public class Task implements Serializable, Comparable<Task> {
 	 * @param resultHash
 	 * @return returns the number of times this result hash has been achieved.
 	 */
-	public double updateResultHash(PeerAddress peerAddress, Integer location, Number160 resultHash) {
+	public int updateResultHash(PeerAddress peerAddress, Integer location, Number160 resultHash) {
 		Tuple<PeerAddress, Integer> tuple = Tuple.create(peerAddress, location);
 		synchronized (this.taskResults) {
 			this.taskResults.put(resultHash, tuple);
@@ -194,7 +209,7 @@ public class Task implements Serializable, Comparable<Task> {
 		synchronized (this.reverseTaskResults) {
 			this.reverseTaskResults.put(tuple, resultHash);
 		}
-		return (double) this.taskResults.get(resultHash).size();
+		return this.taskResults.get(resultHash).size();
 	}
 
 	public Number160 resultHash(PeerAddress peerAddress, Integer location) {
@@ -430,10 +445,8 @@ public class Task implements Serializable, Comparable<Task> {
 		taskCopy.jobId = jobId;
 		taskCopy.isFinished = isFinished;
 		// taskCopy.keys = keys;// Shallow copy...
-		taskCopy.maxNrOfFinishedWorkers = maxNrOfFinishedWorkers;
+		taskCopy.maxNrOfFinishedWorkers(maxNrOfFinishedWorkers);
 		taskCopy.procedure = procedure;
-		ListMultimap<PeerAddress, BCMessageStatus> tmp = ArrayListMultimap.create();
-		taskCopy.executingPeers = Multimaps.synchronizedListMultimap(tmp);
 		// for(PeerAddress peerAddress: executingPeers.keySet()){
 		// taskCopy.executingPeers.putAll(new PeerAddress(peerAddress.peerId()), executingPeers.get(peerAddress));
 		// }
@@ -466,6 +479,10 @@ public class Task implements Serializable, Comparable<Task> {
 				}
 			}
 		}
+	}
+
+	public List<LocationBean> dataToRemove() {
+		return this.dataToRemove;
 	}
 
 }

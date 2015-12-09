@@ -191,11 +191,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public void broadcastFinishedAllTasks(Job job) {
 		broadcastJobUpdate(job, JobUpdateBCMessage.newFinishedAllTasksBCMessage().job(job).sender(this.connectionPeer.peerAddress()));
 	}
-
-	@Override
-	public void broadcastFinishedAllTaskComparisons(Job job) {
-		broadcastJobUpdate(job, JobUpdateBCMessage.newFinishedAllTaskComparisonsBCMessage().job(job).sender(this.connectionPeer.peerAddress()));
-	}
+ 
 
 	@Override
 	public void broadcastFinishedJob(Job job) {
@@ -223,18 +219,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void broadcastFinishedTask(Task task, Number160 resultHash) {
 		broadcastTask(task, TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.connectionPeer.peerAddress()));
-	}
-
-	@Override
-	public void broadcastExecutingCompareTaskResults(Task task) {
-		// broadcastTask(task,
-		// ExecutingTaskBCMessage.newExecutingTaskResultComparisonInstance().task(task).sender(this.connectionPeer.peerAddress()));
-	}
-
-	@Override
-	public void broadcastFinishedTaskComparison(Task task) {
-		// broadcastTask(task, ExecutingTaskBCMessage.newFinishedTaskResultComparisonInstance().task(task).sender(this.connectionPeer.peerAddress()));
-	}
+	} 
 
 	private void broadcastTask(Task task, IBCMessage message) {
 		try {

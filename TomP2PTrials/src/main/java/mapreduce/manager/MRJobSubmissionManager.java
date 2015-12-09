@@ -15,6 +15,7 @@ import mapreduce.execution.task.tasksplitting.ITaskSplitter;
 import mapreduce.execution.task.tasksplitting.MaxFileSizeTaskSplitter;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmitterMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.storage.LocationBean;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
@@ -53,8 +54,8 @@ public class MRJobSubmissionManager {
 
 		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		for (final Task task : job.firstTasks()) {
-			//Set the initial data location for the first task set
-			task.initialDataLocation(Tuple.create(this.dhtConnectionProvider().peerAddress(), 0));
+			// Set the initial data location for the first task set
+			task.initialDataLocation(LocationBean.create(Tuple.create(this.dhtConnectionProvider().peerAddress(), 0), task.procedure()));
 
 			server.submit(new Runnable() {
 

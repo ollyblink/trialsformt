@@ -1,7 +1,6 @@
 package mapreduce.manager.broadcasthandler.broadcastmessages;
 
 import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
 
 /**
  * Any message updating a task should extend this class

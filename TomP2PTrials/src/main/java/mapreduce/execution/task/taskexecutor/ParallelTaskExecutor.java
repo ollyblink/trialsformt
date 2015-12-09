@@ -8,12 +8,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.task.Task;
 
 public class ParallelTaskExecutor implements ITaskExecutor {
+	private static Logger logger = LoggerFactory.getLogger(ParallelTaskExecutor.class);
 
 	private ThreadPoolExecutor server;
 	private List<Future<?>> currentThreads = new ArrayList<Future<?>>();
@@ -46,10 +50,10 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 			Runnable run = new Runnable() {
 
 				@Override
-				public void run() { 
+				public void run() {
 					try {
 						Method process = task.procedure().getClass().getMethods()[0];
-						process.invoke(task.procedure(), new Object[] { key,  dataForTask.get(key), context });
+						process.invoke(task.procedure(), new Object[] { key, dataForTask.get(key), context });
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -61,19 +65,18 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 		cleanUp();
 
 	}
- 
 
 	@Override
 	public void abortTaskExecution() {
 		this.abortedTaskExecution = true;
-		System.err.println("Aborting task");
+		logger.info("Aborting task");
 		if (!server.isTerminated() && server.getActiveCount() > 0) {
 			for (Future<?> run : this.currentThreads) {
 				run.cancel(true);
 			}
 			cleanUp();
 		}
-		System.err.println("Task aborted");
+		logger.info("Task aborted");
 	}
 
 	private void cleanUp() {
@@ -84,7 +87,7 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-		} 
+		}
 	}
 
 }

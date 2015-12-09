@@ -71,20 +71,20 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		}
 	}
 
-	@Override
-	public void handleFinishedTaskComparion(Task task) {
-		for (Job job : jobs) {
-			if (job.id().equals(task.jobId())) {
-				job.updateTaskFinalDataLocation(task);
-			}
-		}
-	}
+	// @Override
+	// public void handleFinishedTaskComparion(Task task) {
+	// for (Job job : jobs) {
+	// if (job.id().equals(task.jobId())) {
+	// job.updateTaskFinalDataLocation(task);
+	// }
+	// }
+	// }
 
 	@Override
-	public void updateJob(Job job, BCMessageStatus status, PeerAddress sender) {
+	public void updateJob(Job job, PeerAddress sender) {
 		if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
 			return;
-		}
+		} 
 		this.isBusy(true);
 		this.jobExecutor.abortExecution(job);
 		this.syncJob(job);
@@ -101,7 +101,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		}
 	}
 
-	public void updateMessagesFromJobUpdate(String jobId) { 
+	public void updateMessagesFromJobUpdate(String jobId) {
 		this.removeMessagesForJob(jobBCMessageUpdateCondition.jobId(jobId).types(finishedAllTasksMessagesToRemove));
 	}
 

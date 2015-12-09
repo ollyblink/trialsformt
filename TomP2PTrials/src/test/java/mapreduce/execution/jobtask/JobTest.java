@@ -17,7 +17,6 @@ import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.utils.IDCreator;
-import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -66,8 +65,8 @@ public class JobTest {
 	public void testUpdateTaskStati() {
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
 		List<Task> tasksForProcedure = new ArrayList<Task>();
-		tasksForProcedure.add(Task.newInstance(jobId));
-		tasksForProcedure.add(Task.newInstance(jobId));
+		tasksForProcedure.add(Task.newInstance(jobId).maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance()));
+		tasksForProcedure.add(Task.newInstance(jobId).maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance()));
 		Job job = Job.newInstance("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(new WordCountMapper(), tasksForProcedure);
 		ArrayList<Task> list = new ArrayList<Task>(tasksForProcedure);
 		PeerAddress[] peers = new PeerAddress[3];

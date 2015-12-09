@@ -1,10 +1,6 @@
 package mapreduce.manager.broadcasthandler.broadcastmessages;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
-import net.tomp2p.peers.PeerAddress;
 
 public class DistributedJobBCMessage extends AbstractJobBCMessage {
 

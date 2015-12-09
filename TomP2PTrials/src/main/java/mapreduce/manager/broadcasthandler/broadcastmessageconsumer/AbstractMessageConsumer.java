@@ -98,11 +98,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleFinishedTaskComparion(Task task) {
-	}
-
-	@Override
-	public void updateJob(Job job, BCMessageStatus status, PeerAddress sender) {
+	public void updateJob(Job job, PeerAddress sender) {
 
 	}
 }
