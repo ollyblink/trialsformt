@@ -15,6 +15,7 @@ import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.task.Task;
+import mapreduce.utils.IAbortableExecution;
 
 public class ParallelTaskExecutor implements ITaskExecutor {
 	private static Logger logger = LoggerFactory.getLogger(ParallelTaskExecutor.class);
@@ -23,16 +24,14 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 	private List<Future<?>> currentThreads = new ArrayList<Future<?>>();
 	private boolean abortedTaskExecution;
 
+	private int nThreads;
+
 	private ParallelTaskExecutor() {
+		this.nThreads = Runtime.getRuntime().availableProcessors();
 	}
 
 	public static ParallelTaskExecutor newInstance() {
 		return new ParallelTaskExecutor();
-	}
-
-	@Override
-	public void abortedTaskExecution(boolean abortedTaskExecution) {
-		this.abortedTaskExecution = abortedTaskExecution;
 	}
 
 	@Override
@@ -44,7 +43,6 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 	public void executeTask(final Task task, final IContext context, final Multimap<Object, Object> dataForTask) {
 		this.abortedTaskExecution = false;
 		context.task(task);
-		int nThreads = Runtime.getRuntime().availableProcessors();
 		this.server = new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 		for (final Object key : dataForTask.keySet()) {
 			Runnable run = new Runnable() {

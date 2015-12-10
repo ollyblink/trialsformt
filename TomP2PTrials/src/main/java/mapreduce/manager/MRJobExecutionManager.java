@@ -20,7 +20,11 @@ import mapreduce.execution.task.taskexecutor.ITaskExecutor;
 import mapreduce.execution.task.taskexecutor.ParallelTaskExecutor;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.storage.LocationBean;
+import mapreduce.storage.dhtmaintenance.IDHTDataCleaner;
+import mapreduce.storage.dhtmaintenance.ParallelDHTDataCleaner;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobExecutionManager.class);
@@ -40,6 +44,8 @@ public class MRJobExecutionManager {
 	private MRJobExecutionManagerMessageConsumer messageConsumer;
 	private boolean canExecute;
 
+	private IDHTDataCleaner dhtDataCleaner;
+
 	private MRJobExecutionManager(IDHTConnectionProvider dhtConnectionProvider, CopyOnWriteArrayList<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
 		this.messageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(this).canTake(true);
@@ -50,7 +56,13 @@ public class MRJobExecutionManager {
 
 	public static MRJobExecutionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
 		return new MRJobExecutionManager(dhtConnectionProvider, DEFAULT_BLOCKING_QUEUE).taskExecutor(DEFAULT_TASK_EXCECUTOR)
+				.dhtDataCleaner(ParallelDHTDataCleaner.newInstance(dhtConnectionProvider.bootstrapIP(), dhtConnectionProvider.bootstrapPort()))
 				.taskExecutionScheduler(DEFAULT_TASK_EXECUTION_SCHEDULER).context(DEFAULT_CONTEXT).canExecute(true);
+	}
+
+	public MRJobExecutionManager dhtDataCleaner(IDHTDataCleaner dhtDataCleaner) {
+		this.dhtDataCleaner = dhtDataCleaner;
+		return this;
 	}
 
 	public MRJobExecutionManager taskExecutor(ITaskExecutor taskExecutor) {
@@ -58,11 +70,6 @@ public class MRJobExecutionManager {
 		return this;
 	}
 
-	public ITaskExecutor taskExecutor() {
-		return this.taskExecutor;
-	}
-
-	// Getter/Setter
 	private MRJobExecutionManager dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
 		return this;
@@ -71,10 +78,6 @@ public class MRJobExecutionManager {
 	public MRJobExecutionManager taskExecutionScheduler(ITaskScheduler taskExecutionScheduler) {
 		this.taskExecutionScheduler = taskExecutionScheduler;
 		return this;
-	}
-
-	public ITaskScheduler taskExecutionScheduler() {
-		return this.taskExecutionScheduler;
 	}
 
 	public IDHTConnectionProvider dhtConnectionProvider() {
@@ -86,10 +89,6 @@ public class MRJobExecutionManager {
 		return this;
 	}
 
-	public IContext context() {
-		return this.context;
-	}
-
 	public MRJobExecutionManager canExecute(boolean canExecute) {
 		this.canExecute = canExecute;
 		return this;
@@ -99,26 +98,16 @@ public class MRJobExecutionManager {
 		return this.canExecute;
 	}
 
-	public Job getJob() {
-		return jobs.get(0);
-	}
-
 	// END GETTER/SETTER
 
 	// Maintenance
-	public void start() {
-		logger.info("Try to connect.");
-		dhtConnectionProvider.connect();
-		startExecuting();
-	}
 
 	public void shutdown() {
 		dhtConnectionProvider.shutdown();
 	}
-	// End Maintenance
 
-	// Execution
-	private void startExecuting() {
+	public void start() {
+		dhtConnectionProvider.connect();
 		while (jobs.isEmpty()) {
 			try {
 				Thread.sleep(DEFAULT_SLEEPING_TIME);
@@ -130,11 +119,13 @@ public class MRJobExecutionManager {
 		executeJob();
 	}
 
+	// End Maintenance
+	// Execution
+
 	private void executeJob() {
 		if (!canExecute()) {
 			System.err.println("Cannot execute! use MRJobSubmitter::canExecute(true) to enable execution");
 		}
-		this.taskExecutor.abortedTaskExecution(false);
 		List<Task> tasks = new ArrayList<Task>(jobs.get(0).tasks(jobs.get(0).currentProcedureIndex()));
 		Task task = null;
 		while ((task = this.taskExecutionScheduler.schedule(tasks)) != null && !this.taskExecutor.abortedTaskExecution() && canExecute()) {
@@ -147,10 +138,9 @@ public class MRJobExecutionManager {
 		}
 		if (!this.taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
 			// Clean up all "executing" tasks
-			// Multimap<Task, LocationBean> dataToRemove = job.taskDataToRemove(job.currentProcedureIndex());
-			// this.removeDataFromDHT(dataToRemove);
-			logger.info("clean up"); 
-			dhtConnectionProvider.broadcastFinishedAllTasks(jobs.get(0));
+//			cleanUpDHT(jobs.get(0).taskDataToRemove(jobs.get(0).currentProcedureIndex()));
+			logger.info("clean up");
+			this.dhtConnectionProvider.broadcastFinishedAllTasks(jobs.get(0));
 
 			// this.messageConsumer.isBusy(true);
 
@@ -173,31 +163,32 @@ public class MRJobExecutionManager {
 
 	}
 
+	private void cleanUpDHT(final Multimap<Task, LocationBean> dataToRemove) {
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				dhtDataCleaner.removeDataFromDHT(dataToRemove);
+			}
+
+		}).start();
+	}
+
 	public void abortExecution(Job job) {
 		if (job.id().equals(jobs.get(0).id())) {
 			this.taskExecutor.abortTaskExecution();
-		}
-
-	}
-
-	private void awaitMessageConsumerCompletion() {
-		while (this.messageConsumer.isBusy()) {
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 
 	private void printResults(Job job) {
 		// Only printing
 		BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
+		logger.info("All final data locations ");
 		for (Task t : ts) {
-			logger.info(t+"");
-			logger.info(t.finalDataLocation().procedure().getClass().getSimpleName() + ": " + t.finalDataLocation().dataLocation().first() + ", "
-					+ t.finalDataLocation().dataLocation().second());
+			PeerAddress p = t.finalDataLocation().dataLocation().first();
+			logger.info("<" + p.tcpPort() + ", " + t.finalDataLocation().dataLocation().second() + ">");
 		}
+
 	}
 
 	public boolean isExecutionAborted() {
@@ -207,46 +198,3 @@ public class MRJobExecutionManager {
 	// End Execution
 
 }
-
-// awaitMessageConsumerCompletion();
-// Task Comparison & new task creation
-// tasks = new ArrayList<Task>(job.tasks(job.currentProcedureIndex())); // Hypothetically, can also reuse it directly from above?
-//
-// task = null;
-// //TODO send result hash with broadcast
-// while ((task = this.taskResultComparisonScheduler.schedule(tasks)) != null && !this.taskResultComparator.abortedTaskComparisons()
-// && canExecute()) {
-// this.dhtConnectionProvider.broadcastExecutingCompareTaskResults(task);
-// Map<Tuple<PeerAddress, Integer>, Multimap<Object, Object>> data = this.getDataToCompare(task);
-// Tuple<PeerAddress, Integer> taskResultEvaluationResult = this.taskResultComparator.compareTaskResults(data);
-// task.finalDataLocation(taskResultEvaluationResult);
-// this.dhtConnectionProvider.broadcastFinishedTaskComparison(task);
-// }
-// if (!this.taskResultComparator.abortedTaskComparisons()) { // this means that this executor is actually the one that is going to abort the
-// // others...
-// this.dhtConnectionProvider.broadcastFinishedAllTaskComparisons(job);
-// // abortTaskExecution();
-// logger.info("This executor aborts task comparisons!");
-// this.messageConsumer.updateMessagesFromJobUpdate(job.id(), BCMessageStatus.FINISHED_ALL_TASK_COMPARIONS);
-// printResults(job);
-// }
-//
-// awaitMessageConsumerCompletion();
-// Clean up data locations of unused tasks
-// private Map<Tuple<PeerAddress, Integer>, Multimap<Object, Object>> getDataToCompare(Task task) {
-// Map<Tuple<PeerAddress, Integer>, Multimap<Object, Object>> dataForEachResult = new HashMap<Tuple<PeerAddress, Integer>, Multimap<Object,
-// Object>>();
-// ArrayList<PeerAddress> allAssignedPeers = task.allAssignedPeers();
-// for (PeerAddress p : allAssignedPeers) {
-// ArrayList<BCMessageStatus> statiForPeer = task.statiForPeer(p);
-// for (int i = 0; i < statiForPeer.size(); ++i) {
-// if (statiForPeer.get(i).equals(BCMessageStatus.FINISHED_TASK)) { // just to make sure, double check, should never be the case anyways!
-// Tuple<PeerAddress, Integer> dataLocationTuple = Tuple.create(p, i);
-// Multimap<Object, Object> taskDataForLocationTuple = dhtConnectionProvider.getTaskData(task,
-// LocationBean.create(dataLocationTuple, task.procedure()));
-// dataForEachResult.put(dataLocationTuple, taskDataForLocationTuple);
-// }
-// }
-// }
-// return dataForEachResult;
-// }

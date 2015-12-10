@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.Random;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -17,8 +16,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import mapreduce.execution.exceptions.IncorrectFormatException;
-import mapreduce.execution.exceptions.NotSetException;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
@@ -28,7 +25,8 @@ import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.JobUpdateBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.utils.DomainProvider;
-import mapreduce.utils.FormatUtils;
+import mapreduce.utils.IDCreator;
+import mapreduce.utils.PortManager;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -49,66 +47,76 @@ import net.tomp2p.storage.StorageDisk;
 public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private static final String KEY_LOCATION_PREAMBLE = "KEYS_FOR_";
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
-	private static final Random RND = new Random();
 
-	private static final int MIN_PORT = 4001;
-	private static final int PORT_RANGE = 1000;
-
-	private int bootstrapPort;
+	private String id;
 	private String bootstrapIP;
+	private int bootstrapPort;
 
 	private PeerDHT connectionPeer;
 	private int port;
 	private MRBroadcastHandler broadcastHandler;
 	private String storageFilePath;
-	private boolean useDiskStorage;
+	private boolean isBootstrapper;
 
 	private DHTConnectionProvider() {
+		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
 		this.broadcastHandler = new MRBroadcastHandler();
 	}
 
-	public static DHTConnectionProvider newInstance() {
-		return new DHTConnectionProvider();
+	public static DHTConnectionProvider newInstance(String bootstrapIP, int bootstrapPort) {
+		DHTConnectionProvider provider = new DHTConnectionProvider().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort)
+				.port(PortManager.INSTANCE.generatePort());
+
+		return provider;
 	}
 
 	// GETTER/SETTER START
 	// ======================
+	@Override
+	public boolean isBootstrapper() {
+		return isBootstrapper;
+	}
 
+	@Override
+	public DHTConnectionProvider isBootstrapper(boolean isBootstrapper) {
+		this.isBootstrapper = isBootstrapper;
+		return this;
+	}
+
+	@Override
 	public DHTConnectionProvider bootstrapIP(String bootstrapIP) {
-		this.bootstrapIP = bootstrapIP;
-		return this;
-	}
-
-	public String bootstrapIP() throws IncorrectFormatException, NotSetException {
-		if (bootstrapIP != null) {
-			if (FormatUtils.isCorrectIP4(bootstrapIP)) {
-				return this.bootstrapIP;
-			} else {
-				throw new IncorrectFormatException("This IP has not the correct format.");
-			}
-		} else {
-			throw new NotSetException("Could not find a valid IP.");
+		if (this.bootstrapIP == null) {// make sure it cannot be externally changed...
+			this.bootstrapIP = bootstrapIP;
 		}
-	}
-
-	public DHTConnectionProvider bootstrapPort(int bootstrapPort) {
-		this.bootstrapPort = bootstrapPort;
 		return this;
 	}
 
+	@Override
+	public String bootstrapIP() {
+		return this.bootstrapIP;
+	}
+
+	@Override
+	public DHTConnectionProvider bootstrapPort(int bootstrapPort) {
+		if (this.bootstrapPort == 0 && bootstrapPort > 0) {// make sure it cannot be externally changed...
+			this.bootstrapPort = bootstrapPort;
+		}
+		return this;
+	}
+
+	@Override
 	public int bootstrapPort() {
 		return this.bootstrapPort;
 	}
 
 	public DHTConnectionProvider port(int port) {
-		this.port = port;
+		if (this.port == 0 && port > 0) {// make sure it cannot be externally changed...
+			this.port = port;
+		}
 		return this;
 	}
 
 	public int port() {
-		if (port == 0) {
-			this.port = MIN_PORT + RND.nextInt(PORT_RANGE);
-		}
 		return this.port;
 	}
 
@@ -117,10 +125,12 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		return this.broadcastHandler;
 	}
 
+	@Override
 	public String storageFilePath() {
 		return storageFilePath;
 	}
 
+	@Override
 	public DHTConnectionProvider storageFilePath(String storageFilePath) {
 		this.storageFilePath = storageFilePath;
 		return this;
@@ -136,18 +146,23 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public DHTConnectionProvider connect() {
 		try {
-			this.port = port();
-			Peer peer = new PeerBuilder(Number160.createHash("DHTConnectionProvider_" + RND.nextLong())).ports(port)
-					.broadcastHandler(this.broadcastHandler).start();
-			logger.warn("port: " + port);
-			if (bootstrapIP != null && bootstrapPort > 0) {
-				logger.warn(bootstrapIP + " " + bootstrapPort);
+			System.err.println(id+" before: " +port);
+			if (isBootstrapper) {
+				this.port = this.bootstrapPort;
+			}
+
+			Peer peer = new PeerBuilder(Number160.createHash(id)).ports(port).broadcastHandler(this.broadcastHandler).start();
+
+			if (!isBootstrapper) {
 				doBootstrapping(peer);
 			}
+			System.err.println(id+" After: " +port);
 			PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer);
-			if (useDiskStorage()) {
-				peerDHTBuilder.storage(new StorageDisk(peer.peerID(), new File(storageFilePath()), null));
+
+			if (this.storageFilePath != null) {
+				peerDHTBuilder.storage(new StorageDisk(peer.peerID(), new File(this.storageFilePath), null));
 			}
+
 			this.connectionPeer = peerDHTBuilder.start();
 		} catch (IOException e) {
 			logger.debug("Exception on bootstrapping", e);
@@ -156,29 +171,25 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	private void doBootstrapping(Peer peer) throws UnknownHostException {
-		try {
-			FutureBootstrap bootstrap = peer.bootstrap().inetAddress(InetAddress.getByName(bootstrapIP())).ports(bootstrapPort()).start();
-			bootstrap.addListener(new BaseFutureListener<FutureBootstrap>() {
 
-				@Override
-				public void operationComplete(FutureBootstrap future) throws Exception {
-					if (future.isSuccess()) {
-						logger.warn("successfully bootstrapped to " + bootstrapIP + "/" + bootstrapPort);
-					} else {
-						logger.warn("No success on bootstrapping: fail reason: " + future.failedReason());
-					}
-				}
-
-				@Override
-				public void exceptionCaught(Throwable t) throws Exception {
-					logger.warn("Exception on bootstrapping", t);
-				}
-			});
-		} catch (IncorrectFormatException e) {
-			e.printStackTrace();
-		} catch (NotSetException e) {
-			e.printStackTrace();
-		}
+		FutureBootstrap bootstrap = peer.bootstrap().inetAddress(InetAddress.getByName(bootstrapIP())).ports(bootstrapPort()).start();
+		bootstrap.awaitUninterruptibly();
+		// bootstrap.addListener(new BaseFutureListener<FutureBootstrap>() {
+		//
+		// @Override
+		// public void operationComplete(FutureBootstrap future) throws Exception {
+		// if (future.isSuccess()) {
+		// logger.warn("successfully bootstrapped to " + bootstrapIP + "/" + bootstrapPort);
+		// } else {
+		// logger.warn("No success on bootstrapping: fail reason: " + future.failedReason());
+		// }
+		// }
+		//
+		// @Override
+		// public void exceptionCaught(Throwable t) throws Exception {
+		// logger.warn("Exception on bootstrapping", t);
+		// }
+		// });
 	}
 
 	@Override
@@ -242,8 +253,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 			Number160 domainKey = Number160.createHash(domain);
 			Number160 keyHash = Number160.createHash(key.toString());
 			logger.info("addTaskData: Domain: " + domain);
-			logger.info("addTaskData: Domainkey: " + domainKey);
-			logger.info("addTaskData: Key:" + keyHash);
+			// logger.info("addTaskData: Domainkey: " + domainKey);
+			// logger.info("addTaskData: Key:" + keyHash);
 
 			FuturePut await = this.connectionPeer.add(keyHash).data(new Data(new Value(value))).domainKey(domainKey).start();
 			await.addListener(new BaseFutureListener<FuturePut>() {
@@ -277,6 +288,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public void addTaskKey(final Task task, final Object key, boolean awaitUninterruptibly) {
 		try {
 			String domain = DomainProvider.INSTANCE.domain(task, connectionPeer.peerAddress());
+			logger.info("addTaskKey: " + domain);
 
 			Number160 domainKey = Number160.createHash(domain);
 
@@ -332,7 +344,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 							taskKeyValues.put(key, kvPair.value());
 						}
 					} else {
-						logger.warn("future data is null!");
+						logger.warn("getTaskData: future data for domain " + locationBean.domain(task.id()) + " is null!");
 					}
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
@@ -361,7 +373,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 						keys.add(data.object());
 					}
 				} else {
-					logger.warn("future task key data is null!");
+					logger.warn("getTaskKeys: future task key data for domain " + domain + " is null!");
 				}
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
@@ -375,17 +387,19 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void removeTaskResultsFor(Task task, LocationBean locationBean) {
 		List<Object> keys = getTaskKeys(task, locationBean);
+		logger.info("removeTaskResultsFor: keys found: " + keys);
 		// String domain = domain(task, task.finalPeerAddress());
 		String domain = locationBean.domain(task.id());
 		Number160 domainKey = Number160.createHash(domain);
+
 		for (final Object key : keys) {
-			connectionPeer.remove(Number160.createHash(key.toString())).domainKey(domainKey).all().start()
+			connectionPeer.remove(Number160.createHash(key.toString())).domainKey(domainKey).all().start().awaitUninterruptibly()
 					.addListener(new BaseFutureListener<FutureRemove>() {
 
 						@Override
 						public void operationComplete(FutureRemove future) throws Exception {
 							if (future.isSuccess()) {
-								logger.warn("Successfully removed data");
+								logger.warn("Successfully removed data for key " + key);
 							} else {
 								logger.warn("No success on trying to remove data for key " + key + ".");
 							}
@@ -399,6 +413,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 			);
 		}
+
 	}
 
 	@Override
@@ -407,23 +422,24 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		String domain = locationBean.domain(task.id());
 		Number160 domainKey = Number160.createHash(domain);
 		Number160 keyLocationHash = Number160.createHash(KEY_LOCATION_PREAMBLE + domain);
-		connectionPeer.remove(keyLocationHash).domainKey(domainKey).all().start().addListener(new BaseFutureListener<FutureRemove>() {
+		connectionPeer.remove(keyLocationHash).domainKey(domainKey).all().start().awaitUninterruptibly()
+				.addListener(new BaseFutureListener<FutureRemove>() {
 
-			@Override
-			public void operationComplete(FutureRemove removeFuture) throws Exception {
-				if (removeFuture.isSuccess()) {
-					logger.warn("Successfully removed data");
-				} else {
-					logger.warn("Something wrong trying to remove keys.");
+					@Override
+					public void operationComplete(FutureRemove removeFuture) throws Exception {
+						if (removeFuture.isSuccess()) {
+							logger.warn("Successfully removed keys");
+						} else {
+							logger.warn("Something wrong trying to remove keys.");
+						}
+					}
+
+					@Override
+					public void exceptionCaught(Throwable t) throws Exception {
+						logger.debug("Exception caught", t);
+
+					}
 				}
-			}
-
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				logger.debug("Exception caught", t);
-
-			}
-		}
 
 		);
 	}
@@ -453,22 +469,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 				logger.warn("Exception thrown in DHTConnectionProvider::shutdown()", t);
 			}
 		});
-	}
-
-	@Override
-	public DHTConnectionProvider useDiskStorage(boolean useDiskStorage) {
-		this.useDiskStorage = useDiskStorage;
-		return this;
-	}
-
-	@Override
-	public boolean useDiskStorage() {
-		return useDiskStorage;
-	}
-
-	@Override
-	public String peerAddressString() {
-		return connectionPeer.peerAddress().inetAddress() + ":" + connectionPeer.peerAddress().tcpPort();
 	}
 
 	@Override

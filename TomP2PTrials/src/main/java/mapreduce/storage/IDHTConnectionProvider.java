@@ -12,6 +12,18 @@ import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {
 
+	public boolean isBootstrapper();
+
+	public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
+
+	public String bootstrapIP();
+
+	public int bootstrapPort();
+
+	public IDHTConnectionProvider bootstrapIP(String bootstrapIP);
+
+	public IDHTConnectionProvider bootstrapPort(int bootstrapPort);
+
 	// DHT access
 	/**
 	 * to store the data for each key produced by this peer
@@ -43,7 +55,7 @@ public interface IDHTConnectionProvider {
 
 	public void removeTaskResultsFor(Task task, LocationBean locationBean);
 
-	void removeTaskKeysFor(Task task, LocationBean locationBean);
+	public void removeTaskKeysFor(Task task, LocationBean locationBean);
 
 	// Broadcasts
 	public MRBroadcastHandler broadcastHandler();
@@ -65,12 +77,10 @@ public interface IDHTConnectionProvider {
 
 	public void shutdown();
 
-	public IDHTConnectionProvider useDiskStorage(boolean useDiskStorage);
-
-	public boolean useDiskStorage();
-
-	public String peerAddressString();
-
 	public PeerAddress peerAddress();
+
+	public String storageFilePath();
+
+	public IDHTConnectionProvider storageFilePath(String storageFilePath);
 
 }

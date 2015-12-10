@@ -28,11 +28,11 @@ public class DHTConnectionProviderTest {
 		// String storageFilePath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/main/java/mapreduce/storage/";
 
 		connectionProviders = new ArrayList<IDHTConnectionProvider>();
-		connectionProviders.add(DHTConnectionProvider.newInstance().port(bootstrapPort));
+		connectionProviders.add(DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort).isBootstrapper(true));
 		connectionProviders.get(0).connect();
 
 		for (int i = 0; i < 10; ++i) {
-			DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort);
+			DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort);
 			connectionProviders.add(dhtConnectionProvider);
 			dhtConnectionProvider.connect();
 		}
@@ -56,7 +56,7 @@ public class DHTConnectionProviderTest {
 
 		Task task = Mockito.mock(Task.class);
 		Mockito.when(task.id()).thenReturn("1");
-		Mockito.when(task.jobId()).thenReturn("1"); 
+		Mockito.when(task.jobId()).thenReturn("1");
 		IMapReduceProcedure procedure = Mockito.mock(IMapReduceProcedure.class);
 		Mockito.when(task.procedure()).thenReturn(procedure);
 		for (Object o : keys) {

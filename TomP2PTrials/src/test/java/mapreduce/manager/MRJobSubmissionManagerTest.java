@@ -23,7 +23,8 @@ public class MRJobSubmissionManagerTest {
 
 	@Test
 	public void test() throws UnsupportedEncodingException {
-		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance().port(4000);
+		String bootstrapIP = "192.168.43.234";
+		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(bootstrapIP, 4000);
 		jobSubmissionManager = MRJobSubmissionManager.newInstance(dhtConnectionProvider);
 		Job job = TestUtils.testJobWO(new WordCountMapper());
 		MaxFileSizeTaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
