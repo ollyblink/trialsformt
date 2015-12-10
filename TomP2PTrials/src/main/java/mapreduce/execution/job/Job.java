@@ -138,7 +138,11 @@ public class Job implements Serializable {
 	}
 
 	public BlockingQueue<Task> tasks(int index) {
-		return procedureTaskTupel(index).tasks();
+		if (index < procedures.size()) {
+			return procedureTaskTupel(index).tasks();
+		} else {
+			return null;
+		}
 	}
 
 	private ProcedureTaskTuple procedureTaskTupel(int index) {

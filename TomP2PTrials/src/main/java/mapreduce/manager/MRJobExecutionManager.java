@@ -108,13 +108,6 @@ public class MRJobExecutionManager {
 
 	public void start() {
 		dhtConnectionProvider.connect();
-		while (jobs.isEmpty()) {
-			try {
-				Thread.sleep(DEFAULT_SLEEPING_TIME);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
 
 		executeJob();
 	}
@@ -123,6 +116,13 @@ public class MRJobExecutionManager {
 	// Execution
 
 	private void executeJob() {
+		while (jobs.isEmpty()) {
+			try {
+				Thread.sleep(DEFAULT_SLEEPING_TIME);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 		if (!canExecute()) {
 			System.err.println("Cannot execute! use MRJobSubmitter::canExecute(true) to enable execution");
 		}
@@ -137,9 +137,7 @@ public class MRJobExecutionManager {
 			this.dhtConnectionProvider.broadcastFinishedTask(task, resultHash);
 		}
 		if (!this.taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
-			// Clean up all "executing" tasks
-//			cleanUpDHT(jobs.get(0).taskDataToRemove(jobs.get(0).currentProcedureIndex()));
-			logger.info("clean up");
+
 			this.dhtConnectionProvider.broadcastFinishedAllTasks(jobs.get(0));
 
 			// this.messageConsumer.isBusy(true);
@@ -159,7 +157,18 @@ public class MRJobExecutionManager {
 		printResults(jobs.get(0));
 		// Create new tasks
 
-		// submit new tasks
+//		if (jobs.get(0).hasNextProcedure()) {
+//			// Create new tasks
+//			// add new tasks to job
+//
+//		} else {
+//			jobs.remove(0);
+//		}
+
+		// Clean up data from old tasks
+		// cleanUpDHT(jobs.get(0).taskDataToRemove(jobs.get(0).currentProcedureIndex()));
+		// logger.info("clean up");
+		executeJob();
 
 	}
 

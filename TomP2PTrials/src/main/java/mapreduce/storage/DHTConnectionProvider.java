@@ -33,6 +33,7 @@ import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.FutureRemove;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
@@ -162,7 +163,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 			if (this.storageFilePath != null) {
 				peerDHTBuilder.storage(new StorageDisk(peer.peerID(), new File(this.storageFilePath), null));
 			}
-
 			this.connectionPeer = peerDHTBuilder.start();
 		} catch (IOException e) {
 			logger.debug("Exception on bootstrapping", e);
@@ -190,6 +190,13 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		// logger.warn("Exception on bootstrapping", t);
 		// }
 		// });
+	}
+	
+	public void storage(){
+
+//		StorageLayer storageLayer = this.connectionPeer.storageLayer();
+//		Number640 key = new Number640(locationKey, domainKey, contentKey, versionKey);
+//		storageLayer.contains(key);
 	}
 
 	@Override
