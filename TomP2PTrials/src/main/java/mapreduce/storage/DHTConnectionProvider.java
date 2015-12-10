@@ -27,6 +27,7 @@ import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.PortManager;
+import mapreduce.utils.Tuple;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -147,7 +148,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public DHTConnectionProvider connect() {
 		try {
-			System.err.println(id+" before: " +port);
 			if (isBootstrapper) {
 				this.port = this.bootstrapPort;
 			}
@@ -157,7 +157,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 			if (!isBootstrapper) {
 				doBootstrapping(peer);
 			}
-			System.err.println(id+" After: " +port);
 			PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer);
 
 			if (this.storageFilePath != null) {
@@ -191,12 +190,12 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		// }
 		// });
 	}
-	
-	public void storage(){
 
-//		StorageLayer storageLayer = this.connectionPeer.storageLayer();
-//		Number640 key = new Number640(locationKey, domainKey, contentKey, versionKey);
-//		storageLayer.contains(key);
+	public void storage() {
+
+		// StorageLayer storageLayer = this.connectionPeer.storageLayer();
+		// Number640 key = new Number640(locationKey, domainKey, contentKey, versionKey);
+		// storageLayer.contains(key);
 	}
 
 	@Override
@@ -255,13 +254,12 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public void addTaskData(Task task, final Object key, final Object value, boolean awaitUninterruptibly) {
 		try {
 
-			String domain = DomainProvider.INSTANCE.domain(task, connectionPeer.peerAddress());
+			String domain = DomainProvider.INSTANCE.taskPeerDomain(task, connectionPeer.peerAddress());
 
 			Number160 domainKey = Number160.createHash(domain);
 			Number160 keyHash = Number160.createHash(key.toString());
-			logger.info("addTaskData: Domain: " + domain);
-			// logger.info("addTaskData: Domainkey: " + domainKey);
-			// logger.info("addTaskData: Key:" + keyHash);
+
+			logger.info("addTaskData: dHashtable.add(" + key + ", " + value + ").domain(" + domain + ")");
 
 			FuturePut await = this.connectionPeer.add(keyHash).data(new Data(new Value(value))).domainKey(domainKey).start();
 			await.addListener(new BaseFutureListener<FuturePut>() {
@@ -294,14 +292,15 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void addTaskKey(final Task task, final Object key, boolean awaitUninterruptibly) {
 		try {
-			String domain = DomainProvider.INSTANCE.domain(task, connectionPeer.peerAddress());
-			logger.info("addTaskKey: " + domain);
+			String domain = DomainProvider.INSTANCE.taskPeerDomain(task, connectionPeer.peerAddress());
+			String taskPeerKeyLocation = KEY_LOCATION_PREAMBLE + domain;
 
-			Number160 domainKey = Number160.createHash(domain);
+			Number160 domainHash = Number160.createHash(domain);
+			Number160 taskPeerKeyLocationHash = Number160.createHash(taskPeerKeyLocation);
 
-			Number160 keyLocationHash = Number160.createHash(KEY_LOCATION_PREAMBLE + domain);
+			logger.info("addTaskKey: dHashtable.add(" + taskPeerKeyLocationHash + ", " + key + ").domain(" + domain + ")");
 
-			FuturePut await = this.connectionPeer.add(keyLocationHash).data(new Data(key.toString())).domainKey(domainKey).start();
+			FuturePut await = this.connectionPeer.add(taskPeerKeyLocationHash).data(new Data(key.toString())).domainKey(domainHash).start();
 
 			await.addListener(new BaseFutureListener<FuturePut>() {
 
@@ -329,29 +328,28 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public Multimap<Object, Object> getTaskData(Task task, LocationBean locationBean) {
+	public Multimap<Object, Object> getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
 		final Multimap<Object, Object> taskKeyValues = ArrayListMultimap.create();
 
 		// String domain = domain(task, task.finalPeerAddress());
-		Number160 domainKey = Number160.createHash(locationBean.domain(task.id()));
-		logger.info("getTaskData: Domain: " + locationBean.domain(task.id()));
-		logger.info("getTaskData: Domainkey: " + domainKey);
-		List<Object> taskKeys = getTaskKeys(task, locationBean);
-		logger.info("getTaskData: taskkeys: " + taskKeys);
+		String domain = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		Number160 domainKey = Number160.createHash(domain);
 
-		for (int i = 0; i < taskKeys.size(); ++i) {
-			String key = taskKeys.get(i).toString();
-			FutureGet getFuture = connectionPeer.get(Number160.createHash(key)).domainKey(domainKey).all().start();
+		List<Object> taskKeys = getTaskKeys(task, selectedExecutor);
+
+		for (Object taskKey : taskKeys) {
+			logger.info("getTaskData: dHashtable.get(" + taskKey + ").domain(" + domain + ")");
+			FutureGet getFuture = connectionPeer.get(Number160.createHash(taskKey.toString())).domainKey(domainKey).all().start();
 			getFuture.awaitUninterruptibly();
 			if (getFuture.isSuccess()) {
 				try {
 					if (getFuture.dataMap() != null) {
 						for (Number640 n : getFuture.dataMap().keySet()) {
 							Value kvPair = (Value) getFuture.dataMap().get(n).object();
-							taskKeyValues.put(key, kvPair.value());
+							taskKeyValues.put(taskKey.toString(), kvPair.value());
 						}
 					} else {
-						logger.warn("getTaskData: future data for domain " + locationBean.domain(task.id()) + " is null!");
+						logger.warn("getTaskData: future data for domain " + domain + " is null!");
 					}
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
@@ -364,12 +362,15 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public List<Object> getTaskKeys(Task task, LocationBean locationBean) {
+	public List<Object> getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
 		List<Object> keys = new ArrayList<Object>();
-		// String domain = domain(task, task.finalPeerAddress());
-		String domain = locationBean.domain(task.id());
+		String domain = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		String keyLocation = KEY_LOCATION_PREAMBLE + domain;
 		Number160 domainKey = Number160.createHash(domain);
-		Number160 keyLocationHash = Number160.createHash(KEY_LOCATION_PREAMBLE + domain);
+		Number160 keyLocationHash = Number160.createHash(keyLocation);
+
+		logger.info("getTaskKeys: dHashtable.get(" + keyLocation + ").domain(" + domain + ")");
+
 		FutureGet getFuture = connectionPeer.get(keyLocationHash).domainKey(domainKey).all().start();
 		getFuture.awaitUninterruptibly();
 		if (getFuture.isSuccess()) {
@@ -392,14 +393,13 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public void removeTaskResultsFor(Task task, LocationBean locationBean) {
-		List<Object> keys = getTaskKeys(task, locationBean);
-		logger.info("removeTaskResultsFor: keys found: " + keys);
-		// String domain = domain(task, task.finalPeerAddress());
-		String domain = locationBean.domain(task.id());
+	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
+		List<Object> keys = getTaskKeys(task, selectedExecutor);
+		String domain = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
 		Number160 domainKey = Number160.createHash(domain);
 
 		for (final Object key : keys) {
+			logger.info("removeTaskResultsFor: dHashtable.remove(" + key + ").domain(" + domain + ")");
 			connectionPeer.remove(Number160.createHash(key.toString())).domainKey(domainKey).all().start().awaitUninterruptibly()
 					.addListener(new BaseFutureListener<FutureRemove>() {
 
@@ -424,11 +424,14 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public void removeTaskKeysFor(Task task, LocationBean locationBean) {
+	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
 
-		String domain = locationBean.domain(task.id());
+		String domain = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		String keyLocation = KEY_LOCATION_PREAMBLE + domain;
 		Number160 domainKey = Number160.createHash(domain);
-		Number160 keyLocationHash = Number160.createHash(KEY_LOCATION_PREAMBLE + domain);
+		Number160 keyLocationHash = Number160.createHash(keyLocation);
+
+		logger.info("removeTaskKeysFor: dHashtable.remove(" + keyLocation + ").domain(" + domain + ")");
 		connectionPeer.remove(keyLocationHash).domainKey(domainKey).all().start().awaitUninterruptibly()
 				.addListener(new BaseFutureListener<FutureRemove>() {
 

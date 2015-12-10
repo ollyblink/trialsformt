@@ -8,6 +8,6 @@ public enum IDCreator {
 	private final Random random = new Random();
 
 	public String createTimeRandomID(final String name) {
-		return name + "_" + System.currentTimeMillis() + "_" + random.nextLong();
+		return name.toUpperCase() + "_" + System.currentTimeMillis() + "_" + random.nextLong();
 	}
 }

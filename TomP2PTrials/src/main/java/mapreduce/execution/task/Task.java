@@ -16,7 +16,6 @@ import com.google.common.collect.Multimaps;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
-import mapreduce.storage.LocationBean;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
@@ -33,26 +32,29 @@ public class Task implements Serializable, Comparable<Task> {
 	private String id;
 	private String jobId;
 	private IMapReduceProcedure procedure;
+	private Integer procedureIndex;
+	private int maxNrOfFinishedWorkers;
+	private boolean isFinished;
+
 	private ListMultimap<PeerAddress, BCMessageStatus> executingPeers;
 	private ListMultimap<Number160, Tuple<PeerAddress, Integer>> taskResults;
 	private ListMultimap<Tuple<PeerAddress, Integer>, Number160> reverseTaskResults;
-	private boolean isFinished;
-	private int maxNrOfFinishedWorkers;
+
 	/** The number of same hash results to be achieved */
 	private int bestOfMaxNrOfFinishedWorkersWithSameResultHash;
 
 	// CONSIDER ONLY STORING THEIR HASH REPRESENTATION FOR THE DOMAIN AND OTHER KEYS
 	/** Data location to retrieve the data from for this task */
-	private LocationBean initialDataLocation;
+	private Tuple<PeerAddress, Integer> initialDataLocation;
 	/**
 	 * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
 	 * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
 	 */
-	private LocationBean finalDataLocation;
-	private List<LocationBean> dataToRemove;
+	private Tuple<PeerAddress, Integer> finalDataLocation;
+	private List<Tuple<PeerAddress, Integer>> dataToRemove;
 
 	private Task(String jobId) {
-		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName()) + "_" + jobId;
+		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
 		this.jobId = jobId;
 		this.procedure = null;
 		ArrayListMultimap<PeerAddress, BCMessageStatus> tmp = ArrayListMultimap.create();
@@ -66,6 +68,15 @@ public class Task implements Serializable, Comparable<Task> {
 		this.initialDataLocation = null;
 		this.finalDataLocation = null;
 		this.dataToRemove = new ArrayList<>();
+	}
+
+	public Integer procedureIndex() {
+		return this.procedureIndex;
+	}
+
+	public Task procedureIndex(Integer procedureIndex) {
+		this.procedureIndex = procedureIndex;
+		return this;
 	}
 
 	private int bestOfMaxNrOfFinishedWorkersWithSameResultHash(int maxNrOfFinishedWorkers) {
@@ -119,21 +130,21 @@ public class Task implements Serializable, Comparable<Task> {
 		return this;
 	}
 
-	public Task initialDataLocation(LocationBean initialDataLocation) {
+	public Task initialDataLocation(Tuple<PeerAddress, Integer> initialDataLocation) {
 		this.initialDataLocation = initialDataLocation;
 		return this;
 	}
 
-	public Task finalDataLocation(LocationBean finalDataLocation) {
+	public Task finalDataLocation(Tuple<PeerAddress, Integer> finalDataLocation) {
 		this.finalDataLocation = finalDataLocation;
 		return this;
 	}
 
-	public LocationBean initialDataLocation() {
+	public Tuple<PeerAddress, Integer> initialDataLocation() {
 		return initialDataLocation;
 	}
 
-	public LocationBean finalDataLocation() {
+	public Tuple<PeerAddress, Integer> finalDataLocation() {
 		return finalDataLocation;
 	}
 
@@ -161,13 +172,13 @@ public class Task implements Serializable, Comparable<Task> {
 
 				if (bestOfAchieved || enoughWorkersFinished) {
 					this.isFinished = true;
-					this.finalDataLocation = LocationBean.create(Tuple.create(peerAddress, locationIndex), procedure);
+					this.finalDataLocation = Tuple.create(peerAddress, locationIndex);
 					for (PeerAddress p : executingPeers.keySet()) {
 						List<BCMessageStatus> list = executingPeers.get(p);
 						for (int i = 0; i < list.size(); ++i) {
-							LocationBean lB = LocationBean.create(Tuple.create(p, i), procedure);
-							if (!lB.equals(finalDataLocation)) {
-								this.dataToRemove.add(lB);
+							Tuple<PeerAddress, Integer> tupleToRemove = Tuple.create(p, i);
+							if (!tupleToRemove.equals(finalDataLocation)) {
+								this.dataToRemove.add(tupleToRemove);
 							}
 						}
 					}
@@ -471,7 +482,7 @@ public class Task implements Serializable, Comparable<Task> {
 		}
 	}
 
-	public List<LocationBean> dataToRemove() {
+	public List<Tuple<PeerAddress, Integer>> dataToRemove() {
 		return this.dataToRemove;
 	}
 

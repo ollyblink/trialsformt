@@ -1,7 +1,6 @@
 package mapreduce.utils;
 
 import java.io.Serializable;
-import java.util.Random;
 
 /**
  * To avoid problem of add().list() in dht that doesn't work
@@ -9,18 +8,17 @@ import java.util.Random;
  * @author ozihler
  *
  */
-public class Value implements Serializable {
+public final class Value implements Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -6638101010868136679L;
-	private static final Random RND = new Random();
-	private long id;
-	private Object value;
+	private final String id;
+	private final Object value;
 
-	public Value(Object value) {
+	public Value(final Object value) {
+		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.value = value;
-		this.id = RND.nextLong() * RND.nextLong() * RND.nextLong();
 	}
 
 	public Object value() {
@@ -36,7 +34,7 @@ public class Value implements Serializable {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (int) (id ^ (id >>> 32));
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		return result;
 	}
 
@@ -49,7 +47,10 @@ public class Value implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		Value other = (Value) obj;
-		if (id != other.id)
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
 			return false;
 		return true;
 	}

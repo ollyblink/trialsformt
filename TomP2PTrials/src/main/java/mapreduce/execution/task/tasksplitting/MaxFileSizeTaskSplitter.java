@@ -85,16 +85,15 @@ public final class MaxFileSizeTaskSplitter implements ITaskSplitter {
 			for (List<String> locations : allNewFileLocations) {
 
 				for (int i = 0; i < locations.size(); ++i) {
-					Task task = Task.newInstance(job.id()).procedure(procedure).maxNrOfFinishedWorkers(job.maxNrOfFinishedWorkers());
+					Task task = Task.newInstance(job.id()).procedure(procedure).procedureIndex(job.currentProcedureIndex())
+							.maxNrOfFinishedWorkers(job.maxNrOfFinishedWorkers());
 					tasksForProcedure.add(task);
 					keysForEachTask.put(task, locations.get(i));
 				}
 
 			}
 
-			job.nextProcedure(procedure, tasksForProcedure);
-			System.err.println(job.currentProcedureIndex());
-			System.err.println(job.tasks(job.currentProcedureIndex()));
+			job.nextProcedure(procedure, tasksForProcedure); 
 		} else {
 			logger.error("Could not put job due to no procedure specified.");
 		}

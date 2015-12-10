@@ -13,7 +13,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Multimap;
 
 import mapreduce.execution.task.Task;
-import mapreduce.storage.LocationBean;
+import mapreduce.utils.Tuple;
+import net.tomp2p.peers.PeerAddress;
 
 public class ParallelDHTDataCleaner implements IDHTDataCleaner {
 	private static Logger logger = LoggerFactory.getLogger(ParallelDHTDataCleaner.class);
@@ -40,12 +41,12 @@ public class ParallelDHTDataCleaner implements IDHTDataCleaner {
 	}
 
 	@Override
-	public void removeDataFromDHT(Multimap<Task, LocationBean> dataToRemove) {
+	public void removeDataFromDHT(Multimap<Task, Tuple<PeerAddress, Integer>> dataToRemove) {
 		this.abortedTaskExecution = false;
 		this.server = new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 		for (final Task task : dataToRemove.keySet()) {
 			System.err.println(task);
-			for (LocationBean location : dataToRemove.get(task)) {
+			for (Tuple<PeerAddress, Integer> location : dataToRemove.get(task)) {
 				CleanRunnable cleaner = CleanRunnable.newInstance(bootstrapIP, bootstrapPort).dataToRemove(task, location); 
 				Future<?> submit = server.submit(cleaner);
 				this.currentThreads.add(submit);

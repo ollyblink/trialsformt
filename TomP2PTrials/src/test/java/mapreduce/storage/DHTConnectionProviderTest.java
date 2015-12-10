@@ -16,6 +16,7 @@ import com.google.common.collect.Multimap;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
 import mapreduce.utils.Tuple;
+import net.tomp2p.peers.PeerAddress;
 
 public class DHTConnectionProviderTest {
 
@@ -64,7 +65,7 @@ public class DHTConnectionProviderTest {
 		}
 		// Thread.sleep(1000);
 
-		LocationBean location = LocationBean.create(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
+		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
 		System.err.println(dataForTask.keySet().size());
 
@@ -102,7 +103,7 @@ public class DHTConnectionProviderTest {
 			connectionProviders.get(putter).addTaskData(task, o, new Integer(1), true);
 		}
 		// Thread.sleep(1000);
-		LocationBean location = LocationBean.create(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
+		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
 
 		System.err.println(dataForTask);
@@ -146,9 +147,9 @@ public class DHTConnectionProviderTest {
 		for (Object o : keys) {
 			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr), true);
 		}
-		// Thread.sleep(1000);
-		LocationBean location = LocationBean.create(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
-		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
+		// Thread.sleep(1000); ;
+		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task,
+				Tuple.create(connectionProviders.get(putter).peerAddress(), -1));
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -191,7 +192,7 @@ public class DHTConnectionProviderTest {
 		for (Object o : keys) {
 			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr), true);
 		}
-		LocationBean location = LocationBean.create(Tuple.create(connectionProviders.get(putter).peerAddress(), -1), procedure);
+		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
 
 		System.err.println(dataForTask);

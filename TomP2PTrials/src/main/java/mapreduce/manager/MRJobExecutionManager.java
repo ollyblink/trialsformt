@@ -20,9 +20,9 @@ import mapreduce.execution.task.taskexecutor.ITaskExecutor;
 import mapreduce.execution.task.taskexecutor.ParallelTaskExecutor;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
-import mapreduce.storage.LocationBean;
 import mapreduce.storage.dhtmaintenance.IDHTDataCleaner;
 import mapreduce.storage.dhtmaintenance.ParallelDHTDataCleaner;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -172,7 +172,7 @@ public class MRJobExecutionManager {
 
 	}
 
-	private void cleanUpDHT(final Multimap<Task, LocationBean> dataToRemove) {
+	private void cleanUpDHT(final Multimap<Task, Tuple<PeerAddress, Integer>> dataToRemove) {
 		new Thread(new Runnable() {
 
 			@Override
@@ -194,8 +194,8 @@ public class MRJobExecutionManager {
 		BlockingQueue<Task> ts = job.tasks(job.currentProcedureIndex());
 		logger.info("All final data locations ");
 		for (Task t : ts) {
-			PeerAddress p = t.finalDataLocation().dataLocation().first();
-			logger.info("<" + p.tcpPort() + ", " + t.finalDataLocation().dataLocation().second() + ">");
+			PeerAddress p = t.finalDataLocation().first();
+			logger.info("<" + p.tcpPort() + ", " + t.finalDataLocation().second() + ">");
 		}
 
 	}

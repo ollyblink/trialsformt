@@ -26,7 +26,6 @@ import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.storage.DHTConnectionProvider;
-import mapreduce.storage.LocationBean;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.FileSizes;
 import mapreduce.utils.FileUtils;
@@ -254,17 +253,17 @@ public class MRJobExecutorMessageConsumerTest {
 		prepare(testMessageConsumer);
 		ArrayList<Task> tasks2 = new ArrayList<Task>(
 				testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()));
-		assertEquals(peer1, tasks2.get(0).finalDataLocation().dataLocation().first());
-		assertEquals(new Integer(2), tasks2.get(0).finalDataLocation().dataLocation().second());
+		assertEquals(peer1, tasks2.get(0).finalDataLocation().first());
+		assertEquals(new Integer(2), tasks2.get(0).finalDataLocation().second());
 
-		assertEquals(peer3, tasks2.get(1).finalDataLocation().dataLocation().first());
-		assertEquals(new Integer(3), tasks2.get(1).finalDataLocation().dataLocation().second());
+		assertEquals(peer3, tasks2.get(1).finalDataLocation().first());
+		assertEquals(new Integer(3), tasks2.get(1).finalDataLocation().second());
 
-		assertEquals(peer2, tasks2.get(2).finalDataLocation().dataLocation().first());
-		assertEquals(new Integer(1), tasks2.get(2).finalDataLocation().dataLocation().second());
+		assertEquals(peer2, tasks2.get(2).finalDataLocation().first());
+		assertEquals(new Integer(1), tasks2.get(2).finalDataLocation().second());
 
-		assertEquals(peer3, tasks2.get(3).finalDataLocation().dataLocation().first());
-		assertEquals(new Integer(2), tasks2.get(3).finalDataLocation().dataLocation().second());
+		assertEquals(peer3, tasks2.get(3).finalDataLocation().first());
+		assertEquals(new Integer(2), tasks2.get(3).finalDataLocation().second());
 	}
 
 	private void prepare(MRJobExecutionManagerMessageConsumer consumer) {
@@ -300,11 +299,8 @@ public class MRJobExecutorMessageConsumerTest {
 				break;
 			}
 			++cnt;
-
-			LocationBean value = Mockito.mock(LocationBean.class);
-			Mockito.when(value.dataLocation()).thenReturn(tuple);
-			Mockito.when(tCopy.finalDataLocation()).thenReturn(value);
-			Mockito.when(tCopy.finalDataLocation().dataLocation()).thenReturn(tuple);
+  
+			Mockito.when(tCopy.finalDataLocation()).thenReturn(tuple); 
 		}
 	}
 
@@ -326,37 +322,35 @@ public class MRJobExecutorMessageConsumerTest {
 		for (Task task : taskList) {
 			Task tCopy = Mockito.mock(Task.class);
 			Mockito.when(tCopy.id()).thenReturn(task.id());
-			Mockito.when(tCopy.jobId()).thenReturn(task.jobId());
-			LocationBean value = Mockito.mock(LocationBean.class);
-			Mockito.when(value.dataLocation()).thenReturn(null);
-			Mockito.when(tCopy.finalDataLocation()).thenReturn(value);
+			Mockito.when(tCopy.jobId()).thenReturn(task.jobId());  
+			Mockito.when(tCopy.finalDataLocation()).thenReturn(null);
 			mockTasks.add(tCopy);
 		}
 		Mockito.when(mockJob.tasks(0)).thenReturn(mockTasks);
 		testMessageConsumer.handleReceivedJob(mockJob);
 
 		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
-				.get(0).finalDataLocation().dataLocation());
+				.get(0).finalDataLocation());
 		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
-				.get(1).finalDataLocation().dataLocation());
+				.get(1).finalDataLocation());
 		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
-				.get(2).finalDataLocation().dataLocation());
+				.get(2).finalDataLocation());
 		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
-				.get(3).finalDataLocation().dataLocation());
+				.get(3).finalDataLocation());
 		testMessageConsumer.updateJob(consumer.jobs().get(0), peer2);
 
 		ArrayList<Task> tasks2 = new ArrayList<Task>(
 				testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()));
-		assertEquals(peer1, tasks2.get(0).finalDataLocation().dataLocation().first());
-		assertEquals(new Integer(2), tasks2.get(0).finalDataLocation().dataLocation().second());
+		assertEquals(peer1, tasks2.get(0).finalDataLocation().first());
+		assertEquals(new Integer(2), tasks2.get(0).finalDataLocation().second());
 
-		assertEquals(peer3, tasks2.get(1).finalDataLocation().dataLocation().first());
-		assertEquals(new Integer(3), tasks2.get(1).finalDataLocation().dataLocation().second());
+		assertEquals(peer3, tasks2.get(1).finalDataLocation().first());
+		assertEquals(new Integer(3), tasks2.get(1).finalDataLocation().second());
 
-		assertEquals(peer2, tasks2.get(2).finalDataLocation().dataLocation().first());
-		assertEquals(new Integer(1), tasks2.get(2).finalDataLocation().dataLocation().second());
+		assertEquals(peer2, tasks2.get(2).finalDataLocation().first());
+		assertEquals(new Integer(1), tasks2.get(2).finalDataLocation().second());
 
-		assertEquals(peer3, tasks2.get(3).finalDataLocation().dataLocation().first());
-		assertEquals(new Integer(2), tasks2.get(3).finalDataLocation().dataLocation().second());
+		assertEquals(peer3, tasks2.get(3).finalDataLocation().first());
+		assertEquals(new Integer(2), tasks2.get(3).finalDataLocation().second());
 	}
 }

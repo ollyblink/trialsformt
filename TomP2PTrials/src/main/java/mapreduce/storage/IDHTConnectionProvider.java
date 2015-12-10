@@ -7,6 +7,7 @@ import com.google.common.collect.Multimap;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -49,13 +50,20 @@ public interface IDHTConnectionProvider {
 	 *            represents the index in task.executingPeers for which the data should be collected
 	 * @return
 	 */
-	public Multimap<Object, Object> getTaskData(Task task, LocationBean locationBean);
+	public Multimap<Object, Object> getTaskData(final Task task, final Tuple<PeerAddress, Integer> selectedExecutor);
 
-	public List<Object> getTaskKeys(Task task, LocationBean locationBean);
+	public List<Object> getTaskKeys(final Task task, final Tuple<PeerAddress, Integer> selectedExecutor);
 
-	public void removeTaskResultsFor(Task task, LocationBean locationBean);
+	public void removeTaskResultsFor(final Task task, final Tuple<PeerAddress, Integer> selectedExecutor);
 
-	public void removeTaskKeysFor(Task task, LocationBean locationBean);
+	public void removeTaskKeysFor(final Task task, final Tuple<PeerAddress, Integer> selectedExecutor);
+
+	public void addProcedureKey(final Task task, final Object key, final boolean awaitUninterruptibly);
+
+	public void addProcedureTaskPeerDomain(final Task task, final Object key, final Tuple<PeerAddress, Integer> selectedExecutor,
+			final boolean awaitUninterruptibly);
+
+	// getProcedureKey, getProcedureTaskPeerDomain, removeProcedureKey, removeProcedureTaskPeerDomain,
 
 	// Broadcasts
 	public MRBroadcastHandler broadcastHandler();

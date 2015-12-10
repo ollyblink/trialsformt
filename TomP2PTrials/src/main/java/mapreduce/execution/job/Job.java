@@ -8,9 +8,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
@@ -18,8 +15,9 @@ import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureTaskTuple;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
-import mapreduce.storage.LocationBean;
 import mapreduce.utils.IDCreator;
+import mapreduce.utils.Tuple;
+import net.tomp2p.peers.PeerAddress;
 
 public class Job implements Serializable {
 
@@ -252,8 +250,8 @@ public class Job implements Serializable {
 		return true;
 	}
 
-	public Multimap<Task, LocationBean> taskDataToRemove(int currentProcedureIndex) {
-		Multimap<Task, LocationBean> toRemove = ArrayListMultimap.create();
+	public Multimap<Task, Tuple<PeerAddress, Integer>> taskDataToRemove(int currentProcedureIndex) {
+		Multimap<Task, Tuple<PeerAddress, Integer>> toRemove = ArrayListMultimap.create();
 		BlockingQueue<Task> tasks = tasks(currentProcedureIndex);
 		for (Task task : tasks) {
 			toRemove.putAll(task, task.dataToRemove());

@@ -14,11 +14,12 @@ import mapreduce.execution.computation.standardprocedures.NullMapReduceProcedure
 import mapreduce.execution.task.Task;
 import mapreduce.storage.dhtmaintenance.ParallelDHTDataCleaner;
 import mapreduce.utils.Tuple;
+import net.tomp2p.peers.PeerAddress;
 
 public class ParallelDHTDataCleanerTest {
 
 	private static ParallelDHTDataCleaner cleaner;
-	private static Multimap<Task, LocationBean> dataToRemove;
+	private static Multimap<Task, Tuple<PeerAddress, Integer>> dataToRemove;
 	private static DHTConnectionProvider connection;
 	private static DHTConnectionProvider connection2;
 	private static int bootstrapPort;
@@ -39,8 +40,8 @@ public class ParallelDHTDataCleanerTest {
 		Task task2 = Task.newInstance("2").procedure(procedure);
 
 		String[] data = "world hello world hello world world this is this is world hello world this".split(" ");
-		dataToRemove.put(task, LocationBean.create(Tuple.create(connection.peerAddress(), -1), procedure));
-		dataToRemove.put(task2, LocationBean.create(Tuple.create(connection2.peerAddress(), -1), procedure));
+		dataToRemove.put(task, Tuple.create(connection.peerAddress(), -1));
+		dataToRemove.put(task2, Tuple.create(connection2.peerAddress(), -1));
 		for (String d : data) {
 			connection.addTaskData(task, d, 1, true);
 			connection2.addTaskData(task2, d, 1, true);
