@@ -1,7 +1,5 @@
 package mapreduce.storage;
 
-import static org.junit.Assert.fail;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,10 +29,10 @@ public class ParallelDHTDataCleanerTest {
 		bootstrapPort = 4000;
 		IMapReduceProcedure procedure = NullMapReduceProcedure.newInstance();
 		dataToRemove = ArrayListMultimap.create();
-		connection = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort).isBootstrapper(true).connect();
+		connection = DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort).isBootstrapper(true)).connect();
 		Thread.sleep(1000);
 
-		connection2 = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort).connect();
+		connection2 = DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort)).connect();
 
 		Task task = Task.newInstance("1").procedure(procedure);
 		Task task2 = Task.newInstance("2").procedure(procedure);
@@ -43,8 +41,8 @@ public class ParallelDHTDataCleanerTest {
 		dataToRemove.put(task, Tuple.create(connection.peerAddress(), -1));
 		dataToRemove.put(task2, Tuple.create(connection2.peerAddress(), -1));
 		for (String d : data) {
-			connection.addTaskData(task, d, 1, true);
-			connection2.addTaskData(task2, d, 1, true);
+			connection.addTaskData(task, d, 1);
+			connection2.addTaskData(task2, d, 1);
 		}
 
 	}

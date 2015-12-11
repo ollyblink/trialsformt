@@ -2,6 +2,7 @@ package mapreduce.storage.dhtmaintenance;
 
 import mapreduce.execution.task.Task;
 import mapreduce.storage.DHTConnectionProvider;
+import mapreduce.storage.DHTUtils;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
 
@@ -12,7 +13,7 @@ public final class CleanRunnable implements Runnable {
 	private DHTConnectionProvider dhtConnection;
 
 	private CleanRunnable(String bootstrapIP, int bootstrapPort) {
-		this.dhtConnection = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort).connect();
+		this.dhtConnection = DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort)).connect();
 
 	}
 
@@ -29,7 +30,7 @@ public final class CleanRunnable implements Runnable {
 	@Override
 	public void run() {
 		if (task != null && location != null) {
-			dhtConnection.removeTaskResultsFor(task, location, true);
+			dhtConnection.removeTaskResultsFor(task, location);
 		}
 	}
 

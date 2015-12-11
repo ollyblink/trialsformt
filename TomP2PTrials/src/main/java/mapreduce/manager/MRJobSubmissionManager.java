@@ -64,7 +64,7 @@ public class MRJobSubmissionManager {
 						try {
 							String filePath = (String) key;
 							String lines = FileUtils.INSTANCE.readLines(filePath);
-							dhtConnectionProvider.addTaskData(task, filePath, lines, awaitOnAdd);
+							dhtConnectionProvider.addTaskData(task, filePath, lines);
 							logger.warn("Added file with path " + filePath);
 						} catch (IOException e) {
 							logger.error("Exception", e);

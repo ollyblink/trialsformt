@@ -15,9 +15,7 @@ public class DHTStorageContext implements IContext {
 
 	private Task task;
 
-	private boolean awaitOnAdd;
-
-//	private ITaskResultComparator taskResultComparator;
+	// private ITaskResultComparator taskResultComparator;
 
 	/**
 	 * 
@@ -33,10 +31,10 @@ public class DHTStorageContext implements IContext {
 		return new DHTStorageContext(dhtConnectionProvider);
 	}
 
-//	public DHTStorageContext taskResultComparator(ITaskResultComparator taskResultComparator) {
-//		this.taskResultComparator = taskResultComparator;
-//		return this;
-//	}
+	// public DHTStorageContext taskResultComparator(ITaskResultComparator taskResultComparator) {
+	// this.taskResultComparator = taskResultComparator;
+	// return this;
+	// }
 
 	@Override
 	public void write(Object keyOut, Object valueOut) {
@@ -46,19 +44,14 @@ public class DHTStorageContext implements IContext {
 			return;
 		}
 
-		this.dhtConnectionProvider.addTaskData(task, keyOut, valueOut, awaitOnAdd);
-//		if (this.taskResultComparator != null) {
-//			taskResultComparator.enableSpeedUp(this.dhtConnectionProvider, task, keyOut, valueOut, awaitOnAdd);
-//		}
+		this.dhtConnectionProvider.addTaskData(task, keyOut, valueOut);
+		// if (this.taskResultComparator != null) {
+		// taskResultComparator.enableSpeedUp(this.dhtConnectionProvider, task, keyOut, valueOut, awaitOnAdd);
+		// }
 	}
 
 	public DHTStorageContext task(Task task) {
 		this.task = task;
-		return this;
-	}
-
-	public DHTStorageContext awaitOnAdd(boolean awaitOnAdd) {
-		this.awaitOnAdd = awaitOnAdd;
 		return this;
 	}
 

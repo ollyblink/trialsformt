@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
@@ -29,11 +30,11 @@ public class DHTConnectionProviderTest {
 		// String storageFilePath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/main/java/mapreduce/storage/";
 
 		connectionProviders = new ArrayList<IDHTConnectionProvider>();
-		connectionProviders.add(DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort).isBootstrapper(true));
+		connectionProviders.add(DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort).isBootstrapper(true)));
 		connectionProviders.get(0).connect();
 
 		for (int i = 0; i < 10; ++i) {
-			DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort);
+			DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort));
 			connectionProviders.add(dhtConnectionProvider);
 			dhtConnectionProvider.connect();
 		}
@@ -61,14 +62,15 @@ public class DHTConnectionProviderTest {
 		IMapReduceProcedure procedure = Mockito.mock(IMapReduceProcedure.class);
 		Mockito.when(task.procedure()).thenReturn(procedure);
 		for (Object o : keys) {
-			connectionProviders.get(putter).addTaskData(task, o, new Integer(1), true);
+			connectionProviders.get(putter).addTaskData(task, o, new Integer(1));
 		}
 		// Thread.sleep(1000);
 
 		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
-		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location, true);
+		Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
+		connectionProviders.get(getter).getTaskData(task, location, dataForTask);
 		System.err.println(dataForTask.keySet().size());
-		
+
 		assertTrue(dataForTask.keySet().size() == 3);
 		assertTrue(dataForTask.values().size() == 3);
 		assertTrue(dataForTask.keySet().contains("this"));
@@ -100,11 +102,12 @@ public class DHTConnectionProviderTest {
 		IMapReduceProcedure procedure = Mockito.mock(IMapReduceProcedure.class);
 		Mockito.when(task.procedure()).thenReturn(procedure);
 		for (Object o : keys) {
-			connectionProviders.get(putter).addTaskData(task, o, new Integer(1), true);
+			connectionProviders.get(putter).addTaskData(task, o, new Integer(1));
 		}
 		// Thread.sleep(1000);
 		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
-		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location, true);
+		Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
+		connectionProviders.get(getter).getTaskData(task, location, dataForTask);
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -145,11 +148,11 @@ public class DHTConnectionProviderTest {
 		Mockito.when(task.procedure()).thenReturn(procedure);
 		int cntr = 0;
 		for (Object o : keys) {
-			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr), true);
+			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr));
 		}
 		// Thread.sleep(1000); ;
-		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task,
-				Tuple.create(connectionProviders.get(putter).peerAddress(), -1), true);
+		Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
+		connectionProviders.get(getter).getTaskData(task, Tuple.create(connectionProviders.get(putter).peerAddress(), -1), dataForTask);
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -190,10 +193,12 @@ public class DHTConnectionProviderTest {
 		Mockito.when(task.procedure()).thenReturn(procedure);
 		int cntr = 0;
 		for (Object o : keys) {
-			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr), true);
+			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr));
 		}
 		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
-		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location, true);
+
+		Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
+		connectionProviders.get(getter).getTaskData(task, location, dataForTask);
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -211,9 +216,10 @@ public class DHTConnectionProviderTest {
 		assertTrue((dataForTask.get("test")).contains(new Integer(6)));
 		assertTrue((dataForTask.get("test")).contains(new Integer(9)));
 
-		connectionProviders.get(0).removeTaskResultsFor(task, location, true);
-		dataForTask = connectionProviders.get(getter).getTaskData(task, location, true);
+		connectionProviders.get(0).removeTaskResultsFor(task, location);
 
+		dataForTask.clear();
+		connectionProviders.get(getter).getTaskData(task, location, dataForTask);
 		System.err.println(dataForTask);
 		assertEquals(0, dataForTask.keySet().size());
 		assertEquals(0, dataForTask.values().size());

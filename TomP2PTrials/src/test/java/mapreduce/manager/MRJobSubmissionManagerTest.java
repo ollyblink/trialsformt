@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
@@ -14,6 +15,7 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.tasksplitting.MaxFileSizeTaskSplitter;
 import mapreduce.storage.DHTConnectionProvider;
+import mapreduce.storage.DHTUtils;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 
@@ -24,7 +26,8 @@ public class MRJobSubmissionManagerTest {
 	@Test
 	public void test() throws UnsupportedEncodingException {
 		String bootstrapIP = "192.168.43.234";
-		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(bootstrapIP, 4000);
+		int bootstrapPort = 4000;
+		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort));
 		jobSubmissionManager = MRJobSubmissionManager.newInstance(dhtConnectionProvider);
 		Job job = TestUtils.testJobWO(new WordCountMapper());
 		MaxFileSizeTaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
@@ -32,7 +35,8 @@ public class MRJobSubmissionManagerTest {
 		jobSubmissionManager.submit(job, true);
 		Multimap<Task, Comparable> keysForEachTask = splitter.keysForEachTask();
 		for (Task task : keysForEachTask.keySet()) {
-			Multimap<Object, Object> taskData = dhtConnectionProvider.getTaskData(task, task.initialDataLocation(), true);
+			Multimap<Object, Object> taskData = ArrayListMultimap.create();
+			dhtConnectionProvider.getTaskData(task, task.initialDataLocation(), taskData);
 
 			for (Object key : taskData.keySet()) {
 				// System.err.println(job.maxFileSize() + " " + new ArrayList<Object>(taskData.get(key)).get(0).toString().getBytes("UTF-8").length);

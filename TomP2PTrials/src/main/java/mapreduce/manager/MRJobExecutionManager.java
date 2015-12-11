@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.context.IContext;
@@ -130,8 +131,8 @@ public class MRJobExecutionManager {
 		Task task = null;
 		while ((task = this.taskExecutionScheduler.schedule(tasks)) != null && !this.taskExecutor.abortedTaskExecution() && canExecute()) {
 			this.dhtConnectionProvider.broadcastExecutingTask(task);
-			final Multimap<Object, Object> dataForTask = dhtConnectionProvider.getTaskData(task, task.initialDataLocation(), true);
-
+			final Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
+			dhtConnectionProvider.getTaskData(task, task.initialDataLocation(), dataForTask); 
 			this.taskExecutor.executeTask(task, context, dataForTask);// Non-blocking!
 			Number160 resultHash = this.context.resultHash();
 			this.dhtConnectionProvider.broadcastFinishedTask(task, resultHash);
@@ -157,13 +158,13 @@ public class MRJobExecutionManager {
 		printResults(jobs.get(0));
 		// Create new tasks
 
-//		if (jobs.get(0).hasNextProcedure()) {
-//			// Create new tasks
-//			// add new tasks to job
-//
-//		} else {
-//			jobs.remove(0);
-//		}
+		// if (jobs.get(0).hasNextProcedure()) {
+		// // Create new tasks
+		// // add new tasks to job
+		//
+		// } else {
+		// jobs.remove(0);
+		// }
 
 		// Clean up data from old tasks
 		// cleanUpDHT(jobs.get(0).taskDataToRemove(jobs.get(0).currentProcedureIndex()));

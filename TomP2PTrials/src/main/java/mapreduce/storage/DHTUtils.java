@@ -4,8 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -21,6 +20,7 @@ import mapreduce.utils.PortManager;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.FutureRemove;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFuture;
@@ -54,6 +54,13 @@ public class DHTUtils {
 		return new DHTUtils().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort).port(PortManager.INSTANCE.generatePort());
 	}
 
+	/**
+	 * Creates a BroadcastHandler and Peer and connects to the DHT. If a bootstrap port and ip were provided (meaning, there are already peers
+	 * connected to a DHT), it will be bootstrap to that node.
+	 * 
+	 * @param performBlocking
+	 * @return
+	 */
 	public void connect(boolean awaitUninterruptibly) {
 		try {
 			if (this.isBootstrapper) {
@@ -160,10 +167,9 @@ public class DHTUtils {
 		}
 	}
 
-	public List<Object> getKD(String keyString, String domainString, boolean asList, boolean awaitUninterruptibly) {
+	public void getKD(String keyString, Collection<Object> valueCollector, String domainString, boolean asList, boolean awaitUninterruptibly) {
 		Number160 domainHash = Number160.createHash(domainString);
 		Number160 keyHash = Number160.createHash(keyString);
-		List<Object> values = new ArrayList<Object>();
 
 		logger.info("getKVD: dHashtable.get(" + keyString + ").domain(" + domainString + ")");
 		FutureGet getFuture = peerDHT.get(keyHash).domainKey(domainHash).all().start();
@@ -186,7 +192,7 @@ public class DHTUtils {
 								} else {
 									valueObject = getFuture.dataMap().get(n).object();
 								}
-								values.add(valueObject);
+								valueCollector.add(valueObject);
 								logger.info("getKVD: Successfully retrieved value for <K, Domain>: <" + keyString + ", " + domainString + ">: "
 										+ valueObject);
 							}
@@ -210,7 +216,34 @@ public class DHTUtils {
 			}
 		});
 
-		return values;
+	}
+
+	public void removeKD(String domainString, String keyString, boolean awaitUninterruptibly) {
+		Number160 domainHash = Number160.createHash(domainString);
+		Number160 keyHash = Number160.createHash(keyString);
+
+		logger.info("removeKD: dHashtable.remove(" + keyString + ").domain(" + domainString + ")");
+		FutureRemove futureRemove = peerDHT.remove(keyHash).domainKey(domainHash).all().start();
+		futureRemove.addListener(new BaseFutureListener<FutureRemove>() {
+
+			@Override
+			public void operationComplete(FutureRemove future) throws Exception {
+				if (future.isSuccess()) {
+					logger.warn("removeKD: Successfully retrieved value for <K, Domain>: <" + keyString + ", " + domainString + ">");
+				} else {
+					logger.warn("removeKD: Failed trying to remove values for <K, Domain>: <" + keyString + ", " + domainString + ">");
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.debug("removeKD: Exception caught", t);
+			}
+		});
+		if (awaitUninterruptibly) {
+			futureRemove.awaitUninterruptibly();
+		}
+
 	}
 
 	// GETTER/SETTER START
@@ -286,7 +319,6 @@ public class DHTUtils {
 				if (future.isSuccess()) {
 					logger.trace("Successfully shut down peer " + peerDHT.peerID() + ".");
 				} else {
-
 					logger.trace("Could not shut down peer " + peerDHT.peerID() + ".");
 				}
 			}
@@ -297,4 +329,5 @@ public class DHTUtils {
 			}
 		});
 	}
+
 }

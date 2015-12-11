@@ -13,12 +13,6 @@ import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {
 
-	public boolean isBootstrapper();
-
-	public String bootstrapIP();
-
-	public int bootstrapPort();
-
 	// DHT access
 	/**
 	 * to store the data for each key produced by this peer
@@ -37,28 +31,21 @@ public interface IDHTConnectionProvider {
 	 */
 	public void addTaskKey(Task task, Object key);
 
-	/**
-	 * 
-	 * @param task
-	 * @param jobStatusIndex
-	 *            represents the index in task.executingPeers for which the data should be collected
-	 * @return
-	 */
-	public Multimap<Object, Object> getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
-
-	public Set<Object> getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
-
-	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
-
-	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
-
 	public void addProcedureKey(Task task, Object key);
 
 	public void addProcedureTaskPeerDomain(Task task, Object key, Tuple<PeerAddress, Integer> selectedExecutor);
 
-	public Set<Object> getProcedureKeys(Job job);
+	public void getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Multimap<Object, Object> taskData);
 
-	public Set<Object> getProcedureTaskPeerDomains(Job job, Object key);
+	public void getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Set<Object> keysCollector);
+
+	public void getProcedureKeys(Job job, Set<Object> keysCollector);
+
+	public void getProcedureTaskPeerDomains(Job job, Object key, Set<Object> domainsCollector);
+
+	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
+
+	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
 
 	// removeProcedureKey, removeProcedureTaskPeerDomain,
 
@@ -76,12 +63,17 @@ public interface IDHTConnectionProvider {
 	public void broadcastFinishedJob(Job job);
 
 	// Maintenance
-	public void connect();
+	public IDHTConnectionProvider connect();
 
 	public void shutdown();
 
 	public PeerAddress peerAddress();
-	
+
 	public IDHTConnectionProvider performBlocking(boolean performBlocking);
 
+	public boolean isBootstrapper();
+
+	public String bootstrapIP();
+
+	public int bootstrapPort();
 }
