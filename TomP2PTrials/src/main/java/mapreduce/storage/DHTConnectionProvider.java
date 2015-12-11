@@ -103,8 +103,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public void addTaskData(Task task, final Object key, final Object value) {
 		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, peerAddress());
 		String keyString = key.toString();
-
-		dhtUtils.addKVD(keyString, value, domainString, true, performBlocking);
+		boolean asList = true;
+		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking);
 		addTaskKey(task, key);
 	}
 
@@ -113,8 +113,9 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, peerAddress());
 		String keyString = KEY_LOCATION_PREAMBLE + domainString;
 		Object value = key;
+		boolean asList = false;
 
-		dhtUtils.addKVD(keyString, value, domainString, false, performBlocking);
+		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking);
 	}
 
 	@Override
@@ -143,20 +144,21 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public void addProcedureTaskPeerDomain(Task task, Object key, Tuple<PeerAddress, Integer> selectedExecutor) {
-		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(task.jobId(), task.procedure().getClass().getSimpleName(),
-				task.procedureIndex());
+	public void addProcedureTaskPeerDomain(Job job, Object key, Tuple<PeerAddress, Integer> selectedExecutor) {
+		// key here is basically the task id...
+		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
 		String keyString = key.toString();
-		String value = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		String value = DomainProvider.INSTANCE.taskPeerDomain(job.id(), job.procedure(job.currentProcedureIndex()).getClass().getSimpleName(),
+				job.currentProcedureIndex(), key.toString(), selectedExecutor.first().peerId().toString(), selectedExecutor.second());
 		boolean asList = false;
 		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking);
-		addProcedureKey(task, key);
+		addProcedureKey(job, key);
 	}
 
 	@Override
-	public void addProcedureKey(Task task, Object key) {
-		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(task.jobId(), task.procedure().getClass().getSimpleName(),
-				task.procedureIndex());
+	public void addProcedureKey(Job job, Object key) { 
+		// key here is basically the task id...
+		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
 		String keyString = KEY_LOCATION_PREAMBLE + domainString;
 		Object value = key;
 		boolean asList = false;

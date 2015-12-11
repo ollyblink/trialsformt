@@ -2,14 +2,25 @@ package mapreduce.utils;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public enum FileUtils {
 
 	INSTANCE;
+
+	public File createTmpFolder(String inputFilePath) {
+		File folder = new File(inputFilePath + "/tmp/");
+		if (folder.exists()) {
+			FileUtils.INSTANCE.deleteTmpFolder(folder);
+		}
+		folder.mkdirs();
+		return folder;
+	}
 
 	public void deleteTmpFolder(File folder) {
 		String[] entries = folder.list();
@@ -34,14 +45,26 @@ public enum FileUtils {
 		}
 	}
 
-	public String readLines(String filePath) throws FileNotFoundException, IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)));
-		String line = null;
-		String lines = "";
-		while ((line = reader.readLine()) != null) {
-			lines += line + "\n";
+	public String readLines(String filePath) {
+		String linesAsLine = "";
+		ArrayList<String> lines = readLinesFromFile(filePath);
+		for (String line : lines) {
+			linesAsLine += line + "\n";
 		}
-		reader.close();
+		return linesAsLine;
+	}
+
+	public static ArrayList<String> readLinesFromFile(String filePath) {
+		ArrayList<String> lines = new ArrayList<String>();
+		try (BufferedReader reader = Files.newBufferedReader(Paths.get(filePath), Charset.forName("UTF-8"))) {
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				lines.add(line);
+			}
+		} catch (IOException x) {
+			System.err.format("IOException: %s%n", x);
+		}
 		return lines;
 	}
+
 }

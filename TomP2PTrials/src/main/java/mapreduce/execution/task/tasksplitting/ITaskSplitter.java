@@ -12,7 +12,6 @@ public interface ITaskSplitter {
 	 * 
 	 * @param job
 	 */
-	public void split(final Job job);
+	public void split(String inputPath, long maxFileSize);
 
-	public Multimap<Task, Comparable> keysForEachTask();
 }

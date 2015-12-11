@@ -1,17 +1,19 @@
 package mapreduce.manager;
 
-import java.io.IOException;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Multimap;
+
+import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.tasksplitting.ITaskSplitter;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeTaskSplitter;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmitterMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.FileUtils;
@@ -19,10 +21,8 @@ import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 
 public class MRJobSubmissionManager {
-	private static final ITaskSplitter DEFAULT_TASK_SPLITTER = MaxFileSizeTaskSplitter.newInstance();
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManager.class);
 	private IDHTConnectionProvider dhtConnectionProvider;
-	private ITaskSplitter taskSplitter;
 	private MRJobSubmitterMessageConsumer messageConsumer;
 	private String id;
 
@@ -44,46 +44,39 @@ public class MRJobSubmissionManager {
 	 * @return
 	 */
 	public void submit(final Job job, final boolean awaitOnAdd) {
+		List<String> keysFilePaths = new ArrayList<String>();
+		FileUtils.INSTANCE.getFiles(new File(job.fileInputFolderPath()), keysFilePaths);
 		dhtConnectionProvider().connect();
-		logger.warn("Connected.");
-		// Split into specified file sizes
-		taskSplitter().split(job);
-		logger.warn("Splitted tasks.");
 
-		ExecutorService server = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-		for (final Task task : job.firstTasks()) {
-			// Set the initial data location for the first task set
-			task.initialDataLocation(Tuple.create(this.dhtConnectionProvider().peerAddress(), 0));
-
-			server.submit(new Runnable() {
-
-				@Override
-				public void run() {
-
-					for (final Comparable key : taskSplitter.keysForEachTask().get(task)) {
-						try {
-							String filePath = (String) key;
-							String lines = FileUtils.INSTANCE.readLines(filePath);
-							dhtConnectionProvider.addTaskData(task, filePath, lines);
-							logger.warn("Added file with path " + filePath);
-						} catch (IOException e) {
-							logger.error("Exception", e);
-						}
-					}
-				}
-
-			});
-		}
-		server.shutdown();
-		while (!server.isTerminated()) {
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+		for (String keyfilePath : keysFilePaths) {
+			File file = new File(keyfilePath);
+			Task task = Task.newInstance(keyfilePath, job.id());
+			dhtConnectionProvider.addTaskData(task, task.id(), file);
+			dhtConnectionProvider.addProcedureTaskPeerDomain(job, task.id(), Tuple.create(dhtConnectionProvider().peerAddress(), 0));
 		}
 		dhtConnectionProvider.broadcastNewJob(job);
-		logger.info("broadcased job");
+	}
+
+	private void createFinalTaskSplits(Job job, Collection<List<String>> allNewFileLocations, Multimap<Task, Comparable> keysForEachTask) {
+		IMapReduceProcedure procedure = job.procedure(job.currentProcedureIndex());
+
+		if (procedure != null) {
+			List<Task> tasksForProcedure = new ArrayList<Task>();
+			for (List<String> locations : allNewFileLocations) {
+
+				for (int i = 0; i < locations.size(); ++i) {
+					Task task = Task.newInstance(job.id()).procedure(procedure).procedureIndex(job.currentProcedureIndex())
+							.maxNrOfFinishedWorkers(job.maxNrOfFinishedWorkers());
+					tasksForProcedure.add(task);
+					keysForEachTask.put(task, locations.get(i));
+				}
+
+			}
+
+			job.nextProcedure(procedure, tasksForProcedure);
+		} else {
+			logger.error("Could not put job due to no procedure specified.");
+		}
 	}
 
 	public MRJobSubmissionManager dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
@@ -93,18 +86,6 @@ public class MRJobSubmissionManager {
 
 	public IDHTConnectionProvider dhtConnectionProvider() {
 		return this.dhtConnectionProvider;
-	}
-
-	public MRJobSubmissionManager taskSplitter(ITaskSplitter taskSplitter) {
-		this.taskSplitter = taskSplitter;
-		return this;
-	}
-
-	public ITaskSplitter taskSplitter() {
-		if (this.taskSplitter == null) {
-			this.taskSplitter = DEFAULT_TASK_SPLITTER;
-		}
-		return this.taskSplitter;
 	}
 
 	public void shutdown() {

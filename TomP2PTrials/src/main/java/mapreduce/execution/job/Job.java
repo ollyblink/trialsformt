@@ -15,6 +15,7 @@ import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureTaskTuple;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
+import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
@@ -29,12 +30,12 @@ public class Job implements Serializable {
 	private static final long serialVersionUID = 1152022246679324578L;
 
 	private String jobSubmitterID;
-	private long maxFileSize;
 	private String id;
 	private List<ProcedureTaskTuple> procedures;
-	private String inputPath;
 	private int maxNrOfFinishedWorkers;
 	private int currentProcedureIndex;
+
+	private String fileInputFolderPath;
 
 	private Job(String jobSubmitterID) {
 		this.jobSubmitterID = jobSubmitterID;
@@ -45,24 +46,6 @@ public class Job implements Serializable {
 
 	public static Job newInstance(String jobSubmitterID) {
 		return new Job(jobSubmitterID);
-	}
-
-	public Job inputPath(String inputPath) {
-		this.inputPath = inputPath;
-		return this;
-	}
-
-	public String inputPath() {
-		return inputPath;
-	}
-
-	public Job maxFileSize(long maxFileSize) {
-		this.maxFileSize = maxFileSize;
-		return this;
-	}
-
-	public long maxFileSize() {
-		return this.maxFileSize;
 	}
 
 	public String id() {
@@ -277,4 +260,12 @@ public class Job implements Serializable {
 		}
 	}
 
+	public Job fileInputFolderPath(String fileInputFolderPath) {
+		this.fileInputFolderPath = fileInputFolderPath;
+		return this;
+	}
+
+	public String fileInputFolderPath() {
+		return fileInputFolderPath;
+	}
 }

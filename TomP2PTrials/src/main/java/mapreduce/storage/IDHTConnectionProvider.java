@@ -31,9 +31,9 @@ public interface IDHTConnectionProvider {
 	 */
 	public void addTaskKey(Task task, Object key);
 
-	public void addProcedureKey(Task task, Object key);
+	public void addProcedureKey(Job job, Object key);
 
-	public void addProcedureTaskPeerDomain(Task task, Object key, Tuple<PeerAddress, Integer> selectedExecutor);
+	public void addProcedureTaskPeerDomain(Job job, Object key, Tuple<PeerAddress, Integer> selectedExecutor);
 
 	public void getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Multimap<Object, Object> taskData);
 

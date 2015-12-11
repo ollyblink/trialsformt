@@ -21,7 +21,7 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.tasksplitting.ITaskSplitter;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeTaskSplitter;
+import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
 import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
@@ -84,7 +84,7 @@ public class MRJobExecutorMessageConsumerTest {
 		Job job = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).inputPath(inputPath).maxFileSize(FileSizes.KILO_BYTE.value())
 				.maxNrOfFinishedWorkersPerTask(5);
 
-		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
+		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
 		splitter.split(job);
 		testMessageConsumer.handleReceivedJob(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
@@ -140,7 +140,7 @@ public class MRJobExecutorMessageConsumerTest {
 		Job job = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(megaByte);
 
-		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
+		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
 		splitter.split(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
 
@@ -271,7 +271,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		Job job = TestUtils.testJob();
 
-		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
+		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
 		splitter.split(job);
 		consumer.handleReceivedJob(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());

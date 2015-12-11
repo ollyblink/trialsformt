@@ -19,14 +19,15 @@ public enum DomainProvider {
 	}
 
 	public String taskPeerDomain(final Task task, PeerAddress peerAddress, Integer jobStatusIndex) {
-		String taskPeerDomain = jobProcedureDomain(task.jobId(), task.procedure().getClass().getSimpleName(), task.procedureIndex()) + "_"
-				+ taskPeerDomain(task.id(), peerAddress.peerId().toString(), jobStatusIndex);
-		return taskPeerDomain;
-	}
- 
+		return taskPeerDomain(task.jobId(), task.procedure().getClass().getSimpleName(), task.procedureIndex(), task.id(),
+				peerAddress.peerId().toString(), jobStatusIndex);
 
-	public String taskPeerDomain(String taskId, String peerId, Integer jobStatusIndex) {
-		return taskId + "_PRODUCER_PEER_ID_" + peerId + "_JOB_STATUS_INDEX_" + jobStatusIndex;
+	}
+
+	public String taskPeerDomain(String jobId, String procedureSimpleName, Integer procedureIndex, String taskId, String peerId,
+			Integer jobStatusIndex) {
+		return jobProcedureDomain(jobId, procedureSimpleName, procedureIndex) + "_" + taskId + "_PRODUCER_PEER_ID_" + peerId + "_JOB_STATUS_INDEX_"
+				+ jobStatusIndex;
 	}
 
 	// End task domain key generation

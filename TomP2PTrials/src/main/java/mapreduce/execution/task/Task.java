@@ -53,8 +53,8 @@ public class Task implements Serializable, Comparable<Task> {
 	private Tuple<PeerAddress, Integer> finalDataLocation;
 	private List<Tuple<PeerAddress, Integer>> dataToRemove;
 
-	private Task(String jobId) {
-		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
+	private Task(String id, String jobId) {
+		this.id = id;
 		this.jobId = jobId;
 		this.procedure = null;
 		ArrayListMultimap<PeerAddress, BCMessageStatus> tmp = ArrayListMultimap.create();
@@ -83,13 +83,14 @@ public class Task implements Serializable, Comparable<Task> {
 		return Math.round((((float) maxNrOfFinishedWorkers) / 2f));
 	}
 
-	public static Task newInstance(String jobId) {
-		return new Task(jobId);
+	public static Task newInstance(String id, String jobId) {
+		return new Task(id, jobId);
 	}
 
 	public String id() {
 		return id;
 	}
+	
 
 	public String jobId() {
 		return jobId;
@@ -441,7 +442,7 @@ public class Task implements Serializable, Comparable<Task> {
 	 */
 	public Task copyWithoutExecutingPeers() {
 
-		Task taskCopy = new Task("");
+		Task taskCopy = new Task(id, jobId);
 		taskCopy.id = id;
 		taskCopy.jobId = jobId;
 		taskCopy.isFinished = isFinished;
