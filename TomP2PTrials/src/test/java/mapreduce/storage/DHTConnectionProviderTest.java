@@ -66,9 +66,9 @@ public class DHTConnectionProviderTest {
 		// Thread.sleep(1000);
 
 		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
-		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
+		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location, true);
 		System.err.println(dataForTask.keySet().size());
-
+		
 		assertTrue(dataForTask.keySet().size() == 3);
 		assertTrue(dataForTask.values().size() == 3);
 		assertTrue(dataForTask.keySet().contains("this"));
@@ -104,7 +104,7 @@ public class DHTConnectionProviderTest {
 		}
 		// Thread.sleep(1000);
 		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
-		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
+		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location, true);
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -149,7 +149,7 @@ public class DHTConnectionProviderTest {
 		}
 		// Thread.sleep(1000); ;
 		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task,
-				Tuple.create(connectionProviders.get(putter).peerAddress(), -1));
+				Tuple.create(connectionProviders.get(putter).peerAddress(), -1), true);
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -193,7 +193,7 @@ public class DHTConnectionProviderTest {
 			connectionProviders.get(putter).addTaskData(task, o, new Integer(++cntr), true);
 		}
 		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
-		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location);
+		Multimap<Object, Object> dataForTask = connectionProviders.get(getter).getTaskData(task, location, true);
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -211,8 +211,8 @@ public class DHTConnectionProviderTest {
 		assertTrue((dataForTask.get("test")).contains(new Integer(6)));
 		assertTrue((dataForTask.get("test")).contains(new Integer(9)));
 
-		connectionProviders.get(0).removeTaskResultsFor(task, location);
-		dataForTask = connectionProviders.get(getter).getTaskData(task, location);
+		connectionProviders.get(0).removeTaskResultsFor(task, location, true);
+		dataForTask = connectionProviders.get(getter).getTaskData(task, location, true);
 
 		System.err.println(dataForTask);
 		assertEquals(0, dataForTask.keySet().size());

@@ -1,6 +1,6 @@
 package mapreduce.storage;
 
-import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.Multimap;
 
@@ -33,7 +33,7 @@ public interface IDHTConnectionProvider {
 	 * @param key
 	 * @param value
 	 */
-	public void addTaskData(Task task, final Object key, final Object value, boolean awaitUninterruptibly);
+	public void addTaskData(Task task, Object key, Object value, boolean awaitUninterruptibly);
 
 	/**
 	 * to store the keys produced for this task by this peer
@@ -41,7 +41,7 @@ public interface IDHTConnectionProvider {
 	 * @param task
 	 * @param key
 	 */
-	public void addTaskKey(final Task task, final Object key, boolean awaitUninterruptibly);
+	public void addTaskKey(Task task, Object key, boolean awaitUninterruptibly);
 
 	/**
 	 * 
@@ -50,20 +50,23 @@ public interface IDHTConnectionProvider {
 	 *            represents the index in task.executingPeers for which the data should be collected
 	 * @return
 	 */
-	public Multimap<Object, Object> getTaskData(final Task task, final Tuple<PeerAddress, Integer> selectedExecutor);
+	public Multimap<Object, Object> getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
 
-	public List<Object> getTaskKeys(final Task task, final Tuple<PeerAddress, Integer> selectedExecutor);
+	public Set<Object> getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
 
-	public void removeTaskResultsFor(final Task task, final Tuple<PeerAddress, Integer> selectedExecutor);
+	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
 
-	public void removeTaskKeysFor(final Task task, final Tuple<PeerAddress, Integer> selectedExecutor);
+	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
 
-	public void addProcedureKey(final Task task, final Object key, final boolean awaitUninterruptibly);
+	public void addProcedureKey(Task task, Object key, boolean awaitUninterruptibly);
 
-	public void addProcedureTaskPeerDomain(final Task task, final Object key, final Tuple<PeerAddress, Integer> selectedExecutor,
-			final boolean awaitUninterruptibly);
+	public void addProcedureTaskPeerDomain(Task task, Object key, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
 
-	// getProcedureKey, getProcedureTaskPeerDomain, removeProcedureKey, removeProcedureTaskPeerDomain,
+	public Set<Object> getProcedureKeys(Job job, boolean awaitUninterruptibly);
+
+	public Set<Object> getProcedureTaskPeerDomains(Job job, Object key, boolean awaitUninterruptibly);
+
+	//   removeProcedureKey, removeProcedureTaskPeerDomain,
 
 	// Broadcasts
 	public MRBroadcastHandler broadcastHandler();

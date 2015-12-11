@@ -13,7 +13,7 @@ public final class CleanRunnable implements Runnable {
 
 	private CleanRunnable(String bootstrapIP, int bootstrapPort) {
 		this.dhtConnection = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort).connect();
-		
+
 	}
 
 	public static CleanRunnable newInstance(String bootstrapIP, int bootstrapPort) {

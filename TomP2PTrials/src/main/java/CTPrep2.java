@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
@@ -35,8 +36,13 @@ public class CTPrep2 {
 		try {
 			Random RND = new Random();
 			for (int i = 0; i < 5; ++i) {
-
-				FuturePut futurePut = peers[RND.nextInt(100)].add(Number160.createHash("Mapper")).data(new Data("Olly" + i)).start();
+				String domain = "job_1_procedure_1_task_1_executor_1_statusindex_" + ((i + 1) % 2);
+ 
+				FuturePut futurePut = peers[RND.nextInt(100)].add(Number160.createHash("Mapper")).data(new Data(new Value("Olly")))
+						.domainKey(Number160.createHash(domain))
+						// .versionKey(Number160.createHash(version))
+						.start();
+//				System.err.println("Olly of " + domain);
 				futurePut.addListener(new BaseFutureListener<FuturePut>() {
 
 					@Override
@@ -63,14 +69,15 @@ public class CTPrep2 {
 			Thread.sleep(2000);
 			// for (String key : keys) {
 			// System.err.println("b-(" + key + ")");
-			FutureGet futureGet = master.get(Number160.createHash("Mapper")).all().start();
+			FutureGet futureGet = master.get(Number160.createHash("Mapper")).domainKey(Number160.createHash("job_1_procedure_1_task_1_executor_1_statusindex_1")).all().start();
 			futureGet.addListener(new BaseFutureListener<FutureGet>() {
 
 				@Override
 				public void operationComplete(FutureGet future) throws Exception {
 
-					if (future.isSuccess()) { 
+					if (future.isSuccess()) {
 						Set<Entry<Number640, Data>> entrySet = future.dataMap().entrySet();
+						System.out.println("Size: "+entrySet.size());
 						for (Entry<Number640, Data> e : entrySet) {
 							System.out.println(e.getValue().object());
 						}

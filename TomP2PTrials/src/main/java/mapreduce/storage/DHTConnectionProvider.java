@@ -6,8 +6,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -34,7 +36,6 @@ import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.FutureRemove;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
-import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
@@ -252,64 +253,116 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void addTaskData(Task task, final Object key, final Object value, boolean awaitUninterruptibly) {
-		try {
+		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, connectionPeer.peerAddress());
+		String keyString = key.toString();
 
-			String domain = DomainProvider.INSTANCE.taskPeerDomain(task, connectionPeer.peerAddress());
-
-			Number160 domainKey = Number160.createHash(domain);
-			Number160 keyHash = Number160.createHash(key.toString());
-
-			logger.info("addTaskData: dHashtable.add(" + key + ", " + value + ").domain(" + domain + ")");
-
-			FuturePut await = this.connectionPeer.add(keyHash).data(new Data(new Value(value))).domainKey(domainKey).start();
-			await.addListener(new BaseFutureListener<FuturePut>() {
-
-				@Override
-				public void operationComplete(FuturePut future) throws Exception {
-					if (future.isSuccess()) {
-						logger.info("Successfully added data for key " + key);
-					} else {
-						logger.error("Could not put data");
-					}
-				}
-
-				@Override
-				public void exceptionCaught(Throwable t) throws Exception {
-					logger.info("Exception caught", t);
-				}
-
-			});
-
-			if (awaitUninterruptibly) {
-				await.awaitUninterruptibly();
-			}
-			addTaskKey(task, key, awaitUninterruptibly);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		addKVD(keyString, value, domainString, true, awaitUninterruptibly);
+		addTaskKey(task, key, awaitUninterruptibly);
 	}
 
 	@Override
-	public void addTaskKey(final Task task, final Object key, boolean awaitUninterruptibly) {
+	public void addTaskKey(Task task, Object key, boolean awaitUninterruptibly) {
+		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, connectionPeer.peerAddress());
+		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		Object value = key;
+
+		addKVD(keyString, value, domainString, false, awaitUninterruptibly);
+	}
+
+	@Override
+	public Multimap<Object, Object> getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly) {
+		final Multimap<Object, Object> taskKeyValues = ArrayListMultimap.create();
+		Set<Object> taskKeys = getTaskKeys(task, selectedExecutor, awaitUninterruptibly);
+
+		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		boolean asList = true;
+		for (Object key : taskKeys) {
+			String keyString = key.toString();
+			List<Object> values = getKVD(keyString, domainString, asList, awaitUninterruptibly);
+			taskKeyValues.putAll(key, values);
+		}
+		return taskKeyValues;
+	}
+
+	@Override
+	public Set<Object> getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly) {
+		Set<Object> keys = new HashSet<Object>();
+		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		boolean asList = false;
+
+		List<Object> keysList = getKVD(keyString, domainString, asList, awaitUninterruptibly);
+		keys.addAll(keysList);
+
+		return keys;
+	}
+
+	@Override
+	public void addProcedureTaskPeerDomain(Task task, Object key, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly) {
+		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(task.jobId(), task.procedure().getClass().getSimpleName(),
+				task.procedureIndex());
+		String keyString = key.toString();
+		String value = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+
+		addKVD(keyString, value, domainString, false, awaitUninterruptibly);
+		addProcedureKey(task, key, awaitUninterruptibly);
+	}
+
+	@Override
+	public void addProcedureKey(Task task, Object key, boolean awaitUninterruptibly) {
+		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(task.jobId(), task.procedure().getClass().getSimpleName(),
+				task.procedureIndex());
+		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		Object value = key;
+
+		addKVD(keyString, value, domainString, false, awaitUninterruptibly);
+	}
+
+	@Override
+	public Set<Object> getProcedureKeys(Job job, boolean awaitUninterruptibly) {
+		Set<Object> keys = new HashSet<Object>();
+		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
+		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		boolean asList = false;
+		List<Object> keysList = getKVD(keyString, domainString, asList, awaitUninterruptibly);
+		keys.addAll(keysList);
+
+		return keys;
+	}
+
+	@Override
+	public Set<Object> getProcedureTaskPeerDomains(Job job, Object key, boolean awaitUninterruptibly) {
+		Set<Object> domains = new HashSet<Object>();
+		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
+		String keyString = key.toString();
+		boolean asList = false;
+
+		List<Object> keysList = getKVD(domainString, keyString, asList, awaitUninterruptibly);
+		domains.addAll(keysList);
+
+		return domains;
+	}
+
+	private void addKVD(String keyString, Object value, String domainString, boolean asList, boolean awaitUninterruptibly) {
 		try {
-			String domain = DomainProvider.INSTANCE.taskPeerDomain(task, connectionPeer.peerAddress());
-			String taskPeerKeyLocation = KEY_LOCATION_PREAMBLE + domain;
+			logger.info("addKVD: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain(" + domainString + ")");
+			Number160 keyHash = Number160.createHash(keyString);
+			Data valueData = new Data(value);
+			if (asList) {
+				valueData = new Data(new Value(value));
+			}
+			Number160 domainHash = Number160.createHash(domainString);
 
-			Number160 domainHash = Number160.createHash(domain);
-			Number160 taskPeerKeyLocationHash = Number160.createHash(taskPeerKeyLocation);
+			FuturePut futurePut = this.connectionPeer.add(keyHash).data(valueData).domainKey(domainHash).start();
 
-			logger.info("addTaskKey: dHashtable.add(" + taskPeerKeyLocationHash + ", " + key + ").domain(" + domain + ")");
-
-			FuturePut await = this.connectionPeer.add(taskPeerKeyLocationHash).data(new Data(key.toString())).domainKey(domainHash).start();
-
-			await.addListener(new BaseFutureListener<FuturePut>() {
+			futurePut.addListener(new BaseFutureListener<FuturePut>() {
 
 				@Override
 				public void operationComplete(FuturePut future) throws Exception {
 					if (future.isSuccess()) {
-						logger.info("Successfully added key " + key);
+						logger.info("Successfully added <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
 					} else {
-						logger.error("Could not put key " + key);
+						logger.error("Failed tyring to add <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
 					}
 				}
 
@@ -320,81 +373,69 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 			});
 			if (awaitUninterruptibly) {
-				await.awaitUninterruptibly();
+				futurePut.awaitUninterruptibly();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	@Override
-	public Multimap<Object, Object> getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
-		final Multimap<Object, Object> taskKeyValues = ArrayListMultimap.create();
+	private List<Object> getKVD(String keyString, String domainString, boolean asList, boolean awaitUninterruptibly) {
+		Number160 domainHash = Number160.createHash(domainString);
+		Number160 keyHash = Number160.createHash(keyString);
+		List<Object> values = new ArrayList<Object>();
 
-		// String domain = domain(task, task.finalPeerAddress());
-		String domain = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
-		Number160 domainKey = Number160.createHash(domain);
+		logger.info("getKVD: dHashtable.get(" + keyString + ").domain(" + domainString + ")");
+		FutureGet getFuture = connectionPeer.get(keyHash).domainKey(domainHash).all().start();
 
-		List<Object> taskKeys = getTaskKeys(task, selectedExecutor);
-
-		for (Object taskKey : taskKeys) {
-			logger.info("getTaskData: dHashtable.get(" + taskKey + ").domain(" + domain + ")");
-			FutureGet getFuture = connectionPeer.get(Number160.createHash(taskKey.toString())).domainKey(domainKey).all().start();
+		if (awaitUninterruptibly) {
 			getFuture.awaitUninterruptibly();
-			if (getFuture.isSuccess()) {
-				try {
-					if (getFuture.dataMap() != null) {
-						for (Number640 n : getFuture.dataMap().keySet()) {
-							Value kvPair = (Value) getFuture.dataMap().get(n).object();
-							taskKeyValues.put(taskKey.toString(), kvPair.value());
-						}
-					} else {
-						logger.warn("getTaskData: future data for domain " + domain + " is null!");
-					}
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
 		}
-		return taskKeyValues;
-	}
+		getFuture.addListener(new BaseFutureListener<FutureGet>() {
 
-	@Override
-	public List<Object> getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
-		List<Object> keys = new ArrayList<Object>();
-		String domain = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
-		String keyLocation = KEY_LOCATION_PREAMBLE + domain;
-		Number160 domainKey = Number160.createHash(domain);
-		Number160 keyLocationHash = Number160.createHash(keyLocation);
-
-		logger.info("getTaskKeys: dHashtable.get(" + keyLocation + ").domain(" + domain + ")");
-
-		FutureGet getFuture = connectionPeer.get(keyLocationHash).domainKey(domainKey).all().start();
-		getFuture.awaitUninterruptibly();
-		if (getFuture.isSuccess()) {
-			try {
-				if (getFuture.data() != null) {
-					Collection<Data> values = getFuture.dataMap().values();
-					for (Data data : values) {
-						keys.add(data.object());
+			@Override
+			public void operationComplete(FutureGet future) throws Exception {
+				if (future.isSuccess()) {
+					try {
+						if (getFuture.dataMap() != null) {
+							for (Number640 n : getFuture.dataMap().keySet()) {
+								Object valueObject = null;
+								if (asList) {
+									Value value = (Value) getFuture.dataMap().get(n).object();
+									valueObject = value.value();
+								} else {
+									valueObject = getFuture.dataMap().get(n).object();
+								}
+								values.add(valueObject);
+								logger.info("getKVD: Successfully retrieved value for <K, Domain>: <" + keyString + ", " + domainString + ">: "
+										+ valueObject);
+							}
+						} else {
+							logger.warn("getKVD: Value for <K, Domain>: <" + keyString + ", " + domainString + "> is null!");
+						}
+					} catch (ClassNotFoundException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
 				} else {
-					logger.warn("getTaskKeys: future task key data for domain " + domain + " is null!");
+					logger.error("getKVD: Failed trying to retrieve value for <K, Domain>: <" + keyString + ", " + domainString + ">");
 				}
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
-		}
-		return keys;
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.debug("getKVD: Exception caught", t);
+
+			}
+		});
+
+		return values;
 	}
 
 	@Override
-	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
-		List<Object> keys = getTaskKeys(task, selectedExecutor);
+	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly) {
+		Set<Object> keys = getTaskKeys(task, selectedExecutor, awaitUninterruptibly);
 		String domain = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
 		Number160 domainKey = Number160.createHash(domain);
 
@@ -424,7 +465,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
+	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly) {
 
 		String domain = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
 		String keyLocation = KEY_LOCATION_PREAMBLE + domain;
