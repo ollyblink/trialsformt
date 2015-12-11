@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.computation.context.PseudoStoreContext;
@@ -131,9 +132,12 @@ public class MRJobExecutionManager {
 		Task task = null;
 		while ((task = this.taskExecutionScheduler.schedule(tasks)) != null && !this.taskExecutor.abortedTaskExecution() && canExecute()) {
 			this.dhtConnectionProvider.broadcastExecutingTask(task);
-			final Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
-			dhtConnectionProvider.getTaskData(task, task.initialDataLocation(), dataForTask); 
-			this.taskExecutor.executeTask(task, context, dataForTask);// Non-blocking!
+			ArrayListMultimap<Object, Object> tmp = ArrayListMultimap.create();
+			Multimap<Object, Object> dataForTask = Multimaps.synchronizedListMultimap(tmp);
+			dhtConnectionProvider.getTaskData(task, task.initialDataLocation(), dataForTask);
+			while (this.taskExecutor.abortedTaskExecution()) {
+				this.taskExecutor.executeTask(task, context, dataForTask);// Non-blocking!
+			}
 			Number160 resultHash = this.context.resultHash();
 			this.dhtConnectionProvider.broadcastFinishedTask(task, resultHash);
 		}

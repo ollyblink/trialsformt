@@ -1,3 +1,4 @@
+package generictests;
 import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.Random;

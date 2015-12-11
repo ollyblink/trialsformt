@@ -1,8 +1,10 @@
 package mapreduce.execution.task.taskexecutor;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -15,7 +17,6 @@ import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.task.Task;
-import mapreduce.utils.IAbortableExecution;
 
 public class ParallelTaskExecutor implements ITaskExecutor {
 	private static Logger logger = LoggerFactory.getLogger(ParallelTaskExecutor.class);
@@ -44,21 +45,27 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 		this.abortedTaskExecution = false;
 		context.task(task);
 		this.server = new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-		for (final Object key : dataForTask.keySet()) {
-			Runnable run = new Runnable() {
-
-				@Override
-				public void run() {
-					try {
-						Method process = task.procedure().getClass().getMethods()[0];
-						process.invoke(task.procedure(), new Object[] { key, dataForTask.get(key), context });
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
+		while (!dataForTask.isEmpty()) {
+			Set<Object> keySet = new HashSet<>();
+			synchronized (dataForTask) {
+				keySet.addAll(dataForTask.keySet());
+			}
+			for (Object key : keySet) {
+				Collection<Object> tmp = null;
+				synchronized (dataForTask) {
+					tmp = dataForTask.removeAll(key);
 				}
-			};
-			Future<?> submit = server.submit(run);
-			this.currentThreads.add(submit);
+				Collection<Object> values = tmp;
+				Runnable run = new Runnable() {
+
+					@Override
+					public void run() {
+						task.procedure().process(key, values, context);
+					}
+				};
+				Future<?> submit = server.submit(run);
+				this.currentThreads.add(submit);
+			}
 		}
 		cleanUp();
 

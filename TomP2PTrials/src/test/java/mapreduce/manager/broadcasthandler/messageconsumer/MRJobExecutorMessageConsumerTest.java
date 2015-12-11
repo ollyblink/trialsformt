@@ -81,7 +81,7 @@ public class MRJobExecutorMessageConsumerTest {
 			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
 		}
 
-		Job job = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).inputPath(inputPath).maxFileSize(FileSizes.KILO_BYTE.value())
+		Job job = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).inputPath(inputPath).maxFileSize(FileSizes.KILO_BYTE.value())
 				.maxNrOfFinishedWorkersPerTask(5);
 
 		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
@@ -137,7 +137,7 @@ public class MRJobExecutorMessageConsumerTest {
 		long megaByte = FileSizes.MEGA_BYTE.value();
 
 		int maxNumberOfFinishedPeers = 5;
-		Job job = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+		Job job = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(megaByte);
 
 		ITaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
@@ -161,7 +161,7 @@ public class MRJobExecutorMessageConsumerTest {
 			assertEquals(BCMessageStatus.FINISHED_TASK, task.statiForPeer(task.allAssignedPeers().get(1)).get(0));
 		}
 		//
-		Job jobCopy = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+		Job jobCopy = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(megaByte);
 		Field idField = jobCopy.getClass().getDeclaredField("id");
 		idField.setAccessible(true);
@@ -207,7 +207,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		testMessageConsumer.updateJob(jobCopy, peer2);
 
-		Job jobCopy2 = Job.newInstance("TEST").nextProcedure(new WordCountMapper()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+		Job jobCopy2 = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(megaByte);
 		// Field idField = jobCopy2.getClass().getDeclaredField("id");
 		// idField.setAccessible(true);
@@ -299,8 +299,8 @@ public class MRJobExecutorMessageConsumerTest {
 				break;
 			}
 			++cnt;
-  
-			Mockito.when(tCopy.finalDataLocation()).thenReturn(tuple); 
+
+			Mockito.when(tCopy.finalDataLocation()).thenReturn(tuple);
 		}
 	}
 
@@ -322,7 +322,7 @@ public class MRJobExecutorMessageConsumerTest {
 		for (Task task : taskList) {
 			Task tCopy = Mockito.mock(Task.class);
 			Mockito.when(tCopy.id()).thenReturn(task.id());
-			Mockito.when(tCopy.jobId()).thenReturn(task.jobId());  
+			Mockito.when(tCopy.jobId()).thenReturn(task.jobId());
 			Mockito.when(tCopy.finalDataLocation()).thenReturn(null);
 			mockTasks.add(tCopy);
 		}

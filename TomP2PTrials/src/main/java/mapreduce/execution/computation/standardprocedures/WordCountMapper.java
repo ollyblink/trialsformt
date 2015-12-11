@@ -28,4 +28,13 @@ public class WordCountMapper implements IMapReduceProcedure {
 	public String toString() {
 		return "WordCountMapper";
 	}
+
+	public static IMapReduceProcedure newInstance() {
+		// TODO Auto-generated method stub
+		return new WordCountMapper();
+	}
+
+	private WordCountMapper() {
+
+	}
 }

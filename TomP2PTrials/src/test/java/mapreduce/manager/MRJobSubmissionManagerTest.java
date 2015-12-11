@@ -29,7 +29,7 @@ public class MRJobSubmissionManagerTest {
 		int bootstrapPort = 4000;
 		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort));
 		jobSubmissionManager = MRJobSubmissionManager.newInstance(dhtConnectionProvider);
-		Job job = TestUtils.testJobWO(new WordCountMapper());
+		Job job = TestUtils.testJobWO(WordCountMapper.newInstance());
 		MaxFileSizeTaskSplitter splitter = MaxFileSizeTaskSplitter.newInstance();
 		jobSubmissionManager.taskSplitter(splitter);
 		jobSubmissionManager.submit(job, true);
