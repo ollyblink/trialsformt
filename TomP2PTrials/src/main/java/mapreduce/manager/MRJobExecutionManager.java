@@ -130,7 +130,7 @@ public class MRJobExecutionManager {
 		Task task = null;
 		while ((task = this.taskExecutionScheduler.schedule(tasks)) != null && !this.taskExecutor.abortedTaskExecution() && canExecute()) {
 			this.dhtConnectionProvider.broadcastExecutingTask(task);
-			final Multimap<Object, Object> dataForTask = dhtConnectionProvider.getTaskData(task, task.initialDataLocation());
+			final Multimap<Object, Object> dataForTask = dhtConnectionProvider.getTaskData(task, task.initialDataLocation(), true);
 
 			this.taskExecutor.executeTask(task, context, dataForTask);// Non-blocking!
 			Number160 resultHash = this.context.resultHash();

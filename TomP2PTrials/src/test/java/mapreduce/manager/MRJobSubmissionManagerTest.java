@@ -32,7 +32,7 @@ public class MRJobSubmissionManagerTest {
 		jobSubmissionManager.submit(job, true);
 		Multimap<Task, Comparable> keysForEachTask = splitter.keysForEachTask();
 		for (Task task : keysForEachTask.keySet()) {
-			Multimap<Object, Object> taskData = dhtConnectionProvider.getTaskData(task, task.initialDataLocation());
+			Multimap<Object, Object> taskData = dhtConnectionProvider.getTaskData(task, task.initialDataLocation(), true);
 
 			for (Object key : taskData.keySet()) {
 				// System.err.println(job.maxFileSize() + " " + new ArrayList<Object>(taskData.get(key)).get(0).toString().getBytes("UTF-8").length);

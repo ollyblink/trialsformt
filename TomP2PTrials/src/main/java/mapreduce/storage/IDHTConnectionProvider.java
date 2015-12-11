@@ -15,15 +15,9 @@ public interface IDHTConnectionProvider {
 
 	public boolean isBootstrapper();
 
-	public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
-
 	public String bootstrapIP();
 
 	public int bootstrapPort();
-
-	public IDHTConnectionProvider bootstrapIP(String bootstrapIP);
-
-	public IDHTConnectionProvider bootstrapPort(int bootstrapPort);
 
 	// DHT access
 	/**
@@ -33,7 +27,7 @@ public interface IDHTConnectionProvider {
 	 * @param key
 	 * @param value
 	 */
-	public void addTaskData(Task task, Object key, Object value, boolean awaitUninterruptibly);
+	public void addTaskData(Task task, Object key, Object value);
 
 	/**
 	 * to store the keys produced for this task by this peer
@@ -41,7 +35,7 @@ public interface IDHTConnectionProvider {
 	 * @param task
 	 * @param key
 	 */
-	public void addTaskKey(Task task, Object key, boolean awaitUninterruptibly);
+	public void addTaskKey(Task task, Object key);
 
 	/**
 	 * 
@@ -50,23 +44,23 @@ public interface IDHTConnectionProvider {
 	 *            represents the index in task.executingPeers for which the data should be collected
 	 * @return
 	 */
-	public Multimap<Object, Object> getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
+	public Multimap<Object, Object> getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
 
-	public Set<Object> getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
+	public Set<Object> getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
 
-	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
+	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
 
-	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
+	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
 
-	public void addProcedureKey(Task task, Object key, boolean awaitUninterruptibly);
+	public void addProcedureKey(Task task, Object key);
 
-	public void addProcedureTaskPeerDomain(Task task, Object key, Tuple<PeerAddress, Integer> selectedExecutor, boolean awaitUninterruptibly);
+	public void addProcedureTaskPeerDomain(Task task, Object key, Tuple<PeerAddress, Integer> selectedExecutor);
 
-	public Set<Object> getProcedureKeys(Job job, boolean awaitUninterruptibly);
+	public Set<Object> getProcedureKeys(Job job);
 
-	public Set<Object> getProcedureTaskPeerDomains(Job job, Object key, boolean awaitUninterruptibly);
+	public Set<Object> getProcedureTaskPeerDomains(Job job, Object key);
 
-	//   removeProcedureKey, removeProcedureTaskPeerDomain,
+	// removeProcedureKey, removeProcedureTaskPeerDomain,
 
 	// Broadcasts
 	public MRBroadcastHandler broadcastHandler();
@@ -82,16 +76,12 @@ public interface IDHTConnectionProvider {
 	public void broadcastFinishedJob(Job job);
 
 	// Maintenance
-	public IDHTConnectionProvider connect();
-
-	public boolean alreadyExecuted(Task task);
+	public void connect();
 
 	public void shutdown();
 
 	public PeerAddress peerAddress();
-
-	public String storageFilePath();
-
-	public IDHTConnectionProvider storageFilePath(String storageFilePath);
+	
+	public IDHTConnectionProvider performBlocking(boolean performBlocking);
 
 }
