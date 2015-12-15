@@ -47,10 +47,10 @@ public class MRJobSubmissionManager {
 		String newFileInputFolderPath = MaxFileSizeFileSplitter.INSTANCE.fileInputFolderPath(job.fileInputFolderPath()).maxFileSize(job.maxFileSize())
 				.split();
 		FileUtils.INSTANCE.getFiles(new File(newFileInputFolderPath), keysFilePaths);
-
+		System.err.println(job);
 		for (String keyfilePath : keysFilePaths) {
 			File file = new File(keyfilePath);
-			Task task = Task.newInstance(keyfilePath, job.id());
+			Task task = Task.newInstance(keyfilePath, job.id()).procedure(job.procedure(job.currentProcedureIndex())).procedureIndex(job.currentProcedureIndex());
 			dhtConnectionProvider.addTaskData(task, task.id(), file);
 			dhtConnectionProvider.addProcedureDataProviderDomain(job, task.id(), Tuple.create(dhtConnectionProvider().peerAddress(), 0));
 		}

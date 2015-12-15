@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -15,8 +14,6 @@ import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureTaskTuple;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
-import mapreduce.manager.MRJobSubmissionManager;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
@@ -32,20 +29,22 @@ public class Job implements Serializable {
 	private static final long serialVersionUID = 1152022246679324578L;
 
 	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTE;
-	private FileSize maxFileSize = DEFAULT_FILE_SIZE;
+
 	private String jobSubmitterID;
 	private String id;
-	private List<ProcedureTaskTuple> procedures;
+
+	private List<IMapReduceProcedure> procedures;
 	private int maxNrOfFinishedWorkers;
 	private int currentProcedureIndex;
 
 	private String fileInputFolderPath;
+	private FileSize maxFileSize = DEFAULT_FILE_SIZE;
 
 	private Job(String jobSubmitterID) {
 		this.jobSubmitterID = jobSubmitterID;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
-		this.procedures = Collections.synchronizedList(new ArrayList<ProcedureTaskTuple>());
 		this.currentProcedureIndex = 0;
+		this.procedures = Collections.synchronizedList(new ArrayList<>());
 	}
 
 	public static Job newInstance(String jobSubmitterID) {
@@ -60,87 +59,12 @@ public class Job implements Serializable {
 		return this.jobSubmitterID;
 	}
 
-	/**
-	 * 
-	 * @param procedure
-	 * @param tasks
-	 *            for this procedure
-	 * @return
-	 */
-	public Job nextProcedure(IMapReduceProcedure procedure, Task... tasks) {
-		List<Task> tasksAsList = new ArrayList<Task>();
-		if (tasks != null) {
-			Collections.addAll(tasksAsList, tasks);
-		}
-		return nextProcedure(procedure, tasksAsList);
-	}
-
-	public Job nextProcedure(IMapReduceProcedure procedure, List<Task> tasks) {
-		if (procedure == null) {
-			return this;
-		}
-
-		ProcedureTaskTuple procedureTasks = null;
-		for (ProcedureTaskTuple p : procedures) {
-			if (p.procedure().equals(procedure)) {
-				procedureTasks = p;
-			}
-		}
-
-		if (procedureTasks == null) {
-			procedureTasks = ProcedureTaskTuple.create(procedure, new LinkedBlockingQueue<Task>());
-		}
-
-		if (tasks != null) {
-			procedureTasks.tasks().addAll(tasks);
-		}
-
-		synchronized (procedures) {
-			this.procedures.add(procedureTasks);
-		}
-
-		return this;
-	}
-
-	public IMapReduceProcedure firstProcedure() {
-		return procedureTaskTupel(0).procedure();
-	}
-
-	public BlockingQueue<Task> firstTasks() {
-		return procedureTaskTupel(0).tasks();
-	}
-
-	public IMapReduceProcedure lastProcedure() {
-		return procedureTaskTupel(procedures.size() - 1).procedure();
-	}
-
-	public BlockingQueue<Task> lastTasks() {
-		return procedureTaskTupel(procedures.size() - 1).tasks();
-	}
-
 	public IMapReduceProcedure procedure(int index) {
-		return procedureTaskTupel(index).procedure();
-	}
-
-	public BlockingQueue<Task> tasks(int index) {
-		if (index < procedures.size()) {
-			return procedureTaskTupel(index).tasks();
-		} else {
+		try {
+			return procedures.get(index);
+		} catch (ArrayIndexOutOfBoundsException e) {
 			return null;
 		}
-	}
-
-	private ProcedureTaskTuple procedureTaskTupel(int index) {
-		return this.procedures.get(index);
-	}
-
-	public BlockingQueue<Task> tasksFor(IMapReduceProcedure procedure) {
-		for (ProcedureTaskTuple tupel : procedures) {
-			if (tupel.procedure().equals(procedure)) {
-				return tupel.tasks();
-			}
-		}
-		return null;
 	}
 
 	public int maxNrOfFinishedWorkers() {
@@ -150,22 +74,7 @@ public class Job implements Serializable {
 		return maxNrOfFinishedWorkers;
 	}
 
-	public Job maxNrOfFinishedWorkersPerTask(int maxNrOfFinishedWorkers) {
-		if (maxNrOfFinishedWorkers < 1) {
-			return this;
-		}
-		this.maxNrOfFinishedWorkers = maxNrOfFinishedWorkers;
 
-		for (ProcedureTaskTuple tupel : procedures) {
-			BlockingQueue<Task> tasks = tupel.tasks();
-			if (tasks != null) {
-				for (Task task : tasks) {
-					task.maxNrOfFinishedWorkers(maxNrOfFinishedWorkers);
-				}
-			}
-		}
-		return this;
-	}
 
 	public void updateTaskExecutionStatus(String taskId, TaskResult toUpdate) {
 
@@ -243,7 +152,9 @@ public class Job implements Serializable {
 
 	@Override
 	public String toString() {
-		return "Job [jobSubmitterID=" + jobSubmitterID + ", id=" + id + "]";
+		return "Job [jobSubmitterID=" + jobSubmitterID + ", id=" + id + ", procedures=" + procedures + ", maxNrOfFinishedWorkers="
+				+ maxNrOfFinishedWorkers + ", currentProcedureIndex=" + currentProcedureIndex + ", fileInputFolderPath=" + fileInputFolderPath
+				+ ", maxFileSize=" + maxFileSize + "]";
 	}
 
 	@Override

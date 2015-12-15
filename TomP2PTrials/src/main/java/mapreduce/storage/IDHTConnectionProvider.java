@@ -15,6 +15,7 @@ public interface IDHTConnectionProvider {
 
 	// DHT access 
 	public void addTaskData(Task task, Object key, Object value); 
+	
 	public void addTaskKey(Task task, Object key);
 
 	public void addProcedureOverallKey(Job job, Object key);

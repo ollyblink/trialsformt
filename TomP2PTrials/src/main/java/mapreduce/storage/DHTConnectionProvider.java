@@ -105,7 +105,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void addTaskData(Task task, final Object key, final Object value) {
-		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, peerAddress());
+		String domainString = DomainProvider.INSTANCE.executorTaskDomain(task.finalDataLocation(Tuple.create(peerAddress(), 0)))+"_"+DomainProvider.INSTANCE.jobProcedureDomain(task.jobId(), task.procedure().getClass().getSimpleName(), task.procedureIndex());
+		System.err.println(domainString);
 		String keyString = key.toString();
 		boolean asList = true;
 		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking, new BaseFutureListener<FuturePut>() {
@@ -215,7 +216,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		Set<Object> taskKeys = new HashSet<>();
 		getTaskKeys(task, selectedExecutor, taskKeys);
 
-		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		String domainString = DomainProvider.INSTANCE.executorTaskDomain(task, selectedExecutor.first(), selectedExecutor.second());
 		boolean asList = true;
 		List<Object> valuesCollector = new ArrayList<>();
 
@@ -229,7 +230,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Set<Object> keysCollector) {
-		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		String domainString = DomainProvider.INSTANCE.executorTaskDomain(task, selectedExecutor.first(), selectedExecutor.second());
 		String keyString = KEY_LOCATION_PREAMBLE + domainString;
 		boolean asList = false;
 		dhtUtils.getKD(keyString, keysCollector, domainString, asList, performBlocking);
@@ -255,7 +256,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
 		Set<Object> keys = new HashSet<>();
 		getTaskKeys(task, selectedExecutor, keys);
-		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		String domainString = DomainProvider.INSTANCE.executorTaskDomain(task, selectedExecutor.first(), selectedExecutor.second());
 		for (final Object key : keys) {
 			dhtUtils.removeKD(domainString, key.toString(), performBlocking);
 		}
@@ -263,7 +264,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
-		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, selectedExecutor.first(), selectedExecutor.second());
+		String domainString = DomainProvider.INSTANCE.executorTaskDomain(task, selectedExecutor.first(), selectedExecutor.second());
 		String keyString = KEY_LOCATION_PREAMBLE + domainString;
 		dhtUtils.removeKD(domainString, keyString, performBlocking);
 	}
