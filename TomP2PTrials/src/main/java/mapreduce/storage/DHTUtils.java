@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
+import mapreduce.manager.MRJobSubmissionManager;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.utils.IDCreator;
@@ -35,7 +36,9 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageDisk;
 
 public class DHTUtils {
-	private static Logger logger = LoggerFactory.getLogger(DHTUtils.class);
+	private static final Logger logger = LoggerFactory.getLogger(DHTUtils.class);
+	private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
+	private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private PeerDHT peerDHT;
 	private String bootstrapIP;
 	private int bootstrapPort;
@@ -44,6 +47,20 @@ public class DHTUtils {
 	private MRBroadcastHandler broadcastHandler;
 	private String id;
 	private String storageFilePath;
+	/** How many times should the data be tried be added to the dht? */
+	private int nrOfAddTrials;
+	/** For how long should the job submitter wait until it declares the data adding to be failed? In milliseconds */
+	private long timeToLiveInMs;
+
+	public DHTUtils timeToLiveInMs(long timeToLiveInMs) {
+		this.timeToLiveInMs = timeToLiveInMs;
+		return this;
+	}
+
+	public DHTUtils nrOfAddTrials(int nrOfAddTrials) {
+		this.nrOfAddTrials = nrOfAddTrials;
+		return this;
+	}
 
 	private DHTUtils() {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
@@ -51,7 +68,8 @@ public class DHTUtils {
 	}
 
 	public static DHTUtils newInstance(String bootstrapIP, int bootstrapPort) {
-		return new DHTUtils().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort).port(PortManager.INSTANCE.generatePort());
+		return new DHTUtils().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort).port(PortManager.INSTANCE.generatePort())
+				.timeToLiveInMs(DEFAULT_TIME_TO_LIVE_IN_MS).nrOfAddTrials(DEFAULT_NUMBER_OF_ADD_TRIALS);
 	}
 
 	/**
@@ -130,7 +148,8 @@ public class DHTUtils {
 		}
 	}
 
-	public void addKVD(String keyString, Object value, String domainString, boolean asList, boolean awaitUninterruptibly, BaseFutureListener<FuturePut> listener) {
+	public void addKVD(String keyString, Object value, String domainString, boolean asList, boolean awaitUninterruptibly,
+			BaseFutureListener<FuturePut> listener) {
 		try {
 			logger.info("addKVD: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain(" + domainString + ")");
 			Number160 keyHash = Number160.createHash(keyString);
@@ -178,9 +197,11 @@ public class DHTUtils {
 								} else {
 									valueObject = getFuture.dataMap().get(n).object();
 								}
-								valueCollector.add(valueObject);
-								logger.info("getKVD: Successfully retrieved value for <K, Domain>: <" + keyString + ", " + domainString + ">: "
-										+ valueObject);
+								synchronized (valueCollector) {
+									valueCollector.add(valueObject);
+									logger.info("getKVD: Successfully retrieved value for <K, Domain>: <" + keyString + ", " + domainString + ">: "
+											+ valueObject);
+								}
 							}
 						} else {
 							logger.warn("getKVD: Value for <K, Domain>: <" + keyString + ", " + domainString + "> is null!");

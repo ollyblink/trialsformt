@@ -1,6 +1,7 @@
 package mapreduce.manager;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -128,7 +129,10 @@ public class MRJobExecutionManager {
 		if (!canExecute()) {
 			System.err.println("Cannot execute! use MRJobSubmitter::canExecute(true) to enable execution");
 		}
-		List<Task> tasks = new ArrayList<Task>(jobs.get(0).tasks(jobs.get(0).currentProcedureIndex()));
+		List<Object> taskKeys = Collections.synchronizedList(new ArrayList<Object>());
+		// Get the data for the job's current procedure
+		dhtConnectionProvider.collectProcedureKeys(jobs.get(0), taskKeys);
+
 		Task task = null;
 		while ((task = this.taskExecutionScheduler.schedule(tasks)) != null && !this.taskExecutor.abortedTaskExecution() && canExecute()) {
 			this.dhtConnectionProvider.broadcastExecutingTask(task);

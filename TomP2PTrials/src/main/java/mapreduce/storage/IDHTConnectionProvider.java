@@ -1,5 +1,6 @@
 package mapreduce.storage;
 
+import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.Multimap;
@@ -13,6 +14,7 @@ import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {
 
+	public void collectProcedureKeys(Job job, List<Object> keyCollector);
 	// DHT access 
 	public void addTaskData(Task task, Object key, Object value); 
 	
@@ -63,4 +65,5 @@ public interface IDHTConnectionProvider {
 	public String bootstrapIP();
 
 	public int bootstrapPort();
+
 }

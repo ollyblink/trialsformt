@@ -1,7 +1,14 @@
 package mapreduce.manager;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -10,7 +17,8 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
+import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
+import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmitterMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.FileUtils;
@@ -19,8 +27,11 @@ import mapreduce.utils.Tuple;
 
 public class MRJobSubmissionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManager.class);
+	private static final ITaskDataComposer DEFAULT_TASK_DATA_COMPOSER = MaxFileSizeTaskDataComposer.create();
+
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private MRJobSubmitterMessageConsumer messageConsumer;
+	private ITaskDataComposer taskDataComposer;
 	private String id;
 
 	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, CopyOnWriteArrayList<Job> jobs) {
@@ -32,7 +43,7 @@ public class MRJobSubmissionManager {
 	}
 
 	public static MRJobSubmissionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobSubmissionManager(dhtConnectionProvider, new CopyOnWriteArrayList<Job>());
+		return new MRJobSubmissionManager(dhtConnectionProvider, new CopyOnWriteArrayList<Job>()).taskComposer(DEFAULT_TASK_DATA_COMPOSER);
 	}
 
 	/**
@@ -44,40 +55,51 @@ public class MRJobSubmissionManager {
 		dhtConnectionProvider.connect();
 
 		List<String> keysFilePaths = new ArrayList<String>();
-		String newFileInputFolderPath = MaxFileSizeFileSplitter.INSTANCE.fileInputFolderPath(job.fileInputFolderPath()).maxFileSize(job.maxFileSize())
-				.split();
-		FileUtils.INSTANCE.getFiles(new File(newFileInputFolderPath), keysFilePaths);
-		System.err.println(job);
+
+		FileUtils.INSTANCE.getFiles(new File(job.fileInputFolderPath()), keysFilePaths);
+		List<Boolean> taskDataSubmitted = Collections.synchronizedList(new ArrayList<>());
 		for (String keyfilePath : keysFilePaths) {
-			File file = new File(keyfilePath);
-			Task task = Task.newInstance(keyfilePath, job.id()).procedure(job.procedure(job.currentProcedureIndex())).procedureIndex(job.currentProcedureIndex());
-			dhtConnectionProvider.addTaskData(task, task.id(), file);
-			dhtConnectionProvider.addProcedureDataProviderDomain(job, task.id(), Tuple.create(dhtConnectionProvider().peerAddress(), 0));
+			Path file = Paths.get(keyfilePath);
+
+			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
+			try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
+				String line = null;
+				while ((line = reader.readLine()) != null) {
+					int dataCounter = 0;
+					String taskKey = keyfilePath + "_" + dataCounter;
+					String value = null;
+					while ((value = taskDataComposer.append(line)) == null) {
+
+					}
+					if (value != null) {
+						Task task = Task.newInstance(taskKey, job.id());
+						dhtConnectionProvider.addTaskData(task, task.id(), value, taskDataSubmitted, index); // Do everything in here!!!
+					}
+
+					// dhtConnectionProvider.addProcedureDataProviderDomain(job, task.id(), Tuple.create(dhtConnectionProvider().peerAddress(), 0));
+
+					++dataCounter;
+				}
+			} catch (IOException x) {
+				System.err.format("IOException: %s%n", x);
+			}
+		}
+		while (taskDataSubmitted.contains(false)) {
+			try {
+				Thread.sleep(100);// Needs to sleep, because job can only be broadcasted once all data is available
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
 		}
 		dhtConnectionProvider.broadcastNewJob(job);
+
 	}
 
-	// private void createFinalTaskSplits(Job job, Collection<List<String>> allNewFileLocations, Multimap<Task, Comparable> keysForEachTask) {
-	// IMapReduceProcedure procedure = job.procedure(job.currentProcedureIndex());
-	//
-	// if (procedure != null) {
-	// List<Task> tasksForProcedure = new ArrayList<Task>();
-	// for (List<String> locations : allNewFileLocations) {
-	//
-	// for (int i = 0; i < locations.size(); ++i) {
-	// Task task = Task.newInstance(job.id()).procedure(procedure).procedureIndex(job.currentProcedureIndex())
-	// .maxNrOfFinishedWorkers(job.maxNrOfFinishedWorkers());
-	// tasksForProcedure.add(task);
-	// keysForEachTask.put(task, locations.get(i));
-	// }
-	//
-	// }
-	//
-	// job.nextProcedure(procedure, tasksForProcedure);
-	// } else {
-	// logger.error("Could not put job due to no procedure specified.");
-	// }
-	// }
+	public MRJobSubmissionManager taskComposer(ITaskDataComposer taskDataComposer) {
+		this.taskDataComposer = taskDataComposer;
+		return this;
+	}
 
 	public MRJobSubmissionManager dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;

@@ -21,7 +21,7 @@ public class TestSubmitterAddingData {
 		String fileInputFolderPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/task/tasksplitting/testfile";
 
 		int maxNumberOfFinishedPeers = 3;
-		Job job = Job.newInstance(submitter.id()).nextProcedure(WordCountMapper.newInstance()).fileInputFolderPath(fileInputFolderPath)
+		Job job = Job.newInstance(submitter.id()).procedure(WordCountMapper.newInstance()).fileInputFolderPath(fileInputFolderPath)
 				.maxFileSize(FileSize.THIRTY_TWO_KILO_BYTE).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 
 		submitter.submit(job);

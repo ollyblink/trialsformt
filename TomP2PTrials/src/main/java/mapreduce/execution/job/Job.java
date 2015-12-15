@@ -2,22 +2,13 @@ package mapreduce.execution.job;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.computation.ProcedureTaskTuple;
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.TaskResult;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
-import mapreduce.utils.Tuple;
-import net.tomp2p.peers.PeerAddress;
 
 public class Job implements Serializable {
 
@@ -30,15 +21,17 @@ public class Job implements Serializable {
 
 	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTE;
 
-	private String jobSubmitterID;
 	private String id;
+	private String jobSubmitterID;
 
 	private List<IMapReduceProcedure> procedures;
-	private int maxNrOfFinishedWorkers;
+	private List<Task> tasks;
+
 	private int currentProcedureIndex;
 
-	private String fileInputFolderPath;
 	private FileSize maxFileSize = DEFAULT_FILE_SIZE;
+	private String fileInputFolderPath;
+	private int maxNrOfFinishedWorkers;
 
 	private Job(String jobSubmitterID) {
 		this.jobSubmitterID = jobSubmitterID;
@@ -62,9 +55,14 @@ public class Job implements Serializable {
 	public IMapReduceProcedure procedure(int index) {
 		try {
 			return procedures.get(index);
-		} catch (ArrayIndexOutOfBoundsException e) {
+		} catch (Exception e) {
 			return null;
 		}
+	}
+
+	public Job procedure(IMapReduceProcedure procedure) {
+		this.procedures.add(procedure);
+		return this;
 	}
 
 	public int maxNrOfFinishedWorkers() {
@@ -74,62 +72,12 @@ public class Job implements Serializable {
 		return maxNrOfFinishedWorkers;
 	}
 
-
-
-	public void updateTaskExecutionStatus(String taskId, TaskResult toUpdate) {
-
-		BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
-		if (tasks != null) {
-			for (Task task : tasks) {
-				if (task.id().equals(taskId)) {
-					task.updateStati(toUpdate);
-					break;
-				}
-			}
-		}
-	}
-
-	public void synchronizeFinishedTasksStati(Collection<Task> receivedSyncTasks) {
-		BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
-		tasks.clear();
-		tasks.addAll(receivedSyncTasks);
-	}
-
 	public int currentProcedureIndex() {
 		return currentProcedureIndex;
 	}
 
 	public void incrementProcedureNumber() {
-		if (this.currentProcedureIndex < this.procedures.size() - 1) {
-			++this.currentProcedureIndex;
-		}
-	}
-
-	public Multimap<Task, Tuple<PeerAddress, Integer>> taskDataToRemove(int currentProcedureIndex) {
-		Multimap<Task, Tuple<PeerAddress, Integer>> toRemove = ArrayListMultimap.create();
-		BlockingQueue<Task> tasks = tasks(currentProcedureIndex);
-		for (Task task : tasks) {
-			toRemove.putAll(task, task.dataToRemove());
-		}
-		return toRemove;
-	}
-
-	public boolean isFinishedFor(IMapReduceProcedure procedure) {
-		for (ProcedureTaskTuple tuple : procedures) {
-			if (tuple.procedure().equals(procedure)) {
-				return tuple.isFinished();
-			}
-		}
-		return false;
-	}
-
-	public void isFinishedFor(IMapReduceProcedure procedure, boolean isFinished) {
-		for (ProcedureTaskTuple tuple : procedures) {
-			if (tuple.procedure().equals(procedure)) {
-				tuple.isFinished(isFinished);
-				break;
-			}
-		}
+		++this.currentProcedureIndex;
 	}
 
 	public Job fileInputFolderPath(String fileInputFolderPath) {
@@ -181,4 +129,5 @@ public class Job implements Serializable {
 			return false;
 		return true;
 	}
+
 }

@@ -31,7 +31,7 @@ import net.tomp2p.peers.PeerAddress;
  */
 public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
-	private static final String KEY_LOCATION_PREAMBLE = "KEYS";
+	private static final String KEYS = "KEYS";
 	/** Provides the actual access to the dht */
 	private DHTUtils dhtUtils;
 	/** Determines if dht operations should be performed in parallel or not */
@@ -133,7 +133,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void addTaskKey(Task task, Object key) {
 		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, peerAddress());
-		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		String keyString = KEYS + domainString;
 		Object value = key;
 		boolean asList = false;
 
@@ -188,7 +188,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void addProcedureOverallKey(Job job, Object key) {
 		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
-		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		String keyString = KEYS + domainString;
 		Object value = key;
 		boolean asList = false;
 		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking, new BaseFutureListener<FuturePut>() {
@@ -231,7 +231,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Set<Object> keysCollector) {
 		String domainString = DomainProvider.INSTANCE.executorTaskDomain(task, selectedExecutor.first(), selectedExecutor.second());
-		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		String keyString = KEYS + domainString;
 		boolean asList = false;
 		dhtUtils.getKD(keyString, keysCollector, domainString, asList, performBlocking);
 	}
@@ -239,7 +239,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void getProcedureKeys(Job job, Set<Object> keysCollector) {
 		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
-		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		String keyString = KEYS + domainString;
 		boolean asList = false;
 		dhtUtils.getKD(keyString, keysCollector, domainString, asList, performBlocking);
 	}
@@ -265,7 +265,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor) {
 		String domainString = DomainProvider.INSTANCE.executorTaskDomain(task, selectedExecutor.first(), selectedExecutor.second());
-		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		String keyString = KEYS + domainString;
 		dhtUtils.removeKD(domainString, keyString, performBlocking);
 	}
 
@@ -283,6 +283,11 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public DHTConnectionProvider performBlocking(boolean performBlocking) {
 		this.performBlocking = performBlocking;
 		return this;
+	}
+
+	@Override
+	public void collectProcedureKeys(Job job, List<Object> keyCollector) {
+		dhtUtils.getKD(KEYS, keyCollector, DomainProvider.INSTANCE.jobProcedureDomain(job), false, performBlocking);
 	}
 
 }
