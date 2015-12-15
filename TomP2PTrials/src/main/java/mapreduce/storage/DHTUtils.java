@@ -130,7 +130,7 @@ public class DHTUtils {
 		}
 	}
 
-	public void addKVD(String keyString, Object value, String domainString, boolean asList, boolean awaitUninterruptibly) {
+	public void addKVD(String keyString, Object value, String domainString, boolean asList, boolean awaitUninterruptibly, BaseFutureListener<FuturePut> listener) {
 		try {
 			logger.info("addKVD: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain(" + domainString + ")");
 			Number160 keyHash = Number160.createHash(keyString);
@@ -142,23 +142,9 @@ public class DHTUtils {
 
 			FuturePut futurePut = this.peerDHT.add(keyHash).data(valueData).domainKey(domainHash).start();
 
-			futurePut.addListener(new BaseFutureListener<FuturePut>() {
-
-				@Override
-				public void operationComplete(FuturePut future) throws Exception {
-					if (future.isSuccess()) {
-						logger.info("Successfully added <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
-					} else {
-						logger.error("Failed tyring to add <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
-					}
-				}
-
-				@Override
-				public void exceptionCaught(Throwable t) throws Exception {
-					logger.debug("Exception caught", t);
-				}
-
-			});
+			if (listener != null) {
+				futurePut.addListener(listener);
+			}
 			if (awaitUninterruptibly) {
 				futurePut.awaitUninterruptibly();
 			}

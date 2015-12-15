@@ -27,7 +27,7 @@ import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutio
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
-import mapreduce.utils.FileSizes;
+import mapreduce.utils.FileSize;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
@@ -81,7 +81,7 @@ public class MRJobExecutorMessageConsumerTest {
 			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
 		}
 
-		Job job = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).inputPath(inputPath).maxFileSize(FileSizes.KILO_BYTE.value())
+		Job job = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).inputPath(inputPath).maxFileSize(FileSize.KILO_BYTE.value())
 				.maxNrOfFinishedWorkersPerTask(5);
 
 		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
@@ -134,7 +134,7 @@ public class MRJobExecutorMessageConsumerTest {
 			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
 		}
 
-		long megaByte = FileSizes.MEGA_BYTE.value();
+		long megaByte = FileSize.MEGA_BYTE.value();
 
 		int maxNumberOfFinishedPeers = 5;
 		Job job = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)

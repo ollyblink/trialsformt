@@ -1,15 +1,11 @@
 package mapreduce;
 
-import java.io.File;
-
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.job.Job;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
 import mapreduce.manager.MRJobSubmissionManager;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.DHTUtils;
-import mapreduce.utils.FileSizes;
-import mapreduce.utils.FileUtils;
+import mapreduce.utils.FileSize;
 
 public class DesignIdeaJobSubmitter {
 	public static void main(String[] args)
@@ -24,14 +20,13 @@ public class DesignIdeaJobSubmitter {
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
 		String fileInputFolderPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/task/tasksplitting/testfile";
 
-		String newFileInputFolderPath = MaxFileSizeFileSplitter.INSTANCE.fileInputFolderPath(fileInputFolderPath)
-				.maxFileSize(FileSizes.THIRTY_TWO_KILO_BYTE.value()).split();
-
 		int maxNumberOfFinishedPeers = 3;
-		Job job = Job.newInstance(submitter.id()).nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
-				.fileInputFolderPath(newFileInputFolderPath);
+		Job job = Job.newInstance(submitter.id())
+				.nextProcedure(WordCountMapper.newInstance())
+				.fileInputFolderPath(fileInputFolderPath) .maxFileSize(FileSize.THIRTY_TWO_KILO_BYTE)
+				.maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 
-		submitter.submit(job, true);
+		submitter.submit(job);
 		//
 		//
 		// DHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newDHTConnectionProvider().bootstrapIP(bootstrapIP)

@@ -24,12 +24,13 @@ public class JobTest {
 
 	@Test
 	public void testNextProcedure() {
+		int counter = 1;
 		List<Task> tasksForProcedure = new ArrayList<Task>();
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
-		tasksForProcedure.add(Task.newInstance(jobId));
-		tasksForProcedure.add(Task.newInstance(jobId));
-		tasksForProcedure.add(Task.newInstance(jobId));
-		tasksForProcedure.add(Task.newInstance(jobId));
+		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
+		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
+		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
+		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
 		Job job = Job.newInstance("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(WordCountMapper.newInstance(), tasksForProcedure);
 		assertTrue(job.currentProcedureIndex() == 0);
 		job.incrementProcedureNumber();
@@ -44,8 +45,8 @@ public class JobTest {
 		assertTrue(job.currentProcedureIndex() == 0);
 
 		List<Task> tasksForProcedure2 = new ArrayList<Task>();
-		tasksForProcedure2.add(Task.newInstance(jobId));
-		tasksForProcedure2.add(Task.newInstance(jobId));
+		tasksForProcedure2.add(Task.newInstance(jobId, ("word" + counter++)));
+		tasksForProcedure2.add(Task.newInstance(jobId, ("word" + counter++)));
 		job.nextProcedure(NullMapReduceProcedure.newInstance(), tasksForProcedure2);
 
 		assertTrue(job.currentProcedureIndex() == 0);
@@ -63,10 +64,13 @@ public class JobTest {
 
 	@Test
 	public void testUpdateTaskStati() {
+		int counter = 0;
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
 		List<Task> tasksForProcedure = new ArrayList<Task>();
-		tasksForProcedure.add(Task.newInstance(jobId).maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance()));
-		tasksForProcedure.add(Task.newInstance(jobId).maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance()));
+		tasksForProcedure
+				.add(Task.newInstance(jobId, "word" + (counter++)).maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance()));
+		tasksForProcedure
+				.add(Task.newInstance(jobId, "word" + (counter++)).maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance()));
 		Job job = Job.newInstance("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(WordCountMapper.newInstance(), tasksForProcedure);
 		ArrayList<Task> list = new ArrayList<Task>(tasksForProcedure);
 		PeerAddress[] peers = new PeerAddress[3];

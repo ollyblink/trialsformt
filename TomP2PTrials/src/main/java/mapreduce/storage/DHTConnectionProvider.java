@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Multimap;
 
@@ -16,6 +18,8 @@ import mapreduce.manager.broadcasthandler.broadcastmessages.JobUpdateBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.Tuple;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -26,8 +30,8 @@ import net.tomp2p.peers.PeerAddress;
  *
  */
 public class DHTConnectionProvider implements IDHTConnectionProvider {
-	// private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
-	private static final String KEY_LOCATION_PREAMBLE = "KEYS_FOR_";
+	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
+	private static final String KEY_LOCATION_PREAMBLE = "KEYS";
 	/** Provides the actual access to the dht */
 	private DHTUtils dhtUtils;
 	/** Determines if dht operations should be performed in parallel or not */
@@ -104,8 +108,25 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		String domainString = DomainProvider.INSTANCE.taskPeerDomain(task, peerAddress());
 		String keyString = key.toString();
 		boolean asList = true;
-		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking);
-		addTaskKey(task, key);
+		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking, new BaseFutureListener<FuturePut>() {
+
+			@Override
+			public void operationComplete(FuturePut future) throws Exception {
+				if (future.isSuccess()) {
+					logger.info("Successfully added <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
+					addTaskKey(task, key);
+				} else {
+					logger.error("Failed tyring to add <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.debug("Exception caught", t);
+			}
+
+		});
+		// addTaskKey(task, key);
 	}
 
 	@Override
@@ -115,7 +136,78 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		Object value = key;
 		boolean asList = false;
 
-		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking);
+		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking, new BaseFutureListener<FuturePut>() {
+
+			@Override
+			public void operationComplete(FuturePut future) throws Exception {
+				if (future.isSuccess()) {
+					logger.info("Successfully added <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
+					// addTaskKey(task, key);
+				} else {
+					logger.error("Failed tyring to add <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.debug("Exception caught", t);
+			}
+
+		});
+	}
+
+	@Override
+	public void addProcedureDataProviderDomain(Job job, Object key, Tuple<PeerAddress, Integer> selectedExecutor) {
+		// key here is basically the task id...
+		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
+		String keyString = key.toString();
+		String value = DomainProvider.INSTANCE.taskPeerDomain(job.id(), job.procedure(job.currentProcedureIndex()).getClass().getSimpleName(),
+				job.currentProcedureIndex(), key.toString(), selectedExecutor.first().peerId().toString(), selectedExecutor.second());
+		boolean asList = false;
+		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking, new BaseFutureListener<FuturePut>() {
+
+			@Override
+			public void operationComplete(FuturePut future) throws Exception {
+				if (future.isSuccess()) {
+					logger.info("Successfully added <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
+					addProcedureOverallKey(job, key);
+				} else {
+					logger.error("Failed tyring to add <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.debug("Exception caught", t);
+			}
+
+		});
+	}
+
+	@Override
+	public void addProcedureOverallKey(Job job, Object key) {
+		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
+		String keyString = KEY_LOCATION_PREAMBLE + domainString;
+		Object value = key;
+		boolean asList = false;
+		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking, new BaseFutureListener<FuturePut>() {
+
+			@Override
+			public void operationComplete(FuturePut future) throws Exception {
+				if (future.isSuccess()) {
+					logger.info("Successfully added <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
+					// addTaskKey(task, key);
+				} else {
+					logger.error("Failed tyring to add <K, V, Domain>: <" + keyString + ", " + value + ", " + domainString + ">");
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.debug("Exception caught", t);
+			}
+
+		});
 	}
 
 	@Override
@@ -141,28 +233,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		String keyString = KEY_LOCATION_PREAMBLE + domainString;
 		boolean asList = false;
 		dhtUtils.getKD(keyString, keysCollector, domainString, asList, performBlocking);
-	}
-
-	@Override
-	public void addProcedureTaskPeerDomain(Job job, Object key, Tuple<PeerAddress, Integer> selectedExecutor) {
-		// key here is basically the task id...
-		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
-		String keyString = key.toString();
-		String value = DomainProvider.INSTANCE.taskPeerDomain(job.id(), job.procedure(job.currentProcedureIndex()).getClass().getSimpleName(),
-				job.currentProcedureIndex(), key.toString(), selectedExecutor.first().peerId().toString(), selectedExecutor.second());
-		boolean asList = false;
-		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking);
-		addProcedureKey(job, key);
-	}
-
-	@Override
-	public void addProcedureKey(Job job, Object key) { 
-		// key here is basically the task id...
-		String domainString = DomainProvider.INSTANCE.jobProcedureDomain(job);
-		String keyString = KEY_LOCATION_PREAMBLE + domainString;
-		Object value = key;
-		boolean asList = false;
-		dhtUtils.addKVD(keyString, value, domainString, asList, performBlocking);
 	}
 
 	@Override

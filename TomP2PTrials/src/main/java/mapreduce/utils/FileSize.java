@@ -1,6 +1,6 @@
 package mapreduce.utils;
 
-public enum FileSizes {
+public enum FileSize {
 	BYTE(1), KILO_BYTE(1024), TWO_KILO_BYTE(2 * KILO_BYTE.value()), FOUR_KILO_BYTE(4 * KILO_BYTE.value()), EIGHT_KILO_BYTE(
 			8 * KILO_BYTE.value()), SIXTEEN_KILO_BYTE(16 * KILO_BYTE.value()), THIRTY_TWO_KILO_BYTE(32 * KILO_BYTE.value()), SIXTY_FOUR_KILO_BYTE(
 					64 * KILO_BYTE.value()), MEGA_BYTE(KILO_BYTE.value() * KILO_BYTE.value()), TWO_MEGA_BYTE(2 * MEGA_BYTE.value()), FOUR_MEGA_BYTE(
@@ -10,7 +10,7 @@ public enum FileSizes {
 
 	private long value;
 
-	FileSizes(long value) {
+	FileSize(long value) {
 		this.value = value;
 	}
 

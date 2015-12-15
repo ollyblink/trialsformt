@@ -23,7 +23,7 @@ public class TaskTest {
 	public static void setUpBeforeClass() throws Exception {
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
 
-		task = Task.newInstance(jobId).maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance());
+		task = Task.newInstance(jobId, "word").maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance());
 	}
 
 	@AfterClass

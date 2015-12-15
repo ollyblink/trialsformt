@@ -13,18 +13,17 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import mapreduce.execution.job.Job;
+import mapreduce.utils.FileSize;
 import mapreduce.utils.FileUtils;
 
 public enum MaxFileSizeFileSplitter {
 	INSTANCE;
 	// private static Logger logger = LoggerFactory.getLogger(MaxFileSizeTaskSplitter.class);
-
+	private FileSize maxFileSize = FileSize.THIRTY_TWO_KILO_BYTE;
 	private static final String DEFAULT_CHARSET = "UTF-8";
 	private static final String TEMP_FOLDER_NAME = "tmp";
 	private String fileEncoding = DEFAULT_CHARSET;
 	private String fileInputFolderPath;
-	private long maxFileSize;
 
 	/**
 	 * @param inputFolderPath
@@ -46,21 +45,21 @@ public enum MaxFileSizeFileSplitter {
 		FileUtils.INSTANCE.getFiles(new File(fileInputFolderPath), pathVisitor);
 
 		// Uses this to store for each original file path the new splitted file paths
-		final Map<String, List<String>> oldAndNew = createNewFilePaths(maxFileSize, pathVisitor);
+		final Map<String, List<String>> oldAndNew = createNewFilePaths(pathVisitor);
 
 		// Create new files
-		readAllFilesAndCreateNewFiles(maxFileSize, oldAndNew);
+		readAllFilesAndCreateNewFiles(oldAndNew);
 		return fileInputFolderPath + "/" + TEMP_FOLDER_NAME;
 	}
 
-	private void readAllFilesAndCreateNewFiles(long maxFileSize, final Map<String, List<String>> oldAndNew) {
+	private void readAllFilesAndCreateNewFiles(final Map<String, List<String>> oldAndNew) {
 		ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 		for (final String fileLocation : oldAndNew.keySet()) {
 			executor.execute(new Runnable() {
 				@Override
 				public void run() {
-					readFileAndCreateNewFiles(maxFileSize, oldAndNew, fileLocation);
+					readFileAndCreateNewFiles(oldAndNew, fileLocation);
 				}
 			});
 		}
@@ -74,7 +73,7 @@ public enum MaxFileSizeFileSplitter {
 		}
 	}
 
-	private Map<String, List<String>> createNewFilePaths(long maxFileSize, List<String> pathVisitor) {
+	private Map<String, List<String>> createNewFilePaths(List<String> pathVisitor) {
 		Map<String, List<String>> oldAndNew = new TreeMap<String, List<String>>();
 
 		for (String filePath : pathVisitor) {
@@ -84,7 +83,7 @@ public enum MaxFileSizeFileSplitter {
 			String extension = file.getName().replace(fileName, "");
 
 			// To know how many files to create
-			long filePartitions = (file.length() / maxFileSize) + 1;
+			long filePartitions = (file.length() / maxFileSize.value()) + 1;
 
 			// Put all the new filepaths into the map
 			for (int i = 0; i < filePartitions; ++i) {
@@ -100,7 +99,7 @@ public enum MaxFileSizeFileSplitter {
 		return oldAndNew;
 	}
 
-	private void readFileAndCreateNewFiles(long maxFileSize, Map<String, List<String>> oldAndNew, String fileLocation) {
+	private void readFileAndCreateNewFiles(Map<String, List<String>> oldAndNew, String fileLocation) {
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File(fileLocation)));
 
@@ -115,7 +114,7 @@ public enum MaxFileSizeFileSplitter {
 				}
 				while (((line = reader.readLine()) != null)) {
 					long lineSize = fileSizeCounter + (line + "\n").getBytes(this.fileEncoding).length;
-					if (lineSize >= maxFileSize) {
+					if (lineSize >= maxFileSize.value()) {
 						break;
 					}
 					fileSizeCounter = lineSize;
@@ -150,12 +149,12 @@ public enum MaxFileSizeFileSplitter {
 		return fileInputFolderPath;
 	}
 
-	public MaxFileSizeFileSplitter maxFileSize(long maxFileSize) {
+	public MaxFileSizeFileSplitter maxFileSize(FileSize maxFileSize) {
 		this.maxFileSize = maxFileSize;
 		return this;
 	}
 
-	public long maxFileSize() {
+	public FileSize maxFileSize() {
 		return this.maxFileSize;
 	}
 }

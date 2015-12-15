@@ -16,6 +16,8 @@ import mapreduce.execution.computation.ProcedureTaskTuple;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
+import mapreduce.manager.MRJobSubmissionManager;
+import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.PeerAddress;
@@ -29,6 +31,8 @@ public class Job implements Serializable {
 	 */
 	private static final long serialVersionUID = 1152022246679324578L;
 
+	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTE;
+	private FileSize maxFileSize = DEFAULT_FILE_SIZE;
 	private String jobSubmitterID;
 	private String id;
 	private List<ProcedureTaskTuple> procedures;
@@ -182,17 +186,6 @@ public class Job implements Serializable {
 		tasks.addAll(receivedSyncTasks);
 	}
 
-	// public void updateTaskFinalDataLocation(Task receivedTask) {
-	// BlockingQueue<Task> tasks = procedures.get(currentProcedureIndex()).tasks();
-	// if (tasks != null) {
-	// for (Task task : tasks) {
-	// if (task.equals(receivedTask)) {
-	// task.finalDataLocation(receivedTask.finalDataLocation());
-	// }
-	// }
-	// }
-	// }
-
 	public int currentProcedureIndex() {
 		return currentProcedureIndex;
 	}
@@ -201,36 +194,6 @@ public class Job implements Serializable {
 		if (this.currentProcedureIndex < this.procedures.size() - 1) {
 			++this.currentProcedureIndex;
 		}
-	}
-
-	@Override
-	public String toString() {
-		return "Job [jobSubmitterID=" + jobSubmitterID + ", id=" + id + "]";
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		// if (getClass() != obj.getClass())
-		// return false;
-		Job other = (Job) obj;
-		if (id == null) {
-			if (other.id() != null)
-				return false;
-		} else if (!id.equals(other.id()))
-			return false;
-		return true;
 	}
 
 	public Multimap<Task, Tuple<PeerAddress, Integer>> taskDataToRemove(int currentProcedureIndex) {
@@ -267,5 +230,44 @@ public class Job implements Serializable {
 
 	public String fileInputFolderPath() {
 		return fileInputFolderPath;
+	}
+
+	public Job maxFileSize(FileSize maxFileSize) {
+		this.maxFileSize = maxFileSize;
+		return this;
+	}
+
+	public FileSize maxFileSize() {
+		return this.maxFileSize;
+	}
+
+	@Override
+	public String toString() {
+		return "Job [jobSubmitterID=" + jobSubmitterID + ", id=" + id + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		// if (getClass() != obj.getClass())
+		// return false;
+		Job other = (Job) obj;
+		if (id == null) {
+			if (other.id() != null)
+				return false;
+		} else if (!id.equals(other.id()))
+			return false;
+		return true;
 	}
 }

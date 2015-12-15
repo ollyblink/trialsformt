@@ -13,27 +13,13 @@ import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {
 
-	// DHT access
-	/**
-	 * to store the data for each key produced by this peer
-	 * 
-	 * @param task
-	 * @param key
-	 * @param value
-	 */
-	public void addTaskData(Task task, Object key, Object value);
-
-	/**
-	 * to store the keys produced for this task by this peer
-	 * 
-	 * @param task
-	 * @param key
-	 */
+	// DHT access 
+	public void addTaskData(Task task, Object key, Object value); 
 	public void addTaskKey(Task task, Object key);
 
-	public void addProcedureKey(Job job, Object key);
+	public void addProcedureOverallKey(Job job, Object key);
 
-	public void addProcedureTaskPeerDomain(Job job, Object key, Tuple<PeerAddress, Integer> selectedExecutor);
+	public void addProcedureDataProviderDomain(Job job, Object key, Tuple<PeerAddress, Integer> selectedExecutor);
 
 	public void getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Multimap<Object, Object> taskData);
 
