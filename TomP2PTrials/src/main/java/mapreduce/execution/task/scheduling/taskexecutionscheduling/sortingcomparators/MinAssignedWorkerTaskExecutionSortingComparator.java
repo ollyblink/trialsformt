@@ -3,6 +3,7 @@ package mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcompa
 import java.util.Comparator;
 
 import mapreduce.execution.task.Task;
+import mapreduce.execution.task.Tasks;
 
 public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparator<Task> {
 
@@ -15,22 +16,22 @@ public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparat
 		} else if (t1.isFinished() && !t2.isFinished()) {
 			return 1;
 		} else {
-			int t1Finished = t1.totalNumberOfFinishedExecutions();
-			int t2Finished = t2.totalNumberOfFinishedExecutions();
+			int t1Finished = Tasks.totalNumberOfFinishedExecutions(t1);
+			int t2Finished = Tasks.totalNumberOfFinishedExecutions(t2);
 			if (t1Finished > t2Finished) {
 				return 1;
 			} else if (t1Finished < t2Finished) {
 				return -1;
 			} else {
-				int t1differentFinished = t1.numberOfDifferentPeersExecutingTask();
-				int t2differentFinished = t2.numberOfDifferentPeersExecutingTask();
+				int t1differentFinished = Tasks.numberOfDifferentPeersExecutingTask(t1);
+				int t2differentFinished = Tasks.numberOfDifferentPeersExecutingTask(t2);
 				if (t1differentFinished > t2differentFinished) {
 					return 1;
 				} else if (t1differentFinished < t2differentFinished) {
 					return -1;
 				} else {
-					int t1Executing = t1.totalNumberOfCurrentExecutions();
-					int t2Executing = t2.totalNumberOfCurrentExecutions();
+					int t1Executing = Tasks.totalNumberOfCurrentExecutions(t1);
+					int t2Executing = Tasks.totalNumberOfCurrentExecutions(t2);
 					if (t1Executing > t2Executing) {
 						return 1;
 					} else if (t1Executing < t2Executing) {

@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.Scanner;
 
+import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
@@ -145,9 +146,9 @@ public class Example {
 		PeerDHT[] peers = new PeerDHT[nr];
 		for (int i = 0; i < nr; i++) {
 			if (i == 0) {
-				peers[0] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).broadcastHandler(bcH).start()).start();
+				peers[0] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).broadcastHandler(bcH).bindings(new Bindings().addInterface("wlan2")).start()).start();
 			} else {
-				peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).masterPeer(peers[0].peer()).start()).start();
+				peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).bindings(new Bindings().addInterface("wlan2")).masterPeer(peers[0].peer()).start()).start();
 			}
 		}
 		return peers;

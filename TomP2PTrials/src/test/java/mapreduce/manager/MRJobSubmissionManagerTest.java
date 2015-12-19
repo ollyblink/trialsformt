@@ -13,11 +13,11 @@ import com.google.common.collect.Multimap;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.DHTUtils;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
+import mapreduce.utils.MaxFileSizeFileSplitter;
 
 public class MRJobSubmissionManagerTest {
 

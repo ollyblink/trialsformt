@@ -21,7 +21,6 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.tasksplitting.ITaskSplitter;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
 import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
@@ -29,6 +28,7 @@ import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.FileUtils;
+import mapreduce.utils.MaxFileSizeFileSplitter;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -64,7 +64,7 @@ public class MRJobExecutorMessageConsumerTest {
 	@Test
 	public void testHandleReceivedJob() {
 		testMessageConsumer.jobs().clear();
-		Job job = Job.newInstance("TEST");
+		Job job = Job.create("TEST");
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
@@ -81,7 +81,7 @@ public class MRJobExecutorMessageConsumerTest {
 			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
 		}
 
-		Job job = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).inputPath(inputPath).maxFileSize(FileSize.KILO_BYTE.value())
+		Job job = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).inputPath(inputPath).maxFileSize(FileSize.KILO_BYTE.value())
 				.maxNrOfFinishedWorkersPerTask(5);
 
 		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
@@ -137,7 +137,7 @@ public class MRJobExecutorMessageConsumerTest {
 		long megaByte = FileSize.MEGA_BYTE.value();
 
 		int maxNumberOfFinishedPeers = 5;
-		Job job = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+		Job job = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(megaByte);
 
 		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
@@ -161,7 +161,7 @@ public class MRJobExecutorMessageConsumerTest {
 			assertEquals(BCMessageStatus.FINISHED_TASK, task.statiForPeer(task.allAssignedPeers().get(1)).get(0));
 		}
 		//
-		Job jobCopy = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+		Job jobCopy = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(megaByte);
 		Field idField = jobCopy.getClass().getDeclaredField("id");
 		idField.setAccessible(true);
@@ -207,7 +207,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		testMessageConsumer.updateJob(jobCopy, peer2);
 
-		Job jobCopy2 = Job.newInstance("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
+		Job jobCopy2 = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(megaByte);
 		// Field idField = jobCopy2.getClass().getDeclaredField("id");
 		// idField.setAccessible(true);

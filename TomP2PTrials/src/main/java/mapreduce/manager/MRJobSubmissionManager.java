@@ -65,20 +65,23 @@ public class MRJobSubmissionManager {
 			try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
 				String line = null;
 				while ((line = reader.readLine()) != null) {
-					int dataCounter = 0;
-					String taskKey = keyfilePath + "_" + dataCounter;
+					int domainCounter = 0;
+					String taskKey = keyfilePath + "_" + domainCounter;
 					String value = null;
-					while ((value = taskDataComposer.append(line)) == null) {
-
+					if ((value = taskDataComposer.append(line)) != null) {
+						int taskDataSubmittedIndexToSet = -1;
+						synchronized (taskDataSubmitted) {
+							taskDataSubmittedIndexToSet = taskDataSubmitted.size();// just convenience 'cos I'm gonna add the next boolean at this
+																					// position
+							taskDataSubmitted.add(false);
+						}
+						if (value != null) {
+							Task task = Task.newInstance(taskKey, job.id()).finalDataLocation(Tuple.create(dhtConnectionProvider.peerAddress(), 0));
+					 
+							dhtConnectionProvider.addData(job, task, value, taskDataSubmitted, taskDataSubmittedIndexToSet); // Do everything in here!!!
+						}
+						++domainCounter;
 					}
-					if (value != null) {
-						Task task = Task.newInstance(taskKey, job.id());
-						dhtConnectionProvider.addTaskData(task, task.id(), value, taskDataSubmitted, index); // Do everything in here!!!
-					}
-
-					// dhtConnectionProvider.addProcedureDataProviderDomain(job, task.id(), Tuple.create(dhtConnectionProvider().peerAddress(), 0));
-
-					++dataCounter;
 				}
 			} catch (IOException x) {
 				System.err.format("IOException: %s%n", x);
@@ -88,9 +91,8 @@ public class MRJobSubmissionManager {
 			try {
 				Thread.sleep(100);// Needs to sleep, because job can only be broadcasted once all data is available
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} 
+			}
 		}
 		dhtConnectionProvider.broadcastNewJob(job);
 

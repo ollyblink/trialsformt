@@ -11,10 +11,10 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.tasksplitting.ITaskSplitter;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.FileUtils;
+import mapreduce.utils.MaxFileSizeFileSplitter;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -26,7 +26,7 @@ public class TestUtils {
 			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
 		}
 		int maxNumberOfFinishedPeers = 3;
-		Job job = Job.newInstance("ME").nextProcedure(procedure).inputPath(inputPath).maxFileSize(FileSize.SIXTY_FOUR_KILO_BYTE.value())
+		Job job = Job.create("ME").nextProcedure(procedure).inputPath(inputPath).maxFileSize(FileSize.SIXTY_FOUR_KILO_BYTES.value())
 				.maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 
 		MaxFileSizeFileSplitter splitter = MaxFileSizeFileSplitter.newInstance();
@@ -45,8 +45,8 @@ public class TestUtils {
 			pAds.add(new PeerAddress(new Number160(i)));
 		}
 		int maxNumberOfFinishedPeers = 3;
-		Job job = Job.newInstance("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
-				.maxFileSize(FileSize.EIGHT_KILO_BYTE.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
+		Job job = Job.create("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
+				.maxFileSize(FileSize.EIGHT_KILO_BYTES.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
 		splitter.split(job);
 
@@ -86,8 +86,8 @@ public class TestUtils {
 			pAds.add(new PeerAddress(new Number160(i)));
 		}
 		int maxNumberOfFinishedPeers = 5;
-		Job job = Job.newInstance("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
-				.maxFileSize(2 * FileSize.EIGHT_KILO_BYTE.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
+		Job job = Job.create("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
+				.maxFileSize(2 * FileSize.EIGHT_KILO_BYTES.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
 		splitter.split(job);
 
@@ -119,8 +119,8 @@ public class TestUtils {
 		}
 
 		int maxNumberOfFinishedPeers = 10;
-		Job job = Job.newInstance("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
-				.maxFileSize(2 * FileSize.EIGHT_KILO_BYTE.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
+		Job job = Job.create("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
+				.maxFileSize(2 * FileSize.EIGHT_KILO_BYTES.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
 		splitter.split(job);
 
@@ -149,8 +149,8 @@ public class TestUtils {
 			pAds.add(new PeerAddress(new Number160(i)));
 		}
 		int maxNumberOfFinishedPeers = 3;
-		Job job = Job.newInstance("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
-				.maxFileSize(2 * FileSize.EIGHT_KILO_BYTE.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
+		Job job = Job.create("ME").nextProcedure(NullMapReduceProcedure.newInstance()).inputPath(inputPath)
+				.maxFileSize(2 * FileSize.EIGHT_KILO_BYTES.value()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
 		splitter.split(job);
 

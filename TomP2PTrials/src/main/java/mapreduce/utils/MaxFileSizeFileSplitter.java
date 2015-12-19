@@ -1,4 +1,4 @@
-package mapreduce.execution.task.tasksplitting;
+package mapreduce.utils;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -13,13 +13,10 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import mapreduce.utils.FileSize;
-import mapreduce.utils.FileUtils;
-
 public enum MaxFileSizeFileSplitter {
 	INSTANCE;
 	// private static Logger logger = LoggerFactory.getLogger(MaxFileSizeTaskSplitter.class);
-	private FileSize maxFileSize = FileSize.THIRTY_TWO_KILO_BYTE;
+	private FileSize maxFileSize = FileSize.THIRTY_TWO_KILO_BYTES;
 	private static final String DEFAULT_CHARSET = "UTF-8";
 	private static final String TEMP_FOLDER_NAME = "tmp";
 	private String fileEncoding = DEFAULT_CHARSET;

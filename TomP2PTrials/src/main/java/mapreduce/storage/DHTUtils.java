@@ -172,7 +172,7 @@ public class DHTUtils {
 		}
 	}
 
-	public void getKD(String keyString, Collection<Object> valueCollector, String domainString, boolean asList, boolean awaitUninterruptibly) {
+	public void getKD(String keyString, String domainString, boolean awaitUninterruptibly, BaseFutureListener<FutureGet> listener) {
 		Number160 domainHash = Number160.createHash(domainString);
 		Number160 keyHash = Number160.createHash(keyString);
 
@@ -182,46 +182,7 @@ public class DHTUtils {
 		if (awaitUninterruptibly) {
 			getFuture.awaitUninterruptibly();
 		}
-		getFuture.addListener(new BaseFutureListener<FutureGet>() {
-
-			@Override
-			public void operationComplete(FutureGet future) throws Exception {
-				if (future.isSuccess()) {
-					try {
-						if (getFuture.dataMap() != null) {
-							for (Number640 n : getFuture.dataMap().keySet()) {
-								Object valueObject = null;
-								if (asList) {
-									Value value = (Value) getFuture.dataMap().get(n).object();
-									valueObject = value.value();
-								} else {
-									valueObject = getFuture.dataMap().get(n).object();
-								}
-								synchronized (valueCollector) {
-									valueCollector.add(valueObject);
-									logger.info("getKVD: Successfully retrieved value for <K, Domain>: <" + keyString + ", " + domainString + ">: "
-											+ valueObject);
-								}
-							}
-						} else {
-							logger.warn("getKVD: Value for <K, Domain>: <" + keyString + ", " + domainString + "> is null!");
-						}
-					} catch (ClassNotFoundException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				} else {
-					logger.error("getKVD: Failed trying to retrieve value for <K, Domain>: <" + keyString + ", " + domainString + ">");
-				}
-			}
-
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				logger.debug("getKVD: Exception caught", t);
-
-			}
-		});
+		getFuture.addListener(listener);
 
 	}
 

@@ -22,7 +22,7 @@ public class Task implements Serializable, Comparable<Task> {
 	 */
 	private static final long serialVersionUID = 5374181867289486399L;
 
-	private String id;
+	private Object key;
 	private String jobId;
 	private boolean isFinished;
 
@@ -30,18 +30,18 @@ public class Task implements Serializable, Comparable<Task> {
 	private ListMultimap<Number160, Tuple<PeerAddress, Integer>> taskResults;
 	private ListMultimap<Tuple<PeerAddress, Integer>, Number160> reverseTaskResults;
 
-	// // CONSIDER ONLY STORING THEIR HASH REPRESENTATION FOR THE DOMAIN AND OTHER KEYS
-	// /** Data location to retrieve the data from for this task */
-	// private Tuple<PeerAddress, Integer> initialDataLocation;
 	/**
 	 * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
 	 * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
 	 */
 	private Tuple<PeerAddress, Integer> finalDataLocation;
+	/**
+	 * Rejected data locations that need to be removed
+	 */
 	private List<Tuple<PeerAddress, Integer>> dataToRemove;
 
-	private Task(String id, String jobId) {
-		this.id = id;
+	private Task(Object key, String jobId) {
+		this.key = key;
 		this.jobId = jobId;
 		ArrayListMultimap<PeerAddress, BCMessageStatus> tmp = ArrayListMultimap.create();
 		this.executingPeers = Multimaps.synchronizedListMultimap(tmp);
@@ -51,15 +51,16 @@ public class Task implements Serializable, Comparable<Task> {
 		this.reverseTaskResults = Multimaps.synchronizedListMultimap(tmp3);
 		this.isFinished = false;
 		this.finalDataLocation = null;
+		// this.finalTaskExecutorDomains = Collections.synchronizedList(new ArrayList<>());
 		this.dataToRemove = Collections.synchronizedList(new ArrayList<>());
 	}
 
-	public static Task newInstance(String id, String jobId) {
-		return new Task(id, jobId);
+	public static Task newInstance(Object key, String jobId) {
+		return new Task(key, jobId);
 	}
 
 	public String id() {
-		return id;
+		return key.toString();
 	}
 
 	public String jobId() {
@@ -102,7 +103,7 @@ public class Task implements Serializable, Comparable<Task> {
 
 	@Override
 	public String toString() {
-		return "Task [id=" + id + ", jobId=" + jobId + ", isFinished=" + isFinished + ", executingPeers=" + executingPeers + ", taskResults="
+		return "Task [id=" + key + ", jobId=" + jobId + ", isFinished=" + isFinished + ", executingPeers=" + executingPeers + ", taskResults="
 				+ taskResults + ", reverseTaskResults=" + reverseTaskResults + ", finalDataLocation=" + finalDataLocation + ", dataToRemove="
 				+ dataToRemove + "]";
 	}
@@ -111,7 +112,7 @@ public class Task implements Serializable, Comparable<Task> {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((id() == null) ? 0 : id().hashCode());
 		return result;
 	}
 
@@ -124,17 +125,17 @@ public class Task implements Serializable, Comparable<Task> {
 		// if (getClass() != obj.getClass())
 		// return false;
 		Task other = (Task) obj;
-		if (id == null) {
+		if (id() == null) {
 			if (other.id() != null)
 				return false;
-		} else if (!id.equals(other.id()))
+		} else if (!id().equals(other.id()))
 			return false;
 		return true;
 	}
 
 	@Override
 	public int compareTo(Task o) {
-		return this.id.compareTo(o.id);
+		return this.id().compareTo(o.id().toString());
 	}
 
 }

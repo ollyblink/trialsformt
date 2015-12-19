@@ -18,8 +18,8 @@ import org.junit.Test;
 import mapreduce.execution.computation.standardprocedures.NullMapReduceProcedure;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
 import mapreduce.utils.FileUtils;
+import mapreduce.utils.MaxFileSizeFileSplitter;
 
 public class MaxFileSizeTaskSplitterTest {
 
@@ -40,7 +40,7 @@ public class MaxFileSizeTaskSplitterTest {
 		}
 		maxFileSize = 1024 * 1024;
 		System.out.println(inputPath);
-		job = Job.newInstance("ME").inputPath(inputPath).maxFileSize(maxFileSize).nextProcedure(NullMapReduceProcedure.newInstance());
+		job = Job.create("ME").inputPath(inputPath).maxFileSize(maxFileSize).nextProcedure(NullMapReduceProcedure.newInstance());
 		dataSplitter = MaxFileSizeFileSplitter.newInstance();
 
 		originalFileAllLines = readFile(inputPath + "/trial.txt");

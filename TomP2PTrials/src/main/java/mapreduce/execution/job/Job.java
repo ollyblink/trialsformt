@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
 
@@ -19,14 +19,12 @@ public class Job implements Serializable {
 	 */
 	private static final long serialVersionUID = 1152022246679324578L;
 
-	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTE;
+	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
 
 	private String id;
 	private String jobSubmitterID;
 
-	private List<IMapReduceProcedure> procedures;
-	private List<Task> tasks;
-
+	private List<ProcedureInformation> procedures;
 	private int currentProcedureIndex;
 
 	private FileSize maxFileSize = DEFAULT_FILE_SIZE;
@@ -40,7 +38,7 @@ public class Job implements Serializable {
 		this.procedures = Collections.synchronizedList(new ArrayList<>());
 	}
 
-	public static Job newInstance(String jobSubmitterID) {
+	public static Job create(String jobSubmitterID) {
 		return new Job(jobSubmitterID);
 	}
 
@@ -52,7 +50,7 @@ public class Job implements Serializable {
 		return this.jobSubmitterID;
 	}
 
-	public IMapReduceProcedure procedure(int index) {
+	public ProcedureInformation procedure(int index) {
 		try {
 			return procedures.get(index);
 		} catch (Exception e) {
@@ -61,15 +59,17 @@ public class Job implements Serializable {
 	}
 
 	public Job procedure(IMapReduceProcedure procedure) {
-		this.procedures.add(procedure);
+		this.procedures.add(ProcedureInformation.create(procedure));
 		return this;
 	}
 
 	public int maxNrOfFinishedWorkers() {
-		if (this.maxNrOfFinishedWorkers == 0) {
-			this.maxNrOfFinishedWorkers = 1;
-		}
 		return maxNrOfFinishedWorkers;
+	}
+
+	public Job maxNrOfFinishedWorkers(int maxNrOfFinishedWorkers) {
+		this.maxNrOfFinishedWorkers = maxNrOfFinishedWorkers;
+		return this;
 	}
 
 	public int currentProcedureIndex() {

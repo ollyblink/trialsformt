@@ -14,7 +14,7 @@ public class MaxFileSizeTaskDataComposerTest {
 	@Test
 	public void test() {
 		MaxFileSizeTaskDataComposer instance = MaxFileSizeTaskDataComposer.create();
-		instance.maxFileSize(FileSize.THIRTY_TWO_KILO_BYTE);
+		instance.maxFileSize(FileSize.THIRTY_TWO_KILO_BYTES);
 		instance.fileEncoding("UTF-8");
 		instance.splitValue("\n");
 		String value = null;
@@ -30,7 +30,7 @@ public class MaxFileSizeTaskDataComposerTest {
 		}
 		assertEquals(compare, value);
 		assertEquals(counter * (toAdd + "\n").getBytes(Charset.forName("UTF-8")).length, value.getBytes(Charset.forName("UTF-8")).length);
-		assertTrue(FileSize.THIRTY_TWO_KILO_BYTE.value() >= value.getBytes(Charset.forName("UTF-8")).length);
+		assertTrue(FileSize.THIRTY_TWO_KILO_BYTES.value() >= value.getBytes(Charset.forName("UTF-8")).length);
 	}
 
 }

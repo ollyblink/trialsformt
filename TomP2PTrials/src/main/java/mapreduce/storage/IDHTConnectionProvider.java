@@ -14,27 +14,28 @@ import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {
 
-	public void collectProcedureKeys(Job job, List<Object> keyCollector);
-	// DHT access 
-	public void addTaskData(Task task, Object key, Object value); 
-	
-	public void addTaskKey(Task task, Object key);
+	// public void addData(Job job, String taskId, String taskKey, String value, List<Boolean> taskDataSubmitted, int index);
 
-	public void addProcedureOverallKey(Job job, Object key);
+	/**
+	 * 
+	 * @param job
+	 *            needed for the job domain to put this data into
+	 * @param taskKey
+	 *            defines a task's initial key
+	 * @param value
+	 *            the value to be stored for that task key
+	 * @param taskDataSubmitted
+	 *            contains boolean values for each data item that is initially set to false and will be flipped to true when all data items were added
+	 * @param index
+	 *            taskDataSubmitted.set(true, index), when everything completed, such that the MRJobSubmissionManager can continue working
+	 */
+	public void addData(Job job, Task task, String value, List<Boolean> taskDataSubmitted, int taskDataSubmittedIndexToSet);
 
-	public void addProcedureDataProviderDomain(Job job, Object key, Tuple<PeerAddress, Integer> selectedExecutor);
+	public void createTasks(Job job, List<Task> procedureTasks, long timeToLive);
 
-	public void getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Multimap<Object, Object> taskData);
+	public void getTaskData(Job job, Task task, List<Object> dataForTask);
 
-	public void getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Set<Object> keysCollector);
-
-	public void getProcedureKeys(Job job, Set<Object> keysCollector);
-
-	public void getProcedureTaskPeerDomains(Job job, Object key, Set<Object> domainsCollector);
-
-	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
-
-	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
+	// DHT access
 
 	// removeProcedureKey, removeProcedureTaskPeerDomain,
 

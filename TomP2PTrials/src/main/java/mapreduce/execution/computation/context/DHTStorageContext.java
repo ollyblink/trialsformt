@@ -44,7 +44,7 @@ public class DHTStorageContext implements IContext {
 			return;
 		}
 
-		this.dhtConnectionProvider.addTaskData(task, keyOut, valueOut);
+//		this.dhtConnectionProvider.addTaskData(task, keyOut, valueOut);
 		// if (this.taskResultComparator != null) {
 		// taskResultComparator.enableSpeedUp(this.dhtConnectionProvider, task, keyOut, valueOut, awaitOnAdd);
 		// }

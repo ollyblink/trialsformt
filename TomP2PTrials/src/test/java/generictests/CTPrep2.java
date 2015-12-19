@@ -1,4 +1,5 @@
 package generictests;
+
 import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -21,7 +22,7 @@ import net.tomp2p.storage.Data;
 public class CTPrep2 {
 	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
 		PeerDHT[] peers = null;
-		int nrOfPeers = 100;
+		int nrOfPeers = 4;
 		int port = 4001;
 
 		// final String myPhoneNumber = "079 666 40 20";
@@ -32,29 +33,30 @@ public class CTPrep2 {
 
 		Thread.sleep(1000);
 		final PeerDHT master = peers[0];
-		Set<String> keys = new TreeSet<String>();
+		Set<String> domains = new TreeSet<String>();
 
 		try {
 			Random RND = new Random();
 			for (int i = 0; i < 5; ++i) {
 				String domain = "job_1_procedure_1_task_1_executor_1_statusindex_" + ((i + 1) % 2);
- 
-				FuturePut futurePut = peers[RND.nextInt(100)].add(Number160.createHash("Mapper")).data(new Data(new Value("Olly")))
+
+				FuturePut futurePut = master.add(Number160.createHash("Mapper")).data(new Data(new Value("Olly")))
 						.domainKey(Number160.createHash(domain))
 						// .versionKey(Number160.createHash(version))
 						.start();
-//				System.err.println("Olly of " + domain);
 				futurePut.addListener(new BaseFutureListener<FuturePut>() {
 
 					@Override
 					public void operationComplete(FuturePut future) throws Exception {
 						if (future.isSuccess()) {
-							System.err.println("send message mapper with bc");
-							TreeMap<Number640, Data> treeMap = new TreeMap<Number640, Data>();
-							treeMap.put(new Number640(Number160.createHash("Mapper"), Number160.createHash("Mapper"), Number160.createHash("Mapper"),
-									Number160.createHash("Mapper")), new Data("added some mapper to the dht"));
-							master.peer().broadcast(Number160.createHash("Mapper")).dataMap(treeMap).start();
-
+							 System.err.println("send message mapper with bc");
+							 TreeMap<Number640, Data> treeMap = new TreeMap<Number640, Data>();
+							 treeMap.put(new Number640(Number160.createHash("Mapper"), Number160.createHash("Mapper"),
+							 Number160.createHash("Mapper"),
+							 Number160.createHash("Mapper")), new Data("added some mapper to the dht"));
+							 master.peer().broadcast(Number160.createHash("Mapper")).dataMap(treeMap).start();
+							 System.err.println("Put success");
+							domains.add(domain);
 						}
 					}
 
@@ -66,35 +68,50 @@ public class CTPrep2 {
 			}
 			// Thread.sleep(500);
 			// }
-
+			System.err.println("Sleep");
 			Thread.sleep(2000);
-			// for (String key : keys) {
-			// System.err.println("b-(" + key + ")");
-			FutureGet futureGet = master.get(Number160.createHash("Mapper")).domainKey(Number160.createHash("job_1_procedure_1_task_1_executor_1_statusindex_1")).all().start();
-			futureGet.addListener(new BaseFutureListener<FutureGet>() {
-
-				@Override
-				public void operationComplete(FutureGet future) throws Exception {
-
-					if (future.isSuccess()) {
-						Set<Entry<Number640, Data>> entrySet = future.dataMap().entrySet();
-						System.out.println("Size: "+entrySet.size());
-						for (Entry<Number640, Data> e : entrySet) {
-							System.out.println(e.getValue().object());
-						}
-					} else {
-						System.err.println("No success");
-					}
-				}
-
-				@Override
-				public void exceptionCaught(Throwable t) throws Exception {
-					t.printStackTrace();
-				}
-			});
+			// for (int i = 0; i < 5; ++i) {
+			// String domain = "job_1_procedure_1_task_1_executor_1_statusindex_" + ((i + 1) % 2);
+			// System.err.println(master.storageLayer().get());
+			// // System.err.println("Contains " + domain + "? " + master.storageLayer().contains(
+			// // new Number640(new Number320(Number160.createHash("Mapper"), Number160.createHash(domain)), Number160.ZERO, Number160.ZERO)));
 			// }
 
-		} finally {
+			for (String domain : domains) {
+				for (PeerDHT p : peers) {
+					// System.err.println(master.storageLayer().get());
+					Number640 key = new Number640(Number160.createHash("Mapper"), Number160.createHash(domain), Number160.ZERO, Number160.ZERO);
+					System.err.println("Contains " + domain + "? " + p.storageLayer().
+							get(key, key,10,true));
+
+				}
+				FutureGet futureGet = master.get(Number160.createHash("Mapper")).domainKey(Number160.createHash(domain)).all().start();
+				futureGet.addListener(new BaseFutureListener<FutureGet>() {
+
+					@Override
+					public void operationComplete(FutureGet future) throws Exception {
+
+						if (future.isSuccess()) {
+							Set<Entry<Number640, Data>> entrySet = future.dataMap().entrySet();
+							System.out.println("Size: " + entrySet.size());
+							for (Entry<Number640, Data> e : entrySet) {
+								System.out.println(domain + " " + e.getValue().object());
+							}
+						} else {
+							System.err.println("No success");
+						}
+					}
+
+					@Override
+					public void exceptionCaught(Throwable t) throws Exception {
+						t.printStackTrace();
+					}
+				});
+			}
+
+		} finally
+
+		{
 			try {
 				Thread.sleep(10000);
 			} catch (InterruptedException e) {
@@ -102,6 +119,7 @@ public class CTPrep2 {
 			}
 			master.shutdown();
 		}
+
 	}
 
 	private static void trials(PeerDHT[] peers, int nrOfPeers, final String myName, Random random, int firstIndex) throws IOException {

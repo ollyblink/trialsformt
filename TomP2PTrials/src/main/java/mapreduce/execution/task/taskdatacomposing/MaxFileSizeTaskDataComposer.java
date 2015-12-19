@@ -5,7 +5,7 @@ import java.nio.charset.Charset;
 import mapreduce.utils.FileSize;
 
 public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
-	private FileSize maxFileSize = FileSize.THIRTY_TWO_KILO_BYTE;
+	private FileSize maxFileSize = FileSize.THIRTY_TWO_KILO_BYTES;
 	private String fileEncoding = "UTF-8";
 	private String splitValue = "\n";
 
