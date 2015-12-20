@@ -58,7 +58,7 @@ public class Job implements Serializable {
 		}
 	}
 
-	public Job procedure(IMapReduceProcedure procedure) {
+	public Job nextProcedure(IMapReduceProcedure procedure) {
 		this.procedures.add(ProcedureInformation.create(procedure));
 		return this;
 	}

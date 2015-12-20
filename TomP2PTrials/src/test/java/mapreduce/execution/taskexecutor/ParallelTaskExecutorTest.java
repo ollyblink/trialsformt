@@ -36,7 +36,7 @@ public class ParallelTaskExecutorTest {
 	public void test() throws InterruptedException {
 		String text1 = "this is a text a text is a this";
 		String text2 = "if this is this and that is that , makes this that this ?";
-		Task task = Task.create("1").procedure(WordCountMapper.newInstance());
+		Task task = Task.create("1").nextProcedure(WordCountMapper.newInstance());
 		Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
 		dataForTask.put("text1", text1);
 		dataForTask.put("text2", text2);
@@ -66,7 +66,7 @@ public class ParallelTaskExecutorTest {
 	public void testParallelism() throws InterruptedException {
 		// List<Object> copyList = new ArrayList<>();
 		ITaskExecutor executor = ParallelTaskExecutor.newInstance();
-		final Task task = Task.create("1").procedure(WordCountMapper.newInstance());
+		final Task task = Task.create("1").nextProcedure(WordCountMapper.newInstance());
 
 		ArrayListMultimap<Object, Object> tmp = ArrayListMultimap.create();
 		ListMultimap<Object, Object> dataForTask = Multimaps.synchronizedListMultimap(tmp);

@@ -24,10 +24,10 @@ public class DesignIdeaJobSubmitter {
 		int maxNumberOfFinishedPeers = 3;
 		Job job = Job
 				.create(submitter.id())
-				.procedure(WordCountMapper.newInstance())
-				.procedure(WordCountReducer.newInstance())
 				.fileInputFolderPath(fileInputFolderPath)
 				.maxFileSize(FileSize.THIRTY_TWO_KILO_BYTES)
+				.nextProcedure(WordCountMapper.newInstance())
+				.nextProcedure(WordCountReducer.newInstance())
 				.maxNrOfFinishedWorkers(maxNumberOfFinishedPeers);
 
 		submitter.submit(job);

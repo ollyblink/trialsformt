@@ -5,7 +5,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
+import mapreduce.execution.task.TaskResult;
+import mapreduce.execution.task.Tasks;
 
 public class ProcedureInformation implements Serializable {
 
@@ -54,6 +57,10 @@ public class ProcedureInformation implements Serializable {
 		return this;
 	}
 
+	public ProcedureInformation tasks(List<Task> tasks) {
+		this.tasks.addAll(tasks);
+		return this;
+	}
 	// public ProcedureInformation nrOfProcedureDomains(long nrOfProcedureDomains) {
 	// this.nrOfProcedureDomains = nrOfProcedureDomains;
 	// return this;
@@ -88,4 +95,14 @@ public class ProcedureInformation implements Serializable {
 		return true;
 	}
 
+	public void updateTaskExecutionStatus(String taskId, TaskResult toUpdate, int maxNrOfFinishedWorkers) {
+		if (tasks != null) {
+			for (Task task : tasks) {
+				if (task.id().equals(taskId)) {
+					Tasks.updateStati(task, toUpdate, maxNrOfFinishedWorkers);
+					break;
+				}
+			}
+		}
+	}
 }

@@ -22,16 +22,7 @@ import net.tomp2p.peers.PeerAddress;
 public enum Jobs {
 	INSTANCE;
 
-	public void updateTaskExecutionStatus(List<Task> tasks, String taskId, TaskResult toUpdate, int maxNrOfFinishedWorkers) {
-		if (tasks != null) {
-			for (Task task : tasks) {
-				if (task.id().equals(taskId)) {
-					Tasks.updateStati(task, toUpdate, maxNrOfFinishedWorkers);
-					break;
-				}
-			}
-		}
-	}
+
 
 	public Multimap<Task, Tuple<PeerAddress, Integer>> taskDataToRemove(List<Task> tasks, int currentProcedureIndex) {
 		Multimap<Task, Tuple<PeerAddress, Integer>> toRemove = ArrayListMultimap.create();

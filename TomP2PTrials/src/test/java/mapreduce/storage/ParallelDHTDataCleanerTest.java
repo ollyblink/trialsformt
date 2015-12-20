@@ -34,8 +34,8 @@ public class ParallelDHTDataCleanerTest {
 
 		connection2 = DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort)).connect();
 
-		Task task = Task.create("1").procedure(procedure);
-		Task task2 = Task.create("2").procedure(procedure);
+		Task task = Task.newInstance("1", "0").nextProcedure(procedure);
+		Task task2 = Task.newInstance("2", "0").nextProcedure(procedure);
 
 		String[] data = "world hello world hello world world this is this is world hello world this".split(" ");
 		dataToRemove.put(task, Tuple.create(connection.peerAddress(), -1));

@@ -29,8 +29,7 @@ public class TestUtils {
 		Job job = Job.create("ME").nextProcedure(procedure).inputPath(inputPath).maxFileSize(FileSize.SIXTY_FOUR_KILO_BYTES.value())
 				.maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 
-		MaxFileSizeFileSplitter splitter = MaxFileSizeFileSplitter.newInstance();
-		splitter.split(job);
+		MaxFileSizeFileSplitter.INSTANCE.split();
 		return job;
 	}
 
