@@ -15,6 +15,8 @@ public interface IMessageConsumer extends Runnable {
 
 	public void handleReceivedJob(Job job);
 
+	public void handleFailedJob(Job job, PeerAddress sender);
+
 	public void handleTaskExecutionStatusUpdate(Task task, TaskResult toUpdate);
 
 	public void updateJob(Job job, PeerAddress sender);

@@ -31,7 +31,7 @@ public class MRJobSubmissionManagerTest {
 		jobSubmissionManager = MRJobSubmissionManager.newInstance(dhtConnectionProvider);
 		Job job = TestUtils.testJobWO(WordCountMapper.newInstance());
 
-		jobSubmissionManager.submit(job, true);
+		jobSubmissionManager.submit(job);
 
 		// Multimap<Task, Comparable> keysForEachTask = splitter.keysForEachTask();
 		// for (Task task : keysForEachTask.keySet()) {

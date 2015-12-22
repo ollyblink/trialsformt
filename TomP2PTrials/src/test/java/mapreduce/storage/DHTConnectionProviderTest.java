@@ -68,7 +68,7 @@ public class DHTConnectionProviderTest {
 
 		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
 		Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
-		connectionProviders.get(getter).getTaskData(task, location, dataForTask);
+		connectionProviders.get(getter).get(task, location, dataForTask);
 		System.err.println(dataForTask.keySet().size());
 
 		assertTrue(dataForTask.keySet().size() == 3);
@@ -107,7 +107,7 @@ public class DHTConnectionProviderTest {
 		// Thread.sleep(1000);
 		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
 		Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
-		connectionProviders.get(getter).getTaskData(task, location, dataForTask);
+		connectionProviders.get(getter).get(task, location, dataForTask);
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -152,7 +152,7 @@ public class DHTConnectionProviderTest {
 		}
 		// Thread.sleep(1000); ;
 		Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
-		connectionProviders.get(getter).getTaskData(task, Tuple.create(connectionProviders.get(putter).peerAddress(), -1), dataForTask);
+		connectionProviders.get(getter).get(task, Tuple.create(connectionProviders.get(putter).peerAddress(), -1), dataForTask);
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -198,7 +198,7 @@ public class DHTConnectionProviderTest {
 		Tuple<PeerAddress, Integer> location = Tuple.create(connectionProviders.get(putter).peerAddress(), -1);
 
 		Multimap<Object, Object> dataForTask = ArrayListMultimap.create();
-		connectionProviders.get(getter).getTaskData(task, location, dataForTask);
+		connectionProviders.get(getter).get(task, location, dataForTask);
 
 		System.err.println(dataForTask);
 		assertEquals(3, dataForTask.keySet().size());
@@ -219,7 +219,7 @@ public class DHTConnectionProviderTest {
 		connectionProviders.get(0).removeTaskResultsFor(task, location);
 
 		dataForTask.clear();
-		connectionProviders.get(getter).getTaskData(task, location, dataForTask);
+		connectionProviders.get(getter).get(task, location, dataForTask);
 		System.err.println(dataForTask);
 		assertEquals(0, dataForTask.keySet().size());
 		assertEquals(0, dataForTask.values().size());

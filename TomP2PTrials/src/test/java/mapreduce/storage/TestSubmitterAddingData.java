@@ -22,7 +22,7 @@ public class TestSubmitterAddingData {
 
 		int maxNumberOfFinishedPeers = 3;
 		Job job = Job.create(submitter.id()).nextProcedure(WordCountMapper.newInstance()).fileInputFolderPath(fileInputFolderPath)
-				.maxFileSize(FileSize.THIRTY_TWO_KILO_BYTES).maxNrOfFinishedWorkers(maxNumberOfFinishedPeers);
+				.maxFileSize(FileSize.THIRTY_TWO_KILO_BYTES).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 
 		submitter.submit(job);
 	}

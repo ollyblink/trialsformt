@@ -10,10 +10,8 @@ public interface ITaskScheduler {
 	 * Schedules the next task to execute according to a defined scheduling algorithm
 	 * 
 	 * @param tasksToSchedule
-	 * @param taskKeys
-	 * @param timeToLive
 	 * @return
 	 */
-	public Task schedule(List<Task> tasksToSchedule, long timeToLive);
+	public Task schedule(List<Task> tasksToSchedule);
 
 }

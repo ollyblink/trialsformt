@@ -22,6 +22,7 @@ public class Task implements Serializable, Comparable<Task> {
 	 */
 	private static final long serialVersionUID = 5374181867289486399L;
 
+	/** the task's key is also its ID */
 	private Object key;
 	private String jobId;
 	private boolean isFinished;

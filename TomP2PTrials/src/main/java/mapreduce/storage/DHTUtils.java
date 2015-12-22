@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -13,11 +12,12 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.manager.MRJobSubmissionManager;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.utils.DomainProvider;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.PortManager;
+import mapreduce.utils.Tuple;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -37,8 +37,6 @@ import net.tomp2p.storage.StorageDisk;
 
 public class DHTUtils {
 	private static final Logger logger = LoggerFactory.getLogger(DHTUtils.class);
-	private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
-	private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private PeerDHT peerDHT;
 	private String bootstrapIP;
 	private int bootstrapPort;
@@ -47,20 +45,6 @@ public class DHTUtils {
 	private MRBroadcastHandler broadcastHandler;
 	private String id;
 	private String storageFilePath;
-	/** How many times should the data be tried be added to the dht? */
-	private int nrOfAddTrials;
-	/** For how long should the job submitter wait until it declares the data adding to be failed? In milliseconds */
-	private long timeToLiveInMs;
-
-	public DHTUtils timeToLiveInMs(long timeToLiveInMs) {
-		this.timeToLiveInMs = timeToLiveInMs;
-		return this;
-	}
-
-	public DHTUtils nrOfAddTrials(int nrOfAddTrials) {
-		this.nrOfAddTrials = nrOfAddTrials;
-		return this;
-	}
 
 	private DHTUtils() {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
@@ -68,8 +52,7 @@ public class DHTUtils {
 	}
 
 	public static DHTUtils newInstance(String bootstrapIP, int bootstrapPort) {
-		return new DHTUtils().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort).port(PortManager.INSTANCE.generatePort())
-				.timeToLiveInMs(DEFAULT_TIME_TO_LIVE_IN_MS).nrOfAddTrials(DEFAULT_NUMBER_OF_ADD_TRIALS);
+		return new DHTUtils().bootstrapIP(bootstrapIP).bootstrapPort(bootstrapPort).port(PortManager.INSTANCE.generatePort());
 	}
 
 	/**
@@ -126,9 +109,10 @@ public class DHTUtils {
 		}
 	}
 
-	public void broadcastTask(Task task, IBCMessage message) {
+	public void broadcastTaskUpdate(Task task, IBCMessage message) {
 		try {
-			Number160 taskHash = Number160.createHash(task.id() + message.sender().toString() + message.status());
+			Number160 taskHash = Number160.createHash(DomainProvider.INSTANCE.executorTaskDomain(task,
+					Tuple.create(peerDHT.peerAddress(), task.executingPeers().get(peerDHT.peerAddress()).size() - 1)));
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(taskHash, taskHash, taskHash, taskHash), new Data(message));
 			peerDHT.peer().broadcast(taskHash).dataMap(dataMap).start();
@@ -139,7 +123,7 @@ public class DHTUtils {
 
 	public void broadcastJobUpdate(Job job, IBCMessage message) {
 		try {
-			Number160 jobHash = Number160.createHash(job.id() + message.sender().toString() + message.status());
+			Number160 jobHash = Number160.createHash(DomainProvider.INSTANCE.jobProcedureDomain(job));
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
 			peerDHT.peer().broadcast(jobHash).dataMap(dataMap).start();
@@ -148,8 +132,8 @@ public class DHTUtils {
 		}
 	}
 
-	public void addKVD(String keyString, Object value, String domainString, boolean asList, boolean awaitUninterruptibly,
-			BaseFutureListener<FuturePut> listener) {
+	public FuturePut addKVD(String keyString, Object value, String domainString, boolean asList) {
+		FuturePut futurePut = null;
 		try {
 			logger.info("addKVD: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain(" + domainString + ")");
 			Number160 keyHash = Number160.createHash(keyString);
@@ -159,17 +143,12 @@ public class DHTUtils {
 			}
 			Number160 domainHash = Number160.createHash(domainString);
 
-			FuturePut futurePut = this.peerDHT.add(keyHash).data(valueData).domainKey(domainHash).start();
+			futurePut = this.peerDHT.add(keyHash).data(valueData).domainKey(domainHash).start();
 
-			if (listener != null) {
-				futurePut.addListener(listener);
-			}
-			if (awaitUninterruptibly) {
-				futurePut.awaitUninterruptibly();
-			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		return futurePut;
 	}
 
 	public void getKD(String keyString, String domainString, boolean awaitUninterruptibly, BaseFutureListener<FutureGet> listener) {

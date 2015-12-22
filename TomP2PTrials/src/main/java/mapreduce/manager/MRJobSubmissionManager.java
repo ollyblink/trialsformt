@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -21,9 +20,15 @@ import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmitterMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.Futures;
 
 public class MRJobSubmissionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManager.class);
@@ -47,6 +52,9 @@ public class MRJobSubmissionManager {
 	}
 
 	/**
+	 * The idea is that for each key/value pair, a broadcast is done that a new task is available for a certain job. The tasks then can be pulled from
+	 * the DHT. If a submission fails here, the whole job is aborted because not the whole data could be sent (this is different from when a job
+	 * executor fails, as then the job simply is marked as failed, cleaned up, and may be pulled again).
 	 * 
 	 * @param job
 	 * @return
@@ -57,44 +65,81 @@ public class MRJobSubmissionManager {
 		List<String> keysFilePaths = new ArrayList<String>();
 
 		FileUtils.INSTANCE.getFiles(new File(job.fileInputFolderPath()), keysFilePaths);
-		List<Boolean> taskDataSubmitted = Collections.synchronizedList(new ArrayList<>());
+		List<Task> tasks = new ArrayList<>();
+		// Adding keys and data to task executor domain
 		for (String keyfilePath : keysFilePaths) {
 			Path file = Paths.get(keyfilePath);
 
 			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
+
 			try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
 				String line = null;
 				while ((line = reader.readLine()) != null) {
-					int domainCounter = 0;
-					String taskKey = keyfilePath + "_" + domainCounter;
-					String value = null;
-					if ((value = taskDataComposer.append(line)) != null) {
-						int taskDataSubmittedIndexToSet = -1;
-						synchronized (taskDataSubmitted) {
-							taskDataSubmittedIndexToSet = taskDataSubmitted.size();// just convenience 'cos I'm gonna add the next boolean at this
-																					// position
-							taskDataSubmitted.add(false);
+					String taskKey = keyfilePath;// + "_" + domainCounter;
+					String taskValue = line + "\n";
+					Task task = Task.newInstance(keyfilePath, job.id()).finalDataLocation(Tuple.create(dhtConnectionProvider.peerAddress(), 0));
+					String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, task.finalDataLocation());
+					tasks.add(task);
+					dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomain, true).addListener(new BaseFutureListener<FuturePut>() {
+
+						@Override
+						public void operationComplete(FuturePut future) throws Exception {
+							if (future.isSuccess()) {
+								String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
+								dhtConnectionProvider.add(task.id(), taskExecutorDomain, jobProcedureDomain, false)
+										.addListener(new BaseFutureListener<FuturePut>() {
+
+									@Override
+									public void operationComplete(FuturePut future) throws Exception {
+										if (future.isSuccess()) {
+											dhtConnectionProvider.add("PROCEDURE_KEYS", task.id(), jobProcedureDomain, false)
+													.addListener(new BaseFutureListener<FuturePut>() {
+
+												@Override
+												public void operationComplete(FuturePut future) throws Exception {
+													if (future.isSuccess()) {
+														dhtConnectionProvider.broadcastNewJob(job);
+													} else {
+														logger.warn(future.failedReason());
+														dhtConnectionProvider.broadcastJobFailed(job);
+													}
+												}
+
+												@Override
+												public void exceptionCaught(Throwable t) throws Exception {
+													logger.warn("Exception thrown", t);
+													dhtConnectionProvider.broadcastJobFailed(job);
+												}
+											});
+										} else {
+											logger.warn(future.failedReason());
+											dhtConnectionProvider.broadcastJobFailed(job);
+										}
+									}
+
+									@Override
+									public void exceptionCaught(Throwable t) throws Exception {
+										logger.warn("Exception thrown", t);
+										dhtConnectionProvider.broadcastJobFailed(job);
+									}
+								});
+							} else {
+								logger.warn(future.failedReason());
+								dhtConnectionProvider.broadcastJobFailed(job);
+							}
 						}
-						if (value != null) {
-							Task task = Task.newInstance(taskKey, job.id()).finalDataLocation(Tuple.create(dhtConnectionProvider.peerAddress(), 0));
-					 
-							dhtConnectionProvider.addData(job, task, value, taskDataSubmitted, taskDataSubmittedIndexToSet); // Do everything in here!!!
+
+						@Override
+						public void exceptionCaught(Throwable t) throws Exception {
+							logger.warn("Exception thrown", t);
+							dhtConnectionProvider.broadcastJobFailed(job);
 						}
-						++domainCounter;
-					}
+					});
 				}
 			} catch (IOException x) {
 				System.err.format("IOException: %s%n", x);
 			}
 		}
-		while (taskDataSubmitted.contains(false)) {
-			try {
-				Thread.sleep(100);// Needs to sleep, because job can only be broadcasted once all data is available
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		dhtConnectionProvider.broadcastNewJob(job);
 
 	}
 

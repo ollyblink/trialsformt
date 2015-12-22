@@ -84,7 +84,7 @@ public class MRJobExecutorMessageConsumerTest {
 		Job job = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).inputPath(inputPath).maxFileSize(FileSize.KILO_BYTE.value())
 				.maxNrOfFinishedWorkersPerTask(5);
 
-		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
+		ITaskSplitter splitter = MaxFileSizeFileSplitter.create();
 		splitter.split(job);
 		testMessageConsumer.handleReceivedJob(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
@@ -140,7 +140,7 @@ public class MRJobExecutorMessageConsumerTest {
 		Job job = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
 				.inputPath(inputPath).maxFileSize(megaByte);
 
-		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
+		ITaskSplitter splitter = MaxFileSizeFileSplitter.create();
 		splitter.split(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
 
@@ -271,7 +271,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		Job job = TestUtils.testJob();
 
-		ITaskSplitter splitter = MaxFileSizeFileSplitter.newInstance();
+		ITaskSplitter splitter = MaxFileSizeFileSplitter.create();
 		splitter.split(job);
 		consumer.handleReceivedJob(job);
 		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());

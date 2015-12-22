@@ -148,7 +148,7 @@ public class Tasks {
 		return statiCount;
 	}
 
-	public static int numberOfDifferentPeersExecutingTask(Task task) {
+	public static int numberOfDifferentPeersExecutingOrFinishedTask(Task task) {
 		synchronized (task.executingPeers()) {
 			return task.executingPeers().keySet().size();
 		}

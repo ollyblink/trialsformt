@@ -34,7 +34,7 @@ public class JobTest {
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
-		Job job = Job.create("ME").maxNrOfFinishedWorkers(3).nextProcedure(WordCountMapper.newInstance());
+		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(WordCountMapper.newInstance());
 		job.procedure(job.currentProcedureIndex()).tasks(tasksForProcedure);
 		assertTrue(job.currentProcedureIndex() == 0);
 
@@ -65,7 +65,7 @@ public class JobTest {
 	public void testUpdateTaskStati() {
 		int counter = 0;
 
-		Job job = Job.create("ME").maxNrOfFinishedWorkers(3).nextProcedure(NullMapReduceProcedure.newInstance());
+		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(NullMapReduceProcedure.newInstance());
 		List<Task> list = new ArrayList<Task>();
 		list.add(Task.newInstance("word" + (counter++), job.id()));
 		list.add(Task.newInstance("word" + (counter++), job.id()));
@@ -77,22 +77,22 @@ public class JobTest {
 
 		ProcedureInformation procInfo = job.procedure(job.currentProcedureIndex());
 		procInfo.updateTaskExecutionStatus(list.get(0).id(), TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.EXECUTING_TASK),
-				job.maxNrOfFinishedWorkers());
+				job.maxNrOfFinishedWorkersPerTask());
 		assertTrue(Tasks.allAssignedPeers(list.get(0)).contains(peers[0]));
 		assertTrue(Tasks.statiForPeer(list.get(0), peers[0]).contains(BCMessageStatus.EXECUTING_TASK));
 
 		procInfo.updateTaskExecutionStatus(list.get(0).id(), TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.FINISHED_TASK),
-				job.maxNrOfFinishedWorkers());
+				job.maxNrOfFinishedWorkersPerTask());
 		assertTrue(Tasks.allAssignedPeers(list.get(0)).contains(peers[0]));
 		assertTrue(Tasks.statiForPeer(list.get(0), peers[0]).contains(BCMessageStatus.FINISHED_TASK));
 
 		procInfo.updateTaskExecutionStatus(list.get(1).id(), TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.EXECUTING_TASK),
-				job.maxNrOfFinishedWorkers());
+				job.maxNrOfFinishedWorkersPerTask());
 		assertTrue(Tasks.allAssignedPeers(list.get(1)).contains(peers[1]));
 		assertTrue(Tasks.statiForPeer(list.get(1), peers[1]).contains(BCMessageStatus.EXECUTING_TASK));
 
 		procInfo.updateTaskExecutionStatus(list.get(1).id(), TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.FINISHED_TASK),
-				job.maxNrOfFinishedWorkers());
+				job.maxNrOfFinishedWorkersPerTask());
 		assertTrue(Tasks.allAssignedPeers(list.get(1)).contains(peers[1]));
 		assertTrue(Tasks.statiForPeer(list.get(1), peers[1]).contains(BCMessageStatus.FINISHED_TASK));
 

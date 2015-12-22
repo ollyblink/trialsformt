@@ -5,11 +5,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import mapreduce.execution.job.Job;
-import mapreduce.execution.job.Jobs;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
@@ -34,7 +32,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		this.finishedAllTasksMessagesToRemove = new HashSet<BCMessageStatus>();
 		Collections.addAll(finishedAllTasksMessagesToRemove, FINISHED_ALL_TASKS_MESSAGES_TO_REMOVE);
 
-		this.jobBCMessageUpdateCondition = JobBCMessageUpdateCondition.newInstance();
+		this.jobBCMessageUpdateCondition = JobBCMessageUpdateCondition.create();
 	}
 
 	public static MRJobExecutionManagerMessageConsumer newInstance(List<Job> jobs) {
@@ -71,7 +69,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				List<Task> tasks = job.procedure(job.currentProcedureIndex()).tasks();
 				synchronized (tasks) {
 					Task task2 = tasks.get(tasks.indexOf(taskToUpdate));
-					Tasks.updateStati(task2, toUpdate, job.maxNrOfFinishedWorkers());
+					Tasks.updateStati(task2, toUpdate, job.maxNrOfFinishedWorkersPerTask());
 				}
 
 			}

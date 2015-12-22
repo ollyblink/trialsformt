@@ -1,14 +1,11 @@
 package mapreduce.storage;
 
 import java.util.List;
-import java.util.Set;
-
-import com.google.common.collect.Multimap;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
-import mapreduce.utils.Tuple;
+import net.tomp2p.dht.FuturePut;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -24,16 +21,12 @@ public interface IDHTConnectionProvider {
 	 *            defines a task's initial key
 	 * @param value
 	 *            the value to be stored for that task key
-	 * @param taskDataSubmitted
-	 *            contains boolean values for each data item that is initially set to false and will be flipped to true when all data items were added
-	 * @param index
-	 *            taskDataSubmitted.set(true, index), when everything completed, such that the MRJobSubmissionManager can continue working
 	 */
-	public void addData(Job job, Task task, String value, List<Boolean> taskDataSubmitted, int taskDataSubmittedIndexToSet);
+	public FuturePut add(String key, Object value, String taskExecutorDomain, boolean asList);
 
-	public void createTasks(Job job, List<Task> procedureTasks, long timeToLive);
+	public void createTasks(Job job, List<Task> procedureTasks);
 
-	public void getTaskData(Job job, Task task, List<Object> dataForTask);
+	public void get(Job job, Task task, List<Object> dataForTask);
 
 	// DHT access
 
@@ -66,5 +59,7 @@ public interface IDHTConnectionProvider {
 	public String bootstrapIP();
 
 	public int bootstrapPort();
+
+	public void broadcastJobFailed(Job job);
 
 }

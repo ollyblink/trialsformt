@@ -23,8 +23,8 @@ public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparat
 			} else if (t1Finished < t2Finished) {
 				return -1;
 			} else {
-				int t1differentFinished = Tasks.numberOfDifferentPeersExecutingTask(t1);
-				int t2differentFinished = Tasks.numberOfDifferentPeersExecutingTask(t2);
+				int t1differentFinished = Tasks.numberOfDifferentPeersExecutingOrFinishedTask(t1);
+				int t2differentFinished = Tasks.numberOfDifferentPeersExecutingOrFinishedTask(t2);
 				if (t1differentFinished > t2differentFinished) {
 					return 1;
 				} else if (t1differentFinished < t2differentFinished) {

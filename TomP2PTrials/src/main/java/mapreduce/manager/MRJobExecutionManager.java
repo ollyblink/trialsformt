@@ -21,21 +21,20 @@ import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWo
 import mapreduce.execution.task.taskexecutor.ITaskExecutor;
 import mapreduce.execution.task.taskexecutor.ParallelTaskExecutor;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
+import mapreduce.manager.conditions.ICondition;
+import mapreduce.manager.conditions.JobEmptyCondition;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.utils.TimeToLive;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobExecutionManager.class);
 
-	private static final long DEFAULT_SLEEPING_TIME = 100;
 	private static final List<Job> DEFAULT_JOB_LIST = Collections.synchronizedList(new ArrayList<>());
 	private static final ITaskExecutor DEFAULT_TASK_EXCECUTOR = ParallelTaskExecutor.newInstance();
 	private static final ITaskScheduler DEFAULT_TASK_EXECUTION_SCHEDULER = MinAssignedWorkersTaskExecutionScheduler.newInstance();
 	private static final IContext DEFAULT_CONTEXT = PseudoStoreContext.newInstance();
-
-	/** Time to live in Milliseconds */
-	private static final long DEFAULT_TIME_TO_LIVE = 10000;
 
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private IContext context;
@@ -43,8 +42,6 @@ public class MRJobExecutionManager {
 	private ITaskExecutor taskExecutor;
 	private List<Job> jobs;
 	private MRJobExecutionManagerMessageConsumer messageConsumer;
-
-	private long timeToLive;
 
 	private Future<?> createTaskThread;
 
@@ -61,12 +58,7 @@ public class MRJobExecutionManager {
 
 	public static MRJobExecutionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
 		return new MRJobExecutionManager(dhtConnectionProvider, DEFAULT_JOB_LIST).taskExecutor(DEFAULT_TASK_EXCECUTOR)
-				.taskExecutionScheduler(DEFAULT_TASK_EXECUTION_SCHEDULER).timeToLive(DEFAULT_TIME_TO_LIVE).context(DEFAULT_CONTEXT);
-	}
-
-	public MRJobExecutionManager timeToLive(long timeToLive) {
-		this.timeToLive = timeToLive;
-		return this;
+				.taskExecutionScheduler(DEFAULT_TASK_EXECUTION_SCHEDULER).context(DEFAULT_CONTEXT);
 	}
 
 	public MRJobExecutionManager taskExecutor(ITaskExecutor taskExecutor) {
@@ -111,73 +103,72 @@ public class MRJobExecutionManager {
 	// Execution
 
 	private void executeJob() {
-		while (jobs.isEmpty()) {
-			try {
-				Thread.sleep(DEFAULT_SLEEPING_TIME);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		ProcedureInformation procedureInformation = jobs.get(0).procedure(jobs.get(0).currentProcedureIndex());
+		if (TimeToLive.INSTANCE.cancelOnTimeout(jobs, JobEmptyCondition.create())) {
 
-		// Get the data for the job's current procedure
-		this.server = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+			ProcedureInformation procedureInformation = jobs.get(0).procedure(jobs.get(0).currentProcedureIndex());
 
-		this.createTaskThread = server.submit(new Runnable() {
+			// Get the data for the job's current procedure
+			this.server = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
-			@Override
-			public void run() {
-				dhtConnectionProvider.createTasks(jobs.get(0), procedureInformation.tasks(), timeToLive);
-			}
+			this.createTaskThread = server.submit(new Runnable() {
 
-		});
+				@Override
+				public void run() {
+					dhtConnectionProvider.createTasks(jobs.get(0), procedureInformation.tasks());
+				}
 
-		Task task = null;
-		List<Task> tasks = procedureInformation.tasks();
-		while ((task = this.taskExecutionScheduler.schedule(tasks, timeToLive)) != null && !this.taskExecutor.abortedTaskExecution()) {
-			this.dhtConnectionProvider.broadcastExecutingTask(task);
-			List<Object> dataForTask = Collections.synchronizedList(new ArrayList<>());
-			dhtConnectionProvider.getTaskData(jobs.get(0), task, dataForTask);
-			while (this.taskExecutor.abortedTaskExecution()) {
+			});
+
+			Task task = null;
+			List<Task> tasks = procedureInformation.tasks();
+			while ((task = this.taskExecutionScheduler.schedule(tasks)) != null && !this.taskExecutor.abortedTaskExecution()) {
+				this.dhtConnectionProvider.broadcastExecutingTask(task);
+				List<Object> dataForTask = Collections.synchronizedList(new ArrayList<>());
+				dhtConnectionProvider.get(jobs.get(0), task, dataForTask);
 				this.taskExecutor.execute(procedureInformation.procedure(), task.id(), dataForTask, context);// Non-blocking!
+
+				this.dhtConnectionProvider.broadcastFinishedTask(task, this.context.resultHash());
 			}
-			Number160 resultHash = this.context.resultHash();
-			this.dhtConnectionProvider.broadcastFinishedTask(task, resultHash);
-		}
-		if (!this.taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
+			if (!this.taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
 
-			jobs.get(0).procedure(jobs.get(0).currentProcedureIndex()).isFinished(true);
-			this.dhtConnectionProvider.broadcastFinishedAllTasks(jobs.get(0));
+				procedureInformation.isFinished(true);
+				this.dhtConnectionProvider.broadcastFinishedAllTasks(jobs.get(0));
 
-			// this.messageConsumer.isBusy(true);
-
-		}
-
-		// awaitMessageConsumerCompletion();
-		while (!jobs.get(0).procedure(jobs.get(0).currentProcedureIndex()).isFinished()) {
-			System.err.println("Waitng... Waiting...");
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
+
+			// awaitMessageConsumerCompletion();
+			// while (!procedureInformation.isFinished()) {
+			// System.err.println("Waitng... Waiting...");
+			// try {
+			// Thread.sleep(100);
+			// } catch (InterruptedException e) {
+			// // TODO Auto-generated catch block
+			// e.printStackTrace();
+			// }
+			// }
+			// printResults(procedureInformation.tasks());
+			// Create new tasks
+
+			// if (jobs.get(0).hasNextProcedure()) {
+			// // Create new tasks
+			// // add new tasks to job
+			//
+			// } else {
+			// jobs.remove(0);
+			// }
+
+			// Clean up data from old tasks
+			// cleanUpDHT(jobs.get(0).taskDataToRemove(jobs.get(0).currentProcedureIndex()));
+			// logger.info("clean up");
+			executeJob();
+		} else {
+			handleTimeout();
 		}
-		printResults(procedureInformation.tasks());
-		// Create new tasks
 
-		// if (jobs.get(0).hasNextProcedure()) {
-		// // Create new tasks
-		// // add new tasks to job
-		//
-		// } else {
-		// jobs.remove(0);
-		// }
+	}
 
-		// Clean up data from old tasks
-		// cleanUpDHT(jobs.get(0).taskDataToRemove(jobs.get(0).currentProcedureIndex()));
-		// logger.info("clean up");
-		executeJob();
+	private void handleTimeout() {
+		// TODO Auto-generated method stub
 
 	}
 
