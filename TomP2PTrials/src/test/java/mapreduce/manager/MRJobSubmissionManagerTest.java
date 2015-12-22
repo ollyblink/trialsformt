@@ -1,23 +1,14 @@
 package mapreduce.manager;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 
 import org.junit.Test;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-
-import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.job.Job;
-import mapreduce.execution.task.Task;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.DHTUtils;
 import mapreduce.storage.IDHTConnectionProvider;
-import mapreduce.testutils.TestUtils;
-import mapreduce.utils.MaxFileSizeFileSplitter;
+import mapreduce.utils.DomainProvider;
 
 public class MRJobSubmissionManagerTest {
 
@@ -27,11 +18,14 @@ public class MRJobSubmissionManagerTest {
 	public void test() throws UnsupportedEncodingException {
 		String bootstrapIP = "192.168.43.234";
 		int bootstrapPort = 4000;
-		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort));
+		DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
+		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(dhtUtils);
 		jobSubmissionManager = MRJobSubmissionManager.newInstance(dhtConnectionProvider);
-		Job job = TestUtils.testJobWO(WordCountMapper.newInstance());
 
+		Job job = Job.create(jobSubmissionManager.id());
 		jobSubmissionManager.submit(job);
+		
+		dhtUtils.getKD("PROCEDURE_KEYS", DomainProvider.INSTANCE.jobProcedureDomain(job));
 
 		// Multimap<Task, Comparable> keysForEachTask = splitter.keysForEachTask();
 		// for (Task task : keysForEachTask.keySet()) {
@@ -44,7 +38,7 @@ public class MRJobSubmissionManagerTest {
 		// assertTrue(job.maxFileSize() >= new ArrayList<Object>(taskData.get(key)).get(0).toString().getBytes("UTF-8").length);
 		// }
 		// }
-		jobSubmissionManager.shutdown();
+		// jobSubmissionManager.shutdown();
 	}
 
 }

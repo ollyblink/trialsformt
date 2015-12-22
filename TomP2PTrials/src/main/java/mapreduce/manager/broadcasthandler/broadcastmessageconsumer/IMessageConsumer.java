@@ -15,13 +15,13 @@ public interface IMessageConsumer extends Runnable {
 
 	public void handleReceivedJob(Job job);
 
-	public void handleFailedJob(Job job, PeerAddress sender);
+	public void handleFailedJob(Job job);
 
 	public void handleTaskExecutionStatusUpdate(Task task, TaskResult toUpdate);
 
 	public void updateJob(Job job, PeerAddress sender);
 
-	public void handleFinishedJob(Job job, String jobSubmitterId);
+	public void handleFinishedJob(Job job);
 
 	public BlockingQueue<IBCMessage> queue();
 

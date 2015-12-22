@@ -18,31 +18,29 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmitterMessageConsumer;
+import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmissionManagerMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.Futures;
 
 public class MRJobSubmissionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManager.class);
 	private static final ITaskDataComposer DEFAULT_TASK_DATA_COMPOSER = MaxFileSizeTaskDataComposer.create();
 
 	private IDHTConnectionProvider dhtConnectionProvider;
-	private MRJobSubmitterMessageConsumer messageConsumer;
+	private MRJobSubmissionManagerMessageConsumer messageConsumer;
 	private ITaskDataComposer taskDataComposer;
 	private String id;
+	private String resultDomain;
 
 	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, CopyOnWriteArrayList<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
-		this.messageConsumer = MRJobSubmitterMessageConsumer.newInstance(id, jobs).canTake(true);
+		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.newInstance(id, jobs).canTake(true);
 		new Thread(messageConsumer).start();
 		dhtConnectionProvider.broadcastHandler().queue(messageConsumer.queue());
 	}
@@ -98,6 +96,7 @@ public class MRJobSubmissionManager {
 												@Override
 												public void operationComplete(FuturePut future) throws Exception {
 													if (future.isSuccess()) {
+														logger.info("Successfully added data. Broadcasting job.");
 														dhtConnectionProvider.broadcastNewJob(job);
 													} else {
 														logger.warn(future.failedReason());
@@ -158,11 +157,17 @@ public class MRJobSubmissionManager {
 	}
 
 	public void shutdown() {
+		logger.info("shutdown()::1::disconnecting jobSubmissionManager from DHT. Bye...");
 		this.dhtConnectionProvider.shutdown();
 	}
 
 	public String id() {
 		return this.id;
+	}
+
+	public void finishedJob(String resultDomain) {
+		logger.info("Received final job procedure domain to get the data from: " + resultDomain);
+		this.resultDomain = resultDomain;
 	}
 
 }

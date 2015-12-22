@@ -13,13 +13,14 @@ public enum DomainProvider {
 	}
 
 	// Job procedure domain key generation
-	public String jobProcedureDomain(String jobId, String procedureSimpleName, Integer procedureIndex) {
-		return jobId + "_PROCEDURE_" + procedureSimpleName.toUpperCase() + "_" + procedureIndex;
+	public String jobProcedureDomain(String jobId, String procedureSimpleName, Integer procedureIndex, Integer submissionNr) {
+		return jobId + "_PROCEDURE_" + procedureSimpleName.toUpperCase() + "_" + procedureIndex + "_" + submissionNr;
 	}
 
 	public String jobProcedureDomain(Job job) {
 		ProcedureInformation procedureInformation = job.procedure(job.currentProcedureIndex());
-		return jobProcedureDomain(job.id(), procedureInformation.procedure().getClass().getSimpleName(), job.currentProcedureIndex());
+		return jobProcedureDomain(job.id(), procedureInformation.procedure().getClass().getSimpleName(), job.currentProcedureIndex(),
+				job.submissionCounter());
 	}
 	// End Job procedure domain key generation
 

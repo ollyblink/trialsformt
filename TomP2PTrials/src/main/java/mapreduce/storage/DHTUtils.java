@@ -151,17 +151,12 @@ public class DHTUtils {
 		return futurePut;
 	}
 
-	public void getKD(String keyString, String domainString, boolean awaitUninterruptibly, BaseFutureListener<FutureGet> listener) {
+	public FutureGet getKD(String keyString, String domainString) {
 		Number160 domainHash = Number160.createHash(domainString);
 		Number160 keyHash = Number160.createHash(keyString);
 
 		logger.info("getKVD: dHashtable.get(" + keyString + ").domain(" + domainString + ")");
-		FutureGet getFuture = peerDHT.get(keyHash).domainKey(domainHash).all().start();
-
-		if (awaitUninterruptibly) {
-			getFuture.awaitUninterruptibly();
-		}
-		getFuture.addListener(listener);
+		return peerDHT.get(keyHash).domainKey(domainHash).all().start();
 
 	}
 

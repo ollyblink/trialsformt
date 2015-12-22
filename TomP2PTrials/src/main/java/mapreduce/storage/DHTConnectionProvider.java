@@ -3,14 +3,10 @@ package mapreduce.storage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Multimap;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
@@ -20,19 +16,14 @@ import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedJobBCMessage
 import mapreduce.manager.broadcasthandler.broadcastmessages.JobFailedBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.JobUpdateBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
-import mapreduce.manager.conditions.ListContainsFalseCondition;
 import mapreduce.manager.conditions.ListSizeZeroCondition;
 import mapreduce.storage.futureListener.GetFutureListener;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.TimeToLive;
 import mapreduce.utils.Tuple;
-import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -108,7 +99,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastFinishedJob(Job job) {
-		dhtUtils.broadcastJobUpdate(job, FinishedJobBCMessage.newInstance().jobSubmitterId(job.jobSubmitterID()).job(job).sender(this.peerAddress()));
+		dhtUtils.broadcastJobUpdate(job, FinishedJobBCMessage.newInstance().job(job).sender(this.peerAddress()));
 	}
 
 	@Override
@@ -119,7 +110,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastFinishedTask(Task task, Number160 resultHash) {
-		dhtUtils.broadcastTaskUpdate(task, TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.peerAddress()));
+		dhtUtils.broadcastTaskUpdate(task,
+				TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.peerAddress()));
 	}
 
 	@Override

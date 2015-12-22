@@ -1,5 +1,6 @@
 package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
@@ -22,7 +23,6 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	protected static Logger logger = LoggerFactory.getLogger(AbstractMessageConsumer.class);
 
-	/* These two blocking queues are used for seemless interaction between classes */
 	protected BlockingQueue<IBCMessage> bcMessages;
 	protected List<Job> jobs;
 
@@ -32,7 +32,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, List<Job> jobs) {
 		this.bcMessages = bcMessages;
-		this.jobs = jobs;
+		this.jobs = Collections.synchronizedList(jobs);
 	}
 
 	@Override
@@ -79,7 +79,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	// Dummy implementations
 	@Override
-	public void handleFinishedJob(Job job, String jobSubmitterId) {
+	public void handleFinishedJob(Job job) {
 	}
 
 	@Override
@@ -88,7 +88,8 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleReceivedJob(Job job) {
+	public void handleReceivedJob(Job job) { 
+
 	}
 
 	@Override

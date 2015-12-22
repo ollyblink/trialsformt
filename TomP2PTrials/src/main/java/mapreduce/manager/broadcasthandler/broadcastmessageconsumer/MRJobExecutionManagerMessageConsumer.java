@@ -64,16 +64,16 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 	@Override
 	public void handleTaskExecutionStatusUpdate(Task taskToUpdate, TaskResult toUpdate) {
-		for (Job job : jobs) {
-			if (job.id().equals(taskToUpdate.jobId())) {
-				List<Task> tasks = job.procedure(job.currentProcedureIndex()).tasks();
-				synchronized (tasks) {
+		synchronized (jobs) {
+			for (Job job : jobs) {
+				if (job.id().equals(taskToUpdate.jobId())) {
+					List<Task> tasks = job.procedure(job.currentProcedureIndex()).tasks();
 					Task task2 = tasks.get(tasks.indexOf(taskToUpdate));
 					Tasks.updateStati(task2, toUpdate, job.maxNrOfFinishedWorkersPerTask());
 				}
-
 			}
 		}
+
 	}
 
 	@Override
@@ -108,7 +108,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	@Override
-	public void handleFinishedJob(Job job, String jobSubmitterId) {
+	public void handleFinishedJob(Job job) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void handleFailedJob(Job job) {
 		// TODO Auto-generated method stub
 
 	}

@@ -7,7 +7,6 @@ import java.util.List;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureInformation;
-import mapreduce.storage.DHTUtils;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
 
@@ -64,10 +63,13 @@ public class Job implements Serializable {
 	private boolean useLocalStorageFirst;
 
 	/** How many times should the dht operation be tried before it is declared as failed? */
-	private int nrOfAddTrials;
+	private int maxNrOfDHTActions;
 
 	/** For how long should be waited until it declares the dht operation to be failed? In milliseconds */
 	private long timeToLiveInMs;
+
+	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
+	private int submissionCounter;
 
 	private Job(String jobSubmitterID) {
 		this.jobSubmitterID = jobSubmitterID;
@@ -78,7 +80,7 @@ public class Job implements Serializable {
 
 	public static Job create(String jobSubmitterID) {
 		return new Job(jobSubmitterID).maxFileSize(DEFAULT_FILE_SIZE).timeToLiveInMs(DEFAULT_TIME_TO_LIVE_IN_MS)
-				.nrOfAddTrials(DEFAULT_NUMBER_OF_ADD_TRIALS).useLocalStorageFirst(true).maxNrOfFinishedWorkersPerTask(3);
+				.maxNrOfDHTActions(DEFAULT_NUMBER_OF_ADD_TRIALS).useLocalStorageFirst(true).maxNrOfFinishedWorkersPerTask(3);
 	}
 
 	public String id() {
@@ -136,6 +138,14 @@ public class Job implements Serializable {
 		++this.currentProcedureIndex;
 	}
 
+	public int submissionCounter() {
+		return this.submissionCounter;
+	}
+
+	public void incrementSubmissionCounter() {
+		++this.submissionCounter;
+	}
+
 	public int maxNrOfFinishedWorkersPerTask() {
 		return maxNrOfFinishedWorkersPerTask;
 	}
@@ -181,13 +191,13 @@ public class Job implements Serializable {
 		return this.timeToLiveInMs;
 	}
 
-	public Job nrOfAddTrials(int nrOfAddTrials) {
-		this.nrOfAddTrials = nrOfAddTrials;
+	public Job maxNrOfDHTActions(int maxNrOfDHTActions) {
+		this.maxNrOfDHTActions = maxNrOfDHTActions;
 		return this;
 	}
 
-	public int nrOfAddTrials() {
-		return this.nrOfAddTrials;
+	public int maxNrOfDHTActions() {
+		return this.maxNrOfDHTActions;
 	}
 
 	@Override
@@ -200,6 +210,7 @@ public class Job implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + submissionCounter;
 		return result;
 	}
 
@@ -209,15 +220,20 @@ public class Job implements Serializable {
 			return true;
 		if (obj == null)
 			return false;
-		// if (getClass() != obj.getClass())
-		// return false;
+		if (getClass() != obj.getClass())
+			return false;
 		Job other = (Job) obj;
 		if (id == null) {
-			if (other.id() != null)
+			if (other.id != null)
 				return false;
-		} else if (!id.equals(other.id()))
+		} else if (!id.equals(other.id))
+			return false;
+		if (submissionCounter != other.submissionCounter)
 			return false;
 		return true;
 	}
+ 
+
+	 
 
 }

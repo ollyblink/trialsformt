@@ -16,7 +16,7 @@ public class JobFailedBCMessage extends AbstractJobBCMessage {
 
 	@Override
 	public void execute(IMessageConsumer messageConsumer) {
-		messageConsumer.handleFailedJob(job, sender);
+		messageConsumer.handleFailedJob(job);
 	}
 
 	public static JobFailedBCMessage newInstance() {
