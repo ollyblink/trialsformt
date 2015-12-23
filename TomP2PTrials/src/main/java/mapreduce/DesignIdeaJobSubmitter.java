@@ -12,14 +12,14 @@ public class DesignIdeaJobSubmitter {
 	public static void main(String[] args)
 	// throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, InstantiationException
 	{
-		String bootstrapIP = "192.168.43.234";
+		String bootstrapIP = "192.168.43.65";
 		int bootstrapPort = 4000;
 
 		MRJobSubmissionManager submitter = MRJobSubmissionManager
 				.newInstance(DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort)));
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
-		String fileInputFolderPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/task/tasksplitting/testfile";
+		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";;
 
 		int maxNumberOfFinishedPeers = 3;
 		Job job = Job

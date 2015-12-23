@@ -23,7 +23,7 @@ import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWo
 import mapreduce.execution.task.taskexecutor.ITaskExecutor;
 import mapreduce.execution.task.taskexecutor.ParallelTaskExecutor;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
-import mapreduce.manager.conditions.JobEmptyCondition;
+import mapreduce.manager.conditions.EmptyListCondition;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.TimeToLive;
@@ -109,7 +109,7 @@ public class MRJobExecutionManager {
 	// Execution
 
 	private void executeJob() {
-		if (TimeToLive.INSTANCE.cancelOnTimeout(jobs, JobEmptyCondition.create())) {
+		if (TimeToLive.INSTANCE.cancelOnTimeout(jobs, EmptyListCondition.create())) {
 
 			ProcedureInformation procedureInformation = jobs.get(0).procedure(jobs.get(0).currentProcedureIndex());
 
@@ -253,6 +253,10 @@ public class MRJobExecutionManager {
 
 	public boolean isExecutionAborted() {
 		return this.taskExecutor.abortedTaskExecution();
+	}
+
+	public List<Job> jobs() { 
+		return jobs;
 	}
 
 	// End Execution
