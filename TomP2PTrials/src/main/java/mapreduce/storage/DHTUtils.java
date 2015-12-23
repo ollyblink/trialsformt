@@ -132,33 +132,10 @@ public class DHTUtils {
 		}
 	}
 
-	public FuturePut addKVD(String keyString, Object value, String domainString, boolean asList) {
-		FuturePut futurePut = null;
-		try {
-			logger.info("addKVD: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain(" + domainString + ")");
-			Number160 keyHash = Number160.createHash(keyString);
-			Data valueData = new Data(value);
-			if (asList) {
-				valueData = new Data(new Value(value));
-			}
-			Number160 domainHash = Number160.createHash(domainString);
-
-			futurePut = this.peerDHT.add(keyHash).data(valueData).domainKey(domainHash).start();
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return futurePut;
-	}
-
-	public FutureGet getKD(String keyString, String domainString) {
-		Number160 domainHash = Number160.createHash(domainString);
-		Number160 keyHash = Number160.createHash(keyString);
-
-		logger.info("getKVD: dHashtable.get(" + keyString + ").domain(" + domainString + ")");
-		return peerDHT.get(keyHash).domainKey(domainHash).all().start();
-
-	}
+	// public FutureGet getAllKD(String keyString, String domainString ) {
+	// return
+	//
+	// }
 
 	public void removeKD(String domainString, String keyString, boolean awaitUninterruptibly) {
 		Number160 domainHash = Number160.createHash(domainString);
@@ -270,6 +247,11 @@ public class DHTUtils {
 				logger.warn("Exception thrown in DHTConnectionProvider::shutdown()", t);
 			}
 		});
+	}
+
+	public PeerDHT peerDHT() {
+		// TODO Auto-generated method stub
+		return this.peerDHT;
 	}
 
 }

@@ -7,6 +7,7 @@ import net.tomp2p.peers.PeerAddress;
 
 public enum DomainProvider {
 	INSTANCE;
+	public static final String PROCEDURE_KEYS = "PROCEDURE_KEYS";
 
 	public String executorTaskDomain(String taskId, String peerId, Integer jobStatusIndex) {
 		return taskId + "_PRODUCER_PEER_ID_" + peerId + "_JOB_STATUS_INDEX_" + jobStatusIndex;

@@ -142,8 +142,8 @@ public class Job implements Serializable {
 		return this.submissionCounter;
 	}
 
-	public void incrementSubmissionCounter() {
-		++this.submissionCounter;
+	public int incrementSubmissionCounter() {
+		return ++this.submissionCounter;
 	}
 
 	public int maxNrOfFinishedWorkersPerTask() {
@@ -202,7 +202,7 @@ public class Job implements Serializable {
 
 	@Override
 	public String toString() {
-		return id;
+		return id + " " + submissionCounter + " " + jobSubmitterID;
 	}
 
 	@Override
@@ -210,6 +210,7 @@ public class Job implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((jobSubmitterID == null) ? 0 : jobSubmitterID.hashCode());
 		result = prime * result + submissionCounter;
 		return result;
 	}
@@ -228,12 +229,14 @@ public class Job implements Serializable {
 				return false;
 		} else if (!id.equals(other.id))
 			return false;
+		if (jobSubmitterID == null) {
+			if (other.jobSubmitterID != null)
+				return false;
+		} else if (!jobSubmitterID.equals(other.jobSubmitterID))
+			return false;
 		if (submissionCounter != other.submissionCounter)
 			return false;
 		return true;
 	}
- 
-
-	 
 
 }

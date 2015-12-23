@@ -40,6 +40,11 @@ public class Task implements Serializable, Comparable<Task> {
 	 * Rejected data locations that need to be removed
 	 */
 	private List<Tuple<PeerAddress, Integer>> dataToRemove;
+	/**
+	 * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
+	 * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
+	 */
+	private String finalTaskExecutorDomain;
 
 	private Task(Object key, String jobId) {
 		this.key = key;
@@ -139,4 +144,8 @@ public class Task implements Serializable, Comparable<Task> {
 		return this.id().compareTo(o.id().toString());
 	}
 
+	public Task finalDataLocationDomain(String finalTaskExecutorDomain) {
+		this.finalTaskExecutorDomain = finalTaskExecutorDomain;
+		return this;
+	}
 }

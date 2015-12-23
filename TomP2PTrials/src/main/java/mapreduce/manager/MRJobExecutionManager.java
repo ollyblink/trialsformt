@@ -1,5 +1,7 @@
 package mapreduce.manager;
 
+import java.io.IOError;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.context.IContext;
-import mapreduce.execution.computation.context.PseudoStoreContext;
+import mapreduce.execution.computation.context.PseudoStorageContext;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
@@ -21,11 +23,15 @@ import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWo
 import mapreduce.execution.task.taskexecutor.ITaskExecutor;
 import mapreduce.execution.task.taskexecutor.ParallelTaskExecutor;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
-import mapreduce.manager.conditions.ICondition;
 import mapreduce.manager.conditions.JobEmptyCondition;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.utils.DomainProvider;
 import mapreduce.utils.TimeToLive;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.Futures;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutionManager {
@@ -34,7 +40,7 @@ public class MRJobExecutionManager {
 	private static final List<Job> DEFAULT_JOB_LIST = Collections.synchronizedList(new ArrayList<>());
 	private static final ITaskExecutor DEFAULT_TASK_EXCECUTOR = ParallelTaskExecutor.newInstance();
 	private static final ITaskScheduler DEFAULT_TASK_EXECUTION_SCHEDULER = MinAssignedWorkersTaskExecutionScheduler.newInstance();
-	private static final IContext DEFAULT_CONTEXT = PseudoStoreContext.newInstance();
+	private static final IContext DEFAULT_CONTEXT = PseudoStorageContext.newInstance();
 
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private IContext context;
@@ -110,31 +116,80 @@ public class MRJobExecutionManager {
 			// Get the data for the job's current procedure
 			this.server = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
+			List<FutureGet> futureTaskExecutorDomains = Collections.synchronizedList(new ArrayList<>());
+			List<Task> tasks = procedureInformation.tasks();
 			this.createTaskThread = server.submit(new Runnable() {
 
 				@Override
 				public void run() {
-					dhtConnectionProvider.createTasks(jobs.get(0), procedureInformation.tasks());
+					dhtConnectionProvider.createTasks(jobs.get(0), futureTaskExecutorDomains, tasks);
 				}
 
 			});
+			Futures.whenAnySuccess(futureTaskExecutorDomains).addListener(new BaseFutureListener<FutureDone<FutureGet>>() {
 
-			Task task = null;
-			List<Task> tasks = procedureInformation.tasks();
-			while ((task = this.taskExecutionScheduler.schedule(tasks)) != null && !this.taskExecutor.abortedTaskExecution()) {
-				this.dhtConnectionProvider.broadcastExecutingTask(task);
-				List<Object> dataForTask = Collections.synchronizedList(new ArrayList<>());
-				dhtConnectionProvider.get(jobs.get(0), task, dataForTask);
-				this.taskExecutor.execute(procedureInformation.procedure(), task.id(), dataForTask, context);// Non-blocking!
+				@Override
+				public void operationComplete(FutureDone<FutureGet> future) throws Exception {
+					if (future.isSuccess()) {
+						Task task = null;
+						while ((task = taskExecutionScheduler.schedule(tasks)) != null && !taskExecutor.abortedTaskExecution()) {
+							final Task taskToDistribute = task;
+							dhtConnectionProvider.broadcastExecutingTask(task);
 
-				this.dhtConnectionProvider.broadcastFinishedTask(task, this.context.resultHash());
-			}
-			if (!this.taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
+							// Now we actually wanna retrieve the data from the specified locations...
+							String keyString = task.id().toString();
+							String domainString = DomainProvider.INSTANCE.jobProcedureDomain(jobs.get(0)) + "_"
+									+ DomainProvider.INSTANCE.executorTaskDomain(task.id(), task.finalDataLocation().first().peerId().toString(),
+											task.finalDataLocation().second());
 
-				procedureInformation.isFinished(true);
-				this.dhtConnectionProvider.broadcastFinishedAllTasks(jobs.get(0));
+							dhtConnectionProvider.getAll(keyString, domainString).addListener(new BaseFutureListener<FutureGet>() {
 
-			}
+								@Override
+								public void operationComplete(FutureGet future) throws Exception {
+									if (future.isSuccess()) {
+										List<Object> dataForTask = Collections.synchronizedList(new ArrayList<>());
+										try {
+											if (future.dataMap() != null) {
+												for (Number640 n : future.dataMap().keySet()) {
+													Object value = future.dataMap().get(n).object();
+													dataForTask.add(value);
+												}
+												taskExecutor.execute(procedureInformation.procedure(), keyString, dataForTask, context);// Non-blocking!
+												dhtConnectionProvider.broadcastFinishedTask(taskToDistribute, context.resultHash());
+											}
+										} catch (IOException e) {
+											dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
+										}
+									}
+								}
+
+								@Override
+								public void exceptionCaught(Throwable t) throws Exception {
+									dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
+								}
+
+							});
+
+						}
+						if (!taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the
+																	// others...
+
+							procedureInformation.isFinished(true);
+							dhtConnectionProvider.broadcastFinishedAllTasks(jobs.get(0));
+
+						}
+					} else {
+						logger.warn("Something wrong");
+					}
+				}
+
+				@Override
+				public void exceptionCaught(Throwable t) throws Exception {
+					// TODO Auto-generated method stub
+
+				}
+
+			});
 
 			// awaitMessageConsumerCompletion();
 			// while (!procedureInformation.isFinished()) {

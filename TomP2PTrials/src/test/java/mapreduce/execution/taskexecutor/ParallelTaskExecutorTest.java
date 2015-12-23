@@ -17,7 +17,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
 import mapreduce.execution.computation.ProcedureInformation;
-import mapreduce.execution.computation.context.PseudoStoreContext;
+import mapreduce.execution.computation.context.PseudoStorageContext;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.computation.standardprocedures.WordCountReducer;
 import mapreduce.execution.task.Task;
@@ -44,7 +44,7 @@ public class ParallelTaskExecutorTest {
 		Task task = Task.newInstance("text1", "0");
 		ProcedureInformation info = ProcedureInformation.create(WordCountMapper.newInstance()).addTask(task);
 
-		PseudoStoreContext storeContext = PseudoStoreContext.newInstance();
+		PseudoStorageContext storeContext = PseudoStorageContext.newInstance();
 
 		List<Task> ts = info.tasks();
 		List<Object> values = new ArrayList<Object>();
@@ -79,7 +79,7 @@ public class ParallelTaskExecutorTest {
 		// List<Object> copyList = new ArrayList<>();
 		ITaskExecutor executor = ParallelTaskExecutor.newInstance();
 
-		PseudoStoreContext context = PseudoStoreContext.newInstance();
+		PseudoStorageContext context = PseudoStorageContext.newInstance();
 		String key = "text1";
 		List<Object> values = Collections.synchronizedList(new ArrayList<>());
 

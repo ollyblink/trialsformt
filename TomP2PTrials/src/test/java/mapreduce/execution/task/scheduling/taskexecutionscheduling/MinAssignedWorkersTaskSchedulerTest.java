@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import mapreduce.execution.task.Task;
@@ -117,7 +118,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		// Mockito.when(task.isFinished()).thenReturn(true);
 		// }
 		taskScheduler.randomizeFirstTask(false);
-		Task task1 = taskScheduler.schedule(tasks, Long.MAX_VALUE);
+		Task task1 = taskScheduler.schedule(tasks);
 
 		assertEquals(task1.id(), ("8"));
 		assertTrue("task id 8", tasks.get(0).id().equals("8"));
@@ -151,7 +152,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		}
 		int numberOfIterations = 10000;
 		for (int i = 0; i < numberOfIterations; ++i) {
-			Task task = taskScheduler.schedule(tasks, Long.MAX_VALUE);
+			Task task = taskScheduler.schedule(tasks);
 			Double taskCounter = taskOccurrenceCounter.get(task);
 			++taskCounter;
 			taskOccurrenceCounter.put(task, taskCounter);
@@ -164,7 +165,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		taskScheduler.randomizeFirstTask(false);
 	}
 
-	@Test
+	@Ignore //Redundant
 	public void waitForDataFetch() {
 		// consumerT1 should be able to fetch the data since it waits longer for it to be created than consumerT2
 
@@ -173,16 +174,16 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		Thread consumerT1 = new Thread(new Runnable() {
 
 			@Override
-			public void run() { 
-				assertEquals(Task.newInstance("1", "0"), taskScheduler.schedule(tasks2, 7000));
+			public void run() {
+				assertEquals(Task.newInstance("1", "0"), taskScheduler.schedule(tasks2));
 			}
 
 		});
 		Thread consumerT2 = new Thread(new Runnable() {
 
 			@Override
-			public void run() { 
-				assertEquals(null, taskScheduler.schedule(tasks2, 1000));
+			public void run() {
+				assertEquals(null, taskScheduler.schedule(tasks2));
 			}
 
 		});
@@ -207,7 +208,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		producer.start();
 		try {
 			Thread.sleep(10000);
-		} catch (InterruptedException e) { 
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}

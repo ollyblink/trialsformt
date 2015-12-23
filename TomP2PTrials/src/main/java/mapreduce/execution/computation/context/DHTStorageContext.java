@@ -7,31 +7,27 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.Tuple;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
 
-public class DHTStorageContext implements IContext {
+public class DHTStorageContext extends AbstractBaseContext {
 	private static Logger logger = LoggerFactory.getLogger(DHTStorageContext.class);
 
 	private IDHTConnectionProvider dhtConnectionProvider;
 
-	private Task task;
+	private ListMultimap<String, Object> tmpKeyValues;
 
-	private IMapReduceProcedure combiner;
-	private Set<Object> keys;
-
-	private ListMultimap<Object, Object> tmpKeyValues;
+	private FileSize maxDataSize = FileSize.FOUR_KILO_BYTES;
 
 	// private ITaskResultComparator taskResultComparator;
 
@@ -41,20 +37,15 @@ public class DHTStorageContext implements IContext {
 	 * @param taskResultComparator
 	 *            may add certain speed ups such that the task result comparison afterwards becomes faster
 	 */
-	private DHTStorageContext(DHTConnectionProvider dhtConnectionProvider) {
+	private DHTStorageContext(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
-		ListMultimap<Object, Object> multimap = ArrayListMultimap.create();
+		ListMultimap<String, Object> multimap = ArrayListMultimap.create();
 		this.tmpKeyValues = Multimaps.synchronizedListMultimap(multimap);
 	}
 
-	public static IContext newDHTStorageContext(DHTConnectionProvider dhtConnectionProvider) {
+	public static DHTStorageContext create(IDHTConnectionProvider dhtConnectionProvider) {
 		return new DHTStorageContext(dhtConnectionProvider);
 	}
-
-	// public DHTStorageContext taskResultComparator(ITaskResultComparator taskResultComparator) {
-	// this.taskResultComparator = taskResultComparator;
-	// return this;
-	// }
 
 	@Override
 	public void write(Object keyOut, Object valueOut) {
@@ -63,14 +54,52 @@ public class DHTStorageContext implements IContext {
 			return;
 		}
 
-		tmpKeyValues.put(keyOut, valueOut);
+		// tmpKeyValues.put(keyOut.toString(), valueOut);
+		updateResultHash(keyOut, valueOut);
 
-//		if (dataLimitAchieved(tmpKeyValues)) {
-//			this.dhtConnectionProvider.add(keyOut, valueOut, DomainProvider.INSTANCE.executorTaskDomain(task,
-//					Tuple.create(dhtConnectionProvider.peerAddress(), task.executingPeers().get(dhtConnectionProvider.peerAddress()).size() - 1)));
-//		}
+		// if (dataLimitAchieved()) {
+		// List<FuturePut> futureDataAdding = Collections.synchronizedList(new ArrayList<>());
+
+		// for (String key : tmpKeyValues.keySet()) {
+		// futureDataAdding.add(
+		this.dhtConnectionProvider
+				.add(keyOut.toString(), valueOut,
+						DomainProvider.INSTANCE.executorTaskDomain(task,
+								Tuple.create(dhtConnectionProvider.peerAddress(),
+										task.executingPeers().get(dhtConnectionProvider.peerAddress()).size() - 1)),
+						true)
+				.addListener(new BaseFutureListener<FuturePut>() {
+
+					@Override
+					public void operationComplete(FuturePut future) throws Exception {
+						if (future.isSuccess()) {
+							logger.info("Put <" + keyOut + ", " + valueOut + ">");
+						} else {
+							logger.warn("Could not put <" + keyOut + ", " + valueOut + ">");
+						}
+					}
+
+					@Override
+					public void exceptionCaught(Throwable t) throws Exception {
+						logger.warn("Exception thrown", t);
+					}
+
+				});
+		// }
 
 	}
+
+	// private boolean dataLimitAchieved() {
+	//
+	// long dataSizes = 0;
+	// for (String key : tmpKeyValues.keySet()) {
+	// dataSizes += key.getBytes(Charset.forName("UTF-8")).length;
+	// for (Object value : tmpKeyValues.get(key)) {
+	// dataSizes += value.toString().getBytes(Charset.forName("UTF-8")).length;
+	// }
+	// }
+	// return dataSizes >= maxDataSize.value();
+	// }
 
 	public DHTStorageContext task(Task task) {
 		this.task = task;
@@ -84,8 +113,12 @@ public class DHTStorageContext implements IContext {
 
 	@Override
 	public Number160 resultHash() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.resultHash;
+	}
+
+	@Override
+	public void resetResultHash() {
+		this.resultHash = Number160.ZERO;
 	}
 
 	@Override
@@ -104,9 +137,4 @@ public class DHTStorageContext implements IContext {
 		return this.keys;
 	}
 
-	public static void main(String[] args) {
-		long tb = FileSize.MEGA_BYTE.value() * FileSize.MEGA_BYTE.value();
-		System.out.println("ABCDEWMQXY".getBytes().length);
-		System.out.println(tb / 10);
-	}
 }

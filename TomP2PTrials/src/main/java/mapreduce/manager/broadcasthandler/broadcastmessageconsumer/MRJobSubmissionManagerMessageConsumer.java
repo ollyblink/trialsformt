@@ -51,23 +51,27 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 	@Override
 	public void handleFailedJob(Job job) {
 		if (this.jobSubmitterID.equals(job.jobSubmitterID())) {
-			logger.warn("handleFailedJob()::1::Job failed:" + job.id()); 
+			logger.warn("handleFailedJob()::1::Job failed:" + job.id());
 			if (job.submissionCounter() < job.maxNrOfDHTActions()) {
 				job.incrementSubmissionCounter();
 				logger.warn("handleFailedJob()::2::Resubmitting job, " + job.submissionCounter() + ". time.");
 				jobSubmissionManager.submit(job);
 			} else {
-				logger.warn("handleFailedJob()::3::Failed to submit job " + job.id() + ". "); 
+				logger.warn("handleFailedJob()::3::Failed to submit job " + job.id() + ". ");
 			}
-			
+
 		}
 	}
 
 	@Override
 	public void handleReceivedJob(Job job) {
 		if (this.jobSubmitterID.equals(job.jobSubmitterID())) {
-			logger.warn("handleReceivedJob()::1::Received own job" + job.id());
-			job.incrementSubmissionCounter();
+			if (!jobs.contains(job)) {
+				jobs.add(job);
+				logger.warn("handleReceivedJob()::1::Received own job, added to jobs: " + job);
+			} else {
+				logger.warn("handleReceivedJob()::2::Received own job, discarded as its already received: " + job);
+			}
 		}
 	}
 }

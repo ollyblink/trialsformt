@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -37,7 +38,7 @@ public class MRJobSubmissionManager {
 	private String id;
 	private String resultDomain;
 
-	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, CopyOnWriteArrayList<Job> jobs) {
+	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, List<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.newInstance(id, jobs).canTake(true);
@@ -46,7 +47,8 @@ public class MRJobSubmissionManager {
 	}
 
 	public static MRJobSubmissionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobSubmissionManager(dhtConnectionProvider, new CopyOnWriteArrayList<Job>()).taskComposer(DEFAULT_TASK_DATA_COMPOSER);
+		return new MRJobSubmissionManager(dhtConnectionProvider, Collections.synchronizedList(new ArrayList<>()))
+				.taskComposer(DEFAULT_TASK_DATA_COMPOSER);
 	}
 
 	/**
@@ -90,7 +92,7 @@ public class MRJobSubmissionManager {
 									@Override
 									public void operationComplete(FuturePut future) throws Exception {
 										if (future.isSuccess()) {
-											dhtConnectionProvider.add("PROCEDURE_KEYS", task.id(), jobProcedureDomain, false)
+											dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), jobProcedureDomain, false)
 													.addListener(new BaseFutureListener<FuturePut>() {
 
 												@Override
@@ -100,38 +102,38 @@ public class MRJobSubmissionManager {
 														dhtConnectionProvider.broadcastNewJob(job);
 													} else {
 														logger.warn(future.failedReason());
-														dhtConnectionProvider.broadcastJobFailed(job);
+														dhtConnectionProvider.broadcastFailedJob(job);
 													}
 												}
 
 												@Override
 												public void exceptionCaught(Throwable t) throws Exception {
 													logger.warn("Exception thrown", t);
-													dhtConnectionProvider.broadcastJobFailed(job);
+													dhtConnectionProvider.broadcastFailedJob(job);
 												}
 											});
 										} else {
 											logger.warn(future.failedReason());
-											dhtConnectionProvider.broadcastJobFailed(job);
+											dhtConnectionProvider.broadcastFailedJob(job);
 										}
 									}
 
 									@Override
 									public void exceptionCaught(Throwable t) throws Exception {
 										logger.warn("Exception thrown", t);
-										dhtConnectionProvider.broadcastJobFailed(job);
+										dhtConnectionProvider.broadcastFailedJob(job);
 									}
 								});
 							} else {
 								logger.warn(future.failedReason());
-								dhtConnectionProvider.broadcastJobFailed(job);
+								dhtConnectionProvider.broadcastFailedJob(job);
 							}
 						}
 
 						@Override
 						public void exceptionCaught(Throwable t) throws Exception {
 							logger.warn("Exception thrown", t);
-							dhtConnectionProvider.broadcastJobFailed(job);
+							dhtConnectionProvider.broadcastFailedJob(job);
 						}
 					});
 				}

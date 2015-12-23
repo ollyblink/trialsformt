@@ -2,7 +2,7 @@ package mapreduce;
 
 import java.io.IOException;
 
-import mapreduce.execution.computation.context.PseudoStoreContext;
+import mapreduce.execution.computation.context.PseudoStorageContext;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.storage.DHTConnectionProvider;
@@ -26,7 +26,7 @@ public class DesignIdeaJobExecutor {
 			dhtUtils.isBootstrapper(true);
 		}
 		MRJobExecutionManager jobExecutor = MRJobExecutionManager.newInstance(DHTConnectionProvider.newInstance(dhtUtils))
-				.context(PseudoStoreContext.newInstance()).taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.newInstance());
+				.context(PseudoStorageContext.newInstance()).taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.newInstance());
 
 		jobExecutor.start();
 

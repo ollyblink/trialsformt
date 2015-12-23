@@ -5,8 +5,6 @@ import java.util.List;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.Tasks;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
-import mapreduce.manager.conditions.ListSizeZeroCondition;
-import mapreduce.utils.TimeToLive;
 
 public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 
@@ -15,12 +13,7 @@ public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 	@Override
 	public Task schedule(List<Task> tasksToSchedule) {
 		if (tasksToSchedule != null) {
-			if (TimeToLive.INSTANCE.cancelOnTimeout(tasksToSchedule, ListSizeZeroCondition.create())) {
-				return scheduleNonNull(tasksToSchedule);
-			} else {
-				this.failedWhileWaiting = true;
-				return null;
-			}
+			return scheduleNonNull(tasksToSchedule);
 		}
 		return null;
 	}

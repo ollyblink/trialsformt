@@ -5,7 +5,9 @@ import java.util.List;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
+import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -22,11 +24,13 @@ public interface IDHTConnectionProvider {
 	 * @param value
 	 *            the value to be stored for that task key
 	 */
-	public FuturePut add(String key, Object value, String taskExecutorDomain, boolean asList);
+	public FuturePut add(String key, Object value, String domain, boolean asList);
 
-	public void createTasks(Job job, List<Task> procedureTasks);
+	public FuturePut put(String key, Object value, String domain);
 
-	public void get(Job job, Task task, List<Object> dataForTask);
+	public void createTasks(Job job, List<FutureGet> procedureTaskFutureGetCollector, List<Task> procedureTaskCollector);
+
+	public FutureGet getAll(String keyString, String domainString);
 
 	// DHT access
 
@@ -37,7 +41,11 @@ public interface IDHTConnectionProvider {
 
 	public void broadcastNewJob(Job job);
 
+	public void broadcastFailedJob(Job job);
+
 	public void broadcastExecutingTask(Task task);
+
+	public void broadcastFailedTask(Task taskToDistribute);
 
 	public void broadcastFinishedTask(Task task, Number160 resultHash);
 
@@ -59,8 +67,5 @@ public interface IDHTConnectionProvider {
 	public String bootstrapIP();
 
 	public int bootstrapPort();
-
-	public void broadcastJobFailed(Job job);
- 
 
 }
