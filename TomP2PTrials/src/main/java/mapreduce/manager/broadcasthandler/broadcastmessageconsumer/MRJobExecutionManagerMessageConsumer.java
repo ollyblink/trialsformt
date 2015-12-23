@@ -2,14 +2,15 @@ package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
+import mapreduce.execution.task.Tasks;
 import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
@@ -25,16 +26,16 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	private JobBCMessageUpdateCondition jobBCMessageUpdateCondition;
 	private MRJobExecutionManager jobExecutor;
 
-	private MRJobExecutionManagerMessageConsumer(BlockingQueue<IBCMessage> bcMessages, CopyOnWriteArrayList<Job> jobs) {
+	private MRJobExecutionManagerMessageConsumer(BlockingQueue<IBCMessage> bcMessages, List<Job> jobs) {
 		super(bcMessages, jobs);
 
 		this.finishedAllTasksMessagesToRemove = new HashSet<BCMessageStatus>();
 		Collections.addAll(finishedAllTasksMessagesToRemove, FINISHED_ALL_TASKS_MESSAGES_TO_REMOVE);
 
-		this.jobBCMessageUpdateCondition = JobBCMessageUpdateCondition.newInstance();
+		this.jobBCMessageUpdateCondition = JobBCMessageUpdateCondition.create();
 	}
 
-	public static MRJobExecutionManagerMessageConsumer newInstance(CopyOnWriteArrayList<Job> jobs) {
+	public static MRJobExecutionManagerMessageConsumer newInstance(List<Job> jobs) {
 		return new MRJobExecutionManagerMessageConsumer(new PriorityBlockingQueue<IBCMessage>(), jobs);
 	}
 
@@ -62,12 +63,17 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	@Override
-	public void handleTaskExecutionStatusUpdate(Task task, TaskResult toUpdate) {
-		for (Job job : jobs) {
-			if (job.id().equals(task.jobId())) {
-				job.updateTaskExecutionStatus(task.id(), toUpdate);
+	public void handleTaskExecutionStatusUpdate(Task taskToUpdate, TaskResult toUpdate) {
+		synchronized (jobs) {
+			for (Job job : jobs) {
+				if (job.id().equals(taskToUpdate.jobId())) {
+					List<Task> tasks = job.procedure(job.currentProcedureIndex()).tasks();
+					Task task2 = tasks.get(tasks.indexOf(taskToUpdate));
+					Tasks.updateStati(task2, toUpdate, job.maxNrOfFinishedWorkersPerTask());
+				}
 			}
 		}
+
 	}
 
 	@Override
@@ -102,7 +108,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	@Override
-	public void handleFinishedJob(Job job, String jobSubmitterId) {
+	public void handleFinishedJob(Job job) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void handleFailedJob(Job job) {
 		// TODO Auto-generated method stub
 
 	}

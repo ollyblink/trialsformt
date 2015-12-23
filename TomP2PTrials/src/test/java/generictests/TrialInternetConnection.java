@@ -37,7 +37,7 @@ public class TrialInternetConnection {
 		int port = 4000;
 		GetOwnIpAddressTest.main(null);
 
-		int peerID = 13;
+		int peerID = 2;
 		String action = "";
 		final String key = "C";
 		final String value = "asdfasdf";

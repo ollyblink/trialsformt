@@ -30,7 +30,7 @@ public final class CleanRunnable implements Runnable {
 	@Override
 	public void run() {
 		if (task != null && location != null) {
-			dhtConnection.removeTaskResultsFor(task, location);
+//			dhtConnection.removeTaskResultsFor(task, location);
 		}
 	}
 

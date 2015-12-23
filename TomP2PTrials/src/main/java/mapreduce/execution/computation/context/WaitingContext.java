@@ -3,19 +3,14 @@ package mapreduce.execution.computation.context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.AbstractMessageConsumer;
-import net.tomp2p.peers.Number160;
 
-public class WaitingContext implements IContext {
+public class WaitingContext extends AbstractBaseContext {
 	private static final int DEFAULT_WAITING_TIME = 1;
 
 	private static Logger logger = LoggerFactory.getLogger(AbstractMessageConsumer.class);
 
-	private Task task;
-
 	private boolean shouldPrint;
-
 	private long waitingTime;
 
 	@Override
@@ -30,12 +25,6 @@ public class WaitingContext implements IContext {
 		}
 	}
 
-	@Override
-	public WaitingContext task(Task task) {
-		this.task = task;
-		return this;
-	}
-
 	public WaitingContext shouldPrint(boolean shouldPrint) {
 		this.shouldPrint = shouldPrint;
 		return this;
@@ -48,12 +37,6 @@ public class WaitingContext implements IContext {
 	public WaitingContext waitingTime(long waitingTime) {
 		this.waitingTime = waitingTime;
 		return this;
-	}
-
-	@Override
-	public Number160 resultHash() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }

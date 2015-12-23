@@ -1,10 +1,7 @@
 package mapreduce.execution.task.taskexecutor;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -13,10 +10,12 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Multimap;
-
+import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.task.Task;
+import mapreduce.manager.conditions.ICondition;
+import mapreduce.manager.conditions.ListSizeZeroCondition;
+import mapreduce.utils.TimeToLive;
 
 public class ParallelTaskExecutor implements ITaskExecutor {
 	private static Logger logger = LoggerFactory.getLogger(ParallelTaskExecutor.class);
@@ -41,31 +40,19 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 	}
 
 	@Override
-	public void executeTask(final Task task, final IContext context, final Multimap<Object, Object> dataForTask) {
+	public void execute(final IMapReduceProcedure procedure, final Object key, final List<Object> values, final IContext context) {
 		this.abortedTaskExecution = false;
-		context.task(task);
 		this.server = new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-		while (!dataForTask.isEmpty()) {
-			Set<Object> keySet = new HashSet<>();
-			synchronized (dataForTask) {
-				keySet.addAll(dataForTask.keySet());
-			}
-			for (Object key : keySet) {
-				Collection<Object> tmp = null;
-				synchronized (dataForTask) {
-					tmp = dataForTask.removeAll(key);
-				}
-				Collection<Object> values = tmp;
-				Runnable run = new Runnable() {
+		if (TimeToLive.INSTANCE.cancelOnTimeout(values, ListSizeZeroCondition.create())) {
+			Runnable run = new Runnable() {
 
-					@Override
-					public void run() {
-						task.procedure().process(key, values, context);
-					}
-				};
-				Future<?> submit = server.submit(run);
-				this.currentThreads.add(submit);
-			}
+				@Override
+				public void run() {
+					procedure.process(key, values, context);
+				}
+			};
+			Future<?> submit = server.submit(run);
+			this.currentThreads.add(submit);
 		}
 		cleanUp();
 

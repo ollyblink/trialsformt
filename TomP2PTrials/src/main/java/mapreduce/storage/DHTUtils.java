@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -15,8 +14,10 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.utils.DomainProvider;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.PortManager;
+import mapreduce.utils.Tuple;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -35,7 +36,7 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageDisk;
 
 public class DHTUtils {
-	private static Logger logger = LoggerFactory.getLogger(DHTUtils.class);
+	private static final Logger logger = LoggerFactory.getLogger(DHTUtils.class);
 	private PeerDHT peerDHT;
 	private String bootstrapIP;
 	private int bootstrapPort;
@@ -108,9 +109,10 @@ public class DHTUtils {
 		}
 	}
 
-	public void broadcastTask(Task task, IBCMessage message) {
+	public void broadcastTaskUpdate(Task task, IBCMessage message) {
 		try {
-			Number160 taskHash = Number160.createHash(task.id() + message.sender().toString() + message.status());
+			Number160 taskHash = Number160.createHash(DomainProvider.INSTANCE.executorTaskDomain(task,
+					Tuple.create(peerDHT.peerAddress(), task.executingPeers().get(peerDHT.peerAddress()).size() - 1)));
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(taskHash, taskHash, taskHash, taskHash), new Data(message));
 			peerDHT.peer().broadcast(taskHash).dataMap(dataMap).start();
@@ -121,7 +123,7 @@ public class DHTUtils {
 
 	public void broadcastJobUpdate(Job job, IBCMessage message) {
 		try {
-			Number160 jobHash = Number160.createHash(job.id() + message.sender().toString() + message.status());
+			Number160 jobHash = Number160.createHash(DomainProvider.INSTANCE.jobProcedureDomain(job));
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
 			peerDHT.peer().broadcast(jobHash).dataMap(dataMap).start();
@@ -130,79 +132,10 @@ public class DHTUtils {
 		}
 	}
 
-	public void addKVD(String keyString, Object value, String domainString, boolean asList, boolean awaitUninterruptibly, BaseFutureListener<FuturePut> listener) {
-		try {
-			logger.info("addKVD: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain(" + domainString + ")");
-			Number160 keyHash = Number160.createHash(keyString);
-			Data valueData = new Data(value);
-			if (asList) {
-				valueData = new Data(new Value(value));
-			}
-			Number160 domainHash = Number160.createHash(domainString);
-
-			FuturePut futurePut = this.peerDHT.add(keyHash).data(valueData).domainKey(domainHash).start();
-
-			if (listener != null) {
-				futurePut.addListener(listener);
-			}
-			if (awaitUninterruptibly) {
-				futurePut.awaitUninterruptibly();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void getKD(String keyString, Collection<Object> valueCollector, String domainString, boolean asList, boolean awaitUninterruptibly) {
-		Number160 domainHash = Number160.createHash(domainString);
-		Number160 keyHash = Number160.createHash(keyString);
-
-		logger.info("getKVD: dHashtable.get(" + keyString + ").domain(" + domainString + ")");
-		FutureGet getFuture = peerDHT.get(keyHash).domainKey(domainHash).all().start();
-
-		if (awaitUninterruptibly) {
-			getFuture.awaitUninterruptibly();
-		}
-		getFuture.addListener(new BaseFutureListener<FutureGet>() {
-
-			@Override
-			public void operationComplete(FutureGet future) throws Exception {
-				if (future.isSuccess()) {
-					try {
-						if (getFuture.dataMap() != null) {
-							for (Number640 n : getFuture.dataMap().keySet()) {
-								Object valueObject = null;
-								if (asList) {
-									Value value = (Value) getFuture.dataMap().get(n).object();
-									valueObject = value.value();
-								} else {
-									valueObject = getFuture.dataMap().get(n).object();
-								}
-								valueCollector.add(valueObject);
-								logger.info("getKVD: Successfully retrieved value for <K, Domain>: <" + keyString + ", " + domainString + ">: "
-										+ valueObject);
-							}
-						} else {
-							logger.warn("getKVD: Value for <K, Domain>: <" + keyString + ", " + domainString + "> is null!");
-						}
-					} catch (ClassNotFoundException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				} else {
-					logger.error("getKVD: Failed trying to retrieve value for <K, Domain>: <" + keyString + ", " + domainString + ">");
-				}
-			}
-
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				logger.debug("getKVD: Exception caught", t);
-
-			}
-		});
-
-	}
+	// public FutureGet getAllKD(String keyString, String domainString ) {
+	// return
+	//
+	// }
 
 	public void removeKD(String domainString, String keyString, boolean awaitUninterruptibly) {
 		Number160 domainHash = Number160.createHash(domainString);
@@ -314,6 +247,11 @@ public class DHTUtils {
 				logger.warn("Exception thrown in DHTConnectionProvider::shutdown()", t);
 			}
 		});
+	}
+
+	public PeerDHT peerDHT() {
+		// TODO Auto-generated method stub
+		return this.peerDHT;
 	}
 
 }

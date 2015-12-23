@@ -22,11 +22,9 @@ public final class JobBCMessageUpdateCondition implements ICondition<IBCMessage>
 	}
 
 	private JobBCMessageUpdateCondition() {
-		this.jobId = null;
-		this.types = null;
 	}
 
-	public static JobBCMessageUpdateCondition newInstance() {
+	public static JobBCMessageUpdateCondition create() {
 		return new JobBCMessageUpdateCondition();
 	}
 

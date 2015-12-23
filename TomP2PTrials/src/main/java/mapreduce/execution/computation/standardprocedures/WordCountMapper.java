@@ -14,8 +14,8 @@ public class WordCountMapper implements IMapReduceProcedure {
 	private static final long serialVersionUID = 4762197473747869364L;
 
 	@Override
-	public void process(Object key, Collection<Object> values, IContext context) {
-		for (Object value : values) {
+	public void process(Object keyIn, Collection<Object> valuesIn, IContext context) {
+		for (Object value : valuesIn) {
 			String valueString = (String) value;
 			StringTokenizer tokens = new StringTokenizer(valueString);
 			while (tokens.hasMoreTokens()) {
@@ -24,13 +24,7 @@ public class WordCountMapper implements IMapReduceProcedure {
 		}
 	}
 
-	@Override
-	public String toString() {
-		return "WordCountMapper";
-	}
-
 	public static IMapReduceProcedure newInstance() {
-		// TODO Auto-generated method stub
 		return new WordCountMapper();
 	}
 

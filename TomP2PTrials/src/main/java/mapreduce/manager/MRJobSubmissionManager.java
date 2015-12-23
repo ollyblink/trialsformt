@@ -1,7 +1,14 @@
 package mapreduce.manager;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -10,32 +17,44 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.tasksplitting.MaxFileSizeFileSplitter;
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmitterMessageConsumer;
+import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
+import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
+import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmissionManagerMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Tuple;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFutureListener;
 
 public class MRJobSubmissionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManager.class);
-	private IDHTConnectionProvider dhtConnectionProvider;
-	private MRJobSubmitterMessageConsumer messageConsumer;
-	private String id;
+	private static final ITaskDataComposer DEFAULT_TASK_DATA_COMPOSER = MaxFileSizeTaskDataComposer.create();
 
-	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, CopyOnWriteArrayList<Job> jobs) {
+	private IDHTConnectionProvider dhtConnectionProvider;
+	private MRJobSubmissionManagerMessageConsumer messageConsumer;
+	private ITaskDataComposer taskDataComposer;
+	private String id;
+	private String resultDomain;
+
+	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, List<Job> jobs) {
 		this.dhtConnectionProvider(dhtConnectionProvider);
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
-		this.messageConsumer = MRJobSubmitterMessageConsumer.newInstance(id, jobs).canTake(true);
+		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.newInstance(id, jobs).canTake(true);
 		new Thread(messageConsumer).start();
 		dhtConnectionProvider.broadcastHandler().queue(messageConsumer.queue());
 	}
 
 	public static MRJobSubmissionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobSubmissionManager(dhtConnectionProvider, new CopyOnWriteArrayList<Job>());
+		return new MRJobSubmissionManager(dhtConnectionProvider, Collections.synchronizedList(new ArrayList<>()))
+				.taskComposer(DEFAULT_TASK_DATA_COMPOSER);
 	}
 
 	/**
+	 * The idea is that for each key/value pair, a broadcast is done that a new task is available for a certain job. The tasks then can be pulled from
+	 * the DHT. If a submission fails here, the whole job is aborted because not the whole data could be sent (this is different from when a job
+	 * executor fails, as then the job simply is marked as failed, cleaned up, and may be pulled again).
 	 * 
 	 * @param job
 	 * @return
@@ -44,40 +63,91 @@ public class MRJobSubmissionManager {
 		dhtConnectionProvider.connect();
 
 		List<String> keysFilePaths = new ArrayList<String>();
-		String newFileInputFolderPath = MaxFileSizeFileSplitter.INSTANCE.fileInputFolderPath(job.fileInputFolderPath()).maxFileSize(job.maxFileSize())
-				.split();
-		FileUtils.INSTANCE.getFiles(new File(newFileInputFolderPath), keysFilePaths);
-		System.err.println(job);
+
+		FileUtils.INSTANCE.getFiles(new File(job.fileInputFolderPath()), keysFilePaths);
+		List<Task> tasks = new ArrayList<>();
+		// Adding keys and data to task executor domain
 		for (String keyfilePath : keysFilePaths) {
-			File file = new File(keyfilePath);
-			Task task = Task.newInstance(keyfilePath, job.id()).procedure(job.procedure(job.currentProcedureIndex())).procedureIndex(job.currentProcedureIndex());
-			dhtConnectionProvider.addTaskData(task, task.id(), file);
-			dhtConnectionProvider.addProcedureDataProviderDomain(job, task.id(), Tuple.create(dhtConnectionProvider().peerAddress(), 0));
+			Path file = Paths.get(keyfilePath);
+
+			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
+
+			try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
+				String line = null;
+				while ((line = reader.readLine()) != null) {
+					String taskKey = keyfilePath;// + "_" + domainCounter;
+					String taskValue = line + "\n";
+					Task task = Task.newInstance(keyfilePath, job.id()).finalDataLocation(Tuple.create(dhtConnectionProvider.peerAddress(), 0));
+					String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, task.finalDataLocation());
+					tasks.add(task);
+					dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomain, true).addListener(new BaseFutureListener<FuturePut>() {
+
+						@Override
+						public void operationComplete(FuturePut future) throws Exception {
+							if (future.isSuccess()) {
+								String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
+								dhtConnectionProvider.add(task.id(), taskExecutorDomain, jobProcedureDomain, false)
+										.addListener(new BaseFutureListener<FuturePut>() {
+
+									@Override
+									public void operationComplete(FuturePut future) throws Exception {
+										if (future.isSuccess()) {
+											dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), jobProcedureDomain, false)
+													.addListener(new BaseFutureListener<FuturePut>() {
+
+												@Override
+												public void operationComplete(FuturePut future) throws Exception {
+													if (future.isSuccess()) {
+														logger.info("Successfully added data. Broadcasting job.");
+														dhtConnectionProvider.broadcastNewJob(job);
+													} else {
+														logger.warn(future.failedReason());
+														dhtConnectionProvider.broadcastFailedJob(job);
+													}
+												}
+
+												@Override
+												public void exceptionCaught(Throwable t) throws Exception {
+													logger.warn("Exception thrown", t);
+													dhtConnectionProvider.broadcastFailedJob(job);
+												}
+											});
+										} else {
+											logger.warn(future.failedReason());
+											dhtConnectionProvider.broadcastFailedJob(job);
+										}
+									}
+
+									@Override
+									public void exceptionCaught(Throwable t) throws Exception {
+										logger.warn("Exception thrown", t);
+										dhtConnectionProvider.broadcastFailedJob(job);
+									}
+								});
+							} else {
+								logger.warn(future.failedReason());
+								dhtConnectionProvider.broadcastFailedJob(job);
+							}
+						}
+
+						@Override
+						public void exceptionCaught(Throwable t) throws Exception {
+							logger.warn("Exception thrown", t);
+							dhtConnectionProvider.broadcastFailedJob(job);
+						}
+					});
+				}
+			} catch (IOException x) {
+				System.err.format("IOException: %s%n", x);
+			}
 		}
-		dhtConnectionProvider.broadcastNewJob(job);
+
 	}
 
-	// private void createFinalTaskSplits(Job job, Collection<List<String>> allNewFileLocations, Multimap<Task, Comparable> keysForEachTask) {
-	// IMapReduceProcedure procedure = job.procedure(job.currentProcedureIndex());
-	//
-	// if (procedure != null) {
-	// List<Task> tasksForProcedure = new ArrayList<Task>();
-	// for (List<String> locations : allNewFileLocations) {
-	//
-	// for (int i = 0; i < locations.size(); ++i) {
-	// Task task = Task.newInstance(job.id()).procedure(procedure).procedureIndex(job.currentProcedureIndex())
-	// .maxNrOfFinishedWorkers(job.maxNrOfFinishedWorkers());
-	// tasksForProcedure.add(task);
-	// keysForEachTask.put(task, locations.get(i));
-	// }
-	//
-	// }
-	//
-	// job.nextProcedure(procedure, tasksForProcedure);
-	// } else {
-	// logger.error("Could not put job due to no procedure specified.");
-	// }
-	// }
+	public MRJobSubmissionManager taskComposer(ITaskDataComposer taskDataComposer) {
+		this.taskDataComposer = taskDataComposer;
+		return this;
+	}
 
 	public MRJobSubmissionManager dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
@@ -89,11 +159,17 @@ public class MRJobSubmissionManager {
 	}
 
 	public void shutdown() {
+		logger.info("shutdown()::1::disconnecting jobSubmissionManager from DHT. Bye...");
 		this.dhtConnectionProvider.shutdown();
 	}
 
 	public String id() {
 		return this.id;
+	}
+
+	public void finishedJob(String resultDomain) {
+		logger.info("Received final job procedure domain to get the data from: " + resultDomain);
+		this.resultDomain = resultDomain;
 	}
 
 }

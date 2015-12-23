@@ -1,38 +1,38 @@
 package mapreduce.storage;
 
-import java.util.Set;
-
-import com.google.common.collect.Multimap;
+import java.util.List;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
-import mapreduce.utils.Tuple;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {
 
-	// DHT access 
-	public void addTaskData(Task task, Object key, Object value); 
-	
-	public void addTaskKey(Task task, Object key);
+	// public void addData(Job job, String taskId, String taskKey, String value, List<Boolean> taskDataSubmitted, int index);
 
-	public void addProcedureOverallKey(Job job, Object key);
+	/**
+	 * 
+	 * @param job
+	 *            needed for the job domain to put this data into
+	 * @param taskKey
+	 *            defines a task's initial key
+	 * @param value
+	 *            the value to be stored for that task key
+	 */
+	public FuturePut add(String key, Object value, String domain, boolean asList);
 
-	public void addProcedureDataProviderDomain(Job job, Object key, Tuple<PeerAddress, Integer> selectedExecutor);
+	public FuturePut put(String key, Object value, String domain);
 
-	public void getTaskData(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Multimap<Object, Object> taskData);
+	public void createTasks(Job job, List<FutureGet> procedureTaskFutureGetCollector, List<Task> procedureTaskCollector);
 
-	public void getTaskKeys(Task task, Tuple<PeerAddress, Integer> selectedExecutor, Set<Object> keysCollector);
+	public FutureGet getAll(String keyString, String domainString);
 
-	public void getProcedureKeys(Job job, Set<Object> keysCollector);
-
-	public void getProcedureTaskPeerDomains(Job job, Object key, Set<Object> domainsCollector);
-
-	public void removeTaskResultsFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
-
-	public void removeTaskKeysFor(Task task, Tuple<PeerAddress, Integer> selectedExecutor);
+	// DHT access
 
 	// removeProcedureKey, removeProcedureTaskPeerDomain,
 
@@ -41,7 +41,11 @@ public interface IDHTConnectionProvider {
 
 	public void broadcastNewJob(Job job);
 
+	public void broadcastFailedJob(Job job);
+
 	public void broadcastExecutingTask(Task task);
+
+	public void broadcastFailedTask(Task taskToDistribute);
 
 	public void broadcastFinishedTask(Task task, Number160 resultHash);
 
@@ -63,4 +67,5 @@ public interface IDHTConnectionProvider {
 	public String bootstrapIP();
 
 	public int bootstrapPort();
+
 }

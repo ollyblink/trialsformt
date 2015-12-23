@@ -6,15 +6,18 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 
 import org.junit.Test;
 
+import com.google.common.collect.ListMultimap;
+
+import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.standardprocedures.NullMapReduceProcedure;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
+import mapreduce.execution.task.Tasks;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.utils.IDCreator;
 import net.tomp2p.peers.Number160;
@@ -31,33 +34,29 @@ public class JobTest {
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
-		Job job = Job.newInstance("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(WordCountMapper.newInstance(), tasksForProcedure);
-		assertTrue(job.currentProcedureIndex() == 0);
-		job.incrementProcedureNumber();
+		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(WordCountMapper.newInstance());
+		job.procedure(job.currentProcedureIndex()).tasks(tasksForProcedure);
 		assertTrue(job.currentProcedureIndex() == 0);
 
-		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
+		List<Task> tasks = job.procedure(job.currentProcedureIndex()).tasks();
 		assertFalse(tasks == null);
 		assertEquals(4, tasks.size());
-		assertEquals("WordCountMapper", job.procedure(job.currentProcedureIndex()).toString());
-		assertTrue(job.currentProcedureIndex() == 0);
-		job.incrementProcedureNumber();
+		assertEquals("WordCountMapper", job.procedure(job.currentProcedureIndex()).procedure().getClass().getSimpleName());
 		assertTrue(job.currentProcedureIndex() == 0);
 
 		List<Task> tasksForProcedure2 = new ArrayList<Task>();
 		tasksForProcedure2.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure2.add(Task.newInstance(jobId, ("word" + counter++)));
-		job.nextProcedure(NullMapReduceProcedure.newInstance(), tasksForProcedure2);
+		job.nextProcedure(NullMapReduceProcedure.newInstance());
+		job.procedure(job.currentProcedureIndex()).tasks(tasksForProcedure2);
 
 		assertTrue(job.currentProcedureIndex() == 0);
 		job.incrementProcedureNumber();
 		assertTrue(job.currentProcedureIndex() == 1);
 
-		tasks = job.tasks(job.currentProcedureIndex());
+		tasks = job.procedure(job.currentProcedureIndex()).tasks();
 		assertFalse(tasks == null);
-		assertEquals("NullMapReduceProcedure", job.procedure(job.currentProcedureIndex()).toString());
-		assertTrue(job.currentProcedureIndex() == 1);
-		job.incrementProcedureNumber();
+		assertEquals("NullMapReduceProcedure", job.procedure(job.currentProcedureIndex()).procedure().getClass().getSimpleName());
 		assertTrue(job.currentProcedureIndex() == 1);
 
 	}
@@ -65,35 +64,44 @@ public class JobTest {
 	@Test
 	public void testUpdateTaskStati() {
 		int counter = 0;
-		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
-		List<Task> tasksForProcedure = new ArrayList<Task>();
-		tasksForProcedure
-				.add(Task.newInstance(jobId, "word" + (counter++)).maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance()));
-		tasksForProcedure
-				.add(Task.newInstance(jobId, "word" + (counter++)).maxNrOfFinishedWorkers(3).procedure(NullMapReduceProcedure.newInstance()));
-		Job job = Job.newInstance("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(WordCountMapper.newInstance(), tasksForProcedure);
-		ArrayList<Task> list = new ArrayList<Task>(tasksForProcedure);
+
+		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(NullMapReduceProcedure.newInstance());
+		List<Task> list = new ArrayList<Task>();
+		list.add(Task.newInstance("word" + (counter++), job.id()));
+		list.add(Task.newInstance("word" + (counter++), job.id()));
+		job.procedure(job.currentProcedureIndex()).tasks(list);
+
 		PeerAddress[] peers = new PeerAddress[3];
-		peers[0] = new PeerAddress(Number160.createHash("1"));
-		peers[1] = new PeerAddress(Number160.createHash("2"));
+		peers[0] = new PeerAddress(new Number160(1));
+		peers[1] = new PeerAddress(new Number160(2));
 
-		job.updateTaskExecutionStatus(tasksForProcedure.get(0).id(),
-				TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.EXECUTING_TASK));
-		assertTrue(list.get(0).allAssignedPeers().contains(peers[0]));
-		assertTrue(list.get(0).statiForPeer(peers[0]).contains(BCMessageStatus.EXECUTING_TASK));
+		ProcedureInformation procInfo = job.procedure(job.currentProcedureIndex());
+		procInfo.updateTaskExecutionStatus(list.get(0).id(), TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.EXECUTING_TASK),
+				job.maxNrOfFinishedWorkersPerTask());
+		assertTrue(Tasks.allAssignedPeers(list.get(0)).contains(peers[0]));
+		assertTrue(Tasks.statiForPeer(list.get(0), peers[0]).contains(BCMessageStatus.EXECUTING_TASK));
 
-		job.updateTaskExecutionStatus(tasksForProcedure.get(0).id(), TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.FINISHED_TASK));
-		assertTrue(list.get(0).allAssignedPeers().contains(peers[0]));
-		assertTrue(list.get(0).statiForPeer(peers[0]).contains(BCMessageStatus.FINISHED_TASK));
+		procInfo.updateTaskExecutionStatus(list.get(0).id(), TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.FINISHED_TASK),
+				job.maxNrOfFinishedWorkersPerTask());
+		assertTrue(Tasks.allAssignedPeers(list.get(0)).contains(peers[0]));
+		assertTrue(Tasks.statiForPeer(list.get(0), peers[0]).contains(BCMessageStatus.FINISHED_TASK));
 
-		job.updateTaskExecutionStatus(tasksForProcedure.get(1).id(),
-				TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.EXECUTING_TASK));
-		assertTrue(list.get(1).allAssignedPeers().contains(peers[1]));
-		assertTrue(list.get(1).statiForPeer(peers[1]).contains(BCMessageStatus.EXECUTING_TASK));
+		procInfo.updateTaskExecutionStatus(list.get(1).id(), TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.EXECUTING_TASK),
+				job.maxNrOfFinishedWorkersPerTask());
+		assertTrue(Tasks.allAssignedPeers(list.get(1)).contains(peers[1]));
+		assertTrue(Tasks.statiForPeer(list.get(1), peers[1]).contains(BCMessageStatus.EXECUTING_TASK));
 
-		job.updateTaskExecutionStatus(tasksForProcedure.get(1).id(), TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.FINISHED_TASK));
-		assertTrue(list.get(1).allAssignedPeers().contains(peers[1]));
-		assertTrue(list.get(1).statiForPeer(peers[1]).contains(BCMessageStatus.FINISHED_TASK));
+		procInfo.updateTaskExecutionStatus(list.get(1).id(), TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.FINISHED_TASK),
+				job.maxNrOfFinishedWorkersPerTask());
+		assertTrue(Tasks.allAssignedPeers(list.get(1)).contains(peers[1]));
+		assertTrue(Tasks.statiForPeer(list.get(1), peers[1]).contains(BCMessageStatus.FINISHED_TASK));
+
+		for (Task task : list) { 
+			ListMultimap<PeerAddress, BCMessageStatus> executingPeers = task.executingPeers();
+			for (PeerAddress p : executingPeers.keySet()) {
+				System.err.println(task.id()+": "+p + " " + executingPeers.get(p));
+			}
+		}
 
 	}
 

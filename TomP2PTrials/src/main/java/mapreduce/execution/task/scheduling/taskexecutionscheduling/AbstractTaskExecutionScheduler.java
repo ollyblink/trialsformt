@@ -3,40 +3,46 @@ package mapreduce.execution.task.scheduling.taskexecutionscheduling;
 import java.util.List;
 
 import mapreduce.execution.task.Task;
+import mapreduce.execution.task.Tasks;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
 
 public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 
+	private boolean failedWhileWaiting = false;
+
 	@Override
 	public Task schedule(List<Task> tasksToSchedule) {
-		if (tasksToSchedule != null && tasksToSchedule.size() > 0) { 
+		if (tasksToSchedule != null) {
 			return scheduleNonNull(tasksToSchedule);
-		} else {
-			return null;
 		}
+		return null;
+	}
+
+	public boolean failedWhileWaiting() {
+		return failedWhileWaiting;
 	}
 
 	protected abstract Task scheduleNonNull(List<Task> tasksToSchedule);
 
 	protected boolean allTasksAreFinished(List<Task> tasksToSchedule) {
-		boolean allFinished = true;
-		for (Task task : tasksToSchedule) {
-			if (!task.isFinished()) {
-				allFinished = false;
-				break;
+		synchronized (tasksToSchedule) {
+			for (Task task : tasksToSchedule) {
+				if (!task.isFinished()) {
+					return false;
+				}
 			}
 		}
-		return allFinished;
+		return true;
 	}
 
 	protected boolean noTaskAssignedYet(List<Task> tasksToSchedule) {
-		boolean nonStartedYet = true;
-		for (Task task : tasksToSchedule) {
-			if (task != null && task.allAssignedPeers().size() > 0) {
-				nonStartedYet = false;
-				break;
+		synchronized (tasksToSchedule) {
+			for (Task task : tasksToSchedule) {
+				if (task != null && Tasks.allAssignedPeers(task).size() > 0) {
+					return false;
+				}
 			}
 		}
-		return nonStartedYet;
+		return true;
 	}
 }

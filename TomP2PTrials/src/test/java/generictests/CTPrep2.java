@@ -1,6 +1,7 @@
 package generictests;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
@@ -23,7 +24,7 @@ import net.tomp2p.storage.Data;
 public class CTPrep2 {
 	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
 		PeerDHT[] peers = null;
-		int nrOfPeers = 100;
+		int nrOfPeers = 4;
 		int port = 4001;
 
 		// final String myPhoneNumber = "079 666 40 20";
@@ -34,7 +35,7 @@ public class CTPrep2 {
 
 		Thread.sleep(1000);
 		final PeerDHT master = peers[0];
-		Set<String> keys = new TreeSet<String>();
+		Set<String> domains = new TreeSet<String>();
 
 		try {
 			Random RND = new Random();
@@ -91,6 +92,13 @@ public class CTPrep2 {
 			});
 
 			// Thread.sleep(500);
+			// } 
+			Thread.sleep(2000);
+			// for (int i = 0; i < 5; ++i) {
+			// String domain = "job_1_procedure_1_task_1_executor_1_statusindex_" + ((i + 1) % 2);
+			// System.err.println(master.storageLayer().get());
+			// // System.err.println("Contains " + domain + "? " + master.storageLayer().contains(
+			// // new Number640(new Number320(Number160.createHash("Mapper"), Number160.createHash(domain)), Number160.ZERO, Number160.ZERO)));
 			// }
 
 			// Thread.sleep(2000);
@@ -139,7 +147,7 @@ public class CTPrep2 {
 
 			t1.run();
 
-		} finally {
+		{
 			try {
 				Thread.sleep(10000);
 			} catch (InterruptedException e) {
@@ -147,6 +155,7 @@ public class CTPrep2 {
 			}
 			master.shutdown();
 		}
+
 	}
 
 	private static void trials(PeerDHT[] peers, int nrOfPeers, final String myName, Random random, int firstIndex) throws IOException {

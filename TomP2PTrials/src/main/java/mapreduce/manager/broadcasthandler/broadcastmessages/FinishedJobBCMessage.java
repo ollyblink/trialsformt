@@ -8,7 +8,6 @@ public class FinishedJobBCMessage extends AbstractJobBCMessage {
 	 * 
 	 */
 	private static final long serialVersionUID = 7088496407737205759L;
-	private String jobSubmitterId;
 
 	@Override
 	public BCMessageStatus status() {
@@ -19,15 +18,9 @@ public class FinishedJobBCMessage extends AbstractJobBCMessage {
 		return new FinishedJobBCMessage();
 	}
 
-	public FinishedJobBCMessage jobSubmitterId(String jobSubmitterId) {
-		this.jobSubmitterId = jobSubmitterId;
-		return this;
-	}
-
-
 	@Override
 	public void execute(final IMessageConsumer messageConsumer) {
-		messageConsumer.handleFinishedJob(job, jobSubmitterId);
+		messageConsumer.handleFinishedJob(job);
 	}
- 
+
 }

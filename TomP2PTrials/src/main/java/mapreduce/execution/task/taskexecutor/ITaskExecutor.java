@@ -1,15 +1,13 @@
 package mapreduce.execution.task.taskexecutor;
 
-import com.google.common.collect.Multimap;
+import java.util.List;
 
+import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
-import mapreduce.execution.task.Task;
 import mapreduce.utils.IAbortableExecution;
 
-public interface ITaskExecutor extends IAbortableExecution{
+public interface ITaskExecutor extends IAbortableExecution {
 
-	public void executeTask(final Task task, final IContext context, final Multimap<Object, Object> dataForTask);
-
-
+	public void execute(final IMapReduceProcedure procedure, final Object key, final List<Object> values, final IContext context);
 
 }

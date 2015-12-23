@@ -1,7 +1,8 @@
 package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,17 +23,16 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	protected static Logger logger = LoggerFactory.getLogger(AbstractMessageConsumer.class);
 
-	/* These two blocking queues are used for seemless interaction between classes */
 	protected BlockingQueue<IBCMessage> bcMessages;
-	protected CopyOnWriteArrayList<Job> jobs;
+	protected List<Job> jobs;
 
 	private boolean canTake;
 	/** Used to signal e.g. the job executor that currently this message consumer is busy */
 	private boolean isBusy;
 
-	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, CopyOnWriteArrayList<Job> jobs) {
+	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, List<Job> jobs) {
 		this.bcMessages = bcMessages;
-		this.jobs = jobs;
+		this.jobs = Collections.synchronizedList(jobs);
 	}
 
 	@Override
@@ -64,7 +64,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public CopyOnWriteArrayList<Job> jobs() {
+	public List<Job> jobs() {
 		return jobs;
 	}
 
@@ -79,7 +79,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	// Dummy implementations
 	@Override
-	public void handleFinishedJob(Job job, String jobSubmitterId) {
+	public void handleFinishedJob(Job job) {
 	}
 
 	@Override
@@ -88,7 +88,8 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleReceivedJob(Job job) {
+	public void handleReceivedJob(Job job) { 
+
 	}
 
 	@Override

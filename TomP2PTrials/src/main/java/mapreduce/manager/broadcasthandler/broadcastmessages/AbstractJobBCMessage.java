@@ -31,18 +31,6 @@ public abstract class AbstractJobBCMessage extends AbstractBCMessage implements 
 	}
 
 	@Override
-	public BCMessageStatus status() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void execute(IMessageConsumer messageConsumer) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public String jobId() {
 		return job.id();
 	}

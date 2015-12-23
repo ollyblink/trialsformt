@@ -1,7 +1,7 @@
 package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
 
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
@@ -15,15 +15,17 @@ public interface IMessageConsumer extends Runnable {
 
 	public void handleReceivedJob(Job job);
 
+	public void handleFailedJob(Job job);
+
 	public void handleTaskExecutionStatusUpdate(Task task, TaskResult toUpdate);
 
 	public void updateJob(Job job, PeerAddress sender);
 
-	public void handleFinishedJob(Job job, String jobSubmitterId);
+	public void handleFinishedJob(Job job);
 
 	public BlockingQueue<IBCMessage> queue();
 
-	public CopyOnWriteArrayList<Job> jobs();
+	public List<Job> jobs();
 
 	public IMessageConsumer canTake(boolean canTake);
 

@@ -25,7 +25,6 @@ public class JobUpdateBCMessage extends AbstractJobBCMessage {
 
 	@Override
 	public void execute(final IMessageConsumer messageConsumer) {
-		job.isFinishedFor(job.procedure(job.currentProcedureIndex()), true);
 		messageConsumer.updateJob(job, sender);
 	}
 
