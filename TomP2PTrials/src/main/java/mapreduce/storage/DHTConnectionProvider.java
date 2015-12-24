@@ -90,7 +90,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public void broadcastFinishedAllTasks(Job job) {
+	public void broadcastFinishedAllTasksOfProcedure(Job job) {
 		dhtUtils.broadcastJobUpdate(job, JobUpdateBCMessage.newFinishedAllTasksBCMessage().job(job).sender(this.peerAddress()));
 
 	}
@@ -162,7 +162,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 																String taskExecutorDomain = future.dataMap().get(n).object().toString();
 
 																Task task = Task.newInstance(key, job.id())
-																		.finalDataLocationDomain(taskExecutorDomain);
+																		.finalDataLocationDomains(taskExecutorDomain);
 																procedureTaskCollector.add(task);
 																logger.info("getKVD: Successfully retrieved value for <K, Domain>: <" + key + ", "
 																		+ procedureDomain + ">: " + taskExecutorDomain);
@@ -172,9 +172,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 															logger.warn(
 																	"getKVD: Value for <K, Domain>: <" + key + ", " + procedureDomain + "> is null!");
 														}
-													} catch (ClassNotFoundException e) {
-														e.printStackTrace();
-													} catch (IOException e) {
+													} catch (ClassNotFoundException | IOException e) {
 														e.printStackTrace();
 													}
 												} else {
@@ -246,7 +244,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		try {
 			logger.info("put: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain(" + domainString + ")");
 
-			return this.dhtUtils.peerDHT().put(Number160.createHash(keyString)).data(new Data(value)).domainKey(Number160.createHash(domainString)).start();
+			return this.dhtUtils.peerDHT().put(Number160.createHash(keyString)).data(new Data(value)).domainKey(Number160.createHash(domainString))
+					.start();
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -257,7 +256,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void broadcastFailedTask(Task taskToDistribute) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

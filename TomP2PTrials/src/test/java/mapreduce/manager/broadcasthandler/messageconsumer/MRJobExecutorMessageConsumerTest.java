@@ -16,10 +16,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
+import mapreduce.execution.task.Tasks;
 import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
@@ -27,32 +29,45 @@ import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.MaxFileSizeFileSplitter;
+import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutorMessageConsumerTest {
 
+	private static final String[] TEST_KEYS = { "hello", "world", "this", "is", "a", "test" };
 	private static MRJobExecutionManagerMessageConsumer testMessageConsumer;
 	private static PeerAddress peer1;
 	private static PeerAddress peer2;
 	private static PeerAddress peer3;
+	private static Job job;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		peer1 = new PeerAddress(new Number160(1));
 		peer2 = new PeerAddress(new Number160(2));
 		peer3 = new PeerAddress(new Number160(3));
-		CopyOnWriteArrayList<Job> jobs = new CopyOnWriteArrayList<Job>();
+		List<Job> jobs = SyncedCollectionProvider.syncedList();
 		MRJobExecutionManager jobExecutor = Mockito.mock(MRJobExecutionManager.class);
 		DHTConnectionProvider dhtConnectionProvider = Mockito.mock(DHTConnectionProvider.class);
 		Mockito.when(jobExecutor.dhtConnectionProvider()).thenReturn(dhtConnectionProvider);
 		Mockito.when(dhtConnectionProvider.peerAddress()).thenReturn(peer1);
 		testMessageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(jobExecutor);
+		resetJob();
 
 		// m.updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus);
 		// public void handleFinishedJob(String jobId, String jobSubmitterId);
 
+	}
+
+	private static void resetJob() {
+		job = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(5);
+		ProcedureInformation currentProc = job.currentProcedure();
+
+		for (String taskKey : TEST_KEYS) {
+			currentProc.addTask(Task.newInstance(taskKey, job.id()));
+		}
 	}
 
 	@AfterClass
@@ -73,25 +88,15 @@ public class MRJobExecutorMessageConsumerTest {
 
 	@Test
 	public void testHandleTaskExecutionStatusUpdate() {
+		resetJob();
+
 		testMessageConsumer.jobs().clear();
-		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/task/tasksplitting/testfile";
-		if (new File(inputPath + "/tmp").exists()) {
-			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
-		}
 
-		Job job = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).inputPath(inputPath).maxFileSize(FileSize.KILO_BYTE.value())
-				.maxNrOfFinishedWorkersPerTask(5);
-
-		ITaskSplitter splitter = MaxFileSizeFileSplitter.create();
-		splitter.split(job);
 		testMessageConsumer.handleReceivedJob(job);
-		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
-		List<Task> copy = new ArrayList<Task>(tasks.size());
-		for (Task task : tasks) {
-			Task tCopy = Mockito.mock(Task.class);
-			Mockito.when(tCopy.id()).thenReturn(task.id());
-			Mockito.when(tCopy.jobId()).thenReturn(task.jobId());
-			copy.add(tCopy);
+
+		List<Task> copy = new ArrayList<Task>(TEST_KEYS.length);
+		for (String taskKey : TEST_KEYS) {
+			copy.add(Task.newInstance(taskKey, job.id()));
 		}
 
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
@@ -108,127 +113,108 @@ public class MRJobExecutorMessageConsumerTest {
 				TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
 
 		Job job1 = testMessageConsumer.jobs().get(0);
-		assertEquals(2, job1.tasks(job1.currentProcedureIndex()).peek().allAssignedPeers().size());
-		assertEquals(peer1, job1.tasks(job1.currentProcedureIndex()).peek().allAssignedPeers().get(0));
-		assertEquals(2, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer1).size());
-		assertEquals(BCMessageStatus.FINISHED_TASK, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer1).get(0));
-		assertEquals(BCMessageStatus.EXECUTING_TASK, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer1).get(1));
+		List<Task> job1Tasks = job1.currentProcedure().tasks();
+		assertEquals(2, Tasks.allAssignedPeers(job1Tasks.get(0)).size());
+		assertEquals(peer1, Tasks.allAssignedPeers(job1Tasks.get(0)).get(0));
+		assertEquals(2, Tasks.statiForPeer(job1Tasks.get(0), peer1).size());
+		assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(job1Tasks.get(0), peer1).get(0));
+		assertEquals(BCMessageStatus.EXECUTING_TASK, Tasks.statiForPeer(job1Tasks.get(0), peer1).get(1));
+
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
 				TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
-		assertEquals(BCMessageStatus.FINISHED_TASK, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer1).get(1));
 
-		assertEquals(peer2, job1.tasks(job1.currentProcedureIndex()).peek().allAssignedPeers().get(1));
-		assertEquals(1, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer2).size());
-		assertEquals(BCMessageStatus.FINISHED_TASK, job1.tasks(job1.currentProcedureIndex()).peek().statiForPeer(peer2).get(0));
+		assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(job1Tasks.get(0), peer1).get(1));
+
+		assertEquals(peer2, Tasks.allAssignedPeers(job1Tasks.get(0)).get(1));
+		assertEquals(1, Tasks.statiForPeer(job1Tasks.get(0), peer2).size());
+		assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(job1Tasks.get(0), peer2).get(0));
 	}
 
 	@Test
-	public void testTaskUpdatesAndFinishedAllTasks()
-			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	public void testTaskUpdatesAndFinishedAllTasks() {
+		resetJob();
 
 		testMessageConsumer.jobs().clear();
-		String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/mapreduce/execution/task/tasksplitting/testfile";
-		if (new File(inputPath + "/tmp").exists()) {
-			FileUtils.INSTANCE.deleteTmpFolder(new File(inputPath + "/tmp"));
-		}
-
-		long megaByte = FileSize.MEGA_BYTE.value();
-
-		int maxNumberOfFinishedPeers = 5;
-		Job job = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
-				.inputPath(inputPath).maxFileSize(megaByte);
-
-		ITaskSplitter splitter = MaxFileSizeFileSplitter.create();
-		splitter.split(job);
-		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
-
+		List<Task> tasks = job.currentProcedure().tasks();
 		for (Task task : tasks) {
-			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
-			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK),
+					job.maxNrOfFinishedWorkersPerTask());
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)),
+					job.maxNrOfFinishedWorkersPerTask());
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK),
+					job.maxNrOfFinishedWorkersPerTask());
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)),
+					job.maxNrOfFinishedWorkersPerTask());
 		}
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
-		BlockingQueue<Task> setTasks = testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex());
-		for (Task task : setTasks) {
-			assertEquals(peer1, task.allAssignedPeers().get(0));
-			assertEquals(BCMessageStatus.FINISHED_TASK, task.statiForPeer(task.allAssignedPeers().get(0)).get(0));
-			assertEquals(peer2, task.allAssignedPeers().get(1));
-			assertEquals(BCMessageStatus.FINISHED_TASK, task.statiForPeer(task.allAssignedPeers().get(1)).get(0));
+		List<Task> tasks2 = testMessageConsumer.jobs().get(0).currentProcedure().tasks();
+		for (Task task : tasks2) {
+			assertEquals(peer1, Tasks.allAssignedPeers(task).get(0));
+			assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(task, Tasks.allAssignedPeers(task).get(0)).get(0));
+			assertEquals(peer2, Tasks.allAssignedPeers(task).get(1));
+			assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(task, Tasks.allAssignedPeers(task).get(1)).get(0));
 		}
 		//
-		Job jobCopy = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
-				.inputPath(inputPath).maxFileSize(megaByte);
-		Field idField = jobCopy.getClass().getDeclaredField("id");
-		idField.setAccessible(true);
-		idField.set(jobCopy, job.id());
-
-		splitter.split(jobCopy);
-
-		for (Task task : tasks) {
-			jobCopy.tasks(jobCopy.currentProcedureIndex()).add(task.copyWithoutExecutingPeers());
+		List<Task> copy = new ArrayList<Task>(TEST_KEYS.length);
+		for (String taskKey : TEST_KEYS) {
+			copy.add(Task.newInstance(taskKey, job.id()));
 		}
-		for (Task task : jobCopy.tasks(jobCopy.currentProcedureIndex())) {
-			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
-			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
-			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
+		int max = job.maxNrOfFinishedWorkersPerTask();
+		for (Task task : copy) {
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK), max);
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK), max);
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);
 
 			TaskResult next = TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1));
-			task.updateStati(next);
+			Tasks.updateStati(task, next, max);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 
 			next = TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK);
-			task.updateStati(next);
+			Tasks.updateStati(task, next, max);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 
 			next = TaskResult.newInstance().sender(peer3).status(BCMessageStatus.EXECUTING_TASK);
-			task.updateStati(next);
+			Tasks.updateStati(task, next, max);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 
 			next = TaskResult.newInstance().sender(peer3).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1));
-			task.updateStati(next);
+			Tasks.updateStati(task, next, max);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 		}
 
-		assertEquals(3, testMessageConsumer.jobs().get(0).tasks(0).peek().allAssignedPeers().size());
-		assertEquals(1, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer1).size());
-		assertEquals(2, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer2).size());
-		assertEquals(1, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer3).size());
-		assertEquals(BCMessageStatus.FINISHED_TASK, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer1).get(0));
-		assertEquals(BCMessageStatus.FINISHED_TASK, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer2).get(0));
-		assertEquals(BCMessageStatus.EXECUTING_TASK, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer2).get(1));
-		assertEquals(BCMessageStatus.FINISHED_TASK, testMessageConsumer.jobs().get(0).tasks(0).peek().statiForPeer(peer3).get(0));
+		Task taskToCheck = testMessageConsumer.jobs().get(0).currentProcedure().tasks().get(0);
+		assertEquals(3, Tasks.allAssignedPeers(taskToCheck).size());
+		assertEquals(1, Tasks.statiForPeer(taskToCheck, peer1).size());
+		assertEquals(2, Tasks.statiForPeer(taskToCheck, peer2).size());
+		assertEquals(1, Tasks.statiForPeer(taskToCheck, peer3).size());
+		assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(taskToCheck, peer1).get(0));
+		assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(taskToCheck, peer2).get(0));
+		assertEquals(BCMessageStatus.EXECUTING_TASK, Tasks.statiForPeer(taskToCheck, peer2).get(1));
+		assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(taskToCheck, peer3).get(0));
 
-		testMessageConsumer.updateJob(jobCopy, peer2);
+		testMessageConsumer.updateJob(job.copy(), peer2);
 
-		Job jobCopy2 = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers)
-				.inputPath(inputPath).maxFileSize(megaByte);
-		// Field idField = jobCopy2.getClass().getDeclaredField("id");
-		// idField.setAccessible(true);
-		idField.set(jobCopy2, job.id());
-
-		splitter.split(jobCopy2);
-
-		for (Task task : tasks) {
-			jobCopy2.tasks(jobCopy2.currentProcedureIndex()).add(task.copyWithoutExecutingPeers());
+		List<Task> copy2 = new ArrayList<Task>(TEST_KEYS.length);
+		for (String taskKey : TEST_KEYS) {
+			copy2.add(Task.newInstance(taskKey, job.id()));
 		}
-		for (Task task : jobCopy2.tasks(jobCopy2.currentProcedureIndex())) {
-			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
-			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
-			task.updateStati(TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
+		for (Task task : copy2) {
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);
+			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
 			System.err.println("Task is finished? " + task.isFinished());
 		}
 
-		testMessageConsumer.updateJob(jobCopy2, peer3);
-		BlockingQueue<Task> tasks2 = testMessageConsumer.jobs().get(0).tasks(0);
+		testMessageConsumer.updateJob(job.copy(), peer3);
+		List<Task> tasks3 = testMessageConsumer.jobs().get(0).currentProcedure().tasks();
 		int cntr = 0;
-		for (Task task : tasks2) {
-			assertEquals(1, task.allAssignedPeers().size());
+		for (Task task : tasks3) {
+			assertEquals(1, Tasks.allAssignedPeers(task).size());
 			int number = 0;
 			for (int i = 1; i <= 3; ++i) {
 				if (i == 1 || i == 3) {
@@ -237,8 +223,8 @@ public class MRJobExecutorMessageConsumerTest {
 					number = 2;
 				}
 				System.err.println(cntr++ + " i is " + i);
-				assertEquals(number, task.statiForPeer(new PeerAddress(new Number160(i))).size());
-				for (BCMessageStatus s : task.statiForPeer(new PeerAddress(new Number160(i)))) {
+				assertEquals(number, Tasks.statiForPeer(task, new PeerAddress(new Number160(i))).size());
+				for (BCMessageStatus s : Tasks.statiForPeer(task, new PeerAddress(new Number160(i)))) {
 					assertEquals(BCMessageStatus.FINISHED_TASK, s);
 					// System.err.println(s);
 				}

@@ -58,6 +58,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	@Override
 	public void handleReceivedJob(Job job) {
 		if (!jobs.contains(job)) {
+			logger.info("NEW JOB: " + job.id());
 			jobs.add(job);
 		}
 	}
@@ -67,9 +68,11 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		synchronized (jobs) {
 			for (Job job : jobs) {
 				if (job.id().equals(taskToUpdate.jobId())) {
-					List<Task> tasks = job.procedure(job.currentProcedureIndex()).tasks();
-					Task task2 = tasks.get(tasks.indexOf(taskToUpdate));
-					Tasks.updateStati(task2, toUpdate, job.maxNrOfFinishedWorkersPerTask());
+					List<Task> tasks = job.currentProcedure().tasks();
+					synchronized (tasks) {
+						int taskIndex = tasks.indexOf(taskToUpdate);
+						Tasks.updateStati(tasks.get(taskIndex), toUpdate, job.maxNrOfFinishedWorkersPerTask());
+					}
 				}
 			}
 		}

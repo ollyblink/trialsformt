@@ -28,4 +28,6 @@ public interface IContext {
 
 	public void updateResultHash(Object keyOut, Object valueOut);
 
+	public void broadcastResultHash();
+
 }

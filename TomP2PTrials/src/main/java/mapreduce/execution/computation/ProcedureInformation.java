@@ -105,4 +105,11 @@ public class ProcedureInformation implements Serializable {
 			}
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "ProcedureInformation [procedure=" + procedure + ", isFinished=" + isFinished + ", tasks=" + tasks + "]";
+	}
+	
+	
 }

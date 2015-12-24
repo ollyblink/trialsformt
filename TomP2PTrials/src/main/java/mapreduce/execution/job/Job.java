@@ -7,8 +7,10 @@ import java.util.List;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureInformation;
+import mapreduce.execution.task.Task;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
+import mapreduce.utils.SyncedCollectionProvider;
 
 public class Job implements Serializable {
 
@@ -237,6 +239,30 @@ public class Job implements Serializable {
 		if (submissionCounter != other.submissionCounter)
 			return false;
 		return true;
+	}
+
+	public Job copy() {
+		Job job = new Job(jobSubmitterID);
+		job.id = id;
+		job.currentProcedureIndex = currentProcedureIndex;
+		job.fileInputFolderPath = fileInputFolderPath;
+		job.maxFileSize = maxFileSize;
+		job.maxNrOfDHTActions = maxNrOfDHTActions;
+		job.maxNrOfFinishedWorkersPerTask = maxNrOfFinishedWorkersPerTask;
+		job.procedures = SyncedCollectionProvider.syncedList();
+		for (ProcedureInformation pI : procedures) {
+			ProcedureInformation copyPI = ProcedureInformation.create(pI.procedure()).isFinished(pI.isFinished());
+			List<Task> tasks = copyPI.tasks();
+			for (Task task : pI.tasks()) {
+				Task taskCopy = Task.newInstance(task.id(), task.jobId()); // NO DEEP TASK COPY
+				tasks.add(taskCopy);
+			}
+			job.procedures.add(pI);
+		}
+		job.submissionCounter = submissionCounter;
+		job.timeToLiveInMs = timeToLiveInMs;
+		job.useLocalStorageFirst = useLocalStorageFirst;
+		return job;
 	}
 
 }

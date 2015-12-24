@@ -49,7 +49,7 @@ public interface IDHTConnectionProvider {
 
 	public void broadcastFinishedTask(Task task, Number160 resultHash);
 
-	public void broadcastFinishedAllTasks(Job job);
+	public void broadcastFinishedAllTasksOfProcedure(Job job);
 
 	public void broadcastFinishedJob(Job job);
 

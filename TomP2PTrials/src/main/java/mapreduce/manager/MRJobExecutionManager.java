@@ -1,6 +1,7 @@
 package mapreduce.manager;
 
-import java.io.IOError;
+import static mapreduce.utils.SyncedCollectionProvider.syncedList;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,7 +28,9 @@ import mapreduce.manager.conditions.EmptyListCondition;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.TimeToLive;
+import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
@@ -112,119 +115,140 @@ public class MRJobExecutionManager {
 		if (TimeToLive.INSTANCE.cancelOnTimeout(jobs, EmptyListCondition.create())) {
 
 			ProcedureInformation procedureInformation = jobs.get(0).procedure(jobs.get(0).currentProcedureIndex());
+			logger.info("Got job: " + jobs.get(0).id() + ", starting procedure " + procedureInformation);
 
 			// Get the data for the job's current procedure
 			this.server = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
-			List<FutureGet> futureTaskExecutorDomains = Collections.synchronizedList(new ArrayList<>());
 			List<Task> tasks = procedureInformation.tasks();
+			String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(jobs.get(0));
 			this.createTaskThread = server.submit(new Runnable() {
 
 				@Override
 				public void run() {
-					dhtConnectionProvider.createTasks(jobs.get(0), futureTaskExecutorDomains, tasks);
+					// Get all procedure keys!! Create all the tasks for each key!!!
+					dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, jobProcedureDomain)
+							.addListener(createTasksForProcedure(tasks, jobProcedureDomain));
 				}
-
-			});
-			Futures.whenAnySuccess(futureTaskExecutorDomains).addListener(new BaseFutureListener<FutureDone<FutureGet>>() {
-
-				@Override
-				public void operationComplete(FutureDone<FutureGet> future) throws Exception {
-					if (future.isSuccess()) {
-						Task task = null;
-						while ((task = taskExecutionScheduler.schedule(tasks)) != null && !taskExecutor.abortedTaskExecution()) {
-							final Task taskToDistribute = task;
-							dhtConnectionProvider.broadcastExecutingTask(task);
-
-							// Now we actually wanna retrieve the data from the specified locations...
-							String keyString = task.id().toString();
-							String domainString = DomainProvider.INSTANCE.jobProcedureDomain(jobs.get(0)) + "_"
-									+ DomainProvider.INSTANCE.executorTaskDomain(task.id(), task.finalDataLocation().first().peerId().toString(),
-											task.finalDataLocation().second());
-
-							dhtConnectionProvider.getAll(keyString, domainString).addListener(new BaseFutureListener<FutureGet>() {
-
-								@Override
-								public void operationComplete(FutureGet future) throws Exception {
-									if (future.isSuccess()) {
-										List<Object> dataForTask = Collections.synchronizedList(new ArrayList<>());
-										try {
-											if (future.dataMap() != null) {
-												for (Number640 n : future.dataMap().keySet()) {
-													Object value = future.dataMap().get(n).object();
-													dataForTask.add(value);
-												}
-												taskExecutor.execute(procedureInformation.procedure(), keyString, dataForTask, context);// Non-blocking!
-												dhtConnectionProvider.broadcastFinishedTask(taskToDistribute, context.resultHash());
-											}
-										} catch (IOException e) {
-											dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
-										}
-									}
-								}
-
-								@Override
-								public void exceptionCaught(Throwable t) throws Exception {
-									dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
-								}
-
-							});
-
-						}
-						if (!taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the
-																	// others...
-
-							procedureInformation.isFinished(true);
-							dhtConnectionProvider.broadcastFinishedAllTasks(jobs.get(0));
-
-						}
-					} else {
-						logger.warn("Something wrong");
-					}
-				}
-
-				@Override
-				public void exceptionCaught(Throwable t) throws Exception {
-					// TODO Auto-generated method stub
-
-				}
-
 			});
 
-			// awaitMessageConsumerCompletion();
-			// while (!procedureInformation.isFinished()) {
-			// System.err.println("Waitng... Waiting...");
-			// try {
-			// Thread.sleep(100);
-			// } catch (InterruptedException e) {
-			// // TODO Auto-generated catch block
-			// e.printStackTrace();
-			// }
-			// }
-			// printResults(procedureInformation.tasks());
-			// Create new tasks
+			Task task = null;
+			while ((task = taskExecutionScheduler.schedule(tasks)) != null && !taskExecutor.abortedTaskExecution()) {
+				final Task taskToDistribute = task;
+				List<String> finalDataLocations = task.finalDataLocations();
+				List<Object> valuesCollector = syncedList();
+				List<FutureGet> futureGets = syncedList();
 
-			// if (jobs.get(0).hasNextProcedure()) {
-			// // Create new tasks
-			// // add new tasks to job
-			//
-			// } else {
-			// jobs.remove(0);
-			// }
+				// TODO build in that the data retrieval may take a certain number of repetitions when failed before being broadcasted as failed
+				for (int i = 0; i < finalDataLocations.size(); ++i) {
+					dhtConnectionProvider.broadcastExecutingTask(task);
+					// Now we actually wanna retrieve the data from the specified locations...
+					futureGets.add(retrieveDataForTask(task, finalDataLocations.get(i), valuesCollector));
+				}
+				Futures.whenAllSuccess(futureGets)
+						.addListener(executeTaskOnSuccessfulDataRetrieval(procedureInformation, taskToDistribute, valuesCollector));
 
-			// Clean up data from old tasks
-			// cleanUpDHT(jobs.get(0).taskDataToRemove(jobs.get(0).currentProcedureIndex()));
-			// logger.info("clean up");
-			executeJob();
-		} else {
-			handleTimeout();
+			}
+
+			if (!taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
+
+				procedureInformation.isFinished(true);
+				dhtConnectionProvider.broadcastFinishedAllTasksOfProcedure(jobs.get(0));
+
+			}
 		}
-
 	}
 
-	private void handleTimeout() {
-		// TODO Auto-generated method stub
+	protected BaseFutureListener<FutureGet> createTasksForProcedure(List<Task> tasks, String jobProcedureDomain) {
+		return new BaseFutureListener<FutureGet>() {
 
+			@Override
+			public void operationComplete(FutureGet future) throws Exception {
+				if (future.isSuccess()) {
+					try {
+						if (future.dataMap() != null) {
+							for (Number640 n : future.dataMap().keySet()) {
+								Object key = future.dataMap().get(n).object();
+								Task task = Task.newInstance(key, jobs.get(0).id());
+								dhtConnectionProvider.getAll(key.toString(), jobProcedureDomain).addListener(new BaseFutureListener<FutureGet>() {
+
+									@Override
+									public void operationComplete(FutureGet future) throws Exception {
+										if (future.isSuccess()) {
+											try {
+												if (future.dataMap() != null) {
+													for (Number640 n : future.dataMap().keySet()) {
+														Object taskExecutorDomain = future.dataMap().get(n).object();
+														task.finalDataLocationDomains(taskExecutorDomain.toString());
+													}
+													tasks.add(task);
+												}
+											} catch (IOException e) {
+												// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
+											}
+										} else {
+											// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
+										}
+									}
+
+									@Override
+									public void exceptionCaught(Throwable t) throws Exception {
+										logger.warn("Exception thrown", t);
+										// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
+									}
+								});
+							}
+						}
+					} catch (IOException e) {
+						// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
+					}
+				} else {
+					// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.warn("Exception thrown", t);
+				dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
+			}
+		};
+	}
+
+	private BaseFutureAdapter<FutureDone<FutureGet[]>> executeTaskOnSuccessfulDataRetrieval(ProcedureInformation procedureInformation,
+			final Task taskToDistribute, List<Object> valuesCollector) {
+		return new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+			@Override
+			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
+				context.task(taskToDistribute);
+				taskExecutor.execute(procedureInformation.procedure(), taskToDistribute.id(), valuesCollector, context);// Non-blocking!
+			}
+		};
+	}
+
+	private FutureGet retrieveDataForTask(Task task, String taskExecutorDomain, List<Object> valuesCollector) {
+		return dhtConnectionProvider.getAll(task.id(), taskExecutorDomain).addListener(new BaseFutureListener<FutureGet>() {
+
+			@Override
+			public void operationComplete(FutureGet future) throws Exception {
+				if (future.isSuccess()) {
+					try {
+						if (future.dataMap() != null) {
+							for (Number640 n : future.dataMap().keySet()) {
+								valuesCollector.add(((Value) future.dataMap().get(n).object()).value());
+							}
+						}
+					} catch (IOException e) {
+						logger.warn("IOException on getting the data", e);
+					}
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				logger.warn("Exception on getting the data", t);
+			}
+		});
 	}
 
 	public void abortExecution(Job job) {
@@ -255,7 +279,7 @@ public class MRJobExecutionManager {
 		return this.taskExecutor.abortedTaskExecution();
 	}
 
-	public List<Job> jobs() { 
+	public List<Job> jobs() {
 		return jobs;
 	}
 

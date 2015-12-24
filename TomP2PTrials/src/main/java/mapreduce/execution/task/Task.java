@@ -2,6 +2,7 @@ package mapreduce.execution.task;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class Task implements Serializable, Comparable<Task> {
 	 * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
 	 * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
 	 */
-	private String finalTaskExecutorDomain;
+	private List<String> finalTaskExecutorDomains;
 
 	private Task(Object key, String jobId) {
 		this.key = key;
@@ -107,6 +108,15 @@ public class Task implements Serializable, Comparable<Task> {
 		return finalDataLocation;
 	}
 
+	public List<String> finalDataLocations() {
+		return finalTaskExecutorDomains;
+	}
+
+	public Task finalDataLocationDomains(String... finalTaskExecutorDomains) {
+		Collections.addAll(this.finalTaskExecutorDomains, finalTaskExecutorDomains);
+		return this;
+	}
+
 	@Override
 	public String toString() {
 		return "Task [id=" + key + ", jobId=" + jobId + ", isFinished=" + isFinished + ", executingPeers=" + executingPeers + ", taskResults="
@@ -144,8 +154,4 @@ public class Task implements Serializable, Comparable<Task> {
 		return this.id().compareTo(o.id().toString());
 	}
 
-	public Task finalDataLocationDomain(String finalTaskExecutorDomain) {
-		this.finalTaskExecutorDomain = finalTaskExecutorDomain;
-		return this;
-	}
 }

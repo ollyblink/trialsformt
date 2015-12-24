@@ -137,4 +137,9 @@ public class DHTStorageContext extends AbstractBaseContext {
 		return this.keys;
 	}
 
+	@Override
+	public void broadcastResultHash() {
+		dhtConnectionProvider.broadcastFinishedTask(task, resultHash());
+	}
+
 }

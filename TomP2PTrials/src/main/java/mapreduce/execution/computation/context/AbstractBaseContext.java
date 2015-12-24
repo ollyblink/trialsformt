@@ -78,4 +78,10 @@ public abstract class AbstractBaseContext implements IContext {
 		resultHash.xor(Number160.createHash(keyOut.toString())).xor(Number160.createHash(valueOut.toString()));
 	}
 
+	@Override
+	public void broadcastResultHash() {
+		// TODO Auto-generated method stub
+
+	}
+
 }

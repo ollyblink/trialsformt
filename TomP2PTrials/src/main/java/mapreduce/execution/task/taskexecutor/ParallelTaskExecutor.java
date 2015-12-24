@@ -49,6 +49,7 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 				@Override
 				public void run() {
 					procedure.process(key, values, context);
+					context.broadcastResultHash();
 				}
 			};
 			Future<?> submit = server.submit(run);
