@@ -39,9 +39,9 @@ public class MRJobSubmissionManager {
 	private String resultDomain;
 
 	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, List<Job> jobs) {
-		this.dhtConnectionProvider(dhtConnectionProvider);
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
-		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.newInstance(id, jobs).canTake(true);
+		this.dhtConnectionProvider(dhtConnectionProvider.owner(this.id));
+		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.newInstance(this, jobs).canTake(true);
 		new Thread(messageConsumer).start();
 		dhtConnectionProvider.broadcastHandler().queue(messageConsumer.queue());
 	}
@@ -77,8 +77,9 @@ public class MRJobSubmissionManager {
 				while ((line = reader.readLine()) != null) {
 					String taskKey = keyfilePath;// + "_" + domainCounter;
 					String taskValue = line + "\n";
-					Task task = Task.newInstance(keyfilePath, job.id()).finalDataLocation(Tuple.create(dhtConnectionProvider.peerAddress(), 0));
-					String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, task.finalDataLocation());
+					Tuple<String, Integer> taskExecutor = Tuple.create(id, 0);
+					Task task = Task.newInstance(keyfilePath, job.id()).finalDataLocationDomains(taskExecutor.combine());
+					String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, taskExecutor);
 					tasks.add(task);
 					dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomain, true).addListener(new BaseFutureListener<FuturePut>() {
 
@@ -99,6 +100,7 @@ public class MRJobSubmissionManager {
 												public void operationComplete(FuturePut future) throws Exception {
 													if (future.isSuccess()) {
 														logger.info("Successfully added data. Broadcasting job.");
+														job.resetSubmissionCounter();
 														dhtConnectionProvider.broadcastNewJob(job);
 													} else {
 														logger.warn(future.failedReason());

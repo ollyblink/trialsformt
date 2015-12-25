@@ -37,124 +37,112 @@ public class CTPrep2 {
 		final PeerDHT master = peers[0];
 		Set<String> domains = new TreeSet<String>();
 
-		try {
-			Random RND = new Random();
-			final PeerDHT[] peers1 = peers;
-			Thread t1 = new Thread(new Runnable() {
+		Random RND = new Random();
+		final PeerDHT[] peers1 = peers;
+		Thread t1 = new Thread(new Runnable() {
 
-				@Override
-				public void run() {
-					// TODO Auto-generated method stub
-					for (int i = 0; i < 5; ++i) {
-						String domain = "job_1_procedure_1_task_1_executor_1_statusindex_0";
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				for (int i = 0; i < 5; ++i) {
+					String domain = "job_1_procedure_1_task_1_executor_1_statusindex_0";
 
-						try {
-							FuturePut futurePut = peers1[RND.nextInt(100)].add(Number160.createHash("Mapper")).data(new Data(new Value("Olly" + i)))
-									.domainKey(Number160.createHash(domain)).streaming(true)
-									// .versionKey(Number160.createHash(version))
-									.start();
+					try {
+						FuturePut futurePut = peers1[RND.nextInt(100)].add(Number160.createHash("Mapper")).data(new Data(new Value("Olly" + i)))
+								.domainKey(Number160.createHash(domain)).streaming(true)
+								// .versionKey(Number160.createHash(version))
+								.start();
 
-							// System.err.println("Olly of " + domain);
-							futurePut.addListener(new BaseFutureListener<FuturePut>() {
+						// System.err.println("Olly of " + domain);
+						futurePut.addListener(new BaseFutureListener<FuturePut>() {
 
-								@Override
-								public void operationComplete(FuturePut future) throws Exception {
-									if (future.isSuccess()) {
-										System.err.println("added data");
-										// TreeMap<Number640, Data> treeMap = new TreeMap<Number640, Data>();
-										// treeMap.put(
-										// new Number640(Number160.createHash("Mapper"), Number160.createHash("Mapper"),
-										// Number160.createHash("Mapper"), Number160.createHash("Mapper")),
-										// new Data("added some mapper to the dht"));
-										// master.peer().broadcast(Number160.createHash("Mapper")).dataMap(treeMap).start();
+							@Override
+							public void operationComplete(FuturePut future) throws Exception {
+								if (future.isSuccess()) {
+									System.err.println("added data");
+									// TreeMap<Number640, Data> treeMap = new TreeMap<Number640, Data>();
+									// treeMap.put(
+									// new Number640(Number160.createHash("Mapper"), Number160.createHash("Mapper"),
+									// Number160.createHash("Mapper"), Number160.createHash("Mapper")),
+									// new Data("added some mapper to the dht"));
+									// master.peer().broadcast(Number160.createHash("Mapper")).dataMap(treeMap).start();
 
-									}
 								}
-
-								@Override
-								public void exceptionCaught(Throwable t) throws Exception {
-									t.printStackTrace();
-								}
-							});
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-
-						// try {
-						// Thread.sleep(1000);
-						// } catch (InterruptedException e) {
-						// // TODO Auto-generated catch block
-						// e.printStackTrace();
-						// }
-					}
-				}
-			});
-
-			// Thread.sleep(500);
-			// } 
-			Thread.sleep(2000);
-			// for (int i = 0; i < 5; ++i) {
-			// String domain = "job_1_procedure_1_task_1_executor_1_statusindex_" + ((i + 1) % 2);
-			// System.err.println(master.storageLayer().get());
-			// // System.err.println("Contains " + domain + "? " + master.storageLayer().contains(
-			// // new Number640(new Number320(Number160.createHash("Mapper"), Number160.createHash(domain)), Number160.ZERO, Number160.ZERO)));
-			// }
-
-			// Thread.sleep(2000);
-			// for (String key : keys) {
-			// System.err.println("b-(" + key + ")");
-
-			Thread t2 = new Thread(new Runnable() {
-
-				@Override
-				public void run() {
-					System.err.println("Here");
-					FutureGet futureGet = master.get(Number160.createHash("Mapper"))
-							.domainKey(Number160.createHash("job_1_procedure_1_task_1_executor_1_statusindex_0")).streaming(true).all().start();
-					 
-					futureGet.addListener(new BaseFutureListener<FutureGet>() {
-
-						@Override
-						public void operationComplete(FutureGet future) throws Exception {
-
-							if (future.isSuccess()) {
-								Data data = future.data();
-								if (data != null) {
-
-									System.err.println("Called data: " + data.object());
-								}
-								Stream<Data> stream = future.dataMap().values().stream(); 
-								stream.
- 								System.err.println("Size: " + entrySet.size());
-								for (Entry<Number640, Data> e : entrySet) {
-									System.err.println("Called data map: " + e.getValue().object());
-								}
-								future.addListener(this);
-							} else {
-								System.err.println("No success");
 							}
-						}
 
-						@Override
-						public void exceptionCaught(Throwable t) throws Exception {
-							t.printStackTrace();
-						}
-					});
+							@Override
+							public void exceptionCaught(Throwable t) throws Exception {
+								t.printStackTrace();
+							}
+						});
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+					// try {
+					// Thread.sleep(1000);
+					// } catch (InterruptedException e) {
+					// // TODO Auto-generated catch block
+					// e.printStackTrace();
+					// }
 				}
-			});
-			t2.run();
-
-			t1.run();
-
-		{
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
 			}
-			master.shutdown();
-		}
+		});
+
+		// Thread.sleep(500);
+		// }
+		Thread.sleep(2000);
+		// for (int i = 0; i < 5; ++i) {
+		// String domain = "job_1_procedure_1_task_1_executor_1_statusindex_" + ((i + 1) % 2);
+		// System.err.println(master.storageLayer().get());
+		// // System.err.println("Contains " + domain + "? " + master.storageLayer().contains(
+		// // new Number640(new Number320(Number160.createHash("Mapper"), Number160.createHash(domain)), Number160.ZERO, Number160.ZERO)));
+		// }
+
+		// Thread.sleep(2000);
+		// for (String key : keys) {
+		// System.err.println("b-(" + key + ")");
+
+		Thread t2 = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				System.err.println("Here");
+				FutureGet futureGet = master.get(Number160.createHash("Mapper"))
+						.domainKey(Number160.createHash("job_1_procedure_1_task_1_executor_1_statusindex_0")).streaming(true).all().start()
+						.addListener(new BaseFutureListener<FutureGet>() {
+
+					@Override
+					public void operationComplete(FutureGet future) throws Exception {
+
+						if (future.isSuccess()) {
+							Data data = future.data();
+							if (data != null) {
+
+								System.err.println("Called data: " + data.object());
+							}
+							// Stream<Data> stream = future.dataMap().values().stream();
+							// stream.
+							// System.err.println("Size: " + entrySet.size());
+							// for (Entry<Number640, Data> e : entrySet) {
+							// System.err.println("Called data map: " + e.getValue().object());
+							// }
+							future.addListener(this);
+						} else {
+							System.err.println("No success");
+						}
+					}
+
+					@Override
+					public void exceptionCaught(Throwable t) throws Exception {
+						t.printStackTrace();
+					}
+				});
+			}
+		});
+		t2.run();
+		t1.run();
 
 	}
 

@@ -25,7 +25,7 @@ public class JobUpdateBCMessage extends AbstractJobBCMessage {
 
 	@Override
 	public void execute(final IMessageConsumer messageConsumer) {
-		messageConsumer.updateJob(job, sender);
+		messageConsumer.handleFinishedAllTasks(job, sender);
 	}
 
 }

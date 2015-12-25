@@ -71,43 +71,41 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					List<Task> tasks = job.currentProcedure().tasks();
 					synchronized (tasks) {
 						int taskIndex = tasks.indexOf(taskToUpdate);
+						if (taskIndex < 0) {// Received a new task currently not yet assigned
+							tasks.add(taskToUpdate);
+							taskIndex = tasks.size() - 1;
+						}
 						Tasks.updateStati(tasks.get(taskIndex), toUpdate, job.maxNrOfFinishedWorkersPerTask());
+						break;
 					}
 				}
 			}
 		}
-
 	}
 
 	@Override
-	public void updateJob(Job job, PeerAddress sender) {
+	public void handleFinishedAllTasks(Job job, String sender) {
 		// if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
 		// return;
 		// }
-		if (!sender.equals(this.jobExecutor.dhtConnectionProvider().peerAddress())) {
+		if (!sender.equals(this.jobExecutor.dhtConnectionProvider().owner())) {
 			this.jobExecutor.abortExecution(job);
 		}
 		logger.info("Sync job");
 		this.jobs.set(this.jobs.indexOf(job), job);
 		logger.info("Synced job");
-		this.updateMessagesFromJobUpdate(job.id());
-		logger.info("removed messages for job");
-	}
-
-	public void updateMessagesFromJobUpdate(String jobId) {
-		this.removeMessagesForJob(jobBCMessageUpdateCondition.jobId(jobId).types(finishedAllTasksMessagesToRemove));
-	}
-
-	private void removeMessagesForJob(ICondition<IBCMessage> removeMessageCondition) {
+		jobBCMessageUpdateCondition.jobId(job.id()).types(finishedAllTasksMessagesToRemove);
 		synchronized (this.bcMessages) {
 			BlockingQueue<IBCMessage> tmp = new PriorityBlockingQueue<IBCMessage>();
 			for (IBCMessage t : this.bcMessages) {
-				if (removeMessageCondition.metBy(t)) {
+				if (jobBCMessageUpdateCondition.metBy(t)) {
 					tmp.add(t);
 				}
 			}
 			this.bcMessages = tmp;
 		}
+		logger.info("removed messages for job");
+		logger.info("job current tasks for current procedure: " + job.currentProcedure().tasks().get(0).executingPeers().keySet());
 	}
 
 	@Override

@@ -1,19 +1,16 @@
 package mapreduce.execution.task;
 
+import static mapreduce.utils.SyncedCollectionProvider.syncedList;
+import static mapreduce.utils.SyncedCollectionProvider.syncedListMultimap;
+
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimaps;
 
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
-import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
 
 public class Task implements Serializable, Comparable<Task> {
 
@@ -28,38 +25,34 @@ public class Task implements Serializable, Comparable<Task> {
 	private String jobId;
 	private boolean isFinished;
 
-	private ListMultimap<PeerAddress, BCMessageStatus> executingPeers;
-	private ListMultimap<Number160, Tuple<PeerAddress, Integer>> taskResults;
-	private ListMultimap<Tuple<PeerAddress, Integer>, Number160> reverseTaskResults;
+	private ListMultimap<String, BCMessageStatus> executingPeers; // String here: JobSubmitter/Executor id
+	private ListMultimap<Number160, String> taskResults; // String here: JobSubmitter/Executor id +"_"+locationIndex
+	private ListMultimap<String, Number160> reverseTaskResults;// String here: JobSubmitter/Executor id +"_"+locationIndex
 
-	/**
-	 * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
-	 * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
-	 */
-	private Tuple<PeerAddress, Integer> finalDataLocation;
+	// /**
+	// * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
+	// * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
+	// */
+	// private Tuple<PeerAddress, Integer> finalDataLocation;
 	/**
 	 * Rejected data locations that need to be removed
 	 */
-	private List<Tuple<PeerAddress, Integer>> dataToRemove;
+	private List<String> removableTaskExecutorDomains;// String here: JobSubmitter/Executor id +"_"+locationIndex
 	/**
 	 * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
 	 * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
 	 */
-	private List<String> finalTaskExecutorDomains;
+	private List<String> finalTaskExecutorDomains;// String here: JobSubmitter/Executor id +"_"+locationIndex
 
 	private Task(Object key, String jobId) {
 		this.key = key;
 		this.jobId = jobId;
-		ArrayListMultimap<PeerAddress, BCMessageStatus> tmp = ArrayListMultimap.create();
-		this.executingPeers = Multimaps.synchronizedListMultimap(tmp);
-		ArrayListMultimap<Number160, Tuple<PeerAddress, Integer>> tmp2 = ArrayListMultimap.create();
-		this.taskResults = Multimaps.synchronizedListMultimap(tmp2);
-		ArrayListMultimap<Tuple<PeerAddress, Integer>, Number160> tmp3 = ArrayListMultimap.create();
-		this.reverseTaskResults = Multimaps.synchronizedListMultimap(tmp3);
+		this.executingPeers = syncedListMultimap();
+		this.taskResults = syncedListMultimap();
+		this.reverseTaskResults = syncedListMultimap();
+		this.finalTaskExecutorDomains = syncedList();
+		this.removableTaskExecutorDomains = syncedList();
 		this.isFinished = false;
-		this.finalDataLocation = null;
-		// this.finalTaskExecutorDomains = Collections.synchronizedList(new ArrayList<>());
-		this.dataToRemove = Collections.synchronizedList(new ArrayList<>());
 	}
 
 	public static Task newInstance(Object key, String jobId) {
@@ -83,32 +76,23 @@ public class Task implements Serializable, Comparable<Task> {
 		return this;
 	}
 
-	public List<Tuple<PeerAddress, Integer>> dataToRemove() {
-		return this.dataToRemove;
+	public List<String> removableTaskExecutorDomains() {
+		return this.removableTaskExecutorDomains;
 	}
 
-	public ListMultimap<PeerAddress, BCMessageStatus> executingPeers() {
+	public ListMultimap<String, BCMessageStatus> executingPeers() {
 		return this.executingPeers;
 	}
 
-	public ListMultimap<Number160, Tuple<PeerAddress, Integer>> taskResults() {
+	public ListMultimap<Number160, String> taskResults() {
 		return taskResults;
 	}
 
-	public ListMultimap<Tuple<PeerAddress, Integer>, Number160> reverseTaskResults() {
+	public ListMultimap<String, Number160> reverseTaskResults() {
 		return reverseTaskResults;
 	}
 
-	public Task finalDataLocation(Tuple<PeerAddress, Integer> finalDataLocation) {
-		this.finalDataLocation = finalDataLocation;
-		return this;
-	}
-
-	public Tuple<PeerAddress, Integer> finalDataLocation() {
-		return finalDataLocation;
-	}
-
-	public List<String> finalDataLocations() {
+	public List<String> finalDataLocationDomains() {
 		return finalTaskExecutorDomains;
 	}
 
@@ -120,8 +104,8 @@ public class Task implements Serializable, Comparable<Task> {
 	@Override
 	public String toString() {
 		return "Task [id=" + key + ", jobId=" + jobId + ", isFinished=" + isFinished + ", executingPeers=" + executingPeers + ", taskResults="
-				+ taskResults + ", reverseTaskResults=" + reverseTaskResults + ", finalDataLocation=" + finalDataLocation + ", dataToRemove="
-				+ dataToRemove + "]";
+				+ taskResults + ", reverseTaskResults=" + reverseTaskResults + ", finalTaskExecutorDomains=" + finalTaskExecutorDomains
+				+ ", removableTaskExecutorDomains=" + removableTaskExecutorDomains + "]";
 	}
 
 	@Override

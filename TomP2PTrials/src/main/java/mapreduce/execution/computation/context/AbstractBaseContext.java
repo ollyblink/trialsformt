@@ -17,10 +17,8 @@ public abstract class AbstractBaseContext implements IContext {
 	protected ListMultimap<String, Object> keyValues = ArrayListMultimap.create();
 	protected boolean combine;
 
-	@Override
-	public void write(Object keyOut, Object valueOut) {
-
-	}
+	/** NEXT!!! not the current, because the next procedure will use the keys produced for this procedure */
+	protected String subsequentJobProcedureDomain;
 
 	protected AbstractBaseContext() {
 		resetResultHash();
@@ -84,4 +82,13 @@ public abstract class AbstractBaseContext implements IContext {
 
 	}
 
+	public String subsequentJobProcedureDomain() {
+		return this.subsequentJobProcedureDomain;
+	}
+
+	@Override
+	public AbstractBaseContext subsequentJobProcedureDomain(String subsequentJobProcedureDomain) {
+		this.subsequentJobProcedureDomain = subsequentJobProcedureDomain;
+		return this;
+	}
 }

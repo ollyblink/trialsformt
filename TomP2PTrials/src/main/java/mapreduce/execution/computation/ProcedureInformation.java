@@ -58,17 +58,10 @@ public class ProcedureInformation implements Serializable {
 	}
 
 	public ProcedureInformation tasks(List<Task> tasks) {
+		this.tasks.clear();
 		this.tasks.addAll(tasks);
 		return this;
 	}
-	// public ProcedureInformation nrOfProcedureDomains(long nrOfProcedureDomains) {
-	// this.nrOfProcedureDomains = nrOfProcedureDomains;
-	// return this;
-	// }
-	//
-	// public long nrOfProcedureDomains() {
-	// return this.nrOfProcedureDomains;
-	// }
 
 	@Override
 	public int hashCode() {
@@ -95,21 +88,9 @@ public class ProcedureInformation implements Serializable {
 		return true;
 	}
 
-	public void updateTaskExecutionStatus(String taskId, TaskResult toUpdate, int maxNrOfFinishedWorkers) {
-		if (tasks != null) {
-			for (Task task : tasks) {
-				if (task.id().equals(taskId)) {
-					Tasks.updateStati(task, toUpdate, maxNrOfFinishedWorkers);
-					break;
-				}
-			}
-		}
-	}
-
 	@Override
 	public String toString() {
 		return "ProcedureInformation [procedure=" + procedure + ", isFinished=" + isFinished + ", tasks=" + tasks + "]";
 	}
-	
-	
+
 }

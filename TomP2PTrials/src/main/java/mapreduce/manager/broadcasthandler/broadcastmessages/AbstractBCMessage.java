@@ -13,19 +13,19 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	 */
 	private static final long serialVersionUID = -2040511707608747442L;
 
-	protected PeerAddress sender;
+	protected String sender;
 	protected Long creationTime = System.currentTimeMillis();
 
 	private boolean isAlreadyProcessed;;
 
 	@Override
-	public AbstractBCMessage sender(final PeerAddress sender) {
+	public AbstractBCMessage sender(final String sender) {
 		this.sender = sender;
 		return this;
 	}
 
 	@Override
-	public PeerAddress sender() {
+	public String sender() {
 		return sender;
 	}
 

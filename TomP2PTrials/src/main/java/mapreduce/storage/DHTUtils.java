@@ -109,28 +109,7 @@ public class DHTUtils {
 		}
 	}
 
-	public void broadcastTaskUpdate(Task task, IBCMessage message) {
-		try {
-			Number160 taskHash = Number160.createHash(DomainProvider.INSTANCE.executorTaskDomain(task,
-					Tuple.create(peerDHT.peerAddress(), task.executingPeers().get(peerDHT.peerAddress()).size() - 1)));
-			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
-			dataMap.put(new Number640(taskHash, taskHash, taskHash, taskHash), new Data(message));
-			peerDHT.peer().broadcast(taskHash).dataMap(dataMap).start();
-		} catch (IOException e) {
-			logger.warn("Exception thrown in DHTConnectionProvider::broadcastTaskSchedule", e);
-		}
-	}
 
-	public void broadcastJobUpdate(Job job, IBCMessage message) {
-		try {
-			Number160 jobHash = Number160.createHash(DomainProvider.INSTANCE.jobProcedureDomain(job));
-			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
-			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
-			peerDHT.peer().broadcast(jobHash).dataMap(dataMap).start();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 
 	// public FutureGet getAllKD(String keyString, String domainString ) {
 	// return

@@ -2,6 +2,8 @@ package mapreduce.utils;
 
 import java.io.Serializable;
 
+import net.tomp2p.peers.PeerAddress;
+
 /**
  * Generic tupel where tupels are needed...
  * 
@@ -75,6 +77,10 @@ public final class Tuple<A extends Comparable<A>, B> implements Serializable, Co
 	@Override
 	public int compareTo(Tuple<A, B> o) {
 		return first.compareTo(o.first);
+	}
+
+	public String combine() {
+		return first + "_" + second;
 	}
 
 }

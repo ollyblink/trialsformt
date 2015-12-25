@@ -2,6 +2,8 @@ package mapreduce.storage;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,10 +13,12 @@ import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
 import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedJobBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.JobFailedBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.JobUpdateBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.utils.DomainProvider;
+import mapreduce.utils.Tuple;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -38,6 +42,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	/** Determines if dht operations should be performed in parallel or not */
 	private boolean performBlocking;
 	private PeerDHT peerDHT;
+	private String owner;
 
 	private DHTConnectionProvider(DHTUtils dhtUtils) {
 		this.dhtUtils = dhtUtils;
@@ -81,35 +86,58 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastNewJob(Job job) {
-		dhtUtils.broadcastJobUpdate(job, DistributedJobBCMessage.newInstance().job(job).sender(this.peerAddress()));
+		broadcastJobUpdate(job, DistributedJobBCMessage.newInstance().job(job).sender(this.owner()));
 	}
 
 	@Override
 	public void broadcastFailedJob(Job job) {
-		dhtUtils.broadcastJobUpdate(job, JobFailedBCMessage.newInstance().job(job).sender(this.peerAddress()));
+		broadcastJobUpdate(job, JobFailedBCMessage.newInstance().job(job).sender(this.owner()));
 	}
 
 	@Override
 	public void broadcastFinishedAllTasksOfProcedure(Job job) {
-		dhtUtils.broadcastJobUpdate(job, JobUpdateBCMessage.newFinishedAllTasksBCMessage().job(job).sender(this.peerAddress()));
+		broadcastJobUpdate(job, JobUpdateBCMessage.newFinishedAllTasksBCMessage().job(job).sender(this.owner()));
 
 	}
 
 	@Override
 	public void broadcastFinishedJob(Job job) {
-		dhtUtils.broadcastJobUpdate(job, FinishedJobBCMessage.newInstance().job(job).sender(this.peerAddress()));
+		broadcastJobUpdate(job, FinishedJobBCMessage.newInstance().job(job).sender(this.owner()));
 	}
 
 	@Override
 	public void broadcastExecutingTask(Task task) {
-		dhtUtils.broadcastTaskUpdate(task, TaskUpdateBCMessage.newExecutingTaskInstance().task(task).sender(this.peerAddress()));
+		broadcastTaskUpdate(task, TaskUpdateBCMessage.newExecutingTaskInstance().task(task).sender(this.owner()));
 
 	}
 
 	@Override
 	public void broadcastFinishedTask(Task task, Number160 resultHash) {
-		dhtUtils.broadcastTaskUpdate(task,
-				TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.peerAddress()));
+		broadcastTaskUpdate(task, TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.owner()));
+	}
+
+	public void broadcastTaskUpdate(Task task, IBCMessage message) {
+		try {
+			int currentStatusIndex = task.executingPeers().get(owner).size() - 1;
+			Tuple<String, Integer> taskExecutor = Tuple.create(owner, currentStatusIndex);
+			Number160 taskHash = Number160.createHash(DomainProvider.INSTANCE.executorTaskDomain(task, taskExecutor));
+			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+			dataMap.put(new Number640(taskHash, taskHash, taskHash, taskHash), new Data(message));
+			peerDHT.peer().broadcast(taskHash).dataMap(dataMap).start();
+		} catch (IOException e) {
+			logger.warn("Exception thrown in DHTConnectionProvider::broadcastTaskSchedule", e);
+		}
+	}
+
+	public void broadcastJobUpdate(Job job, IBCMessage message) {
+		try {
+			Number160 jobHash = Number160.createHash(DomainProvider.INSTANCE.jobProcedureDomain(job));
+			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
+			peerDHT.peer().broadcast(jobHash).dataMap(dataMap).start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -118,8 +146,14 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public PeerAddress peerAddress() {
-		return dhtUtils.peerAddress();
+	public String owner() {
+		return this.owner;
+	}
+
+	@Override
+	public DHTConnectionProvider owner(String owner) {
+		this.owner = owner;
+		return this;
 	}
 
 	@Override

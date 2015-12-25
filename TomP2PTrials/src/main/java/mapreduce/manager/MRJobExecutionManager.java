@@ -27,6 +27,7 @@ import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutio
 import mapreduce.manager.conditions.EmptyListCondition;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
+import mapreduce.utils.IDCreator;
 import mapreduce.utils.TimeToLive;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
@@ -56,8 +57,11 @@ public class MRJobExecutionManager {
 
 	private ThreadPoolExecutor server;
 
+	private String id;
+
 	private MRJobExecutionManager(IDHTConnectionProvider dhtConnectionProvider, List<Job> jobs) {
-		this.dhtConnectionProvider(dhtConnectionProvider);
+		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
+		this.dhtConnectionProvider(dhtConnectionProvider.owner(this.id));
 		this.messageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(this).canTake(true);
 		this.dhtConnectionProvider().broadcastHandler().queue(messageConsumer.queue());
 
@@ -114,7 +118,7 @@ public class MRJobExecutionManager {
 	private void executeJob() {
 		if (TimeToLive.INSTANCE.cancelOnTimeout(jobs, EmptyListCondition.create())) {
 
-			ProcedureInformation procedureInformation = jobs.get(0).procedure(jobs.get(0).currentProcedureIndex());
+			ProcedureInformation procedureInformation = jobs.get(0).currentProcedure();
 			logger.info("Got job: " + jobs.get(0).id() + ", starting procedure " + procedureInformation);
 
 			// Get the data for the job's current procedure
@@ -135,7 +139,7 @@ public class MRJobExecutionManager {
 			Task task = null;
 			while ((task = taskExecutionScheduler.schedule(tasks)) != null && !taskExecutor.abortedTaskExecution()) {
 				final Task taskToDistribute = task;
-				List<String> finalDataLocations = task.finalDataLocations();
+				List<String> finalDataLocations = task.finalDataLocationDomains();
 				List<Object> valuesCollector = syncedList();
 				List<FutureGet> futureGets = syncedList();
 
@@ -145,16 +149,12 @@ public class MRJobExecutionManager {
 					// Now we actually wanna retrieve the data from the specified locations...
 					futureGets.add(retrieveDataForTask(task, finalDataLocations.get(i), valuesCollector));
 				}
-				Futures.whenAllSuccess(futureGets)
-						.addListener(executeTaskOnSuccessfulDataRetrieval(procedureInformation, taskToDistribute, valuesCollector));
-
+				Futures.whenAllSuccess(futureGets).addListener(executeTaskOnSuccessfulDataRetrieval(jobs.get(0), taskToDistribute, valuesCollector));
 			}
 
 			if (!taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
-
 				procedureInformation.isFinished(true);
-				dhtConnectionProvider.broadcastFinishedAllTasksOfProcedure(jobs.get(0));
-
+//				dhtConnectionProvider.broadcastFinishedAllTasksOfProcedure(jobs.get(0).currentProcedure());
 			}
 		}
 	}
@@ -215,13 +215,19 @@ public class MRJobExecutionManager {
 		};
 	}
 
-	private BaseFutureAdapter<FutureDone<FutureGet[]>> executeTaskOnSuccessfulDataRetrieval(ProcedureInformation procedureInformation,
-			final Task taskToDistribute, List<Object> valuesCollector) {
+	private BaseFutureAdapter<FutureDone<FutureGet[]>> executeTaskOnSuccessfulDataRetrieval(Job job, final Task taskToDistribute,
+			List<Object> valuesCollector) {
 		return new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 			@Override
 			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-				context.task(taskToDistribute);
-				taskExecutor.execute(procedureInformation.procedure(), taskToDistribute.id(), valuesCollector, context);// Non-blocking!
+				String subsequentProcedureName = job.subsequentProcedure().procedure().getClass().getSimpleName();
+				int procedureIndex = job.subsequentProcedureIndex();
+				int submissionNr = job.submissionCounter();
+				String subsequentJobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job.id(), subsequentProcedureName, procedureIndex,
+						submissionNr);
+
+				context.task(taskToDistribute).subsequentJobProcedureDomain(subsequentJobProcedureDomain);
+				taskExecutor.execute(job.currentProcedure().procedure(), taskToDistribute.id(), valuesCollector, context);// Non-blocking!
 			}
 		};
 	}
@@ -259,20 +265,6 @@ public class MRJobExecutionManager {
 				this.server.shutdown();
 			}
 		}
-	}
-
-	private void printResults(List<Task> tasks) {
-		logger.info("All final data locations ");
-		for (Task t : tasks) {
-			PeerAddress p = null;
-			synchronized (tasks) {
-				p = t.finalDataLocation().first();
-			}
-			if (p != null) {
-				logger.info("<" + p.tcpPort() + ", " + t.finalDataLocation().second() + ">");
-			}
-		}
-
 	}
 
 	public boolean isExecutionAborted() {

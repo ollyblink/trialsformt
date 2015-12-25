@@ -7,12 +7,13 @@ import java.util.List;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureInformation;
+import mapreduce.execution.computation.standardprocedures.EndReached;
 import mapreduce.execution.task.Task;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
 
-public class Job implements Serializable {
+public class Job implements Serializable, Comparable<Job> {
 
 	// private static Logger logger = LoggerFactory.getLogger(Job.class);
 
@@ -24,13 +25,19 @@ public class Job implements Serializable {
 	private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
 	private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
+	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
 
 	/** specifies a unique id for this job */
 	private String id;
 
 	/** identifier for the submitting entity (@see{MRJobSubmissionManager}) */
-	private String jobSubmitterID;
+	private final String jobSubmitterID;
 
+	/** Used for order of jobs @see{<code>PriorityLevel</code> */
+	private final PriorityLevel priorityLevel;
+
+	/** Used for order of jobs. System.currentTimeInMillis(): long */
+	private final Long creationTime;
 	/**
 	 * Contains all procedures for this job. Processing is done from 0 to procedures.size()-1, meaning that the first procedure added using
 	 * Job.nextProcedure(procedure) is also the first one to be processed.
@@ -73,15 +80,18 @@ public class Job implements Serializable {
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
 	private int submissionCounter;
 
-	private Job(String jobSubmitterID) {
+
+	private Job(String jobSubmitterID, PriorityLevel priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
+		this.priorityLevel = (priorityLevel == null ? DEFAULT_PRIORITY_LEVEL : priorityLevel);
+		this.creationTime = System.currentTimeMillis();
 		this.currentProcedureIndex = 0;
 		this.procedures = Collections.synchronizedList(new ArrayList<>());
 	}
 
-	public static Job create(String jobSubmitterID) {
-		return new Job(jobSubmitterID).maxFileSize(DEFAULT_FILE_SIZE).timeToLiveInMs(DEFAULT_TIME_TO_LIVE_IN_MS)
+	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel) {
+		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).timeToLiveInMs(DEFAULT_TIME_TO_LIVE_IN_MS)
 				.maxNrOfDHTActions(DEFAULT_NUMBER_OF_ADD_TRIALS).useLocalStorageFirst(true).maxNrOfFinishedWorkersPerTask(3);
 	}
 
@@ -106,7 +116,7 @@ public class Job implements Serializable {
 		try {
 			return procedures.get(index);
 		} catch (Exception e) {
-			return null;
+			return ProcedureInformation.create(EndReached.create());
 		}
 	}
 
@@ -120,6 +130,16 @@ public class Job implements Serializable {
 	}
 
 	/**
+	 * Convenience method. Same as Job.procedure(Job.currentProcedureIndex()+1). Retrieves the procedure information for the next procedure to be
+	 * executed after the current procedure
+	 * 
+	 * @return
+	 */
+	public ProcedureInformation subsequentProcedure() {
+		return this.procedure(this.currentProcedureIndex + 1);
+	}
+
+	/**
 	 * Adds a procedure to the job. The idea is that chaining of nextProcedure() calls (e.g. Job.nextProcedure(...).nextProcedure(...) also indicates
 	 * how procedures are processed (from 0 to N). This means that the first procedure added is also the first procedure that is going to be
 	 * processed, until the last added procedure that was added.
@@ -127,16 +147,25 @@ public class Job implements Serializable {
 	 * @param procedure
 	 * @return
 	 */
-	public Job nextProcedure(IMapReduceProcedure procedure) {
+	public Job addSubsequentProcedure(IMapReduceProcedure procedure) {
 		this.procedures.add(ProcedureInformation.create(procedure));
 		return this;
+	}
+
+	/**
+	 * convenience method, same as currentProcedureIndex()+1
+	 * 
+	 * @return the index of the procedure following the currently executed procedure
+	 */
+	public int subsequentProcedureIndex() {
+		return this.currentProcedureIndex + 1;
 	}
 
 	public int currentProcedureIndex() {
 		return currentProcedureIndex;
 	}
 
-	public void incrementProcedureNumber() {
+	public void incrementCurrentProcedureIndex() {
 		++this.currentProcedureIndex;
 	}
 
@@ -146,6 +175,10 @@ public class Job implements Serializable {
 
 	public int incrementSubmissionCounter() {
 		return ++this.submissionCounter;
+	}
+
+	public void resetSubmissionCounter() {
+		this.submissionCounter = 0;
 	}
 
 	public int maxNrOfFinishedWorkersPerTask() {
@@ -242,7 +275,7 @@ public class Job implements Serializable {
 	}
 
 	public Job copy() {
-		Job job = new Job(jobSubmitterID);
+		Job job = new Job(jobSubmitterID, priorityLevel);
 		job.id = id;
 		job.currentProcedureIndex = currentProcedureIndex;
 		job.fileInputFolderPath = fileInputFolderPath;
@@ -265,4 +298,27 @@ public class Job implements Serializable {
 		return job;
 	}
 
+	@Override
+	public int compareTo(Job job) {
+		if (priorityLevel == job.priorityLevel) {
+			return creationTime.compareTo(job.creationTime);
+		} else {
+			return priorityLevel.compareTo(job.priorityLevel);
+		}
+	}
+
+	public static void main(String[] args) {
+		List<Job> jobs = new ArrayList<>();
+		jobs.add(Job.create("1", PriorityLevel.LOW));
+		jobs.add(Job.create("2", PriorityLevel.MODERATE));
+		jobs.add(Job.create("3", PriorityLevel.HIGH));
+		jobs.add(Job.create("4", PriorityLevel.MODERATE));
+		jobs.add(Job.create("5", PriorityLevel.LOW));
+		jobs.add(Job.create("6", PriorityLevel.HIGH));
+		
+		Collections.sort(jobs);
+		for(Job job: jobs){
+			System.err.println(job.jobSubmitterID() +", "+job.priorityLevel);
+		}
+	}
 }

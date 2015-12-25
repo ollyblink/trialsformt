@@ -3,7 +3,6 @@ package mapreduce.manager.broadcasthandler.broadcastmessages;
 import java.io.Serializable;
 
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
-import net.tomp2p.peers.PeerAddress;
 
 public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
 	public BCMessageStatus status();
@@ -28,9 +27,9 @@ public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
 	 */
 	public IBCMessage isAlreadyProcessed(final boolean isAlreadyProcessed);
 
-	public IBCMessage sender(final PeerAddress sender);
+	public IBCMessage sender(final String sender);
 
-	public PeerAddress sender();
+	public String sender();
 
 	public void execute(final IMessageConsumer messageConsumer);
 

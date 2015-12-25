@@ -62,7 +62,7 @@ public class MRJobExecutorMessageConsumerTest {
 	}
 
 	private static void resetJob() {
-		job = Job.create("TEST").nextProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(5);
+		job = Job.create("TEST").addSubsequentProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(5);
 		ProcedureInformation currentProc = job.currentProcedure();
 
 		for (String taskKey : TEST_KEYS) {
@@ -196,7 +196,9 @@ public class MRJobExecutorMessageConsumerTest {
 		assertEquals(BCMessageStatus.EXECUTING_TASK, Tasks.statiForPeer(taskToCheck, peer2).get(1));
 		assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(taskToCheck, peer3).get(0));
 
-		testMessageConsumer.updateJob(job.copy(), peer2);
+		Job jobCopy1 = job.copy();
+		jobCopy1.currentProcedure().tasks(copy);
+		testMessageConsumer.handleFinishedAllTasks(jobCopy1, peer2);
 
 		List<Task> copy2 = new ArrayList<Task>(TEST_KEYS.length);
 		for (String taskKey : TEST_KEYS) {
@@ -210,7 +212,10 @@ public class MRJobExecutorMessageConsumerTest {
 			System.err.println("Task is finished? " + task.isFinished());
 		}
 
-		testMessageConsumer.updateJob(job.copy(), peer3);
+		Job jobCopy2 = job.copy();
+		jobCopy2.currentProcedure().tasks(copy2);
+		testMessageConsumer.handleFinishedAllTasks(jobCopy2, peer2);
+
 		List<Task> tasks3 = testMessageConsumer.jobs().get(0).currentProcedure().tasks();
 		int cntr = 0;
 		for (Task task : tasks3) {
@@ -226,115 +231,9 @@ public class MRJobExecutorMessageConsumerTest {
 				assertEquals(number, Tasks.statiForPeer(task, new PeerAddress(new Number160(i))).size());
 				for (BCMessageStatus s : Tasks.statiForPeer(task, new PeerAddress(new Number160(i)))) {
 					assertEquals(BCMessageStatus.FINISHED_TASK, s);
-					// System.err.println(s);
 				}
 			}
 		}
 	}
 
-	@Ignore
-	public void testHandleFinishedTaskComparion() {
-		prepare(testMessageConsumer);
-		ArrayList<Task> tasks2 = new ArrayList<Task>(
-				testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()));
-		assertEquals(peer1, tasks2.get(0).finalDataLocation().first());
-		assertEquals(new Integer(2), tasks2.get(0).finalDataLocation().second());
-
-		assertEquals(peer3, tasks2.get(1).finalDataLocation().first());
-		assertEquals(new Integer(3), tasks2.get(1).finalDataLocation().second());
-
-		assertEquals(peer2, tasks2.get(2).finalDataLocation().first());
-		assertEquals(new Integer(1), tasks2.get(2).finalDataLocation().second());
-
-		assertEquals(peer3, tasks2.get(3).finalDataLocation().first());
-		assertEquals(new Integer(2), tasks2.get(3).finalDataLocation().second());
-	}
-
-	private void prepare(MRJobExecutionManagerMessageConsumer consumer) {
-		consumer.jobs().clear();
-
-		Job job = TestUtils.testJob();
-
-		ITaskSplitter splitter = MaxFileSizeFileSplitter.create();
-		splitter.split(job);
-		consumer.handleReceivedJob(job);
-		BlockingQueue<Task> tasks = job.tasks(job.currentProcedureIndex());
-		int cnt = 0;
-		for (Task task : tasks) {
-			Task tCopy = Mockito.mock(Task.class);
-			Mockito.when(tCopy.id()).thenReturn(task.id());
-			Mockito.when(tCopy.id()).thenReturn(task.id());
-			Mockito.when(tCopy.jobId()).thenReturn(task.jobId());
-			Tuple<PeerAddress, Integer> tuple = null;
-			switch (cnt) {
-			case 0:
-				tuple = Tuple.create(peer1, 2);
-				break;
-			case 1:
-				tuple = Tuple.create(peer3, 3);
-				break;
-			case 2:
-				tuple = Tuple.create(peer2, 1);
-				break;
-			case 3:
-				tuple = Tuple.create(peer3, 2);
-				break;
-			default:
-				break;
-			}
-			++cnt;
-
-			Mockito.when(tCopy.finalDataLocation()).thenReturn(tuple);
-		}
-	}
-
-	@Ignore
-	public void testHandleFinishedAllTaskComparion() {
-		testMessageConsumer.jobs().clear();
-		CopyOnWriteArrayList<Job> jobs = new CopyOnWriteArrayList<Job>();
-		MRJobExecutionManager jobExecutor = Mockito.mock(MRJobExecutionManager.class);
-		DHTConnectionProvider dhtConnectionProvider = Mockito.mock(DHTConnectionProvider.class);
-		Mockito.when(jobExecutor.dhtConnectionProvider()).thenReturn(dhtConnectionProvider);
-		Mockito.when(dhtConnectionProvider.peerAddress()).thenReturn(peer1);
-		MRJobExecutionManagerMessageConsumer consumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(jobExecutor);
-		prepare(consumer);
-
-		ArrayList<Task> taskList = new ArrayList<Task>(consumer.jobs().get(0).tasks(consumer.jobs().get(0).currentProcedureIndex()));
-		Job mockJob = Mockito.mock(Job.class);
-		Mockito.when(mockJob.id()).thenReturn(jobs.get(0).id());
-		BlockingQueue<Task> mockTasks = new LinkedBlockingQueue<Task>();
-		for (Task task : taskList) {
-			Task tCopy = Mockito.mock(Task.class);
-			Mockito.when(tCopy.id()).thenReturn(task.id());
-			Mockito.when(tCopy.jobId()).thenReturn(task.jobId());
-			Mockito.when(tCopy.finalDataLocation()).thenReturn(null);
-			mockTasks.add(tCopy);
-		}
-		Mockito.when(mockJob.tasks(0)).thenReturn(mockTasks);
-		testMessageConsumer.handleReceivedJob(mockJob);
-
-		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
-				.get(0).finalDataLocation());
-		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
-				.get(1).finalDataLocation());
-		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
-				.get(2).finalDataLocation());
-		assertEquals(null, new ArrayList<Task>(testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()))
-				.get(3).finalDataLocation());
-		testMessageConsumer.updateJob(consumer.jobs().get(0), peer2);
-
-		ArrayList<Task> tasks2 = new ArrayList<Task>(
-				testMessageConsumer.jobs().get(0).tasks(testMessageConsumer.jobs().get(0).currentProcedureIndex()));
-		assertEquals(peer1, tasks2.get(0).finalDataLocation().first());
-		assertEquals(new Integer(2), tasks2.get(0).finalDataLocation().second());
-
-		assertEquals(peer3, tasks2.get(1).finalDataLocation().first());
-		assertEquals(new Integer(3), tasks2.get(1).finalDataLocation().second());
-
-		assertEquals(peer2, tasks2.get(2).finalDataLocation().first());
-		assertEquals(new Integer(1), tasks2.get(2).finalDataLocation().second());
-
-		assertEquals(peer3, tasks2.get(3).finalDataLocation().first());
-		assertEquals(new Integer(2), tasks2.get(3).finalDataLocation().second());
-	}
 }

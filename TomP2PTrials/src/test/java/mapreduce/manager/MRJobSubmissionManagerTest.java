@@ -1,5 +1,7 @@
 package mapreduce.manager;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -7,7 +9,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeMap;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -15,8 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.computation.context.IContext;
-import mapreduce.execution.computation.context.PrintContext;
 import mapreduce.execution.computation.context.PseudoStorageContext;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.computation.standardprocedures.WordCountReducer;
@@ -30,7 +29,6 @@ import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.peers.Number640;
-import static org.junit.Assert.*;
 
 public class MRJobSubmissionManagerTest {
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManagerTest.class);
@@ -48,7 +46,7 @@ public class MRJobSubmissionManagerTest {
 
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";
 		System.err.println(fileInputFolderPath + " : " + new File(fileInputFolderPath).exists());
-		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).nextProcedure(WordCountMapper.newInstance());
+		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).addSubsequentProcedure(WordCountMapper.newInstance());
 
 		final ListMultimap<Object, Object> toCheck = getToCheck(fileInputFolderPath);
 
@@ -153,19 +151,7 @@ public class MRJobSubmissionManagerTest {
 			}
 		} catch (InterruptedException e) { 
 			e.printStackTrace();
-		}
-		// Multimap<Task, Comparable> keysForEachTask = splitter.keysForEachTask();
-		// for (Task task : keysForEachTask.keySet()) {
-		// Multimap<Object, Object> taskData = ArrayListMultimap.create();
-		// dhtConnectionProvider.getTaskData(task, task.initialDataLocation(), taskData);
-		//
-		// for (Object key : taskData.keySet()) {
-		// // System.err.println(job.maxFileSize() + " " + new ArrayList<Object>(taskData.get(key)).get(0).toString().getBytes("UTF-8").length);
-		// assertTrue(keysForEachTask.containsValue(key));
-		// assertTrue(job.maxFileSize() >= new ArrayList<Object>(taskData.get(key)).get(0).toString().getBytes("UTF-8").length);
-		// }
-		// }
-		// jobSubmissionManager.shutdown();
+		} 
 	}
 
 	private ListMultimap<Object, Object> getToCheck(String fileInputFolderPath) {

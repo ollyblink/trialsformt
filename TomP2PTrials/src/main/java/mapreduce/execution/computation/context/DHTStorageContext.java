@@ -5,16 +5,10 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimaps;
-
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
-import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
-import mapreduce.utils.FileSize;
 import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureListener;
@@ -25,9 +19,9 @@ public class DHTStorageContext extends AbstractBaseContext {
 
 	private IDHTConnectionProvider dhtConnectionProvider;
 
-	private ListMultimap<String, Object> tmpKeyValues;
-
-	private FileSize maxDataSize = FileSize.FOUR_KILO_BYTES;
+	// private ListMultimap<String, Object> tmpKeyValues;
+	//
+	// private FileSize maxDataSize = FileSize.FOUR_KILO_BYTES;
 
 	// private ITaskResultComparator taskResultComparator;
 
@@ -39,8 +33,8 @@ public class DHTStorageContext extends AbstractBaseContext {
 	 */
 	private DHTStorageContext(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
-		ListMultimap<String, Object> multimap = ArrayListMultimap.create();
-		this.tmpKeyValues = Multimaps.synchronizedListMultimap(multimap);
+		// ListMultimap<String, Object> multimap = ArrayListMultimap.create();
+		// this.tmpKeyValues = Multimaps.synchronizedListMultimap(multimap);
 	}
 
 	public static DHTStorageContext create(IDHTConnectionProvider dhtConnectionProvider) {
@@ -54,20 +48,30 @@ public class DHTStorageContext extends AbstractBaseContext {
 			return;
 		}
 
-		// tmpKeyValues.put(keyOut.toString(), valueOut);
 		updateResultHash(keyOut, valueOut);
 
-		// if (dataLimitAchieved()) {
-		// List<FuturePut> futureDataAdding = Collections.synchronizedList(new ArrayList<>());
+		this.dhtConnectionProvider.add(keyOut.toString(), valueOut,
+				DomainProvider.INSTANCE.executorTaskDomain(task,
+						Tuple.create(dhtConnectionProvider.owner(), task.executingPeers().get(dhtConnectionProvider.owner()).size() - 1)),
+				true).addListener(new BaseFutureListener<FuturePut>() {
 
-		// for (String key : tmpKeyValues.keySet()) {
-		// futureDataAdding.add(
-		this.dhtConnectionProvider
-				.add(keyOut.toString(), valueOut,
-						DomainProvider.INSTANCE.executorTaskDomain(task,
-								Tuple.create(dhtConnectionProvider.peerAddress(),
-										task.executingPeers().get(dhtConnectionProvider.peerAddress()).size() - 1)),
-						true)
+					@Override
+					public void operationComplete(FuturePut future) throws Exception {
+						if (future.isSuccess()) {
+							logger.info("Put <" + keyOut + ", " + valueOut + ">");
+						} else {
+							logger.warn("Could not put <" + keyOut + ", " + valueOut + ">");
+						}
+					}
+
+					@Override
+					public void exceptionCaught(Throwable t) throws Exception {
+						logger.warn("Exception thrown", t);
+					}
+
+				});
+
+		this.dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, keyOut.toString(), subsequentJobProcedureDomain, true)
 				.addListener(new BaseFutureListener<FuturePut>() {
 
 					@Override
@@ -142,4 +146,13 @@ public class DHTStorageContext extends AbstractBaseContext {
 		dhtConnectionProvider.broadcastFinishedTask(task, resultHash());
 	}
 
+	@Override
+	public String subsequentJobProcedureDomain() {
+		return super.subsequentJobProcedureDomain();
+	}
+
+	@Override
+	public DHTStorageContext subsequentJobProcedureDomain(String jobProcedureDomain) {
+		return (DHTStorageContext) super.subsequentJobProcedureDomain(jobProcedureDomain);
+	}
 }

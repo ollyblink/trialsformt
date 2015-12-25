@@ -27,9 +27,9 @@ public class Tasks {
 	 */
 	public static int numberOfPeersWithMultipleSameStati(Task task, BCMessageStatus statusToCheck) {
 		int nrOfPeers = 0;
-		ListMultimap<PeerAddress, BCMessageStatus> executingPeers = task.executingPeers();
+		ListMultimap<String, BCMessageStatus> executingPeers = task.executingPeers();
 		synchronized (executingPeers) {
-			for (PeerAddress executingPeer : executingPeers.keySet()) {
+			for (String executingPeer : executingPeers.keySet()) {
 				int nrOfStatus = 0;
 				Collection<BCMessageStatus> stati = executingPeers.get(executingPeer);
 				for (BCMessageStatus status : stati) {
@@ -47,9 +47,9 @@ public class Tasks {
 
 	public static int numberOfPeersWithSingleStatus(Task task, BCMessageStatus statusToCheck) {
 		int nrOfPeers = 0;
-		ListMultimap<PeerAddress, BCMessageStatus> executingPeers = task.executingPeers();
+		ListMultimap<String, BCMessageStatus> executingPeers = task.executingPeers();
 		synchronized (executingPeers) {
-			for (PeerAddress executingPeer : executingPeers.keySet()) {
+			for (String executingPeer : executingPeers.keySet()) {
 				int nrOfStatus = 0;
 				Collection<BCMessageStatus> stati = executingPeers.get(executingPeer);
 				for (BCMessageStatus status : stati) {
@@ -67,9 +67,9 @@ public class Tasks {
 
 	public static int numberOfPeersWithAtLeastOneFinishedExecution(Task task) {
 		int nrOfPeers = 0;
-		ListMultimap<PeerAddress, BCMessageStatus> executingPeers = task.executingPeers();
+		ListMultimap<String, BCMessageStatus> executingPeers = task.executingPeers();
 		synchronized (executingPeers) {
-			for (PeerAddress executingPeer : executingPeers.keySet()) {
+			for (String executingPeer : executingPeers.keySet()) {
 				int nrOfStatus = 0;
 				Collection<BCMessageStatus> stati = executingPeers.get(executingPeer);
 				for (BCMessageStatus status : stati) {
@@ -97,8 +97,8 @@ public class Tasks {
 	public static void synchronizeFinishedTaskStatiWith(Task currentTask, Task receivedTask) {
 		synchronized (currentTask.executingPeers()) {
 			synchronized (receivedTask) {
-				ArrayList<PeerAddress> allAssignedPeers = allAssignedPeers(receivedTask);
-				for (PeerAddress peerAddress : allAssignedPeers) {
+				ArrayList<String> allAssignedPeers = allAssignedPeers(receivedTask);
+				for (String peerAddress : allAssignedPeers) {
 					currentTask.executingPeers().removeAll(peerAddress);
 					currentTask.executingPeers().putAll(peerAddress, statiForPeer(receivedTask, peerAddress));
 				}
@@ -107,23 +107,23 @@ public class Tasks {
 		}
 	}
 
-	public static ArrayList<BCMessageStatus> statiForPeer(Task task, PeerAddress peerAddress) {
+	public static ArrayList<BCMessageStatus> statiForPeer(Task task, String peerAddress) {
 		synchronized (task.executingPeers()) {
 			return new ArrayList<BCMessageStatus>(task.executingPeers().get(peerAddress));
 		}
 	}
 
-	public static ArrayList<PeerAddress> allAssignedPeers(Task task) {
+	public static ArrayList<String> allAssignedPeers(Task task) {
 		synchronized (task.executingPeers()) {
-			return new ArrayList<PeerAddress>(task.executingPeers().keySet());
+			return new ArrayList<String>(task.executingPeers().keySet());
 		}
 	}
 
 	private static int countTotalNumber(Task task, BCMessageStatus statusToCheck) {
 		int nrOfFinishedExecutions = 0;
-		ListMultimap<PeerAddress, BCMessageStatus> executingPeers = task.executingPeers();
+		ListMultimap<String, BCMessageStatus> executingPeers = task.executingPeers();
 		synchronized (executingPeers) {
-			for (PeerAddress executingPeer : executingPeers.keySet()) {
+			for (String executingPeer : executingPeers.keySet()) {
 				Collection<BCMessageStatus> stati = executingPeers.get(executingPeer);
 				for (BCMessageStatus status : stati) {
 					if (status.equals(statusToCheck)) {
@@ -135,7 +135,7 @@ public class Tasks {
 		return nrOfFinishedExecutions;
 	}
 
-	public static int numberOfSameStatiForPeer(Task task, PeerAddress peerAddress, BCMessageStatus statusToCheck) {
+	public static int numberOfSameStatiForPeer(Task task, String peerAddress, BCMessageStatus statusToCheck) {
 		int statiCount = 0;
 		synchronized (task.executingPeers()) {
 			Collection<BCMessageStatus> stati = task.executingPeers().get(peerAddress);
@@ -155,33 +155,33 @@ public class Tasks {
 	}
 
 	public static void updateStati(Task task, TaskResult toUpdate, int maxNrOfFinishedWorkers) {
-		ListMultimap<PeerAddress, BCMessageStatus> executingPeers = task.executingPeers();
+		ListMultimap<String, BCMessageStatus> executingPeers = task.executingPeers();
 		synchronized (executingPeers) {
-			PeerAddress peerAddress = toUpdate.sender();
+			String sender = toUpdate.sender();
 			BCMessageStatus currentStatus = toUpdate.status();
-			LinkedList<BCMessageStatus> jobStati = new LinkedList<BCMessageStatus>(executingPeers.removeAll(peerAddress));
+			LinkedList<BCMessageStatus> jobStati = new LinkedList<BCMessageStatus>(executingPeers.removeAll(sender));
 
 			// int lastIndexOfExecuting = jobStati.lastIndexOf(BCMessageStatus.EXECUTING_TASK);
 			boolean containsExecuting = jobStati.contains(BCMessageStatus.EXECUTING_TASK);
-			logger.info("updateStati:  received " + currentStatus + ", " + peerAddress.peerId() + " with stati " + jobStati);
+			logger.info("updateStati:  received " + currentStatus + ", " + sender + " with stati " + jobStati);
 			if (currentStatus == BCMessageStatus.FINISHED_TASK && containsExecuting) {
 				jobStati.removeLastOccurrence(BCMessageStatus.EXECUTING_TASK);
 				jobStati.addLast(currentStatus);
 				int locationIndex = jobStati.size() - 1;
-				int nrOfResultsWithHash = updateResultHash(task, peerAddress, locationIndex, toUpdate.resultHash);
+				int nrOfResultsWithHash = updateResultHash(task, sender, locationIndex, toUpdate.resultHash);
 				boolean bestOfAchieved = nrOfResultsWithHash == bestOfMaxNrOfFinishedWorkersWithSameResultHash(maxNrOfFinishedWorkers);
 				boolean enoughWorkersFinished = totalNumberOfFinishedExecutions(task) >= maxNrOfFinishedWorkers;
 
 				if (bestOfAchieved || enoughWorkersFinished) {
 					task.isFinished(true);
-					task.finalDataLocation(Tuple.create(peerAddress, locationIndex));
-					for (PeerAddress p : executingPeers.keySet()) {
+					task.finalDataLocationDomains(Tuple.create(sender, locationIndex).combine());
+					for (String p : executingPeers.keySet()) {
 						List<BCMessageStatus> list = executingPeers.get(p);
 						for (int i = 0; i < list.size(); ++i) {
-							Tuple<PeerAddress, Integer> tupleToRemove = Tuple.create(p, i);
-							if (!tupleToRemove.equals(task.finalDataLocation())) {
-								synchronized (task.dataToRemove()) {
-									task.dataToRemove().add(tupleToRemove);
+							String toRemove = Tuple.create(p, i).combine();
+							if (!task.finalDataLocationDomains().contains(toRemove)) {
+								synchronized (task.removableTaskExecutorDomains()) {
+									task.removableTaskExecutorDomains().add(toRemove);
 								}
 							}
 						}
@@ -190,11 +190,11 @@ public class Tasks {
 			} else if (currentStatus == BCMessageStatus.EXECUTING_TASK && !containsExecuting && !task.isFinished()) {
 				jobStati.addLast(currentStatus);
 			} else {
-				logger.warn("updateStati:Ignored update for: received " + toUpdate + " for job stati of " + peerAddress.peerId() + " with stati "
-						+ jobStati);
+				logger.warn(
+						"updateStati:Ignored update for: received " + toUpdate + " for job stati of " + sender + " with stati " + jobStati);
 			}
 
-			executingPeers.putAll(peerAddress, jobStati);
+			executingPeers.putAll(sender, jobStati);
 		}
 	}
 
@@ -206,28 +206,23 @@ public class Tasks {
 	 * @param resultHash
 	 * @return returns the number of times this result hash has been achieved.
 	 */
-	public static int updateResultHash(Task task, PeerAddress peerAddress, Integer location, Number160 resultHash) {
-		Tuple<PeerAddress, Integer> tuple = Tuple.create(peerAddress, location);
-		synchronized (task.taskResults()) {
-			task.taskResults().put(resultHash, tuple);
-		}
-		synchronized (task.reverseTaskResults()) {
-			task.reverseTaskResults().put(tuple, resultHash);
-		}
-		synchronized (task.taskResults()) {
-			return task.taskResults().get(resultHash).size();
-		}
+	public static int updateResultHash(Task task, String peerAddress, Integer location, Number160 resultHash) {
+		String tuple = Tuple.create(peerAddress, location).combine();
+		task.taskResults().put(resultHash, tuple);
+		task.reverseTaskResults().put(tuple, resultHash);
+		return task.taskResults().get(resultHash).size();
+
 	}
 
-	public static Number160 resultHash(Task task, PeerAddress peerAddress, Integer location) {
-		return task.reverseTaskResults().get(Tuple.create(peerAddress, location)).get(0);
+	public static Number160 resultHash(Task task, String peerAddress, Integer location) {
+		return task.reverseTaskResults().get(Tuple.create(peerAddress, location).combine()).get(0);
 	}
 
 	private static int bestOfMaxNrOfFinishedWorkersWithSameResultHash(int maxNrOfFinishedWorkers) {
 		return Math.round((((float) maxNrOfFinishedWorkers) / 2f));
 	}
 
-	public static void removeStatusForPeerAt(Task task, PeerAddress peerAddress, int jobStatusIndexToRemove) {
+	public static void removeStatusForPeerAt(Task task, String peerAddress, int jobStatusIndexToRemove) {
 		ArrayList<BCMessageStatus> statiForPeer = null;
 		synchronized (task.executingPeers()) {
 			statiForPeer = new ArrayList<BCMessageStatus>(task.executingPeers().removeAll(peerAddress));
@@ -242,11 +237,11 @@ public class Tasks {
 		}
 	}
 
-	public static void executingPeers(Task task, Collection<Tuple<PeerAddress, BCMessageStatus>> executingPeers) {
+	public static void executingPeers(Task task, Collection<Tuple<String, BCMessageStatus>> executingPeers) {
 		if (executingPeers != null) {
 			synchronized (task.executingPeers()) {
 				task.executingPeers().clear();
-				for (Tuple<PeerAddress, BCMessageStatus> tuple : executingPeers) {
+				for (Tuple<String, BCMessageStatus> tuple : executingPeers) {
 					task.executingPeers().put(tuple.first(), tuple.second());
 				}
 			}

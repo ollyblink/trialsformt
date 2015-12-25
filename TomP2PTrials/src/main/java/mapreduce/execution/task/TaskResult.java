@@ -5,15 +5,15 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 public class TaskResult {
-	PeerAddress sender;
+	String sender;
 	BCMessageStatus status;
 	Number160 resultHash;
 
-	public PeerAddress sender() {
+	public String sender() {
 		return sender;
 	}
 
-	public TaskResult sender(PeerAddress sender) {
+	public TaskResult sender(String sender) {
 		this.sender = sender;
 		return this;
 	}
@@ -46,7 +46,7 @@ public class TaskResult {
 
 	@Override
 	public String toString() {
-		return "TaskResult [sender=" + sender.peerId() + ", status=" + status + ", resultHash=" + resultHash + "]";
+		return "TaskResult [sender=" + sender + ", status=" + status + ", resultHash=" + resultHash + "]";
 	}
 
 }

@@ -10,28 +10,16 @@ import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.utils.DomainProvider;
 
 public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsumer {
-	private String jobSubmitterID;
 
 	private MRJobSubmissionManager jobSubmissionManager;
 
-	private MRJobSubmissionManagerMessageConsumer(String jobSubmitterID, BlockingQueue<IBCMessage> bcMessages, List<Job> jobs) {
+	private MRJobSubmissionManagerMessageConsumer(MRJobSubmissionManager jobSubmissionManager, BlockingQueue<IBCMessage> bcMessages, List<Job> jobs) {
 		super(bcMessages, jobs);
-		this.jobSubmitterID = jobSubmitterID;
-	}
-
-	public static MRJobSubmissionManagerMessageConsumer newInstance(String jobSubmitterID, List<Job> jobs) {
-		return new MRJobSubmissionManagerMessageConsumer(jobSubmitterID, new PriorityBlockingQueue<IBCMessage>(), jobs);
-	}
-
-	/**
-	 * To resubmit the job if necessary
-	 * 
-	 * @param mrJobExecutor
-	 * @return
-	 */
-	public MRJobSubmissionManagerMessageConsumer jobSubmissionManager(MRJobSubmissionManager jobSubmissionManager) {
 		this.jobSubmissionManager = jobSubmissionManager;
-		return this;
+	}
+
+	public static MRJobSubmissionManagerMessageConsumer newInstance(MRJobSubmissionManager jobSubmissionManager, List<Job> jobs) {
+		return new MRJobSubmissionManagerMessageConsumer(jobSubmissionManager, new PriorityBlockingQueue<IBCMessage>(), jobs);
 	}
 
 	@Override
@@ -41,7 +29,7 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 
 	@Override
 	public void handleFinishedJob(Job job) {
-		if (this.jobSubmitterID.equals(job.jobSubmitterID())) {
+		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
 			String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
 			logger.warn("handleFinishedJob()::1::Finished job " + DomainProvider.INSTANCE.jobProcedureDomain(job));
 			this.jobSubmissionManager.finishedJob(jobProcedureDomain);
@@ -50,7 +38,7 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 
 	@Override
 	public void handleFailedJob(Job job) {
-		if (this.jobSubmitterID.equals(job.jobSubmitterID())) {
+		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
 			logger.warn("handleFailedJob()::1::Job failed:" + job.id());
 			if (job.submissionCounter() < job.maxNrOfDHTActions()) {
 				job.incrementSubmissionCounter();
@@ -65,7 +53,7 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 
 	@Override
 	public void handleReceivedJob(Job job) {
-		if (this.jobSubmitterID.equals(job.jobSubmitterID())) {
+		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
 			if (!jobs.contains(job)) {
 				jobs.add(job);
 				logger.warn("handleReceivedJob()::1::Received own job, added to jobs: " + job);

@@ -58,7 +58,7 @@ public interface IDHTConnectionProvider {
 
 	public void shutdown();
 
-	public PeerAddress peerAddress();
+//	public PeerAddress peerAddress();
 
 	public IDHTConnectionProvider performBlocking(boolean performBlocking);
 
@@ -67,5 +67,14 @@ public interface IDHTConnectionProvider {
 	public String bootstrapIP();
 
 	public int bootstrapPort();
+
+	/**
+	 * ID of the JobExecutionManager or SubmissionManager
+	 * 
+	 * @return
+	 */
+	public String owner();
+
+	public IDHTConnectionProvider owner(String owner);
 
 }

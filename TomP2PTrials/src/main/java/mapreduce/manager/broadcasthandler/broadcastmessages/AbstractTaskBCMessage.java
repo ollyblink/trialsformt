@@ -27,8 +27,8 @@ public abstract class AbstractTaskBCMessage extends AbstractBCMessage implements
 
 	@Override
 	public String toString() {
-		return creationTime() + ":"+sender.inetAddress() + ":" + sender.tcpPort() + " sent task message with status " + status() + " for task " + task.id() + " from job "
-				+ task.jobId()+"\n";
+		return creationTime() + ":" + sender + " sent task message with status " + status() + " for task " + task.id() + " from job " + task.jobId()
+				+ "\n";
 	}
 
 	@Override

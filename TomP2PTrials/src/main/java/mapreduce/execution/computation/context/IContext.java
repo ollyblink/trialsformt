@@ -11,7 +11,7 @@ public interface IContext {
 	public void write(Object keyOut, Object valueOut);
 
 	public IContext task(Task task);
-	
+
 	public Task task();
 
 	public Number160 resultHash();
@@ -19,7 +19,7 @@ public interface IContext {
 	public IContext combiner(IMapReduceProcedure combiner);
 
 	public IMapReduceProcedure combiner();
-	
+
 	public void combine();
 
 	public Set<Object> keys();
@@ -30,4 +30,7 @@ public interface IContext {
 
 	public void broadcastResultHash();
 
+	public String subsequentJobProcedureDomain();
+
+	public IContext subsequentJobProcedureDomain(String subsequentJobProcedureDomain);
 }

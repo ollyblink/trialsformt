@@ -34,7 +34,7 @@ public class JobTest {
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
-		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(WordCountMapper.newInstance());
+		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).addSubsequentProcedure(WordCountMapper.newInstance());
 		job.procedure(job.currentProcedureIndex()).tasks(tasksForProcedure);
 		assertTrue(job.currentProcedureIndex() == 0);
 
@@ -47,11 +47,11 @@ public class JobTest {
 		List<Task> tasksForProcedure2 = new ArrayList<Task>();
 		tasksForProcedure2.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure2.add(Task.newInstance(jobId, ("word" + counter++)));
-		job.nextProcedure(NullMapReduceProcedure.newInstance());
+		job.addSubsequentProcedure(NullMapReduceProcedure.newInstance());
 		job.procedure(job.currentProcedureIndex()).tasks(tasksForProcedure2);
 
 		assertTrue(job.currentProcedureIndex() == 0);
-		job.incrementProcedureNumber();
+		job.incrementCurrentProcedureIndex();
 		assertTrue(job.currentProcedureIndex() == 1);
 
 		tasks = job.procedure(job.currentProcedureIndex()).tasks();
@@ -65,7 +65,7 @@ public class JobTest {
 	public void testUpdateTaskStati() {
 		int counter = 0;
 
-		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).nextProcedure(NullMapReduceProcedure.newInstance());
+		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).addSubsequentProcedure(NullMapReduceProcedure.newInstance());
 		List<Task> list = new ArrayList<Task>();
 		list.add(Task.newInstance("word" + (counter++), job.id()));
 		list.add(Task.newInstance("word" + (counter++), job.id()));
