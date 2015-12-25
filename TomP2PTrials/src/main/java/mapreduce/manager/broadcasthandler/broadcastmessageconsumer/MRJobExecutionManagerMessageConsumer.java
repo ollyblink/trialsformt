@@ -14,9 +14,7 @@ import mapreduce.execution.task.Tasks;
 import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.manager.conditions.ICondition;
 import mapreduce.manager.conditions.JobBCMessageUpdateCondition;
-import net.tomp2p.peers.PeerAddress;
 
 public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsumer {
 
@@ -57,9 +55,27 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 	@Override
 	public void handleReceivedJob(Job job) {
-		if (!jobs.contains(job)) {
-			logger.info("NEW JOB: " + job.id());
+		if (!jobs.contains(job)) { // Job was not yet received
 			jobs.add(job);
+			synchronized (jobs) {
+				Collections.sort(jobs);
+			}
+			if (jobExecutor.currentlyExecutedJob() == null) { // No job is executed atm
+				jobExecutor.executeJob(jobs.get(0)); // Execute job with highest priority
+			} else {// Some job is executed atm
+				if (!jobExecutor.currentlyExecutedJob().equals(jobs.get(0))) { // The job currently executing is not the one with highest priority
+																				// anymore
+					jobExecutor.abortExecution(job); // Abort the currently executing job (meaning, interrupt until later resume... This finishes the
+														// task executing atm
+					jobExecutor.executeJob(jobs.get(0));
+				} else {
+					// Do nothing and continue executing
+				}
+			}
+		} else { // Job was already received once. This is either an update or a new submission because another task for the job was added
+			Job containedJob = jobs.get(jobs.indexOf(job)); // get that job from own list and see what's different
+			// Was a task added for execution?
+			containedJob.currentProcedure().tasks();
 		}
 	}
 

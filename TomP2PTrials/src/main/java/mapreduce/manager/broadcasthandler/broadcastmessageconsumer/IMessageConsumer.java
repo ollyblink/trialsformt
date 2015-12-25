@@ -7,12 +7,18 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
-import net.tomp2p.peers.PeerAddress;
 
 public interface IMessageConsumer extends Runnable {
 
 	public void handleNewExecutorOnline();
 
+	/**
+	 * Can either be because a new Job was added, or the next procedure is being executed. If a job with a higher priority is added, the currently
+	 * executed procedure of a currently processed job is aborted after the currently executed task finished and the new Job with higher priority is
+	 * being executed.
+	 * 
+	 * @param job
+	 */
 	public void handleReceivedJob(Job job);
 
 	public void handleFailedJob(Job job);

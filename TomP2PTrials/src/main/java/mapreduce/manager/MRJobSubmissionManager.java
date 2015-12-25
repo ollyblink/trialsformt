@@ -99,43 +99,36 @@ public class MRJobSubmissionManager {
 												@Override
 												public void operationComplete(FuturePut future) throws Exception {
 													if (future.isSuccess()) {
-														logger.info("Successfully added data. Broadcasting job.");
-														job.resetSubmissionCounter();
+														logger.info("Successfully added data. Broadcasting job."); 
 														dhtConnectionProvider.broadcastNewJob(job);
 													} else {
-														logger.warn(future.failedReason());
-														dhtConnectionProvider.broadcastFailedJob(job);
+														logger.warn(future.failedReason()); 
 													}
 												}
 
 												@Override
 												public void exceptionCaught(Throwable t) throws Exception {
-													logger.warn("Exception thrown", t);
-													dhtConnectionProvider.broadcastFailedJob(job);
+													logger.warn("Exception thrown", t); 
 												}
 											});
 										} else {
-											logger.warn(future.failedReason());
-											dhtConnectionProvider.broadcastFailedJob(job);
+											logger.warn(future.failedReason()); 
 										}
 									}
 
 									@Override
 									public void exceptionCaught(Throwable t) throws Exception {
-										logger.warn("Exception thrown", t);
-										dhtConnectionProvider.broadcastFailedJob(job);
+										logger.warn("Exception thrown", t); 
 									}
 								});
 							} else {
-								logger.warn(future.failedReason());
-								dhtConnectionProvider.broadcastFailedJob(job);
+								logger.warn(future.failedReason()); 
 							}
 						}
 
 						@Override
 						public void exceptionCaught(Throwable t) throws Exception {
-							logger.warn("Exception thrown", t);
-							dhtConnectionProvider.broadcastFailedJob(job);
+							logger.warn("Exception thrown", t); 
 						}
 					});
 				}

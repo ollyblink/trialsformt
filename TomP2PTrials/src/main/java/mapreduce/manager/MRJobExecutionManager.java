@@ -59,6 +59,8 @@ public class MRJobExecutionManager {
 
 	private String id;
 
+	private Job currentlyExecutedJob;
+
 	private MRJobExecutionManager(IDHTConnectionProvider dhtConnectionProvider, List<Job> jobs) {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.dhtConnectionProvider(dhtConnectionProvider.owner(this.id));
@@ -72,6 +74,10 @@ public class MRJobExecutionManager {
 	public static MRJobExecutionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
 		return new MRJobExecutionManager(dhtConnectionProvider, DEFAULT_JOB_LIST).taskExecutor(DEFAULT_TASK_EXCECUTOR)
 				.taskExecutionScheduler(DEFAULT_TASK_EXECUTION_SCHEDULER).context(DEFAULT_CONTEXT);
+	}
+
+	public Job currentlyExecutedJob() {
+		return this.currentlyExecutedJob;
 	}
 
 	public MRJobExecutionManager taskExecutor(ITaskExecutor taskExecutor) {
@@ -109,57 +115,54 @@ public class MRJobExecutionManager {
 	public void start() {
 		dhtConnectionProvider.connect();
 
-		executeJob();
 	}
 
 	// End Maintenance
 	// Execution
 
-	private void executeJob() {
-		if (TimeToLive.INSTANCE.cancelOnTimeout(jobs, EmptyListCondition.create())) {
+	public void executeJob(Job job) {
+		// if (TimeToLive.INSTANCE.cancelOnTimeout(jobs, EmptyListCondition.create())) {
 
-			ProcedureInformation procedureInformation = jobs.get(0).currentProcedure();
-			logger.info("Got job: " + jobs.get(0).id() + ", starting procedure " + procedureInformation);
+		this.currentlyExecutedJob = job;
+		ProcedureInformation procedureInformation = currentlyExecutedJob.currentProcedure();
+		logger.info("Got job: " + currentlyExecutedJob.id() + ", starting procedure " + procedureInformation);
 
-			// Get the data for the job's current procedure
-			this.server = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+		// Get the data for the job's current procedure
+		this.server = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
-			List<Task> tasks = procedureInformation.tasks();
-			String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(jobs.get(0));
-			this.createTaskThread = server.submit(new Runnable() {
+		List<Task> tasks = procedureInformation.tasks();
+		String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(currentlyExecutedJob);
+		this.createTaskThread = server.submit(new Runnable() {
 
-				@Override
-				public void run() {
-					// Get all procedure keys!! Create all the tasks for each key!!!
-					dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, jobProcedureDomain)
-							.addListener(createTasksForProcedure(tasks, jobProcedureDomain));
-				}
-			});
-
-			Task task = null;
-			while ((task = taskExecutionScheduler.schedule(tasks)) != null && !taskExecutor.abortedTaskExecution()) {
-				final Task taskToDistribute = task;
-				List<String> finalDataLocations = task.finalDataLocationDomains();
-				List<Object> valuesCollector = syncedList();
-				List<FutureGet> futureGets = syncedList();
-
-				// TODO build in that the data retrieval may take a certain number of repetitions when failed before being broadcasted as failed
-				for (int i = 0; i < finalDataLocations.size(); ++i) {
-					dhtConnectionProvider.broadcastExecutingTask(task);
-					// Now we actually wanna retrieve the data from the specified locations...
-					futureGets.add(retrieveDataForTask(task, finalDataLocations.get(i), valuesCollector));
-				}
-				Futures.whenAllSuccess(futureGets).addListener(executeTaskOnSuccessfulDataRetrieval(jobs.get(0), taskToDistribute, valuesCollector));
+			@Override
+			public void run() {
+				// Get all procedure keys!! Create all the tasks for each key!!!
+				dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, jobProcedureDomain)
+						.addListener(createTasksForProcedure(currentlyExecutedJob, tasks, jobProcedureDomain));
 			}
+		});
 
-			if (!taskExecutor.abortedTaskExecution()) { // this means that this executor is actually the one that is going to abort the others...
-				procedureInformation.isFinished(true);
-//				dhtConnectionProvider.broadcastFinishedAllTasksOfProcedure(jobs.get(0).currentProcedure());
+		Task task = null;
+		while ((task = taskExecutionScheduler.schedule(tasks)) != null && !taskExecutor.abortedTaskExecution()) {
+			final Task taskToDistribute = task;
+			List<String> finalDataLocations = task.finalDataLocationDomains();
+			List<Object> valuesCollector = syncedList();
+			List<FutureGet> futureGets = syncedList();
+
+			// TODO build in that the data retrieval may take a certain number of repetitions when failed before being broadcasted as failed
+			for (int i = 0; i < finalDataLocations.size(); ++i) {
+				dhtConnectionProvider.broadcastExecutingTask(task);
+				// Now we actually wanna retrieve the data from the specified locations...
+				futureGets.add(retrieveDataForTask(task, finalDataLocations.get(i), valuesCollector));
 			}
+			Futures.whenAllSuccess(futureGets)
+					.addListener(executeTaskOnSuccessfulDataRetrieval(currentlyExecutedJob, taskToDistribute, valuesCollector));
 		}
+
+		// }
 	}
 
-	protected BaseFutureListener<FutureGet> createTasksForProcedure(List<Task> tasks, String jobProcedureDomain) {
+	protected BaseFutureListener<FutureGet> createTasksForProcedure(Job job, List<Task> tasks, String jobProcedureDomain) {
 		return new BaseFutureListener<FutureGet>() {
 
 			@Override
@@ -169,7 +172,7 @@ public class MRJobExecutionManager {
 						if (future.dataMap() != null) {
 							for (Number640 n : future.dataMap().keySet()) {
 								Object key = future.dataMap().get(n).object();
-								Task task = Task.newInstance(key, jobs.get(0).id());
+								Task task = Task.newInstance(key, job.id());
 								dhtConnectionProvider.getAll(key.toString(), jobProcedureDomain).addListener(new BaseFutureListener<FutureGet>() {
 
 									@Override
@@ -210,7 +213,7 @@ public class MRJobExecutionManager {
 			@Override
 			public void exceptionCaught(Throwable t) throws Exception {
 				logger.warn("Exception thrown", t);
-				dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
+				dhtConnectionProvider.broadcastFailedJob(job);
 			}
 		};
 	}
@@ -258,7 +261,7 @@ public class MRJobExecutionManager {
 	}
 
 	public void abortExecution(Job job) {
-		if (job.id().equals(jobs.get(0).id())) {
+		if (job.id().equals(currentlyExecutedJob.id())) {
 			this.taskExecutor.abortTaskExecution();
 			if (!server.isTerminated() && server.getActiveCount() > 0) {
 				this.createTaskThread.cancel(true);
