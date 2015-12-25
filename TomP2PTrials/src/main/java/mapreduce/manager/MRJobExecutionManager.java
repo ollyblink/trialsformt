@@ -1,7 +1,5 @@
 package mapreduce.manager;
 
-import static mapreduce.utils.SyncedCollectionProvider.syncedList;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,11 +22,9 @@ import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWo
 import mapreduce.execution.task.taskexecutor.ITaskExecutor;
 import mapreduce.execution.task.taskexecutor.ParallelTaskExecutor;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
-import mapreduce.manager.conditions.EmptyListCondition;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.IDCreator;
-import mapreduce.utils.TimeToLive;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -36,7 +32,7 @@ import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.peers.PeerAddress;
+import static mapreduce.utils.SyncedCollectionProvider.*;
 
 public class MRJobExecutionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobExecutionManager.class);
@@ -121,8 +117,6 @@ public class MRJobExecutionManager {
 	// Execution
 
 	public void executeJob(Job job) {
-		// if (TimeToLive.INSTANCE.cancelOnTimeout(jobs, EmptyListCondition.create())) {
-
 		this.currentlyExecutedJob = job;
 		ProcedureInformation procedureInformation = currentlyExecutedJob.currentProcedure();
 		logger.info("Got job: " + currentlyExecutedJob.id() + ", starting procedure " + procedureInformation);
@@ -132,22 +126,24 @@ public class MRJobExecutionManager {
 
 		List<Task> tasks = procedureInformation.tasks();
 		String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(currentlyExecutedJob);
-		this.createTaskThread = server.submit(new Runnable() {
+		this.createTaskThread = server.submit(new Runnable() { // makes sense as tasks may also be returned from outside (other executors), not only
+																// from stored data
 
 			@Override
 			public void run() {
 				// Get all procedure keys!! Create all the tasks for each key!!!
 				dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, jobProcedureDomain)
-						.addListener(createTasksForProcedure(currentlyExecutedJob, tasks, jobProcedureDomain));
+						.addListener(createTasksForProcedure(currentlyExecutedJob.id(), tasks, jobProcedureDomain));
 			}
 		});
 
 		Task task = null;
+		taskExecutionScheduler.procedureInformation(procedureInformation);
 		while ((task = taskExecutionScheduler.schedule(tasks)) != null && !taskExecutor.abortedTaskExecution()) {
 			final Task taskToDistribute = task;
 			List<String> finalDataLocations = task.finalDataLocationDomains();
-			List<Object> valuesCollector = syncedList();
-			List<FutureGet> futureGets = syncedList();
+			List<Object> valuesCollector = syncedArrayList();
+			List<FutureGet> futureGets = syncedArrayList();
 
 			// TODO build in that the data retrieval may take a certain number of repetitions when failed before being broadcasted as failed
 			for (int i = 0; i < finalDataLocations.size(); ++i) {
@@ -159,10 +155,14 @@ public class MRJobExecutionManager {
 					.addListener(executeTaskOnSuccessfulDataRetrieval(currentlyExecutedJob, taskToDistribute, valuesCollector));
 		}
 
-		// }
+		if (procedureInformation.isFinished()) { // May have been aborted from outside and thus, hasn't finished yet (in case abortExecution(job) was
+													// called
+			dhtConnectionProvider.broadcastFinishedAllTasksOfProcedure(job);
+		}
+
 	}
 
-	protected BaseFutureListener<FutureGet> createTasksForProcedure(Job job, List<Task> tasks, String jobProcedureDomain) {
+	protected BaseFutureListener<FutureGet> createTasksForProcedure(String jobId, List<Task> tasks, String jobProcedureDomain) {
 		return new BaseFutureListener<FutureGet>() {
 
 			@Override
@@ -172,34 +172,40 @@ public class MRJobExecutionManager {
 						if (future.dataMap() != null) {
 							for (Number640 n : future.dataMap().keySet()) {
 								Object key = future.dataMap().get(n).object();
-								Task task = Task.newInstance(key, job.id());
-								dhtConnectionProvider.getAll(key.toString(), jobProcedureDomain).addListener(new BaseFutureListener<FutureGet>() {
+								Task task = Task.newInstance(key, jobId);
+								if (tasks.contains(task)) {// Don't need to add it more, got it e.g. from a BC
+									return;
+								} else {
+									dhtConnectionProvider.getAll(key.toString(), jobProcedureDomain).addListener(new BaseFutureListener<FutureGet>() {
 
-									@Override
-									public void operationComplete(FutureGet future) throws Exception {
-										if (future.isSuccess()) {
-											try {
-												if (future.dataMap() != null) {
-													for (Number640 n : future.dataMap().keySet()) {
-														Object taskExecutorDomain = future.dataMap().get(n).object();
-														task.finalDataLocationDomains(taskExecutorDomain.toString());
+										@Override
+										public void operationComplete(FutureGet future) throws Exception {
+											if (future.isSuccess()) {
+												try {
+													if (future.dataMap() != null) {
+														for (Number640 n : future.dataMap().keySet()) {
+															Object taskExecutorDomain = future.dataMap().get(n).object();
+															task.finalDataLocationDomains(taskExecutorDomain.toString());
+														}
+														if (!tasks.contains(task)) {
+															tasks.add(task);
+														}
 													}
-													tasks.add(task);
+												} catch (IOException e) {
+													// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
 												}
-											} catch (IOException e) {
-												// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
+											} else {
+												// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
 											}
-										} else {
+										}
+
+										@Override
+										public void exceptionCaught(Throwable t) throws Exception {
+											logger.warn("Exception thrown", t);
 											// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
 										}
-									}
-
-									@Override
-									public void exceptionCaught(Throwable t) throws Exception {
-										logger.warn("Exception thrown", t);
-										// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
-									}
-								});
+									});
+								}
 							}
 						}
 					} catch (IOException e) {
@@ -213,7 +219,7 @@ public class MRJobExecutionManager {
 			@Override
 			public void exceptionCaught(Throwable t) throws Exception {
 				logger.warn("Exception thrown", t);
-				dhtConnectionProvider.broadcastFailedJob(job);
+				// dhtConnectionProvider.broadcastFailedJob(job);
 			}
 		};
 	}

@@ -48,7 +48,7 @@ public class MRJobExecutorMessageConsumerTest {
 		peer1 = new PeerAddress(new Number160(1));
 		peer2 = new PeerAddress(new Number160(2));
 		peer3 = new PeerAddress(new Number160(3));
-		List<Job> jobs = SyncedCollectionProvider.syncedList();
+		List<Job> jobs = SyncedCollectionProvider.syncedArrayList();
 		MRJobExecutionManager jobExecutor = Mockito.mock(MRJobExecutionManager.class);
 		DHTConnectionProvider dhtConnectionProvider = Mockito.mock(DHTConnectionProvider.class);
 		Mockito.when(jobExecutor.dhtConnectionProvider()).thenReturn(dhtConnectionProvider);

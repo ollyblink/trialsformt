@@ -47,6 +47,9 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 					assignedTask = tasksToSchedule.get(0);
 				}
 			}
+		}else{
+			//all tasks finished... set procedure to be finished
+			this.procedureInformation.isFinished(true);
 		}
 		return assignedTask;
 	}

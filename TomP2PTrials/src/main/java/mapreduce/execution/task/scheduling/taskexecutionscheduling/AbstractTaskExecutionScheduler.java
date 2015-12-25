@@ -2,6 +2,7 @@ package mapreduce.execution.task.scheduling.taskexecutionscheduling;
 
 import java.util.List;
 
+import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.Tasks;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
@@ -10,7 +11,13 @@ import mapreduce.utils.TimeToLive;
 
 public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 
-	private boolean failedWhileWaiting = false;
+	// private boolean failedWhileWaiting = false;
+	protected ProcedureInformation procedureInformation;
+
+	public AbstractTaskExecutionScheduler procedureInformation(ProcedureInformation procedureInformation) {
+		this.procedureInformation = procedureInformation;
+		return this;
+	}
 
 	@Override
 	public Task schedule(List<Task> tasksToSchedule) {
@@ -20,9 +27,9 @@ public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 		return null;
 	}
 
-	public boolean failedWhileWaiting() {
-		return failedWhileWaiting;
-	}
+	// public boolean failedWhileWaiting() {
+	// return failedWhileWaiting;
+	// }
 
 	protected abstract Task scheduleNonNull(List<Task> tasksToSchedule);
 

@@ -10,6 +10,7 @@ import mapreduce.execution.task.Task;
 import net.tomp2p.peers.Number160;
 
 public abstract class AbstractBaseContext implements IContext {
+ 
 	protected IMapReduceProcedure combiner;
 	protected Task task;
 	protected Number160 resultHash;

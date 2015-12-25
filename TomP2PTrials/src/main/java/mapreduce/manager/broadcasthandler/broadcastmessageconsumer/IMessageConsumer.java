@@ -25,7 +25,7 @@ public interface IMessageConsumer extends Runnable {
 
 	public void handleTaskExecutionStatusUpdate(Task task, TaskResult toUpdate);
 
-	public void handleFinishedAllTasks(Job job, String sender);
+	public void handleFinishedAllTasks(Job job);
 
 	public void handleFinishedJob(Job job);
 

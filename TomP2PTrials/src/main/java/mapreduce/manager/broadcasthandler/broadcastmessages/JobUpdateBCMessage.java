@@ -19,7 +19,7 @@ public class JobUpdateBCMessage extends AbstractJobBCMessage {
 		this.status = status;
 	}
 
-	public static JobUpdateBCMessage newFinishedAllTasksBCMessage() {
+	public static JobUpdateBCMessage create() {
 		return new JobUpdateBCMessage(BCMessageStatus.FINISHED_ALL_TASKS);
 	}
 

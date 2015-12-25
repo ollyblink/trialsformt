@@ -98,7 +98,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleFinishedAllTasks(Job job, String sender) {
+	public void handleFinishedAllTasks(Job job) {
 
 	}
 }

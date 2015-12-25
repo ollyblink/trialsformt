@@ -96,7 +96,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastFinishedAllTasksOfProcedure(Job job) {
-		broadcastJobUpdate(job, JobUpdateBCMessage.newFinishedAllTasksBCMessage().job(job).sender(this.owner()));
+		broadcastJobUpdate(job, JobUpdateBCMessage.create().job(job).sender(this.owner()));
 
 	}
 

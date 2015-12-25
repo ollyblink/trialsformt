@@ -282,7 +282,7 @@ public class Job implements Serializable, Comparable<Job> {
 		job.maxFileSize = maxFileSize;
 		job.maxNrOfDHTActions = maxNrOfDHTActions;
 		job.maxNrOfFinishedWorkersPerTask = maxNrOfFinishedWorkersPerTask;
-		job.procedures = SyncedCollectionProvider.syncedList();
+		job.procedures = SyncedCollectionProvider.syncedArrayList();
 		for (ProcedureInformation pI : procedures) {
 			ProcedureInformation copyPI = ProcedureInformation.create(pI.procedure()).isFinished(pI.isFinished());
 			List<Task> tasks = copyPI.tasks();

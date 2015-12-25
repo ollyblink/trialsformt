@@ -80,57 +80,64 @@ public class MRJobSubmissionManager {
 					Tuple<String, Integer> taskExecutor = Tuple.create(id, 0);
 					Task task = Task.newInstance(keyfilePath, job.id()).finalDataLocationDomains(taskExecutor.combine());
 					String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, taskExecutor);
+					String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
+					// Need the whole thing to be able to distingish the whole domain
+					String taskExecutorDomainCombination = jobProcedureDomain + "_" + taskExecutorDomain;
 					tasks.add(task);
-					dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomain, true).addListener(new BaseFutureListener<FuturePut>() {
+					
+					//Add <key, value, taskExecutorDomain>
+					dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomainCombination, true)
+							.addListener(new BaseFutureListener<FuturePut>() {
 
-						@Override
-						public void operationComplete(FuturePut future) throws Exception {
-							if (future.isSuccess()) {
-								String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
-								dhtConnectionProvider.add(task.id(), taskExecutorDomain, jobProcedureDomain, false)
-										.addListener(new BaseFutureListener<FuturePut>() {
+								@Override
+								public void operationComplete(FuturePut future) throws Exception {
+									if (future.isSuccess()) {
+										//Add <key, taskExecutorDomainPart, jobProcedureDomain> to collect all keys
+										dhtConnectionProvider.add(task.id(), taskExecutorDomain, jobProcedureDomain, false)
+												.addListener(new BaseFutureListener<FuturePut>() {
 
-									@Override
-									public void operationComplete(FuturePut future) throws Exception {
-										if (future.isSuccess()) {
-											dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), jobProcedureDomain, false)
-													.addListener(new BaseFutureListener<FuturePut>() {
+											@Override
+											public void operationComplete(FuturePut future) throws Exception {
+												if (future.isSuccess()) {
+													//Add <PROCEDURE_KEYS, key, jobProcedureDomain> to collect all domains for all keys
+													dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), jobProcedureDomain, false)
+															.addListener(new BaseFutureListener<FuturePut>() {
 
-												@Override
-												public void operationComplete(FuturePut future) throws Exception {
-													if (future.isSuccess()) {
-														logger.info("Successfully added data. Broadcasting job."); 
-														dhtConnectionProvider.broadcastNewJob(job);
-													} else {
-														logger.warn(future.failedReason()); 
-													}
+														@Override
+														public void operationComplete(FuturePut future) throws Exception {
+															if (future.isSuccess()) {
+																logger.info("Successfully added data. Broadcasting job.");
+																dhtConnectionProvider.broadcastNewJob(job);
+															} else {
+																logger.warn(future.failedReason());
+															}
+														}
+
+														@Override
+														public void exceptionCaught(Throwable t) throws Exception {
+															logger.warn("Exception thrown", t);
+														}
+													});
+												} else {
+													logger.warn(future.failedReason());
 												}
+											}
 
-												@Override
-												public void exceptionCaught(Throwable t) throws Exception {
-													logger.warn("Exception thrown", t); 
-												}
-											});
-										} else {
-											logger.warn(future.failedReason()); 
-										}
+											@Override
+											public void exceptionCaught(Throwable t) throws Exception {
+												logger.warn("Exception thrown", t);
+											}
+										});
+									} else {
+										logger.warn(future.failedReason());
 									}
+								}
 
-									@Override
-									public void exceptionCaught(Throwable t) throws Exception {
-										logger.warn("Exception thrown", t); 
-									}
-								});
-							} else {
-								logger.warn(future.failedReason()); 
-							}
-						}
-
-						@Override
-						public void exceptionCaught(Throwable t) throws Exception {
-							logger.warn("Exception thrown", t); 
-						}
-					});
+								@Override
+								public void exceptionCaught(Throwable t) throws Exception {
+									logger.warn("Exception thrown", t);
+								}
+							});
 				}
 			} catch (IOException x) {
 				System.err.format("IOException: %s%n", x);

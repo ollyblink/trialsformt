@@ -1,6 +1,6 @@
 package mapreduce.execution.task;
 
-import static mapreduce.utils.SyncedCollectionProvider.syncedList;
+import static mapreduce.utils.SyncedCollectionProvider.syncedArrayList;
 import static mapreduce.utils.SyncedCollectionProvider.syncedListMultimap;
 
 import java.io.Serializable;
@@ -50,8 +50,8 @@ public class Task implements Serializable, Comparable<Task> {
 		this.executingPeers = syncedListMultimap();
 		this.taskResults = syncedListMultimap();
 		this.reverseTaskResults = syncedListMultimap();
-		this.finalTaskExecutorDomains = syncedList();
-		this.removableTaskExecutorDomains = syncedList();
+		this.finalTaskExecutorDomains = syncedArrayList();
+		this.removableTaskExecutorDomains = syncedArrayList();
 		this.isFinished = false;
 	}
 

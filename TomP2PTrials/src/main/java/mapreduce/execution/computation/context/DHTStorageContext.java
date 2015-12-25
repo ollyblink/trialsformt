@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
+import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
@@ -50,10 +51,12 @@ public class DHTStorageContext extends AbstractBaseContext {
 
 		updateResultHash(keyOut, valueOut);
 
-		this.dhtConnectionProvider.add(keyOut.toString(), valueOut,
-				DomainProvider.INSTANCE.executorTaskDomain(task,
-						Tuple.create(dhtConnectionProvider.owner(), task.executingPeers().get(dhtConnectionProvider.owner()).size() - 1)),
-				true).addListener(new BaseFutureListener<FuturePut>() {
+		String executorTaskDomain = DomainProvider.INSTANCE.executorTaskDomain(task,
+				Tuple.create(dhtConnectionProvider.owner(), task.executingPeers().get(dhtConnectionProvider.owner()).size() - 1));
+
+		String combinedExecutorTaskDomain = subsequentJobProcedureDomain + "_" + executorTaskDomain;
+		this.dhtConnectionProvider.add(keyOut.toString(), valueOut, combinedExecutorTaskDomain, true)
+				.addListener(new BaseFutureListener<FuturePut>() {
 
 					@Override
 					public void operationComplete(FuturePut future) throws Exception {

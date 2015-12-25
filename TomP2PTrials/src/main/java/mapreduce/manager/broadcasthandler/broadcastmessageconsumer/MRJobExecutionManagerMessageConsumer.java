@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import mapreduce.execution.computation.ProcedureInformation;
+import mapreduce.execution.computation.standardprocedures.EndReached;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
@@ -15,6 +17,12 @@ import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.manager.conditions.JobBCMessageUpdateCondition;
+import mapreduce.utils.DomainProvider;
+import mapreduce.utils.SyncedCollectionProvider;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.Futures;
 
 public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsumer {
 
@@ -72,10 +80,9 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					// Do nothing and continue executing
 				}
 			}
-		} else { // Job was already received once. This is either an update or a new submission because another task for the job was added
-			Job containedJob = jobs.get(jobs.indexOf(job)); // get that job from own list and see what's different
-			// Was a task added for execution?
-			containedJob.currentProcedure().tasks();
+		} else { // Job was already received once.
+			// TODO: Currently don't know what to do with that information... skip
+
 		}
 	}
 
@@ -100,12 +107,12 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	@Override
-	public void handleFinishedAllTasks(Job job, String sender) {
+	public void handleFinishedAllTasks(Job job) {
 		// if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
 		// return;
 		// }
-		if (!sender.equals(this.jobExecutor.dhtConnectionProvider().owner())) {
-			this.jobExecutor.abortExecution(job);
+		if (this.jobExecutor.currentlyExecutedJob().equals(job)) {
+			this.jobExecutor.abortExecution(job); // finished
 		}
 		logger.info("Sync job");
 		this.jobs.set(this.jobs.indexOf(job), job);
@@ -120,6 +127,41 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			}
 			this.bcMessages = tmp;
 		}
+		String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
+		List<Task> tasks = job.currentProcedure().tasks();
+		List<FuturePut> futurePuts = SyncedCollectionProvider.syncedArrayList();
+		for (Task task : tasks) {
+			List<String> finalDataLocationDomains = task.finalDataLocationDomains();
+			for (String finalDataLocationDomain : finalDataLocationDomains) {
+				futurePuts.add(this.jobExecutor.dhtConnectionProvider().add(task.id(), finalDataLocationDomain, jobProcedureDomain, false));
+			}
+		}
+		Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
+
+			@Override
+			public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
+				if (future.isSuccess()) {
+					// well... check if there is actually any procedure left... Else job is finished...
+					ProcedureInformation subsequentProcedure = job.subsequentProcedure();
+					if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndReached.class.getSimpleName())) {
+						// Finished job :)
+						jobExecutor.dhtConnectionProvider().broadcastFinishedJob(job);
+						jobs.remove(job);
+					} else {
+						// Next procedure!!
+						job.incrementCurrentProcedureIndex();
+						Job nextJob = job;
+						if (!jobs.get(0).equals(nextJob)) {
+							nextJob = jobs.get(0);// Sorry... but maybe a new, more priorities job needs to be executed asap
+						}
+						jobExecutor.executeJob(nextJob);
+					}
+				} else {
+					// Well... something TODO
+				}
+			}
+
+		});
 		logger.info("removed messages for job");
 		logger.info("job current tasks for current procedure: " + job.currentProcedure().tasks().get(0).executingPeers().keySet());
 	}
