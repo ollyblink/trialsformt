@@ -2,7 +2,7 @@ package mapreduce.manager.broadcasthandler.broadcastmessages;
 
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
 
-public class JobUpdateBCMessage extends AbstractJobBCMessage {
+public class FinishedProcedureBCMessage extends AbstractJobBCMessage {
 
 	/**
 	 * 
@@ -15,17 +15,17 @@ public class JobUpdateBCMessage extends AbstractJobBCMessage {
 		return status;
 	}
 
-	private JobUpdateBCMessage(BCMessageStatus status) {
+	private FinishedProcedureBCMessage(BCMessageStatus status) {
 		this.status = status;
 	}
 
-	public static JobUpdateBCMessage create() {
-		return new JobUpdateBCMessage(BCMessageStatus.FINISHED_ALL_TASKS);
+	public static FinishedProcedureBCMessage create() {
+		return new FinishedProcedureBCMessage(BCMessageStatus.FINISHED_PROCEDURE);
 	}
 
 	@Override
 	public void execute(final IMessageConsumer messageConsumer) {
-		messageConsumer.handleFinishedAllTasks(job, sender);
+		messageConsumer.handleFinishedAllTasks(job);
 	}
 
 }

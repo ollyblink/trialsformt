@@ -15,7 +15,7 @@ import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMess
 import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedJobBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.JobFailedBCMessage;
-import mapreduce.manager.broadcasthandler.broadcastmessages.JobUpdateBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedProcedureBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.Tuple;
@@ -96,7 +96,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public void broadcastFinishedAllTasksOfProcedure(Job job) {
-		broadcastJobUpdate(job, JobUpdateBCMessage.create().job(job).sender(this.owner()));
+		broadcastJobUpdate(job, FinishedProcedureBCMessage.create().job(job).sender(this.owner()));
 
 	}
 

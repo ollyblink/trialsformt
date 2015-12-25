@@ -82,7 +82,6 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			}
 		} else { // Job was already received once.
 			// TODO: Currently don't know what to do with that information... skip
-
 		}
 	}
 
@@ -112,7 +111,12 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		// return;
 		// }
 		if (this.jobExecutor.currentlyExecutedJob().equals(job)) {
-			this.jobExecutor.abortExecution(job); // finished
+			this.jobExecutor.abortExecution(job); // finished already... doesn't need to be executed anymore
+
+			// TODO: hmnn... Should I start another job here while we wait for the evaluatiion of this job? I DON'T KNOW... Well let's think this
+			// through... Only if it was the last procedure and the job is finished, else if we take the next procedure of the same job, there isn't
+			// any data to collect for tasks yet (will be done below)... Sooo will think about it...
+
 		}
 		logger.info("Sync job");
 		this.jobs.set(this.jobs.indexOf(job), job);
@@ -152,12 +156,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 						job.incrementCurrentProcedureIndex();
 						Job nextJob = job;
 						if (!jobs.get(0).equals(nextJob)) {
-							nextJob = jobs.get(0);// Sorry... but maybe a new, more priorities job needs to be executed asap
+							nextJob = jobs.get(0);// Sorry little job... but maybe a new, more prioritized job needs to be executed asap so you need
+													// to step back and wait a little...
 						}
 						jobExecutor.executeJob(nextJob);
 					}
 				} else {
-					// Well... something TODO
+					// TODO Well... something has to be done instead... am I right?
 				}
 			}
 

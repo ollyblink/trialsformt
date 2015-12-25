@@ -48,7 +48,7 @@ public class TaskTest {
 		assertEquals(0, Tasks.numberOfPeersWithAtLeastOneFinishedExecution(task));
 		assertEquals(false, task.isFinished());
 
-		Tasks.updateStati(task, tR.status(BCMessageStatus.FINISHED_ALL_TASKS), NUMBER_OF_FINISHED_WORKERS);
+		Tasks.updateStati(task, tR.status(BCMessageStatus.FINISHED_PROCEDURE), NUMBER_OF_FINISHED_WORKERS);
 		assertEquals(0, Tasks.numberOfDifferentPeersExecutingOrFinishedTask(task));
 		assertEquals(0, Tasks.numberOfPeersWithSingleStatus(task, BCMessageStatus.EXECUTING_TASK));
 		assertEquals(0, Tasks.numberOfPeersWithSingleStatus(task, BCMessageStatus.FINISHED_TASK));
@@ -128,7 +128,7 @@ public class TaskTest {
 		assertEquals(0, Tasks.numberOfPeersWithAtLeastOneFinishedExecution(task));
 		assertEquals(false, task.isFinished());
 
-		Tasks.updateStati(task, tR.status(BCMessageStatus.FINISHED_ALL_TASKS), NUMBER_OF_FINISHED_WORKERS);
+		Tasks.updateStati(task, tR.status(BCMessageStatus.FINISHED_PROCEDURE), NUMBER_OF_FINISHED_WORKERS);
 		assertEquals(1, Tasks.numberOfDifferentPeersExecutingOrFinishedTask(task));
 		assertEquals(1, Tasks.numberOfPeersWithSingleStatus(task, BCMessageStatus.EXECUTING_TASK));
 		assertEquals(0, Tasks.numberOfPeersWithSingleStatus(task, BCMessageStatus.FINISHED_TASK));
@@ -257,7 +257,7 @@ public class TaskTest {
 		assertEquals(1, Tasks.numberOfPeersWithAtLeastOneFinishedExecution(task));
 		assertEquals(false, task.isFinished());
 
-		Tasks.updateStati(task, tR2.status(BCMessageStatus.FINISHED_ALL_TASKS), NUMBER_OF_FINISHED_WORKERS);
+		Tasks.updateStati(task, tR2.status(BCMessageStatus.FINISHED_PROCEDURE), NUMBER_OF_FINISHED_WORKERS);
 		assertEquals(1, Tasks.numberOfDifferentPeersExecutingOrFinishedTask(task));
 		assertEquals(0, Tasks.numberOfPeersWithSingleStatus(task, BCMessageStatus.EXECUTING_TASK));
 		assertEquals(0, Tasks.numberOfPeersWithSingleStatus(task, BCMessageStatus.FINISHED_TASK));
@@ -337,7 +337,7 @@ public class TaskTest {
 		assertEquals(1, Tasks.numberOfPeersWithAtLeastOneFinishedExecution(task));
 		assertEquals(false, task.isFinished());
 
-		Tasks.updateStati(task, tR2.status(BCMessageStatus.FINISHED_ALL_TASKS), NUMBER_OF_FINISHED_WORKERS);
+		Tasks.updateStati(task, tR2.status(BCMessageStatus.FINISHED_PROCEDURE), NUMBER_OF_FINISHED_WORKERS);
 		assertEquals(2, Tasks.numberOfDifferentPeersExecutingOrFinishedTask(task));
 		assertEquals(1, Tasks.numberOfPeersWithSingleStatus(task, BCMessageStatus.EXECUTING_TASK));
 		assertEquals(0, Tasks.numberOfPeersWithSingleStatus(task, BCMessageStatus.FINISHED_TASK));
