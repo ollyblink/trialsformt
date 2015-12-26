@@ -14,7 +14,7 @@ import net.tomp2p.dht.PeerDHT;
 public class TestUtils {
 	public static IDHTConnectionProvider getTestConnectionProvider() {
 		String bootstrapIP = "";
-		int bootstrapPort = 4000;
+		int bootstrapPort = 4002;
 		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
 		List<PeerDHT> peers = SyncedCollectionProvider.syncedArrayList();
 		List<MRBroadcastHandler> bcHandlers = SyncedCollectionProvider.syncedArrayList();

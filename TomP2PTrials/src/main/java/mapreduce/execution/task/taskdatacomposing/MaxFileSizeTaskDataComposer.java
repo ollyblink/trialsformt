@@ -19,26 +19,24 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 	@Override
 	public String append(String value) {
 		String nextValue = value + this.splitValue;
-		long lineSize;
-		lineSize = fileSizeCounter + (nextValue).getBytes(Charset.forName(this.fileEncoding)).length;
-
-		if (lineSize >= maxFileSize.value()) {
+		this.fileSizeCounter += (nextValue).getBytes(Charset.forName(this.fileEncoding)).length;
+		this.data += nextValue;
+		if (fileSizeCounter >= maxFileSize.value()) {
 			String result = data;
 			reset();
 			return result;
-		} else {
-			this.data += nextValue;
-			this.fileSizeCounter = lineSize;
 		}
 		return null;
 	}
 
-	private void reset() {
+	@Override
+	public void reset() {
 		this.fileSizeCounter = 0;
 		this.data = "";
 	}
+
 	@Override
-	public String fileEncoding(){
+	public String fileEncoding() {
 		return this.fileEncoding;
 	}
 
@@ -55,6 +53,11 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 	public MaxFileSizeTaskDataComposer splitValue(String splitValue) {
 		this.splitValue = splitValue;
 		return this;
+	}
+
+	@Override
+	public String currentValues() {
+		return this.data;
 	}
 
 }

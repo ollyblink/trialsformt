@@ -81,16 +81,17 @@ public class Job implements Serializable, Comparable<Job> {
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
 	private int submissionCounter;
 
-	private Job(String jobSubmitterID, PriorityLevel priorityLevel) {
+	private Job(String jobSubmitterID, PriorityLevel... priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
-		this.priorityLevel = (priorityLevel == null ? DEFAULT_PRIORITY_LEVEL : priorityLevel);
+		this.priorityLevel = (priorityLevel == null || priorityLevel.length == 0 || priorityLevel.length > 1 ? DEFAULT_PRIORITY_LEVEL
+				: priorityLevel[0]);
 		this.creationTime = System.currentTimeMillis();
 		this.currentProcedureIndex = 0;
 		this.procedures = Collections.synchronizedList(new ArrayList<>());
 	}
 
-	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel) {
+	public static Job create(String jobSubmitterID, PriorityLevel... priorityLevel) {
 		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).timeToLiveInMs(DEFAULT_TIME_TO_LIVE_IN_MS)
 				.maxNrOfDHTActions(DEFAULT_NUMBER_OF_ADD_TRIALS).useLocalStorageFirst(true).maxNrOfFinishedWorkersPerTask(3);
 	}
