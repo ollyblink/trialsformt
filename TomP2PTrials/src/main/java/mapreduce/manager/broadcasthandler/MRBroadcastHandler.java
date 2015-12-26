@@ -21,11 +21,14 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
+		
 		try {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
-				bcMessages.add(bcMessage);
+			 	if(!bcMessages.contains(bcMessage)){ 
+					bcMessages.add(bcMessage);
+				}
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();

@@ -74,24 +74,7 @@ public class DHTStorageContext extends AbstractBaseContext {
 
 				});
 
-		this.dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, keyOut.toString(), subsequentJobProcedureDomain, true)
-				.addListener(new BaseFutureListener<FuturePut>() {
-
-					@Override
-					public void operationComplete(FuturePut future) throws Exception {
-						if (future.isSuccess()) {
-							logger.info("Put <" + keyOut + ", " + valueOut + ">");
-						} else {
-							logger.warn("Could not put <" + keyOut + ", " + valueOut + ">");
-						}
-					}
-
-					@Override
-					public void exceptionCaught(Throwable t) throws Exception {
-						logger.warn("Exception thrown", t);
-					}
-
-				});
+		
 		// }
 
 	}

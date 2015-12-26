@@ -41,15 +41,15 @@ public final class ExamplePutGet {
 		final int port = 4001;
 		final int waitingTime = 250;
 		try {
-			PeerDHT[] peers = Example.createAndAttachPeersDHT(nrPeers, port);
+			PeerDHT[] peers = Example.createAndAttachPeersDHT(nrPeers, port, null);
 			Example.bootstrap(peers);
 			master = peers[0];
 			Number160 nr = new Number160(RND);
-//			examplePutGet(peers, nr);
-//			examplePutGetConfig(peers, nr);
-//			exampleGetBlocking(peers, nr);
-//			exampleGetNonBlocking(peers, nr);
-//			Thread.sleep(waitingTime);
+			// examplePutGet(peers, nr);
+			// examplePutGetConfig(peers, nr);
+			// exampleGetBlocking(peers, nr);
+			// exampleGetNonBlocking(peers, nr);
+			// Thread.sleep(waitingTime);
 			exampleAddGet(peers);
 		} finally {
 			if (master != null) {

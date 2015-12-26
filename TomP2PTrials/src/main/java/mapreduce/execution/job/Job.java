@@ -9,6 +9,7 @@ import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.standardprocedures.EndReached;
 import mapreduce.execution.task.Task;
+import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -79,7 +80,6 @@ public class Job implements Serializable, Comparable<Job> {
 
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
 	private int submissionCounter;
-
 
 	private Job(String jobSubmitterID, PriorityLevel priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
@@ -237,7 +237,7 @@ public class Job implements Serializable, Comparable<Job> {
 
 	@Override
 	public String toString() {
-		return id + " " + submissionCounter + " " + jobSubmitterID;
+		return id + "_SUBMISSIONNR_" + submissionCounter + "_SUBMITTER_" + jobSubmitterID;
 	}
 
 	@Override
@@ -315,10 +315,15 @@ public class Job implements Serializable, Comparable<Job> {
 		jobs.add(Job.create("4", PriorityLevel.MODERATE));
 		jobs.add(Job.create("5", PriorityLevel.LOW));
 		jobs.add(Job.create("6", PriorityLevel.HIGH));
-		
+
 		Collections.sort(jobs);
-		for(Job job: jobs){
-			System.err.println(job.jobSubmitterID() +", "+job.priorityLevel);
+		for (Job job : jobs) {
+			System.err.println(job.jobSubmitterID() + ", " + job.priorityLevel);
 		}
+	}
+
+	public String subsequentJobProcedureDomain() {
+		String subsequentProcedureName = subsequentProcedure().procedure().getClass().getSimpleName();
+		return DomainProvider.INSTANCE.jobProcedureDomain(id, subsequentProcedureName, subsequentProcedureIndex(), submissionCounter);
 	}
 }

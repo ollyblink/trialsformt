@@ -3,7 +3,7 @@ package mapreduce.manager.broadcasthandler.broadcastmessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tomp2p.peers.PeerAddress;
+import mapreduce.utils.IDCreator;
 
 public abstract class AbstractBCMessage implements IBCMessage {
 	protected static Logger logger = LoggerFactory.getLogger(AbstractBCMessage.class);
@@ -12,7 +12,7 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	 * 
 	 */
 	private static final long serialVersionUID = -2040511707608747442L;
-
+	protected String id;
 	protected String sender;
 	protected Long creationTime = System.currentTimeMillis();
 
@@ -20,6 +20,7 @@ public abstract class AbstractBCMessage implements IBCMessage {
 
 	@Override
 	public AbstractBCMessage sender(final String sender) {
+		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.sender = sender;
 		return this;
 	}
@@ -57,6 +58,36 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	public IBCMessage isAlreadyProcessed(boolean isAlreadyProcessed) {
 		this.isAlreadyProcessed = isAlreadyProcessed;
 		return this;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) { 
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		AbstractBCMessage other = (AbstractBCMessage) obj;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String id() {
+		return this.id;
 	}
 
 }

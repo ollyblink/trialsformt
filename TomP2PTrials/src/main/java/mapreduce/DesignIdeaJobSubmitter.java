@@ -5,7 +5,6 @@ import mapreduce.execution.computation.standardprocedures.WordCountReducer;
 import mapreduce.execution.job.Job;
 import mapreduce.manager.MRJobSubmissionManager;
 import mapreduce.storage.DHTConnectionProvider;
-import mapreduce.storage.DHTUtils;
 import mapreduce.utils.FileSize;
 
 public class DesignIdeaJobSubmitter {
@@ -16,7 +15,7 @@ public class DesignIdeaJobSubmitter {
 		int bootstrapPort = 4000;
 
 		MRJobSubmissionManager submitter = MRJobSubmissionManager
-				.newInstance(DHTConnectionProvider.newInstance(DHTUtils.newInstance(bootstrapIP, bootstrapPort)));
+				.newInstance(DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort));
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";;

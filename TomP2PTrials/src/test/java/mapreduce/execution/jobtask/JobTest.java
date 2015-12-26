@@ -15,6 +15,7 @@ import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.standardprocedures.NullMapReduceProcedure;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.job.Job;
+import mapreduce.execution.job.PriorityLevel;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
@@ -34,7 +35,7 @@ public class JobTest {
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
 		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
-		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).addSubsequentProcedure(WordCountMapper.newInstance());
+		Job job = Job.create("ME", PriorityLevel.MODERATE).maxNrOfFinishedWorkersPerTask(3).addSubsequentProcedure(WordCountMapper.newInstance());
 		job.procedure(job.currentProcedureIndex()).tasks(tasksForProcedure);
 		assertTrue(job.currentProcedureIndex() == 0);
 
@@ -65,41 +66,41 @@ public class JobTest {
 	public void testUpdateTaskStati() {
 		int counter = 0;
 
-		Job job = Job.create("ME").maxNrOfFinishedWorkersPerTask(3).addSubsequentProcedure(NullMapReduceProcedure.newInstance());
+		Job job = Job.create("ME", PriorityLevel.MODERATE).maxNrOfFinishedWorkersPerTask(3)
+				.addSubsequentProcedure(NullMapReduceProcedure.newInstance());
 		List<Task> list = new ArrayList<Task>();
 		list.add(Task.newInstance("word" + (counter++), job.id()));
 		list.add(Task.newInstance("word" + (counter++), job.id()));
 		job.procedure(job.currentProcedureIndex()).tasks(list);
 
-		PeerAddress[] peers = new PeerAddress[3];
-		peers[0] = new PeerAddress(new Number160(1));
-		peers[1] = new PeerAddress(new Number160(2));
+		String[] peers = new String[3];
+		peers[0] = "Executor_1";
+		peers[1] = "Executor_3";
 
-		ProcedureInformation procInfo = job.procedure(job.currentProcedureIndex());
-		procInfo.updateTaskExecutionStatus(list.get(0).id(), TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.EXECUTING_TASK),
+		Tasks.updateStati(list.get(0), TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.EXECUTING_TASK),
 				job.maxNrOfFinishedWorkersPerTask());
 		assertTrue(Tasks.allAssignedPeers(list.get(0)).contains(peers[0]));
 		assertTrue(Tasks.statiForPeer(list.get(0), peers[0]).contains(BCMessageStatus.EXECUTING_TASK));
 
-		procInfo.updateTaskExecutionStatus(list.get(0).id(), TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.FINISHED_TASK),
+		Tasks.updateStati(list.get(0), TaskResult.newInstance().sender(peers[0]).status(BCMessageStatus.FINISHED_TASK),
 				job.maxNrOfFinishedWorkersPerTask());
 		assertTrue(Tasks.allAssignedPeers(list.get(0)).contains(peers[0]));
 		assertTrue(Tasks.statiForPeer(list.get(0), peers[0]).contains(BCMessageStatus.FINISHED_TASK));
 
-		procInfo.updateTaskExecutionStatus(list.get(1).id(), TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.EXECUTING_TASK),
+		Tasks.updateStati(list.get(1), TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.EXECUTING_TASK),
 				job.maxNrOfFinishedWorkersPerTask());
 		assertTrue(Tasks.allAssignedPeers(list.get(1)).contains(peers[1]));
 		assertTrue(Tasks.statiForPeer(list.get(1), peers[1]).contains(BCMessageStatus.EXECUTING_TASK));
 
-		procInfo.updateTaskExecutionStatus(list.get(1).id(), TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.FINISHED_TASK),
+		Tasks.updateStati(list.get(1), TaskResult.newInstance().sender(peers[1]).status(BCMessageStatus.FINISHED_TASK),
 				job.maxNrOfFinishedWorkersPerTask());
 		assertTrue(Tasks.allAssignedPeers(list.get(1)).contains(peers[1]));
 		assertTrue(Tasks.statiForPeer(list.get(1), peers[1]).contains(BCMessageStatus.FINISHED_TASK));
 
-		for (Task task : list) { 
-			ListMultimap<PeerAddress, BCMessageStatus> executingPeers = task.executingPeers();
-			for (PeerAddress p : executingPeers.keySet()) {
-				System.err.println(task.id()+": "+p + " " + executingPeers.get(p));
+		for (Task task : list) {
+			ListMultimap<String, BCMessageStatus> executingPeers = task.executingPeers();
+			for (String p : executingPeers.keySet()) {
+				System.err.println(task.id() + ": " + p + " " + executingPeers.get(p));
 			}
 		}
 

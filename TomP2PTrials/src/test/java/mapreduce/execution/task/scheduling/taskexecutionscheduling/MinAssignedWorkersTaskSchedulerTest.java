@@ -32,80 +32,80 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		tasks = new LinkedList<Task>();
 
 		Task task = Task.newInstance("1", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(2)), BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("2", BCMessageStatus.FINISHED_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
 		task = Task.newInstance("2", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(2)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(2)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("2", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
 		task = Task.newInstance("3", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(2)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
 		task = Task.newInstance("4", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(2)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
 		task = Task.newInstance("5", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(2)), BCMessageStatus.EXECUTING_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(2)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
 		task = Task.newInstance("6", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
 		task = Task.newInstance("7", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
 		task = Task.newInstance("8", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
 		task = Task.newInstance("9", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 		//
 		task = Task.newInstance("10", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
 		task = Task.newInstance("11", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(true);
 		tasks.add(task);
 
 		task = Task.newInstance("12", "0");
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.FINISHED_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
-		task.executingPeers().put(new PeerAddress(new Number160(1)), BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
+		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(true);
 		tasks.add(task);
 	}
@@ -165,7 +165,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 		taskScheduler.randomizeFirstTask(false);
 	}
 
-	@Ignore //Redundant
+	@Ignore // Redundant
 	public void waitForDataFetch() {
 		// consumerT1 should be able to fetch the data since it waits longer for it to be created than consumerT2
 

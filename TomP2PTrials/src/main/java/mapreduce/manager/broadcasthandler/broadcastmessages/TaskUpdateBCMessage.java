@@ -33,6 +33,10 @@ public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 		return new TaskUpdateBCMessage(BCMessageStatus.FINISHED_TASK);
 	}
 
+	public static TaskUpdateBCMessage newFailedTaskInstance() {
+
+		return new TaskUpdateBCMessage(BCMessageStatus.FAILED_TASK);
+	}
 	// public static TaskUpdateBCMessage newExecutingTaskResultComparisonInstance() {
 	// return new TaskUpdateBCMessage(BCMessageStatus.EXECUTING_TASK_COMPARISON);
 	// }
@@ -53,5 +57,6 @@ public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 		this.resultHash = resultHash;
 		return this;
 	}
+
 
 }

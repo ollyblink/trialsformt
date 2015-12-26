@@ -21,6 +21,7 @@ import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
 
@@ -131,13 +132,16 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			}
 			this.bcMessages = tmp;
 		}
-		String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
+
 		List<Task> tasks = job.currentProcedure().tasks();
 		List<FuturePut> futurePuts = SyncedCollectionProvider.syncedArrayList();
 		for (Task task : tasks) {
 			List<String> finalDataLocationDomains = task.finalDataLocationDomains();
 			for (String finalDataLocationDomain : finalDataLocationDomains) {
-				futurePuts.add(this.jobExecutor.dhtConnectionProvider().add(task.id(), finalDataLocationDomain, jobProcedureDomain, false));
+				futurePuts.add(this.jobExecutor.dhtConnectionProvider().add(DomainProvider.PROCEDURE_KEYS, task.id(),
+						job.subsequentJobProcedureDomain(), false));
+				futurePuts.add(
+						this.jobExecutor.dhtConnectionProvider().add(task.id(), finalDataLocationDomain, job.subsequentJobProcedureDomain(), false));
 			}
 		}
 		Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {

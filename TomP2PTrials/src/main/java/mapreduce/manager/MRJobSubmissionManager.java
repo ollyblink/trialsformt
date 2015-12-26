@@ -10,7 +10,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +42,16 @@ public class MRJobSubmissionManager {
 		this.dhtConnectionProvider(dhtConnectionProvider.owner(this.id));
 		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.newInstance(this, jobs).canTake(true);
 		new Thread(messageConsumer).start();
-		dhtConnectionProvider.broadcastHandler().queue(messageConsumer.queue());
+		dhtConnectionProvider.addMessageQueueToBroadcastHandlers(messageConsumer.queue());
 	}
 
 	public static MRJobSubmissionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
 		return new MRJobSubmissionManager(dhtConnectionProvider, Collections.synchronizedList(new ArrayList<>()))
 				.taskComposer(DEFAULT_TASK_DATA_COMPOSER);
+	}
+
+	public void connect() {
+		dhtConnectionProvider.connect();
 	}
 
 	/**
@@ -60,7 +63,6 @@ public class MRJobSubmissionManager {
 	 * @return
 	 */
 	public void submit(final Job job) {
-		dhtConnectionProvider.connect();
 
 		List<String> keysFilePaths = new ArrayList<String>();
 
@@ -72,76 +74,77 @@ public class MRJobSubmissionManager {
 
 			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
 
+			String taskValue = "";
 			try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
 				String line = null;
 				while ((line = reader.readLine()) != null) {
-					String taskKey = keyfilePath;// + "_" + domainCounter;
-					String taskValue = line + "\n";
-					Tuple<String, Integer> taskExecutor = Tuple.create(id, 0);
-					Task task = Task.newInstance(keyfilePath, job.id()).finalDataLocationDomains(taskExecutor.combine());
-					String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, taskExecutor);
-					String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
-					// Need the whole thing to be able to distingish the whole domain
-					String taskExecutorDomainCombination = jobProcedureDomain + "_" + taskExecutorDomain;
-					tasks.add(task);
-					
-					//Add <key, value, taskExecutorDomain>
-					dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomainCombination, true)
-							.addListener(new BaseFutureListener<FuturePut>() {
-
-								@Override
-								public void operationComplete(FuturePut future) throws Exception {
-									if (future.isSuccess()) {
-										//Add <key, taskExecutorDomainPart, jobProcedureDomain> to collect all keys
-										dhtConnectionProvider.add(task.id(), taskExecutorDomain, jobProcedureDomain, false)
-												.addListener(new BaseFutureListener<FuturePut>() {
-
-											@Override
-											public void operationComplete(FuturePut future) throws Exception {
-												if (future.isSuccess()) {
-													//Add <PROCEDURE_KEYS, key, jobProcedureDomain> to collect all domains for all keys
-													dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), jobProcedureDomain, false)
-															.addListener(new BaseFutureListener<FuturePut>() {
-
-														@Override
-														public void operationComplete(FuturePut future) throws Exception {
-															if (future.isSuccess()) {
-																logger.info("Successfully added data. Broadcasting job.");
-																dhtConnectionProvider.broadcastNewJob(job);
-															} else {
-																logger.warn(future.failedReason());
-															}
-														}
-
-														@Override
-														public void exceptionCaught(Throwable t) throws Exception {
-															logger.warn("Exception thrown", t);
-														}
-													});
-												} else {
-													logger.warn(future.failedReason());
-												}
-											}
-
-											@Override
-											public void exceptionCaught(Throwable t) throws Exception {
-												logger.warn("Exception thrown", t);
-											}
-										});
-									} else {
-										logger.warn(future.failedReason());
-									}
-								}
-
-								@Override
-								public void exceptionCaught(Throwable t) throws Exception {
-									logger.warn("Exception thrown", t);
-								}
-							});
+					taskValue += line + "\n";
 				}
 			} catch (IOException x) {
 				System.err.format("IOException: %s%n", x);
 			}
+
+			String taskKey = keyfilePath;// + "_" + domainCounter;
+			Tuple<String, Integer> taskExecutor = Tuple.create(id, 0);
+			Task task = Task.newInstance(keyfilePath, job.id()).finalDataLocationDomains(taskExecutor.combine());
+			String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, taskExecutor);
+			String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
+			// Need the whole thing to be able to distingish the whole domain
+			String taskExecutorDomainCombination = jobProcedureDomain + "_" + taskExecutorDomain;
+			tasks.add(task);
+			// Add <key, value, taskExecutorDomain>
+			dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomainCombination, true).addListener(new BaseFutureListener<FuturePut>() {
+
+				@Override
+				public void operationComplete(FuturePut future) throws Exception {
+					if (future.isSuccess()) {
+						// Add <key, taskExecutorDomainPart, jobProcedureDomain> to collect all keys
+						dhtConnectionProvider.add(task.id(), taskExecutorDomain, jobProcedureDomain, false)
+								.addListener(new BaseFutureListener<FuturePut>() {
+
+							@Override
+							public void operationComplete(FuturePut future) throws Exception {
+								if (future.isSuccess()) {
+									// Add <PROCEDURE_KEYS, key, jobProcedureDomain> to collect all domains for all keys
+									dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), jobProcedureDomain, false)
+											.addListener(new BaseFutureListener<FuturePut>() {
+
+										@Override
+										public void operationComplete(FuturePut future) throws Exception {
+											if (future.isSuccess()) {
+												logger.info("Successfully added data. Broadcasting job.");
+												dhtConnectionProvider.broadcastNewJob(job);
+											} else {
+												logger.warn(future.failedReason());
+											}
+										}
+
+										@Override
+										public void exceptionCaught(Throwable t) throws Exception {
+											logger.warn("Exception thrown", t);
+										}
+									});
+								} else {
+									logger.warn(future.failedReason());
+								}
+							}
+
+							@Override
+							public void exceptionCaught(Throwable t) throws Exception {
+								logger.warn("Exception thrown", t);
+							}
+						});
+					} else {
+						logger.warn(future.failedReason());
+					}
+				}
+
+				@Override
+				public void exceptionCaught(Throwable t) throws Exception {
+					logger.warn("Exception thrown", t);
+				}
+			});
+
 		}
 
 	}

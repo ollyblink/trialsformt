@@ -19,6 +19,7 @@ import org.mockito.Mockito;
 import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.job.Job;
+import mapreduce.execution.job.PriorityLevel;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
@@ -38,21 +39,21 @@ public class MRJobExecutorMessageConsumerTest {
 
 	private static final String[] TEST_KEYS = { "hello", "world", "this", "is", "a", "test" };
 	private static MRJobExecutionManagerMessageConsumer testMessageConsumer;
-	private static PeerAddress peer1;
-	private static PeerAddress peer2;
-	private static PeerAddress peer3;
+	private static String peer1;
+	private static String peer2;
+	private static String peer3;
 	private static Job job;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		peer1 = new PeerAddress(new Number160(1));
-		peer2 = new PeerAddress(new Number160(2));
-		peer3 = new PeerAddress(new Number160(3));
+		peer1 = "EXECUTOR_1";
+		peer2 = "EXECUTOR_2";
+		peer3 = "EXECUTOR_3";
 		List<Job> jobs = SyncedCollectionProvider.syncedArrayList();
 		MRJobExecutionManager jobExecutor = Mockito.mock(MRJobExecutionManager.class);
 		DHTConnectionProvider dhtConnectionProvider = Mockito.mock(DHTConnectionProvider.class);
 		Mockito.when(jobExecutor.dhtConnectionProvider()).thenReturn(dhtConnectionProvider);
-		Mockito.when(dhtConnectionProvider.peerAddress()).thenReturn(peer1);
+		Mockito.when(dhtConnectionProvider.owner()).thenReturn(peer1);
 		testMessageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(jobExecutor);
 		resetJob();
 
@@ -62,7 +63,7 @@ public class MRJobExecutorMessageConsumerTest {
 	}
 
 	private static void resetJob() {
-		job = Job.create("TEST").addSubsequentProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(5);
+		job = Job.create("TEST", PriorityLevel.MODERATE).addSubsequentProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(5);
 		ProcedureInformation currentProc = job.currentProcedure();
 
 		for (String taskKey : TEST_KEYS) {
@@ -77,7 +78,7 @@ public class MRJobExecutorMessageConsumerTest {
 	@Test
 	public void testHandleReceivedJob() {
 		testMessageConsumer.jobs().clear();
-		Job job = Job.create("TEST");
+		Job job = Job.create("TEST", PriorityLevel.MODERATE);
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
@@ -198,7 +199,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		Job jobCopy1 = job.copy();
 		jobCopy1.currentProcedure().tasks(copy);
-		testMessageConsumer.handleFinishedAllTasks(jobCopy1, peer2);
+		testMessageConsumer.handleFinishedAllTasks(jobCopy1);
 
 		List<Task> copy2 = new ArrayList<Task>(TEST_KEYS.length);
 		for (String taskKey : TEST_KEYS) {
@@ -214,7 +215,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		Job jobCopy2 = job.copy();
 		jobCopy2.currentProcedure().tasks(copy2);
-		testMessageConsumer.handleFinishedAllTasks(jobCopy2, peer2);
+		testMessageConsumer.handleFinishedAllTasks(jobCopy2);
 
 		List<Task> tasks3 = testMessageConsumer.jobs().get(0).currentProcedure().tasks();
 		int cntr = 0;
@@ -228,8 +229,8 @@ public class MRJobExecutorMessageConsumerTest {
 					number = 2;
 				}
 				System.err.println(cntr++ + " i is " + i);
-				assertEquals(number, Tasks.statiForPeer(task, new PeerAddress(new Number160(i))).size());
-				for (BCMessageStatus s : Tasks.statiForPeer(task, new PeerAddress(new Number160(i)))) {
+				assertEquals(number, Tasks.statiForPeer(task, "EXECUTOR_"+i).size());
+				for (BCMessageStatus s : Tasks.statiForPeer(task, "EXECUTOR_"+i)) {
 					assertEquals(BCMessageStatus.FINISHED_TASK, s);
 				}
 			}

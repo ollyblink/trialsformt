@@ -37,7 +37,7 @@ public class MessageSortingTest {
 		final Task task = Mockito.mock(Task.class);
 		Mockito.when(task.id()).thenReturn("TEST_TASK_TEST_JOB");
 		Mockito.when(task.jobId()).thenReturn("TEST_JOB");
-		final PeerAddress sender = new PeerAddress(Number160.createHash((1)));
+		final String sender = "EXECUTOR_1";
 
 		for (double i = 2; i < 6; i += 0.5) {
 			final double in = i;
@@ -99,11 +99,9 @@ public class MessageSortingTest {
 						e.printStackTrace();
 					}
 					if ((in) % ((int) in) == 0.5) {
-						messages.add(TaskUpdateBCMessage.newFinishedTaskInstance().task(task)
-								.sender(new PeerAddress(Number160.createHash(inCnt))));
+						messages.add(TaskUpdateBCMessage.newFinishedTaskInstance().task(task).sender("EXECUTOR_"+inCnt));
 					} else {
-						messages.add(TaskUpdateBCMessage.newExecutingTaskInstance().task(task)
-								.sender(new PeerAddress(Number160.createHash(inCnt))));
+						messages.add(TaskUpdateBCMessage.newExecutingTaskInstance().task(task).sender("EXECUTOR_" + inCnt));
 					}
 				}
 

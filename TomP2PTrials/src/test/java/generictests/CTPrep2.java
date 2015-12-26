@@ -1,13 +1,9 @@
 package generictests;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Stream;
 
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
@@ -16,7 +12,6 @@ import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
@@ -29,7 +24,7 @@ public class CTPrep2 {
 
 		// final String myPhoneNumber = "079 666 40 20";
 		// final String myName = "Oliver Zihler";
-		peers = Example.createAndAttachPeersDHT(nrOfPeers, port);
+		peers = Example.createAndAttachPeersDHT(nrOfPeers, port, null);
 
 		Example.bootstrap(peers);
 

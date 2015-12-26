@@ -11,7 +11,7 @@ public class JobFailedBCMessage extends AbstractJobBCMessage {
 
 	@Override
 	public BCMessageStatus status() {
-		return BCMessageStatus.JOB_FAILED;
+		return BCMessageStatus.FAILED_JOB;
 	}
 
 	@Override

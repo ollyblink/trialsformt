@@ -1,8 +1,11 @@
 package generictests;
+
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
+import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -23,10 +26,10 @@ public class Example {
 	static final Random RND = new Random(42L);
 
 	public static void put(PeerDHT peer, Number160 key, Data value) {
-		FuturePut futurePut = peer.add(key).data(value).start(); 
+		FuturePut futurePut = peer.add(key).data(value).start();
 		futurePut.addListener(new BaseFutureListener<FuturePut>() {
 
-			public void operationComplete(FuturePut future) throws Exception { 
+			public void operationComplete(FuturePut future) throws Exception {
 				if (future.isSuccess()) {
 					System.out.println("Put object success ");
 				} else {
@@ -42,7 +45,7 @@ public class Example {
 	}
 
 	public static void get(PeerDHT peer, Number160 key) {
-		FutureGet futureGet = peer.get(key).all().start(); 
+		FutureGet futureGet = peer.get(key).all().start();
 		futureGet.addListener(new BaseFutureListener<FutureGet>() {
 
 			public void operationComplete(FutureGet future) throws Exception {
@@ -64,7 +67,7 @@ public class Example {
 
 	public static void main(String[] args) throws InterruptedException, IOException, ClassNotFoundException {
 		int numberOfPeers = 10;
-		PeerDHT[] peers = createAndAttachPeersDHT(numberOfPeers, PORT);
+		PeerDHT[] peers = createAndAttachPeersDHT(numberOfPeers, PORT, null);
 		bootstrap(peers);
 		PeerDHT master = peers[0];
 
@@ -140,15 +143,21 @@ public class Example {
 		return peers;
 	}
 
-	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port) throws IOException {
-		
-		StructuredBroadcastHandler bcH = new MyBroadcastHandler();
+	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, List<MRBroadcastHandler> bcHandlers) throws IOException {
+		StructuredBroadcastHandler bcH = null;
+		if (bcHandlers == null) {
+			bcH = new MyBroadcastHandler();
+		}
 		PeerDHT[] peers = new PeerDHT[nr];
 		for (int i = 0; i < nr; i++) {
+			if (bcHandlers != null) {
+				bcH = new MRBroadcastHandler();
+				bcHandlers.add((MRBroadcastHandler) bcH);
+			}
 			if (i == 0) {
-				peers[0] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).broadcastHandler(bcH).bindings(new Bindings().addInterface("wlan2")).start()).start();
+				peers[0] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).broadcastHandler(bcH).start()).start();
 			} else {
-				peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).bindings(new Bindings().addInterface("wlan2")).masterPeer(peers[0].peer()).start()).start();
+				peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).masterPeer(peers[0].peer()).start()).start();
 			}
 		}
 		return peers;

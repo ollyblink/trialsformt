@@ -33,4 +33,6 @@ public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
 
 	public void execute(final IMessageConsumer messageConsumer);
 
+	public String id();
+
 }

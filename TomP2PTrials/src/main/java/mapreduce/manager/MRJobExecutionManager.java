@@ -61,7 +61,7 @@ public class MRJobExecutionManager {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.dhtConnectionProvider(dhtConnectionProvider.owner(this.id));
 		this.messageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(this).canTake(true);
-		this.dhtConnectionProvider().broadcastHandler().queue(messageConsumer.queue());
+		this.dhtConnectionProvider().addMessageQueueToBroadcastHandlers(messageConsumer.queue());
 
 		this.jobs = jobs;
 		new Thread(messageConsumer).start();
@@ -229,15 +229,12 @@ public class MRJobExecutionManager {
 		return new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 			@Override
 			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-				String subsequentProcedureName = job.subsequentProcedure().procedure().getClass().getSimpleName();
-				int procedureIndex = job.subsequentProcedureIndex();
-				int submissionNr = job.submissionCounter();
-				String subsequentJobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job.id(), subsequentProcedureName, procedureIndex,
-						submissionNr);
+				String subsequentJobProcedureDomain = job.subsequentJobProcedureDomain();
 
 				context.task(taskToDistribute).subsequentJobProcedureDomain(subsequentJobProcedureDomain);
 				taskExecutor.execute(job.currentProcedure().procedure(), taskToDistribute.id(), valuesCollector, context);// Non-blocking!
 			}
+
 		};
 	}
 

@@ -1,15 +1,14 @@
 package mapreduce.storage;
 
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
+import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
 
 public interface IDHTConnectionProvider {
 
@@ -37,7 +36,6 @@ public interface IDHTConnectionProvider {
 	// removeProcedureKey, removeProcedureTaskPeerDomain,
 
 	// Broadcasts
-	public MRBroadcastHandler broadcastHandler();
 
 	public void broadcastNewJob(Job job);
 
@@ -54,13 +52,21 @@ public interface IDHTConnectionProvider {
 	public void broadcastFinishedJob(Job job);
 
 	// Maintenance
-	public IDHTConnectionProvider connect();
+
+	/**
+	 * Creates a BroadcastHandler and Peer and connects to the DHT. If a bootstrap port and ip were provided (meaning, there are already peers
+	 * connected to a DHT), it will be bootstrap to that node.
+	 * 
+	 * @param performBlocking
+	 * @return
+	 */
+	public void connect();
 
 	public void shutdown();
 
-//	public PeerAddress peerAddress();
+	// public PeerAddress peerAddress();
 
-	public IDHTConnectionProvider performBlocking(boolean performBlocking);
+	// public IDHTConnectionProvider performBlocking(boolean performBlocking);
 
 	public boolean isBootstrapper();
 
@@ -77,4 +83,17 @@ public interface IDHTConnectionProvider {
 
 	public IDHTConnectionProvider owner(String owner);
 
+	public IDHTConnectionProvider port(int port);
+
+	public int port();
+
+	public String storageFilePath();
+
+	public IDHTConnectionProvider storageFilePath(String storageFilePath);
+
+	public IDHTConnectionProvider bootstrapPort(int bootstrapPort);
+
+	public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
+
+	public IDHTConnectionProvider addMessageQueueToBroadcastHandlers(BlockingQueue<IBCMessage> bcMessages);
 }
