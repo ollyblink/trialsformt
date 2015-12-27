@@ -28,8 +28,8 @@ public enum DomainProvider {
 		return executorTaskDomain(task.id(), domainInfo.first(), domainInfo.second());
 	}
 
-	public String concatenation(Job job, Task task, Tuple<String, Integer> domainInfo) {
-		return jobProcedureDomain(job) + "_" + executorTaskDomain(task, domainInfo);
+	public String concatenation(ProcedureInformation info, Task task, Tuple<String, Integer> domainInfo) {
+		return info.jobProcedureDomain() + "_" + executorTaskDomain(task, domainInfo);
 	}
 
 }

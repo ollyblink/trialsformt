@@ -24,7 +24,7 @@ public class DesignIdeaJobExecutor {
 		if (id == 1) {
 			newInstance.isBootstrapper(true);
 		}
-		MRJobExecutionManager jobExecutor = MRJobExecutionManager.newInstance(newInstance).context(DHTStorageContext.create(newInstance))
+		MRJobExecutionManager jobExecutor = MRJobExecutionManager.newInstance(newInstance).context(DHTStorageContext.create())
 				.taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.newInstance());
 
 		jobExecutor.start();

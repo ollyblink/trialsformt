@@ -44,6 +44,8 @@ public class Task implements Serializable, Comparable<Task> {
 	 */
 	private List<String> finalTaskExecutorDomains;// String here: JobSubmitter/Executor id +"_"+locationIndex
 
+	private boolean isActive;
+
 	private Task(Object key, String jobId) {
 		this.key = key;
 		this.jobId = jobId;
@@ -101,11 +103,13 @@ public class Task implements Serializable, Comparable<Task> {
 		return this;
 	}
 
+ 
+
 	@Override
 	public String toString() {
-		return "Task [id=" + key + ", jobId=" + jobId + ", isFinished=" + isFinished + ", executingPeers=" + executingPeers + ", taskResults="
-				+ taskResults + ", reverseTaskResults=" + reverseTaskResults + ", finalTaskExecutorDomains=" + finalTaskExecutorDomains
-				+ ", removableTaskExecutorDomains=" + removableTaskExecutorDomains + "]";
+		return "Task [key=" + key + ", jobId=" + jobId + ", isFinished=" + isFinished + ", executingPeers=" + executingPeers + ", taskResults="
+				+ taskResults + ", reverseTaskResults=" + reverseTaskResults + ", removableTaskExecutorDomains=" + removableTaskExecutorDomains
+				+ ", finalTaskExecutorDomains=" + finalTaskExecutorDomains + ", isActive=" + isActive + "]";
 	}
 
 	@Override
@@ -138,4 +142,11 @@ public class Task implements Serializable, Comparable<Task> {
 		return this.id().compareTo(o.id().toString());
 	}
 
+	public void isActive(boolean isActive) {
+		this.isActive = isActive;
+	}
+
+	public boolean isActive() {
+		return this.isActive;
+	}
 }

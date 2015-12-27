@@ -1,24 +1,27 @@
 package mapreduce.execution.computation.context;
 
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
+import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number160;
 
 public class DHTStorageContext extends AbstractBaseContext {
 	private static Logger logger = LoggerFactory.getLogger(DHTStorageContext.class);
 
 	private IDHTConnectionProvider dhtConnectionProvider;
+
+	private List<FuturePut> futurePutData = SyncedCollectionProvider.syncedArrayList();
 
 	// private ListMultimap<String, Object> tmpKeyValues;
 	//
@@ -32,14 +35,13 @@ public class DHTStorageContext extends AbstractBaseContext {
 	 * @param taskResultComparator
 	 *            may add certain speed ups such that the task result comparison afterwards becomes faster
 	 */
-	private DHTStorageContext(IDHTConnectionProvider dhtConnectionProvider) {
-		this.dhtConnectionProvider = dhtConnectionProvider;
+	private DHTStorageContext() {
 		// ListMultimap<String, Object> multimap = ArrayListMultimap.create();
 		// this.tmpKeyValues = Multimaps.synchronizedListMultimap(multimap);
 	}
 
-	public static DHTStorageContext create(IDHTConnectionProvider dhtConnectionProvider) {
-		return new DHTStorageContext(dhtConnectionProvider);
+	public static DHTStorageContext create() {
+		return new DHTStorageContext();
 	}
 
 	@Override
@@ -55,26 +57,37 @@ public class DHTStorageContext extends AbstractBaseContext {
 				Tuple.create(dhtConnectionProvider.owner(), task.executingPeers().get(dhtConnectionProvider.owner()).size() - 1));
 
 		String combinedExecutorTaskDomain = subsequentJobProcedureDomain + "_" + executorTaskDomain;
-		this.dhtConnectionProvider.add(keyOut.toString(), valueOut, combinedExecutorTaskDomain, true)
-				.addListener(new BaseFutureListener<FuturePut>() {
+		List<FuturePut> futureProcedureKeys = SyncedCollectionProvider.syncedArrayList();
+		this.futurePutData.add(this.dhtConnectionProvider.add(keyOut.toString(), valueOut, combinedExecutorTaskDomain, true)
+				.addListener(new BaseFutureAdapter<FuturePut>() {
 
 					@Override
 					public void operationComplete(FuturePut future) throws Exception {
 						if (future.isSuccess()) {
 							logger.info("Put <" + keyOut + ", " + valueOut + ">");
+							futureProcedureKeys
+									.add(dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), subsequentJobProcedureDomain, false)
+											.addListener(new BaseFutureAdapter<FuturePut>() {
+
+								@Override
+								public void operationComplete(FuturePut future) throws Exception {
+									if (future.isSuccess()) {
+										logger.info("Put <" + keyOut + ", " + valueOut + ">");
+
+									} else {
+										logger.warn("Could not put <" + keyOut + ", " + valueOut + ">");
+									}
+								}
+
+							}));
+
 						} else {
 							logger.warn("Could not put <" + keyOut + ", " + valueOut + ">");
 						}
 					}
 
-					@Override
-					public void exceptionCaught(Throwable t) throws Exception {
-						logger.warn("Exception thrown", t);
-					}
+				}));
 
-				});
-
-		
 		// }
 
 	}
@@ -96,6 +109,7 @@ public class DHTStorageContext extends AbstractBaseContext {
 		return this;
 	}
 
+	@Override
 	public DHTStorageContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
 		return this;
@@ -140,5 +154,10 @@ public class DHTStorageContext extends AbstractBaseContext {
 	@Override
 	public DHTStorageContext subsequentJobProcedureDomain(String jobProcedureDomain) {
 		return (DHTStorageContext) super.subsequentJobProcedureDomain(jobProcedureDomain);
+	}
+
+	@Override
+	public List<FuturePut> futurePutData() {
+		return this.futurePutData;
 	}
 }

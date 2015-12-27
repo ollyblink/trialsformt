@@ -96,4 +96,6 @@ public interface IDHTConnectionProvider {
 	public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
 
 	public IDHTConnectionProvider addMessageQueueToBroadcastHandlers(BlockingQueue<IBCMessage> bcMessages);
+
+	public String taskExecutorDomain(Task task);
 }

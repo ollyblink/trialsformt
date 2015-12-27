@@ -14,6 +14,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
@@ -74,11 +75,11 @@ public class MRJobSubmissionManager {
 			Path path = Paths.get(keyfilePath);
 			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
 
-			int filePartCounter = 0; 
+			int filePartCounter = 0;
 			try (BufferedReader reader = Files.newBufferedReader(path, charset)) {
 
 				String line = null;
-				while ((line = reader.readLine()) != null) { 
+				while ((line = reader.readLine()) != null) {
 					String taskValues = taskDataComposer.append(line);
 					if (taskValues != null) {
 						filePartCounter = addDataToDHT(job, file, tasks, keyfilePath, taskValues, filePartCounter);
@@ -102,9 +103,11 @@ public class MRJobSubmissionManager {
 		Tuple<String, Integer> taskExecutor = Tuple.create(id, 0);
 		Task task = Task.newInstance(taskKey, job.id()).finalDataLocationDomains(taskExecutor.combine());
 		String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, taskExecutor);
-		String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
+
+		ProcedureInformation pI = job.currentProcedure();
+		String jobProcedureDomain = pI.jobProcedureDomain();
 		// Need the whole thing to be able to distinguish the whole domain
-		String taskExecutorDomainCombination = DomainProvider.INSTANCE.concatenation(job, task, taskExecutor);
+		String taskExecutorDomainCombination = DomainProvider.INSTANCE.concatenation(pI, task, taskExecutor);
 		tasks.add(task);
 		// Add <key, value, taskExecutorDomain>
 		dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomainCombination, true).addListener(new BaseFutureListener<FuturePut>() {

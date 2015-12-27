@@ -32,14 +32,16 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, List<Job> jobs) {
 		this.bcMessages = bcMessages;
-		this.jobs = Collections.synchronizedList(jobs);
+		this.jobs = jobs;
 	}
 
 	@Override
 	public void run() {
 		try {
 			while (canTake()) {
+				
 				final IBCMessage nextMessage = bcMessages.take();
+				logger.info("Next message: " +nextMessage);
 				nextMessage.execute(this);
 			}
 		} catch (InterruptedException e) {

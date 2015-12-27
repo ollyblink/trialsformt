@@ -28,7 +28,7 @@ public class DHTStorageContextTest {
 
 	@Test
 	public void test() throws InterruptedException {
-		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider();
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(4000);
 		dhtConnectionProvider.owner(executor);
 		Thread.sleep(3000);
 
@@ -36,7 +36,7 @@ public class DHTStorageContextTest {
 		Task task = Task.newInstance("hello", job.id());
 		task.finalDataLocationDomains(Tuple.create(executor, 0).combine());
 
-		DHTStorageContext context = DHTStorageContext.create(dhtConnectionProvider).task(task)
+		DHTStorageContext context = DHTStorageContext.create().dhtConnectionProvider(dhtConnectionProvider).task(task)
 				.subsequentJobProcedureDomain(job.subsequentJobProcedureDomain());
 		context.task().executingPeers().put(executor, BCMessageStatus.EXECUTING_TASK);
 
@@ -80,7 +80,7 @@ public class DHTStorageContextTest {
 			public void exceptionCaught(Throwable t) throws Exception {
 				logger.warn("Exception thrown", t);
 			}
-		}) ;
+		});
 		Thread.sleep(5000);
 	}
 

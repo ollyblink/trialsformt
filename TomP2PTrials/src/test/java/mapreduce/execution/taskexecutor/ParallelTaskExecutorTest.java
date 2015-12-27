@@ -14,7 +14,6 @@ import org.junit.Test;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 
 import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.context.PseudoStorageContext;
@@ -42,7 +41,7 @@ public class ParallelTaskExecutorTest {
 	@Test
 	public void test() throws InterruptedException {
 		Task task = Task.newInstance("text1", "0");
-		ProcedureInformation info = ProcedureInformation.create(WordCountMapper.newInstance()).addTask(task);
+		ProcedureInformation info = ProcedureInformation.create("0", WordCountMapper.newInstance(), 0, 0).addTask(task);
 
 		PseudoStorageContext storeContext = PseudoStorageContext.newInstance();
 
@@ -54,6 +53,7 @@ public class ParallelTaskExecutorTest {
 				taskExecutor.execute(info.procedure(), t.id(), values, storeContext);
 			}
 		}
+		Thread.sleep(1000);
 		ListMultimap<Object, Object> storage = storeContext.storage();
 
 		assertEquals(10, storage.keySet().size());
@@ -126,7 +126,7 @@ public class ParallelTaskExecutorTest {
 		StringTokenizer tokens = new StringTokenizer(valueString);
 		while (tokens.hasMoreTokens()) {
 			Object o = tokens.nextToken();
-			invertedIndex.put(o, invertedIndex.removeAll(o).size()+1);
+			invertedIndex.put(o, invertedIndex.removeAll(o).size() + 1);
 		}
 
 		ListMultimap<Object, Object> storage = context.storage();

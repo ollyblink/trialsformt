@@ -9,26 +9,34 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
+import mapreduce.utils.DomainProvider;
 
-public class ProcedureInformation implements Serializable {
+public final class ProcedureInformation implements Serializable {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1717123684693430690L;
-	private IMapReduceProcedure procedure;
+	private final String jobId;
+	private final IMapReduceProcedure procedure;
+	private final int procedureIndex;
+	private final int submissionNumber;
+
 	private boolean isFinished;
 	private List<Task> tasks;
 
-	private ProcedureInformation(IMapReduceProcedure procedure) {
+	private ProcedureInformation(String jobId, IMapReduceProcedure procedure, int procedureIndex, int submissionNumber) {
+		this.jobId = jobId;
 		this.procedure = procedure;
+		this.procedureIndex = procedureIndex;
+		this.submissionNumber = submissionNumber;
 		this.isFinished = false;
 		this.tasks = Collections.synchronizedList(new ArrayList<>());
 		// this.nrOfProcedureDomains = 0;
 	}
 
-	public static ProcedureInformation create(IMapReduceProcedure procedure) {
-		return new ProcedureInformation(procedure);
+	public static ProcedureInformation create(String jobId, IMapReduceProcedure procedure, int procedureIndex, int submissionNumber) {
+		return new ProcedureInformation(jobId, procedure, procedureIndex, submissionNumber);
 	}
 
 	public IMapReduceProcedure procedure() {
@@ -37,6 +45,14 @@ public class ProcedureInformation implements Serializable {
 
 	public boolean isFinished() {
 		return this.isFinished;
+	}
+
+	public int procedureIndex() {
+		return this.procedureIndex;
+	}
+
+	public int submissionNumber() {
+		return this.submissionNumber;
 	}
 
 	public ProcedureInformation isFinished(boolean isFinished) {
@@ -91,6 +107,10 @@ public class ProcedureInformation implements Serializable {
 	@Override
 	public String toString() {
 		return "ProcedureInformation [procedure=" + procedure + ", isFinished=" + isFinished + ", tasks=" + tasks + "]";
+	}
+
+	public String jobProcedureDomain() {
+		return DomainProvider.INSTANCE.jobProcedureDomain(jobId, procedure.getClass().getSimpleName(), procedureIndex, submissionNumber);
 	}
 
 }

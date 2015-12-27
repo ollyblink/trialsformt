@@ -21,7 +21,6 @@ import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
 
@@ -70,13 +69,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				Collections.sort(jobs);
 			}
 			if (jobExecutor.currentlyExecutedJob() == null) { // No job is executed atm
-				jobExecutor.executeJob(jobs.get(0)); // Execute job with highest priority
+				jobExecutor.execute(jobs.get(0)); // Execute job with highest priority
 			} else {// Some job is executed atm
 				if (!jobExecutor.currentlyExecutedJob().equals(jobs.get(0))) { // The job currently executing is not the one with highest priority
 																				// anymore
 					jobExecutor.abortExecution(job); // Abort the currently executing job (meaning, interrupt until later resume... This finishes the
 														// task executing atm
-					jobExecutor.executeJob(jobs.get(0));
+					jobExecutor.execute(jobs.get(0));
 				} else {
 					// Do nothing and continue executing
 				}
@@ -88,16 +87,23 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 	@Override
 	public void handleTaskExecutionStatusUpdate(Task taskToUpdate, TaskResult toUpdate) {
+		logger.info("Updating task: " + taskToUpdate + " with " + toUpdate);
+
 		synchronized (jobs) {
+			logger.info("Looking for job in "+jobs);
 			for (Job job : jobs) {
+				logger.info(job.id() + ".equals(" + taskToUpdate.jobId() + ")" + job.id().equals(taskToUpdate.jobId()));
 				if (job.id().equals(taskToUpdate.jobId())) {
+					logger.info("found job: " + job);
 					List<Task> tasks = job.currentProcedure().tasks();
+					logger.info("found tasks: " + tasks);
 					synchronized (tasks) {
 						int taskIndex = tasks.indexOf(taskToUpdate);
 						if (taskIndex < 0) {// Received a new task currently not yet assigned
 							tasks.add(taskToUpdate);
 							taskIndex = tasks.size() - 1;
 						}
+						logger.info("Updating task: " + tasks.get(taskIndex) + " with " + toUpdate);
 						Tasks.updateStati(tasks.get(taskIndex), toUpdate, job.maxNrOfFinishedWorkersPerTask());
 						break;
 					}
@@ -111,7 +117,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		// if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
 		// return;
 		// }
-		if (this.jobExecutor.currentlyExecutedJob().equals(job)) {
+		if (this.jobExecutor.currentlyExecutedJob() != null && this.jobExecutor.currentlyExecutedJob().equals(job)) {
 			this.jobExecutor.abortExecution(job); // finished already... doesn't need to be executed anymore
 
 			// TODO: hmnn... Should I start another job here while we wait for the evaluatiion of this job? I DON'T KNOW... Well let's think this
@@ -137,40 +143,52 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		List<FuturePut> futurePuts = SyncedCollectionProvider.syncedArrayList();
 		for (Task task : tasks) {
 			List<String> finalDataLocationDomains = task.finalDataLocationDomains();
-			for (String finalDataLocationDomain : finalDataLocationDomains) {
-				futurePuts.add(this.jobExecutor.dhtConnectionProvider().add(DomainProvider.PROCEDURE_KEYS, task.id(),
-						job.subsequentJobProcedureDomain(), false));
-				futurePuts.add(
-						this.jobExecutor.dhtConnectionProvider().add(task.id(), finalDataLocationDomain, job.subsequentJobProcedureDomain(), false));
+			FuturePut addKey = this.jobExecutor.dhtConnectionProvider().add(DomainProvider.PROCEDURE_KEYS, task.id(),
+					job.subsequentJobProcedureDomain(), false);
+			if (addKey != null) {
+				futurePuts.add(addKey);
 			}
-		}
-		Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 
-			@Override
-			public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-				if (future.isSuccess()) {
-					// well... check if there is actually any procedure left... Else job is finished...
-					ProcedureInformation subsequentProcedure = job.subsequentProcedure();
-					if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndReached.class.getSimpleName())) {
-						// Finished job :)
-						jobExecutor.dhtConnectionProvider().broadcastFinishedJob(job);
-						jobs.remove(job);
-					} else {
-						// Next procedure!!
-						job.incrementCurrentProcedureIndex();
-						Job nextJob = job;
-						if (!jobs.get(0).equals(nextJob)) {
-							nextJob = jobs.get(0);// Sorry little job... but maybe a new, more prioritized job needs to be executed asap so you need
-													// to step back and wait a little...
-						}
-						jobExecutor.executeJob(nextJob);
-					}
-				} else {
-					// TODO Well... something has to be done instead... am I right?
+			for (String finalDataLocationDomain : finalDataLocationDomains) {
+				FuturePut addDataLocation = this.jobExecutor.dhtConnectionProvider().add(task.id(), finalDataLocationDomain,
+						job.subsequentJobProcedureDomain(), false);
+				if (addDataLocation != null) {
+					futurePuts.add(addDataLocation);
 				}
 			}
+		}
+		if (futurePuts.size() > 0) {
+			Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 
-		});
+				@Override
+				public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
+					if (future.isSuccess()) {
+						// well... check if there is actually any procedure left... Else job is finished...
+						ProcedureInformation subsequentProcedure = job.subsequentProcedure();
+						if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndReached.class.getSimpleName())) {
+							// Finished job :)
+							jobExecutor.dhtConnectionProvider().broadcastFinishedJob(job);
+							jobs.remove(job);
+						} else {
+							// Next procedure!!
+							job.incrementCurrentProcedureIndex();
+							Job nextJob = job;
+							if (!jobs.get(0).equals(nextJob)) {
+								nextJob = jobs.get(0);// Sorry little job... but maybe a new, more prioritized job needs to be executed asap so you
+														// need
+														// to step back and wait a little...
+							}
+							jobExecutor.execute(nextJob);
+						}
+					} else {
+						// TODO Well... something has to be done instead... am I right?
+					}
+				}
+
+			});
+		} else {
+			logger.warn("No FuturePuts created. Check why?");
+		}
 		logger.info("removed messages for job");
 		logger.info("job current tasks for current procedure: " + job.currentProcedure().tasks().get(0).executingPeers().keySet());
 	}

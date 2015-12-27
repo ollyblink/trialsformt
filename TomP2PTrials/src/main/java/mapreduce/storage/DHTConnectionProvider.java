@@ -97,7 +97,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public DHTConnectionProvider addMessageQueueToBroadcastHandlers(BlockingQueue<IBCMessage> bcMessages) {
-		for (MRBroadcastHandler bCH : broadcastHandlers) { 
+		for (MRBroadcastHandler bCH : broadcastHandlers) {
 			bCH.queue(bcMessages);
 		}
 		return this;
@@ -432,6 +432,11 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	@Override
+	public String taskExecutorDomain(Task task) {
+		return DomainProvider.INSTANCE.executorTaskDomain(task, Tuple.create(owner(), 0));
 	}
 
 }

@@ -12,9 +12,9 @@ import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.PeerDHT;
 
 public class TestUtils {
-	public static IDHTConnectionProvider getTestConnectionProvider() {
+	public static IDHTConnectionProvider getTestConnectionProvider(int port) {
 		String bootstrapIP = "";
-		int bootstrapPort = 4002;
+		int bootstrapPort = port;
 		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
 		List<PeerDHT> peers = SyncedCollectionProvider.syncedArrayList();
 		List<MRBroadcastHandler> bcHandlers = SyncedCollectionProvider.syncedArrayList();

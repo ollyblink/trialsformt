@@ -79,12 +79,34 @@ public class MRJobExecutorMessageConsumerTest {
 	public void testHandleReceivedJob() {
 		testMessageConsumer.jobs().clear();
 		Job job = Job.create("TEST", PriorityLevel.MODERATE);
+ 
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
+		
+		Job job2 = Job.create("TEST", PriorityLevel.HIGH);
+		testMessageConsumer.handleReceivedJob(job2);
+		assertEquals(2, testMessageConsumer.jobs().size());
+		assertEquals(job2.id(), testMessageConsumer.jobs().get(0).id());
+		assertEquals(job.id(), testMessageConsumer.jobs().get(1).id());
+		
+		
+		Job job3 = Job.create("TEST", PriorityLevel.LOW);
+		testMessageConsumer.handleReceivedJob(job3);
+		assertEquals(3, testMessageConsumer.jobs().size());
+		assertEquals(job2.id(), testMessageConsumer.jobs().get(0).id());
+		assertEquals(job.id(), testMessageConsumer.jobs().get(1).id());
+		assertEquals(job3.id(), testMessageConsumer.jobs().get(2).id());
+		
+		Job job4 = Job.create("TEST", PriorityLevel.MODERATE);
+		testMessageConsumer.handleReceivedJob(job4);
+
+		assertEquals(4, testMessageConsumer.jobs().size()); 
+		assertEquals(job2.id(), testMessageConsumer.jobs().get(0).id()); 
+		assertEquals(job3.id(), testMessageConsumer.jobs().get(3).id());
 	}
 
 	@Test

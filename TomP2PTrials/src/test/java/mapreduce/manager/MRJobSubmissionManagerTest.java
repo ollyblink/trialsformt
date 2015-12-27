@@ -16,11 +16,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.context.PseudoStorageContext;
 import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.computation.standardprocedures.WordCountReducer;
 import mapreduce.execution.job.Job;
-import mapreduce.execution.job.PriorityLevel;
 import mapreduce.execution.task.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
@@ -40,25 +40,26 @@ public class MRJobSubmissionManagerTest {
 
 	@Test
 	public void test() throws IOException {
+
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";
 
-		System.err.println(fileInputFolderPath);
-		//
-		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider();
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(5001);
 		jobSubmissionManager = MRJobSubmissionManager.newInstance(dhtConnectionProvider);
 
-		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.SIXTEEN_BYTES)
+		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_KILO_BYTES)
 				.addSubsequentProcedure(WordCountMapper.newInstance());
+		jobSubmissionManager.submit(job);
 
 		final ListMultimap<Object, Object> toCheck = getToCheck(fileInputFolderPath);
-
-		jobSubmissionManager.submit(job);
 		try {
-			Thread.sleep(20000);
+			Thread.sleep(5000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
+		System.err.println("HERE");
+		ProcedureInformation pI = job.currentProcedure();
+		String jobProcedureDomain = pI.jobProcedureDomain();
+		
 		ArrayList<FutureGet> keysFutures = new ArrayList<>();
 		ArrayList<FutureGet> taskExecutorDomainFutures = new ArrayList<>();
 		ArrayList<FutureGet> valueFutures = new ArrayList<>();

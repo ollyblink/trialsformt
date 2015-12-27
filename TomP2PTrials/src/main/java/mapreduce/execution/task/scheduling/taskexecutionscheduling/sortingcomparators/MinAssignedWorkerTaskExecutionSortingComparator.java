@@ -9,6 +9,7 @@ public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparat
 
 	@Override
 	public int compare(Task t1, Task t2) {
+		 
 		if (t1.isFinished() && t2.isFinished()) {
 			return 0;
 		} else if (!t1.isFinished() && t2.isFinished()) {

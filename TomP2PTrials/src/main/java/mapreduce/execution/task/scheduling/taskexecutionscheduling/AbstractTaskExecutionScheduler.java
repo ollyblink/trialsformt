@@ -21,8 +21,10 @@ public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 
 	@Override
 	public Task schedule(List<Task> tasksToSchedule) {
-		if (TimeToLive.INSTANCE.cancelOnTimeout(tasksToSchedule, EmptyListCondition.create()) || tasksToSchedule != null) {
+		if (tasksToSchedule != null) {
+			// if (TimeToLive.INSTANCE.cancelOnTimeout(tasksToSchedule, EmptyListCondition.create())) {
 			return scheduleNonNull(tasksToSchedule);
+			// }
 		}
 		return null;
 	}

@@ -117,7 +117,7 @@ public class Job implements Serializable, Comparable<Job> {
 		try {
 			return procedures.get(index);
 		} catch (Exception e) {
-			return ProcedureInformation.create(EndReached.create());
+			return ProcedureInformation.create(id, EndReached.create(), procedures.size(), 0);
 		}
 	}
 
@@ -149,7 +149,8 @@ public class Job implements Serializable, Comparable<Job> {
 	 * @return
 	 */
 	public Job addSubsequentProcedure(IMapReduceProcedure procedure) {
-		this.procedures.add(ProcedureInformation.create(procedure));
+		ProcedureInformation procedureInformation = ProcedureInformation.create(id, procedure, this.procedures.size(), 0);
+		this.procedures.add(procedureInformation);
 		return this;
 	}
 
@@ -285,7 +286,8 @@ public class Job implements Serializable, Comparable<Job> {
 		job.maxNrOfFinishedWorkersPerTask = maxNrOfFinishedWorkersPerTask;
 		job.procedures = SyncedCollectionProvider.syncedArrayList();
 		for (ProcedureInformation pI : procedures) {
-			ProcedureInformation copyPI = ProcedureInformation.create(pI.procedure()).isFinished(pI.isFinished());
+			ProcedureInformation copyPI = ProcedureInformation.create(job.id, pI.procedure(), pI.procedureIndex(), pI.submissionNumber())
+					.isFinished(pI.isFinished());
 			List<Task> tasks = copyPI.tasks();
 			for (Task task : pI.tasks()) {
 				Task taskCopy = Task.newInstance(task.id(), task.jobId()); // NO DEEP TASK COPY
@@ -324,7 +326,10 @@ public class Job implements Serializable, Comparable<Job> {
 	}
 
 	public String subsequentJobProcedureDomain() {
-		String subsequentProcedureName = subsequentProcedure().procedure().getClass().getSimpleName();
-		return DomainProvider.INSTANCE.jobProcedureDomain(id, subsequentProcedureName, subsequentProcedureIndex(), submissionCounter);
+		return subsequentProcedure().jobProcedureDomain();
+	}
+
+	public String currentProcedureDomain() {
+		return currentProcedure().jobProcedureDomain();
 	}
 }

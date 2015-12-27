@@ -1,5 +1,6 @@
 package mapreduce.execution.computation.context;
 
+import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -7,10 +8,12 @@ import com.google.common.collect.ListMultimap;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
+import mapreduce.storage.IDHTConnectionProvider;
+import net.tomp2p.dht.FuturePut;
 import net.tomp2p.peers.Number160;
 
 public abstract class AbstractBaseContext implements IContext {
- 
+
 	protected IMapReduceProcedure combiner;
 	protected Task task;
 	protected Number160 resultHash;
@@ -91,5 +94,15 @@ public abstract class AbstractBaseContext implements IContext {
 	public AbstractBaseContext subsequentJobProcedureDomain(String subsequentJobProcedureDomain) {
 		this.subsequentJobProcedureDomain = subsequentJobProcedureDomain;
 		return this;
+	}
+
+	@Override
+	public IContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		// TODO Auto-generated method stub
+		return this;
+	}
+
+	public List<FuturePut> futurePutData() {
+		return null;
 	}
 }

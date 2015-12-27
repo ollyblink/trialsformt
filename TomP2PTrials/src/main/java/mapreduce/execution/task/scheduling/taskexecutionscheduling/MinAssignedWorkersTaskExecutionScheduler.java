@@ -42,13 +42,13 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 				assignedTask = randomTaskScheduler.scheduleNonNull(tasksToSchedule);
 			} else {
 				Collections.sort(tasksToSchedule, this.comparator);
-
-				if (!tasksToSchedule.get(0).isFinished()) {
-					assignedTask = tasksToSchedule.get(0);
+				Task task = tasksToSchedule.get(0);
+				if (!task.isFinished() || task.isActive()) {
+					assignedTask = task;
 				}
 			}
-		}else{
-			//all tasks finished... set procedure to be finished
+		} else {
+			// all tasks finished... set procedure to be finished
 			this.procedureInformation.isFinished(true);
 		}
 		return assignedTask;

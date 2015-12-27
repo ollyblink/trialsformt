@@ -1,9 +1,12 @@
 package mapreduce.execution.computation.context;
 
+import java.util.List;
 import java.util.Set;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
+import mapreduce.storage.IDHTConnectionProvider;
+import net.tomp2p.dht.FuturePut;
 import net.tomp2p.peers.Number160;
 
 public interface IContext {
@@ -33,4 +36,8 @@ public interface IContext {
 	public String subsequentJobProcedureDomain();
 
 	public IContext subsequentJobProcedureDomain(String subsequentJobProcedureDomain);
+
+	public IContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider);
+
+	public List<FuturePut> futurePutData();
 }
