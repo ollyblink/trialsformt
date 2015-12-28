@@ -69,7 +69,8 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	@Override
-	public void handleReceivedJob(Job job, String sender) {
+	public void handleReceivedJob(Job job) {
+		logger.info("Received job: " + job);
 
 		if (!jobs.contains(job)) { // Job was not yet received
 			jobs.add(job);

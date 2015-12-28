@@ -4,6 +4,7 @@ import java.util.concurrent.BlockingQueue;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
+import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
 import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedJobBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedProcedureBCMessage;
@@ -31,7 +32,7 @@ public interface IDHTConnectionProvider {
 
 	public FuturePut put(String key, Object value, String domain);
 
-//	public void createTasks(Job job, List<FutureGet> procedureTaskFutureGetCollector, List<Task> procedureTaskCollector);
+	// public void createTasks(Job job, List<FutureGet> procedureTaskFutureGetCollector, List<Task> procedureTaskCollector);
 
 	public FutureGet getAll(String keyString, String domainString);
 
@@ -43,11 +44,11 @@ public interface IDHTConnectionProvider {
 
 	public DistributedJobBCMessage broadcastNewJob(Job job);
 
-//	public JobFailedBCMessage broadcastFailedJob(Job job);
+	// public JobFailedBCMessage broadcastFailedJob(Job job);
 
 	public TaskUpdateBCMessage broadcastExecutingTask(Task task);
 
-//	public TaskUpdateBCMessage broadcastFailedTask(Task taskToDistribute);
+	// public TaskUpdateBCMessage broadcastFailedTask(Task taskToDistribute);
 
 	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Number160 resultHash);
 
@@ -102,4 +103,5 @@ public interface IDHTConnectionProvider {
 	public IDHTConnectionProvider addMessageQueueToBroadcastHandler(BlockingQueue<IBCMessage> bcMessages);
 
 	public String taskExecutorDomain(Task task);
+
 }

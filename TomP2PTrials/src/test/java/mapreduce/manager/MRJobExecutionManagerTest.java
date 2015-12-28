@@ -105,9 +105,9 @@ public class MRJobExecutionManagerTest {
 									@Override
 									public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
 										if (future.isSuccess()) {
-											dhtConnectionProvider.broadcastNewJob(job);
-											DistributedJobBCMessage message = dhtConnectionProvider.broadcastNewJob(job);
-										 
+											System.err.println("Broadcast job");
+											DistributedJobBCMessage message = dhtConnectionProvider.owner("TEST").broadcastNewJob(job);
+											dhtConnectionProvider.owner(jobExecutor.id());
 										}
 									}
 								});

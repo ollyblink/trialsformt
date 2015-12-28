@@ -30,8 +30,8 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 	@Override
 	public void handleFinishedJob(Job job) {
 		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
-			String jobProcedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
-			logger.warn("handleFinishedJob()::1::Finished job " + DomainProvider.INSTANCE.jobProcedureDomain(job));
+			String jobProcedureDomain = job.currentProcedureDomain();
+			logger.warn("handleFinishedJob()::1::Finished job " + jobProcedureDomain);
 			this.jobSubmissionManager.finishedJob(jobProcedureDomain);
 		}
 	}
@@ -52,7 +52,7 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 	}
 
 	@Override
-	public void handleReceivedJob(Job job, String sender) {
+	public void handleReceivedJob(Job job) {
 		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
 			if (!jobs.contains(job)) {
 				jobs.add(job);

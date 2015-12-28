@@ -92,7 +92,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleReceivedJob(Job job, String sender) {
+	public void handleReceivedJob(Job job) {
 
 	}
 

@@ -103,7 +103,8 @@ public class MRJobExecutionManager {
 	}
 
 	public void start() {
-		Thread messageConsumerThread = new Thread(messageConsumer.canTake(true));
+		messageConsumer.canTake(true);
+		Thread messageConsumerThread = new Thread(messageConsumer);
 		messageConsumerThread.start();
 	}
 

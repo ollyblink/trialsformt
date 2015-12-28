@@ -19,7 +19,7 @@ public interface IMessageConsumer extends Runnable {
 	 * 
 	 * @param job
 	 */
-	public void handleReceivedJob(Job job, String sender);
+	public void handleReceivedJob(Job job);
 
 	public void handleFailedJob(Job job);
 

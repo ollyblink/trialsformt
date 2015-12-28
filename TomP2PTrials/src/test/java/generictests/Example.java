@@ -150,6 +150,7 @@ public class Example {
 		}else{
 			bcH = bcHandler;
 		}
+		System.err.println(bcH);
 		PeerDHT[] peers = new PeerDHT[nr];
 		for (int i = 0; i < nr; i++) {
 			if (i == 0) {

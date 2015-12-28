@@ -24,7 +24,7 @@ public class DistributedJobBCMessage extends AbstractJobBCMessage {
 
 	@Override
 	public void execute(final IMessageConsumer messageConsumer) {
-		messageConsumer.handleReceivedJob(job, sender);
+		messageConsumer.handleReceivedJob(job);
 
 	}
 

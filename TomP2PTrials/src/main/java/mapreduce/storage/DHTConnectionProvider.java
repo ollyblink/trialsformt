@@ -69,8 +69,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		this.bootstrapIP = bootstrapIP;
 		this.bootstrapPort = bootstrapPort;
 		this.peerDHTs = SyncedCollectionProvider.syncedArrayList();
-		this.broadcastHandler = MRBroadcastHandler.create();
-
 	}
 
 	public static DHTConnectionProvider newInstance(String bootstrapIP, int bootstrapPort) {
@@ -159,6 +157,10 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public void connect() {
 		int bootstrapper = 0; // I use this to only make one peer be the master that creates everything... all others simply connect to the
 								// bootstrapper
+		if (broadcastHandler == null) {
+			this.broadcastHandler = MRBroadcastHandler.create();
+		}
+
 		for (int i = 0; i < this.numberOfPeers; ++i) {
 
 			try {
@@ -166,7 +168,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 					this.port = this.bootstrapPort;
 				}
-
 				Peer peer = new PeerBuilder(Number160.createHash(this.id)).ports(this.port).broadcastHandler(broadcastHandler).start();
 
 				if (!this.isBootstrapper && bootstrapper == 0) {
@@ -213,12 +214,12 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		return message;
 	}
 
-//	@Override
-//	public JobFailedBCMessage broadcastFailedJob(Job job) {
-//		JobFailedBCMessage message = JobFailedBCMessage.newInstance().job(job).sender(this.owner());
-//		broadcastJobUpdate(job, message);
-//		return message;
-//	}
+	// @Override
+	// public JobFailedBCMessage broadcastFailedJob(Job job) {
+	// JobFailedBCMessage message = JobFailedBCMessage.newInstance().job(job).sender(this.owner());
+	// broadcastJobUpdate(job, message);
+	// return message;
+	// }
 
 	@Override
 	public FinishedProcedureBCMessage broadcastFinishedAllTasksOfProcedure(Job job) {
@@ -250,12 +251,12 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		return message;
 	}
 
-//	@Override
-//	public TaskUpdateBCMessage broadcastFailedTask(Task task) {
-//		TaskUpdateBCMessage message = TaskUpdateBCMessage.newFailedTaskInstance().task(task).sender(this.owner());
-//		broadcastTaskUpdate(task, message);
-//		return message;
-//	}
+	// @Override
+	// public TaskUpdateBCMessage broadcastFailedTask(Task task) {
+	// TaskUpdateBCMessage message = TaskUpdateBCMessage.newFailedTaskInstance().task(task).sender(this.owner());
+	// broadcastTaskUpdate(task, message);
+	// return message;
+	// }
 
 	public void broadcastTaskUpdate(Task task, IBCMessage message) {
 		try {
@@ -313,6 +314,10 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public DHTConnectionProvider owner(String owner) {
 		this.owner = owner;
+		System.err.println(broadcastHandler);
+		if (this.broadcastHandler != null) {
+			this.broadcastHandler.owner(owner);
+		}
 		return this;
 	}
 
@@ -364,5 +369,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public String taskExecutorDomain(Task task) {
 		return DomainProvider.INSTANCE.executorTaskDomain(task, Tuple.create(owner(), 0));
 	}
+ 
 
 }
