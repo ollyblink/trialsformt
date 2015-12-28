@@ -143,17 +143,15 @@ public class Example {
 		return peers;
 	}
 
-	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, List<MRBroadcastHandler> bcHandlers) throws IOException {
+	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, MRBroadcastHandler bcHandler) throws IOException {
 		StructuredBroadcastHandler bcH = null;
-		if (bcHandlers == null) {
+		if (bcHandler == null) {
 			bcH = new MyBroadcastHandler();
+		}else{
+			bcH = bcHandler;
 		}
 		PeerDHT[] peers = new PeerDHT[nr];
 		for (int i = 0; i < nr; i++) {
-			if (bcHandlers != null) {
-				bcH = new MRBroadcastHandler();
-				bcHandlers.add((MRBroadcastHandler) bcH);
-			}
 			if (i == 0) {
 				peers[0] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).broadcastHandler(bcH).start()).start();
 			} else {

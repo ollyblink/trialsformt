@@ -60,16 +60,18 @@ public abstract class AbstractBCMessage implements IBCMessage {
 		return this;
 	}
 
+	 
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((sender == null) ? 0 : sender.hashCode());
 		return result;
 	}
 
 	@Override
-	public boolean equals(Object obj) { 
+	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -77,10 +79,10 @@ public abstract class AbstractBCMessage implements IBCMessage {
 		if (getClass() != obj.getClass())
 			return false;
 		AbstractBCMessage other = (AbstractBCMessage) obj;
-		if (id == null) {
-			if (other.id != null)
+		if (sender == null) {
+			if (other.sender != null)
 				return false;
-		} else if (!id.equals(other.id))
+		} else if (!sender.equals(other.sender))
 			return false;
 		return true;
 	}
@@ -88,6 +90,12 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	@Override
 	public String id() {
 		return this.id;
+	}
+
+	@Override
+	public String toString() {
+		return "AbstractBCMessage [id=" + id + ", sender=" + sender + ", creationTime=" + creationTime + ", sender()=" + sender()
+				+ ", creationTime()=" + creationTime() + ", isAlreadyProcessed()=" + isAlreadyProcessed() + ", id()=" + id() + "]\n";
 	}
 
 }

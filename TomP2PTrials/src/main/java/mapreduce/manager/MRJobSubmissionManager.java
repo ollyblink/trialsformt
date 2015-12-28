@@ -20,6 +20,7 @@ import mapreduce.execution.task.Task;
 import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmissionManagerMessageConsumer;
+import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
@@ -43,7 +44,7 @@ public class MRJobSubmissionManager {
 		this.dhtConnectionProvider(dhtConnectionProvider.owner(this.id));
 		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.newInstance(this, jobs).canTake(true);
 		new Thread(messageConsumer).start();
-		dhtConnectionProvider.addMessageQueueToBroadcastHandlers(messageConsumer.queue());
+		dhtConnectionProvider.addMessageQueueToBroadcastHandler(messageConsumer.queue());
 	}
 
 	public static MRJobSubmissionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
@@ -130,7 +131,9 @@ public class MRJobSubmissionManager {
 									public void operationComplete(FuturePut future) throws Exception {
 										if (future.isSuccess()) {
 											logger.info("Successfully added data. Broadcasting job.");
-											dhtConnectionProvider.broadcastNewJob(job);
+
+											DistributedJobBCMessage message = dhtConnectionProvider.broadcastNewJob(job);
+											messageConsumer.queue().add(message);
 										} else {
 											logger.warn(future.failedReason());
 										}

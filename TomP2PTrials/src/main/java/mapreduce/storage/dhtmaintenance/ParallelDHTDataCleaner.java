@@ -47,10 +47,10 @@ public class ParallelDHTDataCleaner implements IDHTDataCleaner {
 		for (final Task task : dataToRemove.keySet()) {
 			System.err.println(task);
 			for (Tuple<PeerAddress, Integer> location : dataToRemove.get(task)) {
-				CleanRunnable cleaner = CleanRunnable.newInstance(bootstrapIP, bootstrapPort).dataToRemove(task, location); 
-				Future<?> submit = server.submit(cleaner);
-				this.currentThreads.add(submit);
-				this.cleaners.add(cleaner);
+//				CleanRunnable cleaner = CleanRunnable.newInstance(bootstrapIP, bootstrapPort).dataToRemove(task, location); 
+//				Future<?> submit = server.submit(cleaner);
+//				this.currentThreads.add(submit);
+//				this.cleaners.add(cleaner);
 			}
 		}
 		cleanUp();
@@ -82,7 +82,7 @@ public class ParallelDHTDataCleaner implements IDHTDataCleaner {
 			}
 		}
 		for (CleanRunnable c : cleaners) {
-			c.shutdown();
+//			c.shutdown();
 		}
 	}
 

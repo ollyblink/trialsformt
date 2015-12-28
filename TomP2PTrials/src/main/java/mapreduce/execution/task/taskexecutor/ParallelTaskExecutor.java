@@ -54,11 +54,11 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 //		this.currentThreads.add(server.submit(new Runnable() {
 //
 //			@Override
-//			public void run() {
-				context.task().isActive(true);
-				procedure.process(key, values, context);
-				context.broadcastResultHash();
-				context.task().isActive(false);
+////			public void run() {
+//				context.task().isActive(true);
+//				procedure.process(key, values, context);
+//				context.broadcastResultHash();
+//				context.task().isActive(false);
 //			}
 //		}));
 

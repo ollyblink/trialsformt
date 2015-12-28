@@ -7,6 +7,7 @@ import mapreduce.execution.task.Task;
 public enum DomainProvider {
 	INSTANCE;
 	public static final String PROCEDURE_KEYS = "PROCEDURE_KEYS";
+	public static final String TASK_KEYS = "TASK_KEYS";
 
 	public String executorTaskDomain(String taskId, String producer, Integer jobStatusIndex) {
 		return taskId + "_PRODUCER_" + producer + "_JOB_STATUS_INDEX_" + jobStatusIndex;

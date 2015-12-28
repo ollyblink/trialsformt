@@ -8,6 +8,7 @@ import com.google.common.collect.ListMultimap;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.peers.Number160;
@@ -81,9 +82,9 @@ public abstract class AbstractBaseContext implements IContext {
 	}
 
 	@Override
-	public void broadcastResultHash() {
+	public TaskUpdateBCMessage broadcastResultHash() {
 		// TODO Auto-generated method stub
-
+		return null;
 	}
 
 	public String subsequentJobProcedureDomain() {

@@ -1,5 +1,6 @@
 package mapreduce.manager.broadcasthandler.broadcastmessages;
 
+import mapreduce.execution.job.Job;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
 
 public class JobFailedBCMessage extends AbstractJobBCMessage {
@@ -23,4 +24,14 @@ public class JobFailedBCMessage extends AbstractJobBCMessage {
 		return new JobFailedBCMessage();
 	}
 
+	@Override
+	public JobFailedBCMessage sender(final String sender) {
+		return (JobFailedBCMessage) super.sender(sender);
+	}
+
+	@Override
+	public JobFailedBCMessage job(Job job) {
+		super.job(job);
+		return this;
+	}
 }

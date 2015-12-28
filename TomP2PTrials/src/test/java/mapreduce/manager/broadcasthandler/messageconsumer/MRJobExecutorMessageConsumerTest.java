@@ -54,7 +54,7 @@ public class MRJobExecutorMessageConsumerTest {
 		DHTConnectionProvider dhtConnectionProvider = Mockito.mock(DHTConnectionProvider.class);
 		Mockito.when(jobExecutor.dhtConnectionProvider()).thenReturn(dhtConnectionProvider);
 		Mockito.when(dhtConnectionProvider.owner()).thenReturn(peer1);
-		testMessageConsumer = MRJobExecutionManagerMessageConsumer.newInstance(jobs).jobExecutor(jobExecutor);
+		testMessageConsumer = MRJobExecutionManagerMessageConsumer.newInstance().jobExecutor(jobExecutor);
 		resetJob();
 
 		// m.updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus);
@@ -221,7 +221,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		Job jobCopy1 = job.copy();
 		jobCopy1.currentProcedure().tasks(copy);
-		testMessageConsumer.handleFinishedAllTasks(jobCopy1);
+		testMessageConsumer.handleFinishedProcedure(jobCopy1);
 
 		List<Task> copy2 = new ArrayList<Task>(TEST_KEYS.length);
 		for (String taskKey : TEST_KEYS) {
@@ -237,7 +237,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		Job jobCopy2 = job.copy();
 		jobCopy2.currentProcedure().tasks(copy2);
-		testMessageConsumer.handleFinishedAllTasks(jobCopy2);
+		testMessageConsumer.handleFinishedProcedure(jobCopy2);
 
 		List<Task> tasks3 = testMessageConsumer.jobs().get(0).currentProcedure().tasks();
 		int cntr = 0;

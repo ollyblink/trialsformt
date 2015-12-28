@@ -49,7 +49,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private static final int DEFAULT_NUMBER_OF_PEERS = 10;
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
 	private List<PeerDHT> peerDHTs;
-	private List<MRBroadcastHandler> broadcastHandlers;
+	private MRBroadcastHandler broadcastHandler;
 	private String owner;
 	private String bootstrapIP;
 	private int bootstrapPort;
@@ -61,11 +61,15 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private int numberOfPeers = DEFAULT_NUMBER_OF_PEERS;
 	private int currentExecutingPeerCounter = 0;
 
+	private DHTConnectionProvider() {
+
+	}
+
 	private DHTConnectionProvider(String bootstrapIP, int bootstrapPort) {
 		this.bootstrapIP = bootstrapIP;
 		this.bootstrapPort = bootstrapPort;
 		this.peerDHTs = SyncedCollectionProvider.syncedArrayList();
-		this.broadcastHandlers = SyncedCollectionProvider.syncedArrayList();
+		this.broadcastHandler = MRBroadcastHandler.create();
 
 	}
 
@@ -84,9 +88,9 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		return this;
 	}
 
-	public DHTConnectionProvider externalPeers(List<PeerDHT> peerDHTs, List<MRBroadcastHandler> broadcastHandlers) {
+	public DHTConnectionProvider externalPeers(List<PeerDHT> peerDHTs, MRBroadcastHandler bcHandler) {
 		this.peerDHTs = peerDHTs;
-		this.broadcastHandlers = broadcastHandlers;
+		this.broadcastHandler = bcHandler;
 		return this;
 	}
 
@@ -96,10 +100,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public DHTConnectionProvider addMessageQueueToBroadcastHandlers(BlockingQueue<IBCMessage> bcMessages) {
-		for (MRBroadcastHandler bCH : broadcastHandlers) {
-			bCH.queue(bcMessages);
-		}
+	public DHTConnectionProvider addMessageQueueToBroadcastHandler(BlockingQueue<IBCMessage> bcMessages) {
+		broadcastHandler.queue(bcMessages);
 		return this;
 	}
 
@@ -165,8 +167,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 					this.port = this.bootstrapPort;
 				}
 
-				MRBroadcastHandler broadcastHandler = new MRBroadcastHandler();
-				broadcastHandlers.add(broadcastHandler);
 				Peer peer = new PeerBuilder(Number160.createHash(this.id)).ports(this.port).broadcastHandler(broadcastHandler).start();
 
 				if (!this.isBootstrapper && bootstrapper == 0) {
@@ -207,42 +207,55 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public void broadcastNewJob(Job job) {
-		broadcastJobUpdate(job, DistributedJobBCMessage.newInstance().job(job).sender(this.owner()));
+	public DistributedJobBCMessage broadcastNewJob(Job job) {
+		DistributedJobBCMessage message = DistributedJobBCMessage.newInstance().job(job).sender(this.owner());
+		broadcastJobUpdate(job, message);
+		return message;
 	}
 
-	@Override
-	public void broadcastFailedJob(Job job) {
-		broadcastJobUpdate(job, JobFailedBCMessage.newInstance().job(job).sender(this.owner()));
-	}
+//	@Override
+//	public JobFailedBCMessage broadcastFailedJob(Job job) {
+//		JobFailedBCMessage message = JobFailedBCMessage.newInstance().job(job).sender(this.owner());
+//		broadcastJobUpdate(job, message);
+//		return message;
+//	}
 
 	@Override
-	public void broadcastFinishedAllTasksOfProcedure(Job job) {
-		broadcastJobUpdate(job, FinishedProcedureBCMessage.create().job(job).sender(this.owner()));
-
-	}
-
-	@Override
-	public void broadcastFinishedJob(Job job) {
-		broadcastJobUpdate(job, FinishedJobBCMessage.newInstance().job(job).sender(this.owner()));
-	}
-
-	@Override
-	public void broadcastExecutingTask(Task task) {
-		broadcastTaskUpdate(task, TaskUpdateBCMessage.newExecutingTaskInstance().task(task).sender(this.owner()));
+	public FinishedProcedureBCMessage broadcastFinishedAllTasksOfProcedure(Job job) {
+		FinishedProcedureBCMessage message = FinishedProcedureBCMessage.create().job(job).sender(this.owner());
+		broadcastJobUpdate(job, message);
+		return message;
 
 	}
 
 	@Override
-	public void broadcastFinishedTask(Task task, Number160 resultHash) {
-		broadcastTaskUpdate(task, TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.owner()));
+	public FinishedJobBCMessage broadcastFinishedJob(Job job) {
+		FinishedJobBCMessage message = FinishedJobBCMessage.newInstance().job(job).sender(this.owner());
+		broadcastJobUpdate(job, message);
+		return message;
 	}
 
 	@Override
-	public void broadcastFailedTask(Task task) {
-		broadcastTaskUpdate(task, TaskUpdateBCMessage.newFailedTaskInstance().task(task).sender(this.owner()));
+	public TaskUpdateBCMessage broadcastExecutingTask(Task task) {
+		TaskUpdateBCMessage message = TaskUpdateBCMessage.newExecutingTaskInstance().task(task).sender(this.owner());
+		broadcastTaskUpdate(task, message);
+		return message;
 
 	}
+
+	@Override
+	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Number160 resultHash) {
+		TaskUpdateBCMessage message = TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.owner());
+		broadcastTaskUpdate(task, message);
+		return message;
+	}
+
+//	@Override
+//	public TaskUpdateBCMessage broadcastFailedTask(Task task) {
+//		TaskUpdateBCMessage message = TaskUpdateBCMessage.newFailedTaskInstance().task(task).sender(this.owner());
+//		broadcastTaskUpdate(task, message);
+//		return message;
+//	}
 
 	public void broadcastTaskUpdate(Task task, IBCMessage message) {
 		try {
@@ -263,6 +276,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
 			currentExecutingPeer().peer().broadcast(jobHash).dataMap(dataMap).start();
+			logger.info("Broadcasted job: " + job);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -311,94 +325,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		int index = this.currentExecutingPeerCounter;
 		this.currentExecutingPeerCounter = (currentExecutingPeerCounter + 1) % peerDHTs.size();
 		return peerDHTs.get(index);
-	}
-
-	@Override
-	public void createTasks(Job job, List<FutureGet> procedureTaskFutureGetCollector, List<Task> procedureTaskCollector) {
-
-		final String procedureDomain = DomainProvider.INSTANCE.jobProcedureDomain(job);
-		final Number160 procedureDomainHash = Number160.createHash(procedureDomain);
-
-		currentExecutingPeer().get(Number160.createHash(DomainProvider.PROCEDURE_KEYS)).domainKey(procedureDomainHash).all().start()
-				.addListener(new BaseFutureListener<FutureGet>() {
-
-					@Override
-					public void operationComplete(FutureGet future) throws Exception {
-						if (future.isSuccess()) {
-							try {
-								if (future.dataMap() != null) {
-									for (Number640 n : future.dataMap().keySet()) {
-										Object key = future.dataMap().get(n).object();
-										// 1 key from procedure domain == 1 task
-										procedureTaskFutureGetCollector.add(currentExecutingPeer().get(Number160.createHash(key.toString()))
-												.domainKey(procedureDomainHash).all().start().addListener(new BaseFutureListener<FutureGet>() {
-
-											@Override
-											public void operationComplete(FutureGet future) throws Exception {
-												if (future.isSuccess()) {
-													try {
-														if (future.dataMap() != null) {
-															for (Number640 n : future.dataMap().keySet()) {
-																String taskExecutorDomain = future.dataMap().get(n).object().toString();
-
-																Task task = Task.newInstance(key, job.id())
-																		.finalDataLocationDomains(taskExecutorDomain);
-																procedureTaskCollector.add(task);
-																logger.info("getKVD: Successfully retrieved value for <K, Domain>: <" + key + ", "
-																		+ procedureDomain + ">: " + taskExecutorDomain);
-															}
-
-														} else {
-															logger.warn(
-																	"getKVD: Value for <K, Domain>: <" + key + ", " + procedureDomain + "> is null!");
-														}
-													} catch (ClassNotFoundException | IOException e) {
-														e.printStackTrace();
-													}
-												} else {
-													logger.error("getKVD: Failed trying to retrieve value for <K, Domain>: <" + key + ", "
-															+ procedureDomain + ">");
-												}
-											}
-
-											@Override
-											public void exceptionCaught(Throwable t) throws Exception {
-												logger.debug("getKVD: Exception caught", t);
-
-											}
-
-										}));
-									}
-								} else {
-									logger.warn("getKVD: Value for <K, Domain>: <" + DomainProvider.PROCEDURE_KEYS + ", " + procedureDomain
-											+ "> is null!");
-								}
-							} catch (ClassNotFoundException e)
-
-					{
-								e.printStackTrace();
-							} catch (
-
-					IOException e)
-
-					{
-								e.printStackTrace();
-							}
-
-						} else {
-							logger.error("getKVD: Failed trying to retrieve value for <K, Domain>: <" + DomainProvider.PROCEDURE_KEYS + ", "
-									+ procedureDomain + ">");
-						}
-					}
-
-					@Override
-					public void exceptionCaught(Throwable t) throws Exception {
-						logger.debug("get: Exception caught", t);
-					}
-
-				});
-
-		// Collections.sort(procedureTaskCollector);
 	}
 
 	@Override

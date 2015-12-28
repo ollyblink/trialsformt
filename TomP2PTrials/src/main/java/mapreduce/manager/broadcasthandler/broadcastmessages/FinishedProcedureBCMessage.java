@@ -1,5 +1,6 @@
 package mapreduce.manager.broadcasthandler.broadcastmessages;
 
+import mapreduce.execution.job.Job;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
 
 public class FinishedProcedureBCMessage extends AbstractJobBCMessage {
@@ -25,7 +26,17 @@ public class FinishedProcedureBCMessage extends AbstractJobBCMessage {
 
 	@Override
 	public void execute(final IMessageConsumer messageConsumer) {
-		messageConsumer.handleFinishedAllTasks(job);
+		messageConsumer.handleFinishedProcedure(job);
 	}
 
+	@Override
+	public FinishedProcedureBCMessage sender(final String sender) {
+		return (FinishedProcedureBCMessage) super.sender(sender);
+	}
+
+	@Override
+	public FinishedProcedureBCMessage job(Job job) {
+		super.job(job);
+		return this;
+	}
 }

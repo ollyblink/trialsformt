@@ -8,12 +8,14 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number160;
 
 public class DHTStorageContext extends AbstractBaseContext {
@@ -66,7 +68,7 @@ public class DHTStorageContext extends AbstractBaseContext {
 						if (future.isSuccess()) {
 							logger.info("Put <" + keyOut + ", " + valueOut + ">");
 							futureProcedureKeys
-									.add(dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), subsequentJobProcedureDomain, false)
+									.add(dhtConnectionProvider.add(DomainProvider.TASK_KEYS, keyOut.toString(), combinedExecutorTaskDomain, false)
 											.addListener(new BaseFutureAdapter<FuturePut>() {
 
 								@Override
@@ -88,6 +90,19 @@ public class DHTStorageContext extends AbstractBaseContext {
 
 				}));
 
+		Futures.whenAllSuccess(futureProcedureKeys).addListener(new BaseFutureAdapter<FuturePut>() {
+
+			@Override
+			public void operationComplete(FuturePut future) throws Exception {
+				if (future.isSuccess()) {
+					logger.info("Put all key");
+
+				} else {
+					logger.warn("Could not put key");
+				}
+			}
+
+		});
 		// }
 
 	}
@@ -142,8 +157,9 @@ public class DHTStorageContext extends AbstractBaseContext {
 	}
 
 	@Override
-	public void broadcastResultHash() {
-		dhtConnectionProvider.broadcastFinishedTask(task, resultHash());
+	public TaskUpdateBCMessage broadcastResultHash() {
+		logger.info("Broadcast result ");
+		return dhtConnectionProvider.broadcastFinishedTask(task, resultHash());
 	}
 
 	@Override

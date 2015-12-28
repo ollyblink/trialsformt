@@ -11,6 +11,7 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -37,11 +38,12 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	@Override
 	public void run() {
+		
 		try {
 			while (canTake()) {
-				
-				final IBCMessage nextMessage = bcMessages.take();
-				logger.info("Next message: " +nextMessage);
+				System.err.println("Before Take message");
+				IBCMessage nextMessage = bcMessages.take();
+				logger.info("Next message: " + nextMessage);
 				nextMessage.execute(this);
 			}
 		} catch (InterruptedException e) {
@@ -90,7 +92,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleReceivedJob(Job job) { 
+	public void handleReceivedJob(Job job, String sender) {
 
 	}
 
@@ -100,7 +102,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleFinishedAllTasks(Job job) {
+	public void handleFinishedProcedure(Job job) {
 
 	}
 }

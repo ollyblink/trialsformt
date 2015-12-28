@@ -26,13 +26,15 @@ public abstract class AbstractTaskBCMessage extends AbstractBCMessage implements
 	}
 
 	@Override
-	public String toString() {
-		return creationTime() + ":" + sender + " sent task message with status " + status() + " for task " + task.id() + " from job " + task.jobId()
-				+ "\n";
-	}
-
-	@Override
 	public String jobId() {
 		return task.jobId();
 	}
+
+	@Override
+	public String toString() {
+		return super.toString() + "AbstractTaskBCMessage [task=" + task + "]";
+	}
+ 
+	
+	
 }

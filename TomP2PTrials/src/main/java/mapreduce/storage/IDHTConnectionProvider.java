@@ -1,11 +1,15 @@
 package mapreduce.storage;
 
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedJobBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedProcedureBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.JobFailedBCMessage;
+import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.peers.Number160;
@@ -27,7 +31,7 @@ public interface IDHTConnectionProvider {
 
 	public FuturePut put(String key, Object value, String domain);
 
-	public void createTasks(Job job, List<FutureGet> procedureTaskFutureGetCollector, List<Task> procedureTaskCollector);
+//	public void createTasks(Job job, List<FutureGet> procedureTaskFutureGetCollector, List<Task> procedureTaskCollector);
 
 	public FutureGet getAll(String keyString, String domainString);
 
@@ -37,19 +41,19 @@ public interface IDHTConnectionProvider {
 
 	// Broadcasts
 
-	public void broadcastNewJob(Job job);
+	public DistributedJobBCMessage broadcastNewJob(Job job);
 
-	public void broadcastFailedJob(Job job);
+//	public JobFailedBCMessage broadcastFailedJob(Job job);
 
-	public void broadcastExecutingTask(Task task);
+	public TaskUpdateBCMessage broadcastExecutingTask(Task task);
 
-	public void broadcastFailedTask(Task taskToDistribute);
+//	public TaskUpdateBCMessage broadcastFailedTask(Task taskToDistribute);
 
-	public void broadcastFinishedTask(Task task, Number160 resultHash);
+	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Number160 resultHash);
 
-	public void broadcastFinishedAllTasksOfProcedure(Job job);
+	public FinishedProcedureBCMessage broadcastFinishedAllTasksOfProcedure(Job job);
 
-	public void broadcastFinishedJob(Job job);
+	public FinishedJobBCMessage broadcastFinishedJob(Job job);
 
 	// Maintenance
 
@@ -95,7 +99,7 @@ public interface IDHTConnectionProvider {
 
 	public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
 
-	public IDHTConnectionProvider addMessageQueueToBroadcastHandlers(BlockingQueue<IBCMessage> bcMessages);
+	public IDHTConnectionProvider addMessageQueueToBroadcastHandler(BlockingQueue<IBCMessage> bcMessages);
 
 	public String taskExecutorDomain(Task task);
 }

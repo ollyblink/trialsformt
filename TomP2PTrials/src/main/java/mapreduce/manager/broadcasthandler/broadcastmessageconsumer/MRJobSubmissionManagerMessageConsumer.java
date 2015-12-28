@@ -52,7 +52,7 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 	}
 
 	@Override
-	public void handleReceivedJob(Job job) {
+	public void handleReceivedJob(Job job, String sender) {
 		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
 			if (!jobs.contains(job)) {
 				jobs.add(job);

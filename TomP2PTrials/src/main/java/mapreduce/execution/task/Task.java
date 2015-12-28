@@ -44,7 +44,7 @@ public class Task implements Serializable, Comparable<Task> {
 	 */
 	private List<String> finalTaskExecutorDomains;// String here: JobSubmitter/Executor id +"_"+locationIndex
 
-	private boolean isActive;
+	private volatile boolean isActive;
 
 	private Task(Object key, String jobId) {
 		this.key = key;

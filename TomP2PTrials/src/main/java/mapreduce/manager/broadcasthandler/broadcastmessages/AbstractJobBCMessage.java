@@ -1,7 +1,6 @@
 package mapreduce.manager.broadcasthandler.broadcastmessages;
 
 import mapreduce.execution.job.Job;
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
 
 /**
  * Any message updating a job should extend this class
@@ -26,12 +25,18 @@ public abstract class AbstractJobBCMessage extends AbstractBCMessage implements 
 	}
 
 	@Override
-	public String toString() {
-		return sender + " sent job message with status " + status() + " for job " + job.id();
-	}
-
-	@Override
 	public String jobId() {
 		return job.id();
 	}
+
+	@Override
+	public String toString() {
+		return super.toString() + "AbstractJobBCMessage [job=" + job + "]";
+	}
+
+	// @Override
+	// public String toString() {
+	// return super.toString() + "AbstractTaskBCMessage [task=" + task + "]";
+	// }
+
 }

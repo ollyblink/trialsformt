@@ -5,6 +5,7 @@ import java.util.Set;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.peers.Number160;
@@ -31,7 +32,7 @@ public interface IContext {
 
 	public void updateResultHash(Object keyOut, Object valueOut);
 
-	public void broadcastResultHash();
+	public TaskUpdateBCMessage broadcastResultHash();
 
 	public String subsequentJobProcedureDomain();
 

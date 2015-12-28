@@ -17,10 +17,10 @@ public class TestUtils {
 		int bootstrapPort = port;
 		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
 		List<PeerDHT> peers = SyncedCollectionProvider.syncedArrayList();
-		List<MRBroadcastHandler> bcHandlers = SyncedCollectionProvider.syncedArrayList();
 		PeerDHT[] peerArray = null;
+		MRBroadcastHandler bcHandler = MRBroadcastHandler.create();
 		try {
-			peerArray = Example.createAndAttachPeersDHT(10, bootstrapPort, bcHandlers);
+			peerArray = Example.createAndAttachPeersDHT(10, bootstrapPort, bcHandler);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -29,7 +29,7 @@ public class TestUtils {
 		Example.bootstrap(peerArray);
 		Collections.addAll(peers, peerArray);
 
-		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort).externalPeers(peers, bcHandlers);
+		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort).externalPeers(peers, bcHandler);
 		return dhtConnectionProvider;
 	}
 }

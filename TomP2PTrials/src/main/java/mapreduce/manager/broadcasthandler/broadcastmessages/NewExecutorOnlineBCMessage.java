@@ -19,4 +19,8 @@ public class NewExecutorOnlineBCMessage extends AbstractBCMessage {
 		messageConsumer.handleNewExecutorOnline();
 	}
 
+	@Override
+	public NewExecutorOnlineBCMessage sender(final String sender) {
+		return (NewExecutorOnlineBCMessage) super.sender(sender);
+	}
 }

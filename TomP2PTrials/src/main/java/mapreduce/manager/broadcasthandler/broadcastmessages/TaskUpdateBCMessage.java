@@ -1,5 +1,6 @@
 package mapreduce.manager.broadcasthandler.broadcastmessages;
 
+import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
 import net.tomp2p.peers.Number160;
@@ -58,5 +59,15 @@ public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 		return this;
 	}
 
+	@Override
+	public TaskUpdateBCMessage sender(final String sender) {
+		return (TaskUpdateBCMessage) super.sender(sender);
+	}
+
+	@Override
+	public TaskUpdateBCMessage task(Task task) {
+		super.task(task);
+		return this;
+	}
 
 }
