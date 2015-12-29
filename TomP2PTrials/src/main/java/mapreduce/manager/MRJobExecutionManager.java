@@ -13,6 +13,8 @@ import mapreduce.execution.computation.context.DHTStorageContext;
 import mapreduce.execution.computation.context.IContext;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
+import mapreduce.execution.task.TaskResult;
+import mapreduce.execution.task.Tasks;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
@@ -22,6 +24,7 @@ import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.IDCreator;
+import mapreduce.utils.Tuple;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -114,39 +117,38 @@ public class MRJobExecutionManager {
 	public void execute(Job job) {
 		isExecutionAborted = false;
 		this.currentlyExecutedJob = job;
-		ProcedureInformation procedureInformation = job.currentProcedure();
-		taskExecutionScheduler.procedureInformation(procedureInformation);
-		logger.info("Got job: " + currentlyExecutedJob.id() + ", starting procedure " + job.currentProcedureIndex() + ", " + procedureInformation);
+		ProcedureInformation previousProcedureInformation = job.currentProcedure();
+		logger.info("Got job: " + currentlyExecutedJob.id() + ", retrieving data for , " + previousProcedureInformation);
 
 		// Get the data for the job's current procedure
 		// this.server = new ThreadPoolExecutor(2, 2, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
-		String jobProcedureDomain = procedureInformation.jobProcedureDomain();
+		String jobProcedureDomainString = previousProcedureInformation.jobProcedureDomainString();
 		// List<FutureGet> futureGetTaskExecutorDomains = syncedArrayList();
 
 		// Get all procedure keys!! Create all the tasks for each key!!!
 		logger.info("run()");
 		logger.info(DomainProvider.PROCEDURE_KEYS);
-		logger.info(jobProcedureDomain);
+		logger.info(jobProcedureDomainString);
 
-		List<Task> tasks = procedureInformation.tasks();
-		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, jobProcedureDomain).addListener(new BaseFutureAdapter<FutureGet>() {
+		List<Task> tasks = previousProcedureInformation.tasks();
+		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, jobProcedureDomainString).addListener(new BaseFutureAdapter<FutureGet>() {
 
 			@Override
 			public void operationComplete(FutureGet future) throws Exception {
-				System.err.println("Job Proc domain: " + jobProcedureDomain);
+				System.err.println("Job Proc domain: " + jobProcedureDomainString);
 				if (future.isSuccess()) {
 					try {
 						if (future.dataMap() != null) {
 							for (Number640 n : future.dataMap().keySet()) {
 								Object key = future.dataMap().get(n).object();
-								Task task = Task.newInstance(key, job.id());
+								Task task = Task.create(key, previousProcedureInformation.jobProcedureDomain());
 								if (tasks.contains(task)) {// Don't need to add it more, got it e.g. from a BC
-									System.err.println("tasks.contains(task)");
+									System.err.println("tasks.contains(" + task + "): " + tasks.contains(task));
 									return;
 								} else {
-									System.err.println("KEY: " + key.toString());
-									dhtConnectionProvider.getAll(key.toString(), jobProcedureDomain).addListener(new BaseFutureAdapter<FutureGet>() {
+									System.err.println("KEY: " + task.id());
+									dhtConnectionProvider.getAll(task.id(), jobProcedureDomainString).addListener(new BaseFutureAdapter<FutureGet>() {
 
 										@Override
 										public void operationComplete(FutureGet future) throws Exception {
@@ -154,10 +156,11 @@ public class MRJobExecutionManager {
 												try {
 													if (future.dataMap() != null) {
 														for (Number640 n : future.dataMap().keySet()) {
-															Object taskExecutorDomain = future.dataMap().get(n).object();
+															Tuple<String, Integer> taskExecutor = (Tuple<String, Integer>) future.dataMap().get(n)
+																	.object();
 
-															System.err.println("taskExecutorDomain: " + taskExecutorDomain);
-															task.finalDataLocationDomains(taskExecutorDomain.toString());
+															System.err.println("taskExecutor: " + taskExecutor);
+															task.addFinalExecutorTaskDomainPart(taskExecutor);
 														}
 														if (!tasks.contains(task)) {
 															System.err.println("!tasks.contains(task)");
@@ -203,48 +206,33 @@ public class MRJobExecutionManager {
 		if (!isExecutionAborted() && task != null && !task.isActive()) {
 			this.executionCounter++;
 			logger.info("Task to execute: " + task);
-
-			List<String> finalDataLocations = task.finalDataLocationDomains();
+			
+			List<Tuple<String, Integer>> executorTaskDomainParts = task.finalExecutorTaskDomainParts();
 			List<Object> valuesCollector = syncedArrayList();
 			List<FutureGet> futureGetData = syncedArrayList();
 
-			TaskUpdateBCMessage message = dhtConnectionProvider.broadcastExecutingTask(task);
-			messageConsumer.queue().add(message);
+			Tuple<String, Integer> taskExecutor = Tuple.create(id, task.executingPeers().get(id).size() - 1);
+			dhtConnectionProvider.broadcastExecutingTask(task, taskExecutor);
+			Tasks.updateStati(task, TaskResult.newInstance().sender(id).status(BCMessageStatus.EXECUTING_TASK),
+					currentlyExecutedJob.maxNrOfFinishedWorkersPerTask());
+
 			// TODO build in that the data retrieval may take a certain number of repetitions when failed before being broadcasted as failed
-			for (int i = 0; i < finalDataLocations.size(); ++i) {
+			for (Tuple<String, Integer> executorTaskDomainPart : executorTaskDomainParts) {
 				// Now we actually wanna retrieve the data from the specified locations...
-				String taskExecutorDomainCombination = currentlyExecutedJob.currentProcedureDomain() + "_" + finalDataLocations.get(i);
-				futureGetData
-						.add(dhtConnectionProvider.getAll(task.id(), taskExecutorDomainCombination).addListener(new BaseFutureAdapter<FutureGet>() {
-
-							@Override
-							public void operationComplete(FutureGet future) throws Exception {
-								if (future.isSuccess()) {
-									try {
-										if (future.dataMap() != null) {
-											for (Number640 n : future.dataMap().keySet()) {
-												valuesCollector.add(((Value) future.dataMap().get(n).object()).value());
-											}
-										}
-									} catch (IOException e) {
-										logger.warn("IOException on getting the data", e);
-									}
-								} else {
-									logger.info("No success on retrieving data for key : " + task.id());
-								}
-							}
-
-						}));
+				futureGetData.add(collectValuesForTask(task, valuesCollector, task.concatenationString(executorTaskDomainPart)));
 			}
+			// Start execution on successful retrieval
+			// Everything here with subsequent procedure!!!!
 			Futures.whenAllSuccess(futureGetData).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 				@Override
 				public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-					IContext context = DHTStorageContext.create().task(task).dhtConnectionProvider(dhtConnectionProvider)
-							.subsequentJobProcedureDomain(currentlyExecutedJob.subsequentJobProcedureDomain());
+					IContext context = DHTStorageContext.create().task(task).taskExecutor(taskExecutor).dhtConnectionProvider(dhtConnectionProvider)
+							.subsequentJobProcedureDomain(currentlyExecutedJob.subsequentProcedure().jobProcedureDomain());
 					// taskExecutor.execute(job.currentProcedure().procedure(), task.id(), valuesCollector, context);
 
+					ProcedureInformation subsequentProcedureInformation = currentlyExecutedJob.subsequentProcedure();
 					context.task().isActive(true);
-					currentlyExecutedJob.currentProcedure().procedure().process(task.id(), valuesCollector, context);
+					subsequentProcedureInformation.procedure().process(task.id(), valuesCollector, context);
 					TaskUpdateBCMessage message = context.broadcastResultHash();
 					messageConsumer.queue().add(message);
 					context.task().isActive(false);
@@ -253,15 +241,15 @@ public class MRJobExecutionManager {
 						@Override
 						public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 							executionCounter--;
-							Task nextTask = taskExecutionScheduler.schedule(currentlyExecutedJob.currentProcedure().tasks());
-							if (currentlyExecutedJob.currentProcedure().isFinished()) {
+							Task nextTask = taskExecutionScheduler.schedule(subsequentProcedureInformation.tasks());
+							if (subsequentProcedureInformation.isFinished()) {
 								// May have been aborted from outside and thus, hasn't finished yet (in case abortExecution(job) was called
 								FinishedProcedureBCMessage message = dhtConnectionProvider.broadcastFinishedAllTasksOfProcedure(currentlyExecutedJob);
 								messageConsumer.queue().add(message);
 								logger.info("Broadcast finished Procedure");
 							} else {
 								logger.info("executing next task");
-								logger.info("tasks: " + currentlyExecutedJob.currentProcedure().tasks());
+								logger.info("tasks: " + subsequentProcedureInformation.tasks());
 								if (canExecute()) {
 									executeTask(nextTask);
 								}
@@ -278,6 +266,29 @@ public class MRJobExecutionManager {
 	// private FutureGet retrieveDataForTask(Task task, String taskExecutorDomain, List<Object> valuesCollector) {
 	// return
 	// }
+
+	private FutureGet collectValuesForTask(Task task, List<Object> valuesCollector, String taskExecutorDomainConcatenation) {
+		return dhtConnectionProvider.getAll(task.id(), taskExecutorDomainConcatenation).addListener(new BaseFutureAdapter<FutureGet>() {
+
+			@Override
+			public void operationComplete(FutureGet future) throws Exception {
+				if (future.isSuccess()) {
+					try {
+						if (future.dataMap() != null) {
+							for (Number640 n : future.dataMap().keySet()) {
+								valuesCollector.add(((Value) future.dataMap().get(n).object()).value());
+							}
+						}
+					} catch (IOException e) {
+						logger.warn("IOException on getting the data", e);
+					}
+				} else {
+					logger.info("No success on retrieving data for key : " + task.id());
+				}
+			}
+
+		});
+	}
 
 	// private void cleanUp() {
 	// server.shutdown();

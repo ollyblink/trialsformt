@@ -23,6 +23,7 @@ import mapreduce.manager.broadcasthandler.messageconsumer.MessageConsumerTestSui
 import mapreduce.manager.conditions.JobBCMessageUpdateCondition;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
+import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -80,12 +81,12 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			int index = jobs.indexOf(job);
 			logger.info("Index: " + index);
 			Job job2 = jobs.get(index);
-			logger.info("job2.currentProcedureIndex() < job.currentProcedureIndex()" + job2.currentProcedureIndex() + " < "
-					+ job.currentProcedureIndex() + " = " + (job2.currentProcedureIndex() < job.currentProcedureIndex()));
-			if (job2.currentProcedureIndex() < job.currentProcedureIndex()) { // next procedure
+			logger.info("job2.currentProcedureIndex() == job.currentProcedureIndex()" + job2.currentProcedure() + " == " + job.currentProcedure()
+					+ " ? " + (job2.currentProcedure().equals(job.currentProcedure())));
+			if (job2.currentProcedure().equals(job.currentProcedure())) { // next procedure
 				jobs.set(index, job); // replaced
-				logger.info("replaced old job with new version as the procedure index increased: from " + job2.currentProcedureIndex() + " to "
-						+ job.currentProcedureIndex());
+				logger.info("replaced old job with new version as the procedure index increased: from " + job2.currentProcedure() + " to "
+						+ job.currentProcedure());
 				// }
 			}
 		}
@@ -167,9 +168,10 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		List<FutureGet> futureGets = SyncedCollectionProvider.syncedArrayList();
 		List<FuturePut> futurePuts = SyncedCollectionProvider.syncedArrayList();
 		for (Task task : tasks) {
-			List<String> finalDataLocationDomains = task.finalDataLocationDomains();
-			for (String finalDataLocationDomain : finalDataLocationDomains) {
-				String combination = job.subsequentJobProcedureDomain() + "_" + finalDataLocationDomain;
+			List<Tuple<String, Integer>> finalExecutorTaskDomainParts = task.finalExecutorTaskDomainParts();
+			for (Tuple<String, Integer> finalDataLocationDomain : finalExecutorTaskDomainParts) {
+
+				String combination = task.concatenationString(finalDataLocationDomain);
 				logger.info("get task keys for task executor domain: " + combination);
 				futureGets.add(this.jobExecutor.dhtConnectionProvider().getAll(DomainProvider.TASK_KEYS, combination)
 						.addListener(new BaseFutureAdapter<FutureGet>() {
@@ -183,9 +185,9 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 											for (Number640 n : future.dataMap().keySet()) {
 												String key = (String) future.dataMap().get(n).object();
 												futurePuts.add(jobExecutor.dhtConnectionProvider().add(key, finalDataLocationDomain,
-														job.subsequentJobProcedureDomain(), false));
+														job.subsequentProcedure().jobProcedureDomainString(), false));
 												futurePuts.add(jobExecutor.dhtConnectionProvider().add(DomainProvider.PROCEDURE_KEYS, key,
-														job.subsequentJobProcedureDomain(), false));
+														job.subsequentProcedure().jobProcedureDomainString(), false));
 											}
 										}
 									} catch (IOException e) {
@@ -224,11 +226,10 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 									} else {
 										// Next procedure!!
 										logger.info("Execute next procedure");
-
+										job.incrementCurrentProcedureIndex();
 										DistributedJobBCMessage message = jobExecutor.dhtConnectionProvider().broadcastNewJob(job);
 										bcMessages.add(message);
-										System.err.println("job.currentProcedureIndex()  : " + job.currentProcedureIndex());
-										System.err.println("bc messages: " + bcMessages);
+										logger.info("job.currentProcedure()  : " + job.currentProcedure()); 
 									}
 								} else {
 									// TODO Well... something has to be done instead... am I right?

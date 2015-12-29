@@ -10,6 +10,7 @@ import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.peers.Number160;
 
@@ -23,7 +24,7 @@ public abstract class AbstractBaseContext implements IContext {
 	protected boolean combine;
 
 	/** NEXT!!! not the current, because the next procedure will use the keys produced for this procedure */
-	protected String subsequentJobProcedureDomain;
+	protected Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain;
 
 	protected AbstractBaseContext() {
 		resetResultHash();
@@ -87,12 +88,13 @@ public abstract class AbstractBaseContext implements IContext {
 		return null;
 	}
 
-	public String subsequentJobProcedureDomain() {
+	@Override
+	public Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain() {
 		return this.subsequentJobProcedureDomain;
 	}
 
 	@Override
-	public AbstractBaseContext subsequentJobProcedureDomain(String subsequentJobProcedureDomain) {
+	public AbstractBaseContext subsequentJobProcedureDomain(Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain) {
 		this.subsequentJobProcedureDomain = subsequentJobProcedureDomain;
 		return this;
 	}
@@ -104,6 +106,12 @@ public abstract class AbstractBaseContext implements IContext {
 	}
 
 	public List<FuturePut> futurePutData() {
+		return null;
+	}
+
+	@Override
+	public DHTStorageContext taskExecutor(Tuple<String, Integer> taskExecutor) {
+		// TODO Auto-generated method stub
 		return null;
 	}
 }

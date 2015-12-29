@@ -25,7 +25,7 @@ public class DesignIdeaJobSubmitter {
 				.create(submitter.id(), null)
 				.fileInputFolderPath(fileInputFolderPath)
 				.maxFileSize(FileSize.THIRTY_TWO_KILO_BYTES)
-				.addSubsequentProcedure(WordCountMapper.newInstance())
+				.addSubsequentProcedure(WordCountMapper.create())
 				.addSubsequentProcedure(WordCountReducer.newInstance())
 				.maxNrOfFinishedWorkersPerTask(maxNumberOfFinishedPeers);
 

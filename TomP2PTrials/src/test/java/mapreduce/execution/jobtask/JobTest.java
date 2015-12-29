@@ -31,11 +31,11 @@ public class JobTest {
 		int counter = 1;
 		List<Task> tasksForProcedure = new ArrayList<Task>();
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
-		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
-		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
-		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
-		tasksForProcedure.add(Task.newInstance(jobId, ("word" + counter++)));
-		Job job = Job.create("ME", PriorityLevel.MODERATE).maxNrOfFinishedWorkersPerTask(3).addSubsequentProcedure(WordCountMapper.newInstance());
+		tasksForProcedure.add(Task.create(jobId, ("word" + counter++)));
+		tasksForProcedure.add(Task.create(jobId, ("word" + counter++)));
+		tasksForProcedure.add(Task.create(jobId, ("word" + counter++)));
+		tasksForProcedure.add(Task.create(jobId, ("word" + counter++)));
+		Job job = Job.create("ME", PriorityLevel.MODERATE).maxNrOfFinishedWorkersPerTask(3).addSubsequentProcedure(WordCountMapper.create());
 		job.procedure(job.currentProcedureIndex()).tasks(tasksForProcedure);
 		assertTrue(job.currentProcedureIndex() == 0);
 
@@ -46,8 +46,8 @@ public class JobTest {
 		assertTrue(job.currentProcedureIndex() == 0);
 
 		List<Task> tasksForProcedure2 = new ArrayList<Task>();
-		tasksForProcedure2.add(Task.newInstance(jobId, ("word" + counter++)));
-		tasksForProcedure2.add(Task.newInstance(jobId, ("word" + counter++)));
+		tasksForProcedure2.add(Task.create(jobId, ("word" + counter++)));
+		tasksForProcedure2.add(Task.create(jobId, ("word" + counter++)));
 		job.addSubsequentProcedure(NullMapReduceProcedure.newInstance());
 		job.procedure(job.currentProcedureIndex()).tasks(tasksForProcedure2);
 
@@ -69,8 +69,8 @@ public class JobTest {
 		Job job = Job.create("ME", PriorityLevel.MODERATE).maxNrOfFinishedWorkersPerTask(3)
 				.addSubsequentProcedure(NullMapReduceProcedure.newInstance());
 		List<Task> list = new ArrayList<Task>();
-		list.add(Task.newInstance("word" + (counter++), job.id()));
-		list.add(Task.newInstance("word" + (counter++), job.id()));
+		list.add(Task.create("word" + (counter++), job.id()));
+		list.add(Task.create("word" + (counter++), job.id()));
 		job.procedure(job.currentProcedureIndex()).tasks(list);
 
 		String[] peers = new String[3];

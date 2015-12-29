@@ -31,78 +31,78 @@ public class MinAssignedWorkersTaskSchedulerTest {
 
 		tasks = new LinkedList<Task>();
 
-		Task task = Task.newInstance("1", "0");
+		Task task = Task.create("1", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.FINISHED_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.newInstance("2", "0");
+		task = Task.create("2", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.newInstance("3", "0");
+		task = Task.create("3", "0");
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.newInstance("4", "0");
+		task = Task.create("4", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.newInstance("5", "0");
+		task = Task.create("5", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.newInstance("6", "0");
+		task = Task.create("6", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.newInstance("7", "0");
+		task = Task.create("7", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.newInstance("8", "0");
+		task = Task.create("8", "0");
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.newInstance("9", "0");
+		task = Task.create("9", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 		//
-		task = Task.newInstance("10", "0");
+		task = Task.create("10", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.newInstance("11", "0");
+		task = Task.create("11", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(true);
 		tasks.add(task);
 
-		task = Task.newInstance("12", "0");
+		task = Task.create("12", "0");
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
@@ -175,7 +175,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 
 			@Override
 			public void run() {
-				assertEquals(Task.newInstance("1", "0"), taskScheduler.schedule(tasks2));
+				assertEquals(Task.create("1", "0"), taskScheduler.schedule(tasks2));
 			}
 
 		});
@@ -197,7 +197,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				tasks2.add(Task.newInstance("1", "0"));
+				tasks2.add(Task.create("1", "0"));
 
 			}
 

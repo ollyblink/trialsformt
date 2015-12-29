@@ -22,7 +22,7 @@ public class TaskTest {
 	public static void setUpBeforeClass() throws Exception {
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
 
-		task = Task.newInstance(jobId, "word");
+		task = Task.create(jobId, "word");
 	}
 
 	@AfterClass

@@ -57,10 +57,10 @@ public class MRJobExecutionManagerTest {
 
 	@Test
 	public void test() throws Exception {
-		Job job = Job.create("TEST").addSubsequentProcedure(WordCountMapper.newInstance()).addSubsequentProcedure(WordCountReducer.newInstance());
+		Job job = Job.create("TEST").addSubsequentProcedure(WordCountMapper.create()).addSubsequentProcedure(WordCountReducer.newInstance());
 		String key = "file1";
 		String value = "hello world hello world hello world world world world";
-		Task task = Task.newInstance(key, job.id());
+		Task task = Task.create(key, job.id());
 		String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, Tuple.create(dhtConnectionProvider.owner(), 0));
 
 		ProcedureInformation pI = job.currentProcedure();

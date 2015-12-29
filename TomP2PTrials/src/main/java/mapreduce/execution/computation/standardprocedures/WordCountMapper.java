@@ -24,7 +24,7 @@ public class WordCountMapper implements IMapReduceProcedure {
 		}
 	}
 
-	public static IMapReduceProcedure newInstance() {
+	public static IMapReduceProcedure create() {
 		return new WordCountMapper();
 	}
 

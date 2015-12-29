@@ -5,11 +5,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.TaskResult;
-import mapreduce.execution.task.Tasks;
 import mapreduce.utils.DomainProvider;
+import mapreduce.utils.Tuple;
 
 public final class ProcedureInformation implements Serializable {
 
@@ -20,23 +18,20 @@ public final class ProcedureInformation implements Serializable {
 	private final String jobId;
 	private final IMapReduceProcedure procedure;
 	private final int procedureIndex;
-	private final int submissionNumber;
 
 	private boolean isFinished;
 	private List<Task> tasks;
 
-	private ProcedureInformation(String jobId, IMapReduceProcedure procedure, int procedureIndex, int submissionNumber) {
+	private ProcedureInformation(String jobId, IMapReduceProcedure procedure, int procedureIndex) {
 		this.jobId = jobId;
 		this.procedure = procedure;
 		this.procedureIndex = procedureIndex;
-		this.submissionNumber = submissionNumber;
 		this.isFinished = false;
 		this.tasks = Collections.synchronizedList(new ArrayList<>());
-		// this.nrOfProcedureDomains = 0;
 	}
 
-	public static ProcedureInformation create(String jobId, IMapReduceProcedure procedure, int procedureIndex, int submissionNumber) {
-		return new ProcedureInformation(jobId, procedure, procedureIndex, submissionNumber);
+	public static ProcedureInformation create(String jobId, IMapReduceProcedure procedure, int procedureIndex) {
+		return new ProcedureInformation(jobId, procedure, procedureIndex);
 	}
 
 	public IMapReduceProcedure procedure() {
@@ -49,10 +44,6 @@ public final class ProcedureInformation implements Serializable {
 
 	public int procedureIndex() {
 		return this.procedureIndex;
-	}
-
-	public int submissionNumber() {
-		return this.submissionNumber;
 	}
 
 	public ProcedureInformation isFinished(boolean isFinished) {
@@ -83,7 +74,9 @@ public final class ProcedureInformation implements Serializable {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((procedure == null) ? 0 : procedure.hashCode());
+		result = prime * result + ((jobId == null) ? 0 : jobId.hashCode());
+		result = prime * result + ((procedure == null) ? 0 : procedure.getClass().getSimpleName().hashCode());
+		result = prime * result + procedureIndex;
 		return result;
 	}
 
@@ -96,21 +89,33 @@ public final class ProcedureInformation implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		ProcedureInformation other = (ProcedureInformation) obj;
+		if (jobId == null) {
+			if (other.jobId != null)
+				return false;
+		} else if (!jobId.equals(other.jobId))
+			return false;
 		if (procedure == null) {
 			if (other.procedure != null)
 				return false;
-		} else if (!procedure.equals(other.procedure))
+		} else if (!procedure.getClass().getSimpleName().equals(other.procedure.getClass().getSimpleName()))
+			return false;
+		if (procedureIndex != other.procedureIndex)
 			return false;
 		return true;
 	}
 
-	@Override
-	public String toString() {
-		return "ProcedureInformation [procedure=" + procedure + ", isFinished=" + isFinished + ", tasks=" + tasks + "]";
+	public Tuple<String, Tuple<String, Integer>> jobProcedureDomain() {
+		return Tuple.create(jobId, Tuple.create(procedure.getClass().getSimpleName(), procedureIndex));
 	}
 
-	public String jobProcedureDomain() {
-		return DomainProvider.INSTANCE.jobProcedureDomain(jobId, procedure.getClass().getSimpleName(), procedureIndex, submissionNumber);
+	public String jobProcedureDomainString() {
+		return DomainProvider.INSTANCE.jobProcedureDomain(jobProcedureDomain());
+	}
+
+	@Override
+	public String toString() {
+		return "ProcedureInformation [jobId=" + jobId + ", procedure=" + procedure + ", procedureIndex=" + procedureIndex + ", isFinished="
+				+ isFinished + ", tasks=" + tasks + "]";
 	}
 
 }

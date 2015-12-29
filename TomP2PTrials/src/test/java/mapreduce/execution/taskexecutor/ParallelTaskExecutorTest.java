@@ -40,8 +40,8 @@ public class ParallelTaskExecutorTest {
 
 	@Test
 	public void test() throws InterruptedException {
-		Task task = Task.newInstance("text1", "0");
-		ProcedureInformation info = ProcedureInformation.create("0", WordCountMapper.newInstance(), 0, 0).addTask(task);
+		Task task = Task.create("text1", "0");
+		ProcedureInformation info = ProcedureInformation.create("0", WordCountMapper.create(), 0, 0).addTask(task);
 
 		PseudoStorageContext storeContext = PseudoStorageContext.newInstance();
 
@@ -90,7 +90,7 @@ public class ParallelTaskExecutorTest {
 			@Override
 			public void run() {
 				while (!executor.abortedTaskExecution()) {
-					executor.execute(WordCountMapper.newInstance(), key, values, context);
+					executor.execute(WordCountMapper.create(), key, values, context);
 					executor.abortTaskExecution();
 				}
 

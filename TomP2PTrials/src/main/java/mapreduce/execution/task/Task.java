@@ -10,6 +10,9 @@ import java.util.List;
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
+import mapreduce.utils.DomainProvider;
+import mapreduce.utils.SyncedCollectionProvider;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 
 public class Task implements Serializable, Comparable<Task> {
@@ -22,7 +25,8 @@ public class Task implements Serializable, Comparable<Task> {
 
 	/** the task's key is also its ID */
 	private Object key;
-	private String jobId;
+	private Tuple<String, Tuple<String, Integer>> jobProcedureDomain;
+	// private String jobId;
 	private boolean isFinished;
 
 	private ListMultimap<String, BCMessageStatus> executingPeers; // String here: JobSubmitter/Executor id
@@ -37,28 +41,28 @@ public class Task implements Serializable, Comparable<Task> {
 	/**
 	 * Rejected data locations that need to be removed
 	 */
-	private List<String> removableTaskExecutorDomains;// String here: JobSubmitter/Executor id +"_"+locationIndex
+	private List<Tuple<String, Integer>> rejectedExecutorTaskDomainParts;// String here: JobSubmitter/Executor id
 	/**
 	 * Data location chosen to be the data that remains in the DHT of all the peers that finished the task in executingPeers (above)... The Integer
 	 * value is actually the index in the above multimap of the value (Collection) for that PeerAddress key
 	 */
-	private List<String> finalTaskExecutorDomains;// String here: JobSubmitter/Executor id +"_"+locationIndex
+	private List<Tuple<String, Integer>> finalExecutorTaskDomainParts;// String here: JobSubmitter/Executor id
 
 	private volatile boolean isActive;
 
-	private Task(Object key, String jobId) {
+	private Task(Object key, Tuple<String, Tuple<String, Integer>> jobProcedureDomain) {
 		this.key = key;
-		this.jobId = jobId;
+		this.jobProcedureDomain = jobProcedureDomain;
 		this.executingPeers = syncedListMultimap();
 		this.taskResults = syncedListMultimap();
 		this.reverseTaskResults = syncedListMultimap();
-		this.finalTaskExecutorDomains = syncedArrayList();
-		this.removableTaskExecutorDomains = syncedArrayList();
+		this.finalExecutorTaskDomainParts = syncedArrayList();
+		this.rejectedExecutorTaskDomainParts = syncedArrayList();
 		this.isFinished = false;
 	}
 
-	public static Task newInstance(Object key, String jobId) {
-		return new Task(key, jobId);
+	public static Task create(Object key, Tuple<String, Tuple<String, Integer>> jobProcedureDomain) {
+		return new Task(key, jobProcedureDomain);
 	}
 
 	public String id() {
@@ -66,7 +70,7 @@ public class Task implements Serializable, Comparable<Task> {
 	}
 
 	public String jobId() {
-		return jobId;
+		return jobProcedureDomain.first();
 	}
 
 	public boolean isFinished() {
@@ -76,10 +80,6 @@ public class Task implements Serializable, Comparable<Task> {
 	public Task isFinished(boolean isFinished) {
 		this.isFinished = isFinished;
 		return this;
-	}
-
-	public List<String> removableTaskExecutorDomains() {
-		return this.removableTaskExecutorDomains;
 	}
 
 	public ListMultimap<String, BCMessageStatus> executingPeers() {
@@ -94,22 +94,59 @@ public class Task implements Serializable, Comparable<Task> {
 		return reverseTaskResults;
 	}
 
-	public List<String> finalDataLocationDomains() {
-		return finalTaskExecutorDomains;
+	public List<Tuple<String, Integer>> finalExecutorTaskDomainParts() {
+		return finalExecutorTaskDomainParts;
 	}
 
-	public Task finalDataLocationDomains(String... finalTaskExecutorDomains) {
-		Collections.addAll(this.finalTaskExecutorDomains, finalTaskExecutorDomains);
+	public Task addFinalExecutorTaskDomainPart(Tuple<String, Integer> t) {
+		if (t != null) {
+			this.finalExecutorTaskDomainParts.add(t);
+		}
 		return this;
 	}
 
- 
+	public List<Tuple<String, Integer>> rejectedExecutorTaskDomainParts() {
+		return this.rejectedExecutorTaskDomainParts;
+	}
+
+	public Task addRejectedExecutorTaskDomainPart(Tuple<String, Integer> t) {
+		if (t != null) {
+			this.rejectedExecutorTaskDomainParts.add(t);
+		}
+		return this;
+	}
+
+	/**
+	 * Puts a new result hash
+	 * 
+	 * @param sender
+	 * @param location
+	 * @param resultHash
+	 * @return returns the number of times this result hash has been achieved.
+	 */
+	public int updateResultHash(Tuple<String, Integer> t, Number160 resultHash) {
+		String executorTaskDomain = DomainProvider.INSTANCE.executorTaskDomain(Tuple.create(key.toString(), t));
+		taskResults.put(resultHash, executorTaskDomain);
+		reverseTaskResults.put(executorTaskDomain, resultHash);
+		return taskResults.get(resultHash).size();
+
+	}
+
+	public Number160 resultHash(Tuple<String, Integer> t) {
+		String executorTaskDomain = DomainProvider.INSTANCE.executorTaskDomain(Tuple.create(key.toString(), t));
+		List<Number160> resultHashs = reverseTaskResults.get(executorTaskDomain);
+		if (resultHashs.size() > 0) {
+			return resultHashs.get(0);
+		} else {
+			return null;
+		}
+	}
 
 	@Override
 	public String toString() {
-		return "Task [key=" + key + ", jobId=" + jobId + ", isFinished=" + isFinished + ", executingPeers=" + executingPeers + ", taskResults="
-				+ taskResults + ", reverseTaskResults=" + reverseTaskResults + ", removableTaskExecutorDomains=" + removableTaskExecutorDomains
-				+ ", finalTaskExecutorDomains=" + finalTaskExecutorDomains + ", isActive=" + isActive + "]";
+		return "Task [key=" + key + ", jobId=" + jobProcedureDomain.first() + ", isFinished=" + isFinished + ", executingPeers=" + executingPeers
+				+ ", taskResults=" + taskResults + ", reverseTaskResults=" + reverseTaskResults + ", removableTaskExecutorDomains="
+				+ rejectedExecutorTaskDomainParts + ", finalTaskExecutorDomains=" + finalExecutorTaskDomainParts + ", isActive=" + isActive + "]";
 	}
 
 	@Override
@@ -148,5 +185,32 @@ public class Task implements Serializable, Comparable<Task> {
 
 	public boolean isActive() {
 		return this.isActive;
+	}
+
+	public Tuple<String, Tuple<String, Integer>> executorTaskDomain(Tuple<String, Integer> executorTaskDomainPart) {
+		if (executorTaskDomainPart != null) {
+			if (executingPeers.containsKey(executorTaskDomainPart.first())) {
+				if (executingPeers.get(executorTaskDomainPart.first()).size() >= executorTaskDomainPart.second()) {
+					return Tuple.create(key.toString(), executorTaskDomainPart);
+				}
+			}
+		}
+		return null;
+	}
+
+	public String executorTaskDomainString(Tuple<String, Integer> executorTaskDomainPart) {
+		Tuple<String, Tuple<String, Integer>> executorTaskDomain = executorTaskDomain(executorTaskDomainPart);
+		if (executorTaskDomain != null) {
+			return DomainProvider.INSTANCE.executorTaskDomain(executorTaskDomain);
+		}
+		return null;
+	}
+
+	public String concatenationString(Tuple<String, Integer> executorTaskDomainPart) {
+		Tuple<String, Tuple<String, Integer>> executorTaskDomain = executorTaskDomain(executorTaskDomainPart);
+		if (jobProcedureDomain != null && executorTaskDomain != null) {
+			DomainProvider.INSTANCE.concatenation(jobProcedureDomain, executorTaskDomain);
+		}
+		return null;
 	}
 }

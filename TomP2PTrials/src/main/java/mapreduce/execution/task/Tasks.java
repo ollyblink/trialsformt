@@ -168,20 +168,20 @@ public class Tasks {
 				jobStati.removeLastOccurrence(BCMessageStatus.EXECUTING_TASK);
 				jobStati.addLast(currentStatus);
 				int locationIndex = jobStati.size() - 1;
-				int nrOfResultsWithHash = updateResultHash(task, sender, locationIndex, toUpdate.resultHash);
+				int nrOfResultsWithHash = task.updateResultHash(Tuple.create(sender, locationIndex), toUpdate.resultHash);
 				boolean bestOfAchieved = nrOfResultsWithHash == bestOfMaxNrOfFinishedWorkersWithSameResultHash(maxNrOfFinishedWorkers);
 				boolean enoughWorkersFinished = totalNumberOfFinishedExecutions(task) >= maxNrOfFinishedWorkers;
 
 				if (bestOfAchieved || enoughWorkersFinished) {
 					task.isFinished(true);
-					task.finalDataLocationDomains(Tuple.create(sender, locationIndex).combine());
+					task.addFinalExecutorTaskDomainPart(Tuple.create(sender, locationIndex));
 					for (String p : executingPeers.keySet()) {
 						List<BCMessageStatus> list = executingPeers.get(p);
 						for (int i = 0; i < list.size(); ++i) {
-							String toRemove = Tuple.create(p, i).combine();
-							if (!task.finalDataLocationDomains().contains(toRemove)) {
-								synchronized (task.removableTaskExecutorDomains()) {
-									task.removableTaskExecutorDomains().add(toRemove);
+							Tuple<String, Integer> toRemove = Tuple.create(p, i);
+							if (!task.finalExecutorTaskDomainParts().contains(toRemove)) {
+								synchronized (task.rejectedExecutorTaskDomainParts()) {
+									task.addRejectedExecutorTaskDomainPart(toRemove);
 								}
 							}
 						}
@@ -190,35 +190,14 @@ public class Tasks {
 			} else if (currentStatus == BCMessageStatus.EXECUTING_TASK && !containsExecuting && !task.isFinished()) {
 				jobStati.addLast(currentStatus);
 			} else {
-				logger.warn(
-						"updateStati:Ignored update for: received " + toUpdate + " for job stati of " + sender + " with stati " + jobStati);
+				logger.warn("updateStati:Ignored update for: received " + toUpdate + " for job stati of " + sender + " with stati " + jobStati);
 			}
 
 			executingPeers.putAll(sender, jobStati);
 		}
 	}
 
-	/**
-	 * Puts a new result hash
-	 * 
-	 * @param sender
-	 * @param location
-	 * @param resultHash
-	 * @return returns the number of times this result hash has been achieved.
-	 */
-	public static int updateResultHash(Task task, String peerAddress, Integer location, Number160 resultHash) {
-		String tuple = Tuple.create(peerAddress, location).combine();
-		task.taskResults().put(resultHash, tuple);
-		task.reverseTaskResults().put(tuple, resultHash);
-		return task.taskResults().get(resultHash).size();
-
-	}
-
-	public static Number160 resultHash(Task task, String peerAddress, Integer location) {
-		return task.reverseTaskResults().get(Tuple.create(peerAddress, location).combine()).get(0);
-	}
-
-	private static int bestOfMaxNrOfFinishedWorkersWithSameResultHash(int maxNrOfFinishedWorkers) {
+	public static int bestOfMaxNrOfFinishedWorkersWithSameResultHash(int maxNrOfFinishedWorkers) {
 		return Math.round((((float) maxNrOfFinishedWorkers) / 2f));
 	}
 

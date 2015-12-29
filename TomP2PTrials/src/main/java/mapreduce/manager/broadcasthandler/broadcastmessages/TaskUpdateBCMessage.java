@@ -3,6 +3,7 @@ package mapreduce.manager.broadcasthandler.broadcastmessages;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 
 public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
@@ -69,5 +70,6 @@ public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 		super.task(task);
 		return this;
 	}
+ 
 
 }

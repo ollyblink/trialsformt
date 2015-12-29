@@ -33,8 +33,8 @@ public class DHTStorageContextTest {
 		Thread.sleep(3000);
 
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE);
-		Task task = Task.newInstance("hello", job.id());
-		task.finalDataLocationDomains(Tuple.create(executor, 0).combine());
+		Task task = Task.create("hello", job.id());
+		task.addFinalExecutorTaskDomainPart(Tuple.create(executor, 0).combine());
 
 		DHTStorageContext context = DHTStorageContext.create().dhtConnectionProvider(dhtConnectionProvider).task(task)
 				.subsequentJobProcedureDomain(job.subsequentJobProcedureDomain());

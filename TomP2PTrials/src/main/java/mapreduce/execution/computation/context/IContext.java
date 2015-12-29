@@ -7,6 +7,7 @@ import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.peers.Number160;
 
@@ -34,11 +35,13 @@ public interface IContext {
 
 	public TaskUpdateBCMessage broadcastResultHash();
 
-	public String subsequentJobProcedureDomain();
+	public Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain();
 
-	public IContext subsequentJobProcedureDomain(String subsequentJobProcedureDomain);
+	public IContext subsequentJobProcedureDomain(Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain);
 
 	public IContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider);
 
 	public List<FuturePut> futurePutData();
+
+	DHTStorageContext taskExecutor(Tuple<String, Integer> taskExecutor);
 }

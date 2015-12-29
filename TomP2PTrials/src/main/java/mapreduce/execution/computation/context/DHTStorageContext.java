@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
@@ -24,6 +25,8 @@ public class DHTStorageContext extends AbstractBaseContext {
 	private IDHTConnectionProvider dhtConnectionProvider;
 
 	private List<FuturePut> futurePutData = SyncedCollectionProvider.syncedArrayList();
+
+	private Tuple<String, Integer> taskExecutor;
 
 	// private ListMultimap<String, Object> tmpKeyValues;
 	//
@@ -55,8 +58,11 @@ public class DHTStorageContext extends AbstractBaseContext {
 
 		updateResultHash(keyOut, valueOut);
 
-		String executorTaskDomain = DomainProvider.INSTANCE.executorTaskDomain(task,
-				Tuple.create(dhtConnectionProvider.owner(), task.executingPeers().get(dhtConnectionProvider.owner()).size() - 1));
+		String producer = dhtConnectionProvider.owner();
+		Integer location = task.executingPeers().get(dhtConnectionProvider.owner()).size() - 1;
+		Task newTask = Task.create(keyOut, subsequentJobProcedureDomain);
+
+		String executorTaskDomain = task.concatenationString(Tuple.create(producer, location));
 
 		String combinedExecutorTaskDomain = subsequentJobProcedureDomain + "_" + executorTaskDomain;
 		List<FuturePut> futureProcedureKeys = SyncedCollectionProvider.syncedArrayList();
@@ -107,18 +113,13 @@ public class DHTStorageContext extends AbstractBaseContext {
 
 	}
 
-	// private boolean dataLimitAchieved() {
-	//
-	// long dataSizes = 0;
-	// for (String key : tmpKeyValues.keySet()) {
-	// dataSizes += key.getBytes(Charset.forName("UTF-8")).length;
-	// for (Object value : tmpKeyValues.get(key)) {
-	// dataSizes += value.toString().getBytes(Charset.forName("UTF-8")).length;
-	// }
-	// }
-	// return dataSizes >= maxDataSize.value();
-	// }
+	@Override
+	public DHTStorageContext taskExecutor(Tuple<String, Integer> taskExecutor) {
+		this.taskExecutor = taskExecutor;
+		return this;
+	}
 
+	@Override
 	public DHTStorageContext task(Task task) {
 		this.task = task;
 		return this;
@@ -159,17 +160,12 @@ public class DHTStorageContext extends AbstractBaseContext {
 	@Override
 	public TaskUpdateBCMessage broadcastResultHash() {
 		logger.info("Broadcast result ");
-		return dhtConnectionProvider.broadcastFinishedTask(task, resultHash());
+		return dhtConnectionProvider.broadcastFinishedTask(task, taskExecutor, resultHash());
 	}
 
 	@Override
-	public String subsequentJobProcedureDomain() {
-		return super.subsequentJobProcedureDomain();
-	}
-
-	@Override
-	public DHTStorageContext subsequentJobProcedureDomain(String jobProcedureDomain) {
-		return (DHTStorageContext) super.subsequentJobProcedureDomain(jobProcedureDomain);
+	public DHTStorageContext subsequentJobProcedureDomain(Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain) {
+		return (DHTStorageContext) super.subsequentJobProcedureDomain(subsequentJobProcedureDomain);
 	}
 
 	@Override

@@ -8,11 +8,13 @@ import java.util.List;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.standardprocedures.EndReached;
+import mapreduce.execution.computation.standardprocedures.Start;
 import mapreduce.execution.task.Task;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
+import mapreduce.utils.Tuple;
 
 public class Job implements Serializable, Comparable<Job> {
 
@@ -79,7 +81,7 @@ public class Job implements Serializable, Comparable<Job> {
 	private long timeToLiveInMs;
 
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
-	private int submissionCounter;
+	private int jobSubmissionCounter;
 
 	private Job(String jobSubmitterID, PriorityLevel... priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
@@ -89,6 +91,9 @@ public class Job implements Serializable, Comparable<Job> {
 		this.creationTime = System.currentTimeMillis();
 		this.currentProcedureIndex = 0;
 		this.procedures = Collections.synchronizedList(new ArrayList<>());
+		//Add initial
+		ProcedureInformation procedureInformation = ProcedureInformation.create(id(), Start.create(), this.procedures.size());
+		this.procedures.add(procedureInformation);
 	}
 
 	public static Job create(String jobSubmitterID, PriorityLevel... priorityLevel) {
@@ -97,7 +102,7 @@ public class Job implements Serializable, Comparable<Job> {
 	}
 
 	public String id() {
-		return this.id;
+		return this.id + "_SUBMISSION_NR(" + jobSubmissionCounter + ")";
 	}
 
 	public String jobSubmitterID() {
@@ -117,7 +122,7 @@ public class Job implements Serializable, Comparable<Job> {
 		try {
 			return procedures.get(index);
 		} catch (Exception e) {
-			return ProcedureInformation.create(id, EndReached.create(), procedures.size(), 0);
+			return ProcedureInformation.create(id(), EndReached.create(), procedures.size());
 		}
 	}
 
@@ -149,38 +154,26 @@ public class Job implements Serializable, Comparable<Job> {
 	 * @return
 	 */
 	public Job addSubsequentProcedure(IMapReduceProcedure procedure) {
-		ProcedureInformation procedureInformation = ProcedureInformation.create(id, procedure, this.procedures.size(), 0);
+		ProcedureInformation procedureInformation = ProcedureInformation.create(id(), procedure, this.procedures.size());
 		this.procedures.add(procedureInformation);
 		return this;
 	}
-
-	/**
-	 * convenience method, same as currentProcedureIndex()+1
-	 * 
-	 * @return the index of the procedure following the currently executed procedure
-	 */
-	public int subsequentProcedureIndex() {
-		return this.currentProcedureIndex + 1;
-	}
-
-	public int currentProcedureIndex() {
-		return currentProcedureIndex;
-	}
-
+ 
+ 
 	public void incrementCurrentProcedureIndex() {
 		++this.currentProcedureIndex;
 	}
 
 	public int submissionCounter() {
-		return this.submissionCounter;
+		return this.jobSubmissionCounter;
 	}
 
 	public int incrementSubmissionCounter() {
-		return ++this.submissionCounter;
+		return ++this.jobSubmissionCounter;
 	}
 
 	public void resetSubmissionCounter() {
-		this.submissionCounter = 0;
+		this.jobSubmissionCounter = 0;
 	}
 
 	public int maxNrOfFinishedWorkersPerTask() {
@@ -239,16 +232,16 @@ public class Job implements Serializable, Comparable<Job> {
 
 	@Override
 	public String toString() {
-		return id + "_SUBMISSIONNR_" + submissionCounter + "_SUBMITTER_" + jobSubmitterID;
+		return id();
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((id() == null) ? 0 : id().hashCode());
 		result = prime * result + ((jobSubmitterID == null) ? 0 : jobSubmitterID.hashCode());
-		result = prime * result + submissionCounter;
+		result = prime * result + jobSubmissionCounter;
 		return result;
 	}
 
@@ -261,17 +254,17 @@ public class Job implements Serializable, Comparable<Job> {
 		if (getClass() != obj.getClass())
 			return false;
 		Job other = (Job) obj;
-		if (id == null) {
-			if (other.id != null)
+		if (id() == null) {
+			if (other.id() != null)
 				return false;
-		} else if (!id.equals(other.id))
+		} else if (!id().equals(other.id()))
 			return false;
 		if (jobSubmitterID == null) {
 			if (other.jobSubmitterID != null)
 				return false;
 		} else if (!jobSubmitterID.equals(other.jobSubmitterID))
 			return false;
-		if (submissionCounter != other.submissionCounter)
+		if (jobSubmissionCounter != other.jobSubmissionCounter)
 			return false;
 		return true;
 	}
@@ -286,16 +279,15 @@ public class Job implements Serializable, Comparable<Job> {
 		job.maxNrOfFinishedWorkersPerTask = maxNrOfFinishedWorkersPerTask;
 		job.procedures = SyncedCollectionProvider.syncedArrayList();
 		for (ProcedureInformation pI : procedures) {
-			ProcedureInformation copyPI = ProcedureInformation.create(job.id, pI.procedure(), pI.procedureIndex(), pI.submissionNumber())
-					.isFinished(pI.isFinished());
+			ProcedureInformation copyPI = ProcedureInformation.create(job.id(), pI.procedure(), pI.procedureIndex()).isFinished(pI.isFinished());
 			List<Task> tasks = copyPI.tasks();
 			for (Task task : pI.tasks()) {
-				Task taskCopy = Task.newInstance(task.id(), task.jobId()); // NO DEEP TASK COPY
+				Task taskCopy = Task.create(task.id(), copyPI.jobProcedureDomain()); // NO DEEP TASK COPY
 				tasks.add(taskCopy);
 			}
 			job.procedures.add(pI);
 		}
-		job.submissionCounter = submissionCounter;
+		job.jobSubmissionCounter = jobSubmissionCounter;
 		job.timeToLiveInMs = timeToLiveInMs;
 		job.useLocalStorageFirst = useLocalStorageFirst;
 		return job;
@@ -325,11 +317,4 @@ public class Job implements Serializable, Comparable<Job> {
 		}
 	}
 
-	public String subsequentJobProcedureDomain() {
-		return subsequentProcedure().jobProcedureDomain();
-	}
-
-	public String currentProcedureDomain() {
-		return currentProcedure().jobProcedureDomain();
-	}
 }

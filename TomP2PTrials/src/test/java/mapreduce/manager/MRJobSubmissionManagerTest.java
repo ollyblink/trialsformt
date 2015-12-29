@@ -47,7 +47,7 @@ public class MRJobSubmissionManagerTest {
 		jobSubmissionManager = MRJobSubmissionManager.newInstance(dhtConnectionProvider);
 
 		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_KILO_BYTES)
-				.addSubsequentProcedure(WordCountMapper.newInstance());
+				.addSubsequentProcedure(WordCountMapper.create());
 		jobSubmissionManager.submit(job);
 
 		final ListMultimap<Object, Object> toCheck = getToCheck(fileInputFolderPath);
@@ -171,7 +171,7 @@ public class MRJobSubmissionManagerTest {
 											for (String key : vals.keySet())
 
 											{
-												context.task(Task.newInstance(key, job.id()));
+												context.task(Task.create(key, job.id()));
 												job.currentProcedure().procedure().process(key, vals.get(key), context);
 
 											}
@@ -246,7 +246,7 @@ public class MRJobSubmissionManagerTest {
 				List<Object> values = new ArrayList<>();
 				values.add(line);
 				System.err.println(line);
-				WordCountMapper.newInstance().process(fileInputFolderPath + "/testfile.txt", values, storage);
+				WordCountMapper.create().process(fileInputFolderPath + "/testfile.txt", values, storage);
 			}
 
 			reader.close();

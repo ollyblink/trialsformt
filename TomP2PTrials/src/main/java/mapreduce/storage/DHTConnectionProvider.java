@@ -237,17 +237,16 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public TaskUpdateBCMessage broadcastExecutingTask(Task task) {
-		TaskUpdateBCMessage message = TaskUpdateBCMessage.newExecutingTaskInstance().task(task).sender(this.owner());
-		broadcastTaskUpdate(task, message);
-		return message;
-
+	public TaskUpdateBCMessage broadcastExecutingTask(Task task, Tuple<String, Integer> taskExecutor) {
+		TaskUpdateBCMessage message = TaskUpdateBCMessage.newExecutingTaskInstance().task(task).sender(taskExecutor.first());
+		broadcastTaskUpdate(task, taskExecutor, message);
+		return message; 
 	}
 
 	@Override
-	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Number160 resultHash) {
-		TaskUpdateBCMessage message = TaskUpdateBCMessage.newFinishedTaskInstance().resultHash(resultHash).task(task).sender(this.owner());
-		broadcastTaskUpdate(task, message);
+	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Tuple<String, Integer> taskExecutor, Number160 resultHash) {
+		TaskUpdateBCMessage message = TaskUpdateBCMessage.newFinishedTaskInstance().task(task).sender(taskExecutor.first()).resultHash(resultHash);
+		broadcastTaskUpdate(task, taskExecutor, message);
 		return message;
 	}
 
@@ -258,11 +257,9 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	// return message;
 	// }
 
-	public void broadcastTaskUpdate(Task task, IBCMessage message) {
+	public void broadcastTaskUpdate(Task task, Tuple<String, Integer> taskExecutor, IBCMessage message) {
 		try {
-			int currentStatusIndex = task.executingPeers().get(owner).size() - 1;
-			Tuple<String, Integer> taskExecutor = Tuple.create(owner, currentStatusIndex);
-			Number160 taskHash = Number160.createHash(DomainProvider.INSTANCE.executorTaskDomain(task, taskExecutor));
+			Number160 taskHash = Number160.createHash(task.executorTaskDomainString(taskExecutor));
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(taskHash, taskHash, taskHash, taskHash), new Data(message));
 			currentExecutingPeer().peer().broadcast(taskHash).dataMap(dataMap).start();
@@ -273,7 +270,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	public void broadcastJobUpdate(Job job, IBCMessage message) {
 		try {
-			Number160 jobHash = Number160.createHash(DomainProvider.INSTANCE.jobProcedureDomain(job));
+			Number160 jobHash = Number160.createHash(job.currentProcedure().jobProcedureDomainString());
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
 			currentExecutingPeer().peer().broadcast(jobHash).dataMap(dataMap).start();
@@ -364,11 +361,5 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		}
 		return null;
 	}
-
-	@Override
-	public String taskExecutorDomain(Task task) {
-		return DomainProvider.INSTANCE.executorTaskDomain(task, Tuple.create(owner(), 0));
-	}
- 
 
 }

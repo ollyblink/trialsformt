@@ -11,6 +11,7 @@ import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedProcedureBCM
 import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.JobFailedBCMessage;
 import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
+import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.peers.Number160;
@@ -46,11 +47,11 @@ public interface IDHTConnectionProvider {
 
 	// public JobFailedBCMessage broadcastFailedJob(Job job);
 
-	public TaskUpdateBCMessage broadcastExecutingTask(Task task);
+	public TaskUpdateBCMessage broadcastExecutingTask(Task task, Tuple<String, Integer> taskExecutor);
 
 	// public TaskUpdateBCMessage broadcastFailedTask(Task taskToDistribute);
 
-	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Number160 resultHash);
+	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Tuple<String, Integer> taskExecutor, Number160 resultHash);
 
 	public FinishedProcedureBCMessage broadcastFinishedAllTasksOfProcedure(Job job);
 
@@ -101,7 +102,5 @@ public interface IDHTConnectionProvider {
 	public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
 
 	public IDHTConnectionProvider addMessageQueueToBroadcastHandler(BlockingQueue<IBCMessage> bcMessages);
-
-	public String taskExecutorDomain(Task task);
 
 }

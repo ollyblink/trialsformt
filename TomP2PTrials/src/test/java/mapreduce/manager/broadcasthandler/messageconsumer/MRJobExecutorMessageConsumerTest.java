@@ -63,11 +63,11 @@ public class MRJobExecutorMessageConsumerTest {
 	}
 
 	private static void resetJob() {
-		job = Job.create("TEST", PriorityLevel.MODERATE).addSubsequentProcedure(WordCountMapper.newInstance()).maxNrOfFinishedWorkersPerTask(5);
+		job = Job.create("TEST", PriorityLevel.MODERATE).addSubsequentProcedure(WordCountMapper.create()).maxNrOfFinishedWorkersPerTask(5);
 		ProcedureInformation currentProc = job.currentProcedure();
 
 		for (String taskKey : TEST_KEYS) {
-			currentProc.addTask(Task.newInstance(taskKey, job.id()));
+			currentProc.addTask(Task.create(taskKey, job.id()));
 		}
 	}
 
@@ -119,7 +119,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		List<Task> copy = new ArrayList<Task>(TEST_KEYS.length);
 		for (String taskKey : TEST_KEYS) {
-			copy.add(Task.newInstance(taskKey, job.id()));
+			copy.add(Task.create(taskKey, job.id()));
 		}
 
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
@@ -182,7 +182,7 @@ public class MRJobExecutorMessageConsumerTest {
 		//
 		List<Task> copy = new ArrayList<Task>(TEST_KEYS.length);
 		for (String taskKey : TEST_KEYS) {
-			copy.add(Task.newInstance(taskKey, job.id()));
+			copy.add(Task.create(taskKey, job.id()));
 		}
 		int max = job.maxNrOfFinishedWorkersPerTask();
 		for (Task task : copy) {
@@ -225,7 +225,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 		List<Task> copy2 = new ArrayList<Task>(TEST_KEYS.length);
 		for (String taskKey : TEST_KEYS) {
-			copy2.add(Task.newInstance(taskKey, job.id()));
+			copy2.add(Task.create(taskKey, job.id()));
 		}
 		for (Task task : copy2) {
 			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);

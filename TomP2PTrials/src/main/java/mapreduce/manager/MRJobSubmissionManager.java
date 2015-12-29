@@ -17,9 +17,12 @@ import org.slf4j.LoggerFactory;
 import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
+import mapreduce.execution.task.TaskResult;
+import mapreduce.execution.task.Tasks;
 import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmissionManagerMessageConsumer;
+import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
@@ -70,7 +73,7 @@ public class MRJobSubmissionManager {
 		List<String> keysFilePaths = new ArrayList<String>();
 		File file = new File(job.fileInputFolderPath());
 		FileUtils.INSTANCE.getFiles(file, keysFilePaths);
-		List<Task> tasks = new ArrayList<>();
+		// List<Task> tasks = new ArrayList<>();
 		// Adding keys and data to task executor domain
 		for (String keyfilePath : keysFilePaths) {
 			Path path = Paths.get(keyfilePath);
@@ -83,7 +86,7 @@ public class MRJobSubmissionManager {
 				while ((line = reader.readLine()) != null) {
 					String taskValues = taskDataComposer.append(line);
 					if (taskValues != null) {
-						filePartCounter = addDataToDHT(job, file, tasks, keyfilePath, taskValues, filePartCounter);
+						filePartCounter = addDataToDHT(job, file, keyfilePath, taskValues, filePartCounter);
 					}
 				}
 			} catch (IOException x) {
@@ -91,40 +94,45 @@ public class MRJobSubmissionManager {
 			}
 
 			if (taskDataComposer.currentValues() != null) {
-				filePartCounter = addDataToDHT(job, file, tasks, keyfilePath, taskDataComposer.currentValues(), filePartCounter);
+				filePartCounter = addDataToDHT(job, file, keyfilePath, taskDataComposer.currentValues(), filePartCounter);
 				taskDataComposer.reset();
 			}
 		}
 
 	}
 
-	private int addDataToDHT(final Job job, File file, List<Task> tasks, String keyfilePath, String taskValue, int filePartCounter) {
+	private int addDataToDHT(final Job job, File file, String keyfilePath, String taskValue, int filePartCounter) {
 		String fileName = keyfilePath.replace(file.getPath(), "").replace(".", "").replace("\\", "");
 		String taskKey = fileName + "_" + filePartCounter++;
-		Tuple<String, Integer> taskExecutor = Tuple.create(id, 0);
-		Task task = Task.newInstance(taskKey, job.id()).finalDataLocationDomains(taskExecutor.combine());
-		String taskExecutorDomain = DomainProvider.INSTANCE.executorTaskDomain(task, taskExecutor);
 
 		ProcedureInformation pI = job.currentProcedure();
-		String jobProcedureDomain = pI.jobProcedureDomain();
-		// Need the whole thing to be able to distinguish the whole domain
-		String taskExecutorDomainCombination = DomainProvider.INSTANCE.concatenation(pI, task, taskExecutor);
-		tasks.add(task);
+		
+		Task task = Task.create(taskKey, pI.jobProcedureDomain());
+		for (int i = 0; i < Tasks.bestOfMaxNrOfFinishedWorkersWithSameResultHash(job.maxNrOfFinishedWorkersPerTask()); ++i) {
+			Tasks.updateStati(task, TaskResult.newInstance().sender(id).status(BCMessageStatus.EXECUTING_TASK), job.maxNrOfFinishedWorkersPerTask());
+			Tasks.updateStati(task, TaskResult.newInstance().sender(id).status(BCMessageStatus.FINISHED_TASK), job.maxNrOfFinishedWorkersPerTask());
+		}
+		Tuple<String, Integer> taskExecutor = Tuple.create(id, task.executingPeers().get(id).size() - 1);
+
+		String jobProcedureDomainString = pI.jobProcedureDomainString();
+
+		String taskExecutorDomainConcatenation = task.concatenationString(taskExecutor);
+
 		// Add <key, value, taskExecutorDomain>
-		dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomainCombination, true).addListener(new BaseFutureListener<FuturePut>() {
+		dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomainConcatenation, true).addListener(new BaseFutureListener<FuturePut>() {
 
 			@Override
 			public void operationComplete(FuturePut future) throws Exception {
 				if (future.isSuccess()) {
 					// Add <key, taskExecutorDomainPart, jobProcedureDomain> to collect all keys
-					dhtConnectionProvider.add(task.id(), taskExecutorDomain, jobProcedureDomain, false)
+					dhtConnectionProvider.add(task.id(), taskExecutor, jobProcedureDomainString, false)
 							.addListener(new BaseFutureListener<FuturePut>() {
 
 						@Override
 						public void operationComplete(FuturePut future) throws Exception {
 							if (future.isSuccess()) {
 								// Add <PROCEDURE_KEYS, key, jobProcedureDomain> to collect all domains for all keys
-								dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), jobProcedureDomain, false)
+								dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), jobProcedureDomainString, false)
 										.addListener(new BaseFutureListener<FuturePut>() {
 
 									@Override
@@ -164,6 +172,7 @@ public class MRJobSubmissionManager {
 				logger.warn("Exception thrown", t);
 			}
 		});
+
 		return filePartCounter;
 	}
 

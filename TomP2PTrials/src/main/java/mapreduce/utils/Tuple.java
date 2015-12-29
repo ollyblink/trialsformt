@@ -79,8 +79,4 @@ public final class Tuple<A extends Comparable<A>, B> implements Serializable, Co
 		return first.compareTo(o.first);
 	}
 
-	public String combine() {
-		return first + "_" + second;
-	}
-
 }
