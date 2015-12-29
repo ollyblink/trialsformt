@@ -117,88 +117,91 @@ public class MRJobExecutionManager {
 	public void execute(Job job) {
 		isExecutionAborted = false;
 		this.currentlyExecutedJob = job;
-		ProcedureInformation previousProcedureInformation = job.currentProcedure();
-		logger.info("Got job: " + currentlyExecutedJob.id() + ", retrieving data for , " + previousProcedureInformation);
+		// ProcedureInformation previousProcedureInformation = job.currentProcedure();
+		// this.taskExecutionScheduler.procedureInformation(previousProcedureInformation);
 
 		// Get the data for the job's current procedure
 		// this.server = new ThreadPoolExecutor(2, 2, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
-		String jobProcedureDomainString = previousProcedureInformation.jobProcedureDomainString();
+		String dataLocationJobProcedureDomainString = job.currentProcedure().jobProcedureDomainString();
+		logger.info("Got job: " + currentlyExecutedJob.id() + ", retrieving data for , " + dataLocationJobProcedureDomainString);
+
+		Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain = job.subsequentProcedure().jobProcedureDomain();
 		// List<FutureGet> futureGetTaskExecutorDomains = syncedArrayList();
 
 		// Get all procedure keys!! Create all the tasks for each key!!!
-		logger.info("run()");
-		logger.info(DomainProvider.PROCEDURE_KEYS);
-		logger.info(jobProcedureDomainString);
+		List<Task> tasks = job.subsequentProcedure().tasks();
+		logger.info("Retrieve data for domain: " + dataLocationJobProcedureDomainString);
+		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, dataLocationJobProcedureDomainString)
+				.addListener(new BaseFutureAdapter<FutureGet>() {
 
-		List<Task> tasks = previousProcedureInformation.tasks();
-		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, jobProcedureDomainString).addListener(new BaseFutureAdapter<FutureGet>() {
+					@Override
+					public void operationComplete(FutureGet future) throws Exception {
+						logger.info("Job Proc domain: " + dataLocationJobProcedureDomainString);
+						if (future.isSuccess()) {
+							try {
+								if (future.dataMap() != null) {
+									for (Number640 n : future.dataMap().keySet()) {
+										Object key = future.dataMap().get(n).object();
+										Task task = Task.create(key, subsequentJobProcedureDomain);
 
-			@Override
-			public void operationComplete(FutureGet future) throws Exception {
-				System.err.println("Job Proc domain: " + jobProcedureDomainString);
-				if (future.isSuccess()) {
-					try {
-						if (future.dataMap() != null) {
-							for (Number640 n : future.dataMap().keySet()) {
-								Object key = future.dataMap().get(n).object();
-								Task task = Task.create(key, previousProcedureInformation.jobProcedureDomain());
-								if (tasks.contains(task)) {// Don't need to add it more, got it e.g. from a BC
-									System.err.println("tasks.contains(" + task + "): " + tasks.contains(task));
-									return;
-								} else {
-									System.err.println("KEY: " + task.id());
-									dhtConnectionProvider.getAll(task.id(), jobProcedureDomainString).addListener(new BaseFutureAdapter<FutureGet>() {
+										if (tasks.contains(task)) {// Don't need to add it more, got it e.g. from a BC
+											logger.info("tasks.contains(" + task + "): " + tasks.contains(task));
+											return;
+										} else {
+											logger.info("KEY: " + task.id());
+											dhtConnectionProvider.getAll(task.id(), dataLocationJobProcedureDomainString)
+													.addListener(new BaseFutureAdapter<FutureGet>() {
 
-										@Override
-										public void operationComplete(FutureGet future) throws Exception {
-											if (future.isSuccess()) {
-												try {
-													if (future.dataMap() != null) {
-														for (Number640 n : future.dataMap().keySet()) {
-															Tuple<String, Integer> taskExecutor = (Tuple<String, Integer>) future.dataMap().get(n)
-																	.object();
+												@Override
+												public void operationComplete(FutureGet future) throws Exception {
+													if (future.isSuccess()) {
+														try {
+															if (future.dataMap() != null) {
+																for (Number640 n : future.dataMap().keySet()) {
+																	Tuple<String, Tuple<String, Integer>> initialDataLocation = (Tuple<String, Tuple<String, Integer>>) future
+																			.dataMap().get(n).object();
 
-															System.err.println("taskExecutor: " + taskExecutor);
-															task.addFinalExecutorTaskDomainPart(taskExecutor);
-														}
-														if (!tasks.contains(task)) {
-															System.err.println("!tasks.contains(task)");
-															tasks.add(task);
-															if (canExecute()) {
-																executeTask(taskExecutionScheduler.schedule(tasks));
+																	logger.info("taskExecutor: " + initialDataLocation);
+																	task.addInitialExecutorTaskDomain(initialDataLocation);
+																}
+																if (!tasks.contains(task)) {
+																	logger.info("!tasks.contains(task)");
+																	tasks.add(task);
+																	if (canExecute()) {
+																		executeTask(taskExecutionScheduler.schedule(tasks));
+																	}
+																}
 															}
+														} catch (IOException e) {
+															logger.info("failed");
+															logger.info("failed");
+															// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
 														}
+													} else {
+														// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
+														logger.info("failed");
+														logger.info("failed");
 													}
-												} catch (IOException e) {
-													System.err.println("failed");
-													logger.info("failed");
-													// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
 												}
-											} else {
-												// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
-												System.err.println("failed");
-												logger.info("failed");
-											}
+
+											});
 										}
-
-									});
+									}
 								}
+							} catch (IOException e) {
+								// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
+								logger.info("failed");
+								logger.info("failed");
 							}
+						} else {
+							// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
+							logger.info("failed");
+							logger.info("failed");
 						}
-					} catch (IOException e) {
-						// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
-						System.err.println("failed");
-						logger.info("failed");
 					}
-				} else {
-					// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
-					System.err.println("failed");
-					logger.info("failed");
-				}
-			}
 
-		});
+				});
 
 	}
 
@@ -206,53 +209,70 @@ public class MRJobExecutionManager {
 		if (!isExecutionAborted() && task != null && !task.isActive()) {
 			this.executionCounter++;
 			logger.info("Task to execute: " + task);
-			
-			List<Tuple<String, Integer>> executorTaskDomainParts = task.finalExecutorTaskDomainParts();
+
+			List<Tuple<String, Tuple<String, Integer>>> executorTaskDomains = task.initialExecutorTaskDomain();
 			List<Object> valuesCollector = syncedArrayList();
 			List<FutureGet> futureGetData = syncedArrayList();
 
 			Tuple<String, Integer> taskExecutor = Tuple.create(id, task.executingPeers().get(id).size() - 1);
-			dhtConnectionProvider.broadcastExecutingTask(task, taskExecutor);
-			Tasks.updateStati(task, TaskResult.newInstance().sender(id).status(BCMessageStatus.EXECUTING_TASK),
-					currentlyExecutedJob.maxNrOfFinishedWorkersPerTask());
+
+			messageConsumer.queue().add(dhtConnectionProvider.broadcastExecutingTask(task, taskExecutor));
 
 			// TODO build in that the data retrieval may take a certain number of repetitions when failed before being broadcasted as failed
-			for (Tuple<String, Integer> executorTaskDomainPart : executorTaskDomainParts) {
+			for (Tuple<String, Tuple<String, Integer>> eTD : executorTaskDomains) {
 				// Now we actually wanna retrieve the data from the specified locations...
-				futureGetData.add(collectValuesForTask(task, valuesCollector, task.concatenationString(executorTaskDomainPart)));
+				Task oldTask = Task.create(eTD.first(), currentlyExecutedJob.currentProcedure().jobProcedureDomain());
+				String executorTaskDomain = oldTask.concatenationString(eTD.second());
+				logger.info("Data for executorTaskDomain " + executorTaskDomain);
+				futureGetData.add(collectValuesForTask(task, valuesCollector, executorTaskDomain));
 			}
 			// Start execution on successful retrieval
 			// Everything here with subsequent procedure!!!!
 			Futures.whenAllSuccess(futureGetData).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 				@Override
 				public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-					IContext context = DHTStorageContext.create().task(task).taskExecutor(taskExecutor).dhtConnectionProvider(dhtConnectionProvider)
-							.subsequentJobProcedureDomain(currentlyExecutedJob.subsequentProcedure().jobProcedureDomain());
+					IContext context = DHTStorageContext.create().taskExecutor(taskExecutor).task(task).dhtConnectionProvider(dhtConnectionProvider)
+							.subsequentProcedure(currentlyExecutedJob.subsequentProcedure());
 					// taskExecutor.execute(job.currentProcedure().procedure(), task.id(), valuesCollector, context);
 
 					ProcedureInformation subsequentProcedureInformation = currentlyExecutedJob.subsequentProcedure();
-					context.task().isActive(true);
+					task.isActive(true);
+					logger.info("Executing task: " + task.id() + " with values " + valuesCollector);
 					subsequentProcedureInformation.procedure().process(task.id(), valuesCollector, context);
-					TaskUpdateBCMessage message = context.broadcastResultHash();
-					messageConsumer.queue().add(message);
-					context.task().isActive(false);
+
+					task.isActive(false);
 
 					Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 						@Override
 						public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-							executionCounter--;
-							Task nextTask = taskExecutionScheduler.schedule(subsequentProcedureInformation.tasks());
-							if (subsequentProcedureInformation.isFinished()) {
-								// May have been aborted from outside and thus, hasn't finished yet (in case abortExecution(job) was called
-								FinishedProcedureBCMessage message = dhtConnectionProvider.broadcastFinishedAllTasksOfProcedure(currentlyExecutedJob);
-								messageConsumer.queue().add(message);
-								logger.info("Broadcast finished Procedure");
-							} else {
-								logger.info("executing next task");
-								logger.info("tasks: " + subsequentProcedureInformation.tasks());
-								if (canExecute()) {
-									executeTask(nextTask);
+							if (future.isSuccess()) {
+								executionCounter--;
+								Task nextTask = taskExecutionScheduler.procedureInformation(subsequentProcedureInformation)
+										.schedule(subsequentProcedureInformation.tasks());
+								if (subsequentProcedureInformation.isFinished()) {
+									// May have been aborted from outside and thus, hasn't finished yet (in case abortExecution(job) was called
+									FinishedProcedureBCMessage message = dhtConnectionProvider
+											.broadcastFinishedAllTasksOfProcedure(currentlyExecutedJob);
+									messageConsumer.queue().add(message);
+									logger.info("Broadcast finished Procedure");
+								} else {
+									messageConsumer.queue()
+											.add(dhtConnectionProvider.broadcastFinishedTask(task, taskExecutor, context.resultHash()));
+									logger.info("executing next task");
+									logger.info("tasks: " + subsequentProcedureInformation.tasks());
+									if (canExecute()) {
+										executeTask(nextTask);
+									}
 								}
+							} else {
+								//TASK FAILED
+//								messageConsumer.queue()
+//								.add(dhtConnectionProvider.broadcastFinishedTask(task, taskExecutor, context.resultHash()));
+//						logger.info("executing next task");
+//						logger.info("tasks: " + subsequentProcedureInformation.tasks());
+//						if (canExecute()) {
+//							executeTask(nextTask);
+//						}
 							}
 						}
 

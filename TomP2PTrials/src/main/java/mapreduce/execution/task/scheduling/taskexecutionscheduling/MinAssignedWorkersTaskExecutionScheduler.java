@@ -1,8 +1,10 @@
 package mapreduce.execution.task.scheduling.taskexecutionscheduling;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcomparators.MinAssignedWorkerTaskExecutionSortingComparator;
@@ -16,7 +18,7 @@ import mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcompar
  *
  */
 public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecutionScheduler {
-	// private static Logger logger = LoggerFactory.getLogger(MinAssignedWorkersTaskScheduler.class);
+	 private static Logger logger = LoggerFactory.getLogger(MinAssignedWorkersTaskExecutionScheduler.class);
 	// private boolean isFirstTaskRandom;
 	private MinAssignedWorkerTaskExecutionSortingComparator comparator;
 	private RandomTaskExecutionScheduler randomTaskScheduler;
@@ -36,18 +38,22 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 
 	@Override
 	protected Task scheduleNonNull(List<Task> tasksToSchedule) {
+		logger.info("to schedule: " + tasksToSchedule);
 		Task assignedTask = null;
 		if (!allTasksAreFinished(tasksToSchedule)) {
 			if (randomTaskScheduler != null && noTaskAssignedYet(tasksToSchedule)) {
 				assignedTask = randomTaskScheduler.scheduleNonNull(tasksToSchedule);
+				logger.info("random task assigned" + assignedTask);
 			} else {
 				Collections.sort(tasksToSchedule, this.comparator);
 				Task task = tasksToSchedule.get(0);
 				if (!task.isFinished() || task.isActive()) {
 					assignedTask = task;
-				}
+				} 
+				logger.info("compared task assigned" + assignedTask);
 			}
 		} else {
+			logger.info("finished procedure " + procedureInformation);
 			// all tasks finished... set procedure to be finished
 			this.procedureInformation.isFinished(true);
 		}

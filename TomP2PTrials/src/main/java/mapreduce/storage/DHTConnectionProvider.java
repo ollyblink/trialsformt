@@ -270,7 +270,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	public void broadcastJobUpdate(Job job, IBCMessage message) {
 		try {
-			Number160 jobHash = Number160.createHash(job.currentProcedure().jobProcedureDomainString());
+			Number160 jobHash = Number160.createHash(job.subsequentProcedure().jobProcedureDomainString());
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
 			currentExecutingPeer().peer().broadcast(jobHash).dataMap(dataMap).start();
@@ -338,7 +338,10 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 				valueData = new Data(new Value(value));
 			}
 
-			return this.currentExecutingPeer().add(Number160.createHash(keyString)).data(valueData).domainKey(Number160.createHash(domainString))
+			return this.currentExecutingPeer()
+					.add(Number160.createHash(keyString))
+					.data(valueData)
+					.domainKey(Number160.createHash(domainString))
 					.start();
 
 		} catch (IOException e) {

@@ -1,11 +1,10 @@
 package mapreduce.execution.computation.context;
 
 import java.util.List;
-import java.util.Set;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
+import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
@@ -15,10 +14,6 @@ public interface IContext {
 
 	public void write(Object keyOut, Object valueOut);
 
-	public IContext task(Task task);
-
-	public Task task();
-
 	public Number160 resultHash();
 
 	public IContext combiner(IMapReduceProcedure combiner);
@@ -27,21 +22,17 @@ public interface IContext {
 
 	public void combine();
 
-	public Set<Object> keys();
-
-	public void resetResultHash();
-
-	public void updateResultHash(Object keyOut, Object valueOut);
-
-	public TaskUpdateBCMessage broadcastResultHash();
-
-	public Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain();
-
-	public IContext subsequentJobProcedureDomain(Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain);
-
 	public IContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider);
 
 	public List<FuturePut> futurePutData();
 
-	DHTStorageContext taskExecutor(Tuple<String, Integer> taskExecutor);
+	public DHTStorageContext taskExecutor(Tuple<String, Integer> taskExecutor);
+
+	public AbstractBaseContext subsequentProcedure(ProcedureInformation subsequentProcedure);
+
+	public ProcedureInformation subsequentProcedure();
+
+	public IContext task(Task task);
+
+	public Task task();
 }

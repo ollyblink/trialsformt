@@ -4,14 +4,12 @@ import static mapreduce.utils.SyncedCollectionProvider.syncedArrayList;
 import static mapreduce.utils.SyncedCollectionProvider.syncedListMultimap;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.List;
 
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
 import mapreduce.utils.DomainProvider;
-import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 
@@ -50,6 +48,8 @@ public class Task implements Serializable, Comparable<Task> {
 
 	private volatile boolean isActive;
 
+	private List<Tuple<String, Tuple<String, Integer>>> initialDataLocation;
+
 	private Task(Object key, Tuple<String, Tuple<String, Integer>> jobProcedureDomain) {
 		this.key = key;
 		this.jobProcedureDomain = jobProcedureDomain;
@@ -58,6 +58,7 @@ public class Task implements Serializable, Comparable<Task> {
 		this.reverseTaskResults = syncedListMultimap();
 		this.finalExecutorTaskDomainParts = syncedArrayList();
 		this.rejectedExecutorTaskDomainParts = syncedArrayList();
+		this.initialDataLocation = syncedArrayList();
 		this.isFinished = false;
 	}
 
@@ -189,11 +190,11 @@ public class Task implements Serializable, Comparable<Task> {
 
 	public Tuple<String, Tuple<String, Integer>> executorTaskDomain(Tuple<String, Integer> executorTaskDomainPart) {
 		if (executorTaskDomainPart != null) {
-			if (executingPeers.containsKey(executorTaskDomainPart.first())) {
-				if (executingPeers.get(executorTaskDomainPart.first()).size() >= executorTaskDomainPart.second()) {
-					return Tuple.create(key.toString(), executorTaskDomainPart);
-				}
-			}
+			// if (executingPeers.containsKey(executorTaskDomainPart.first())) {
+			// if (executingPeers.get(executorTaskDomainPart.first()).size() >= executorTaskDomainPart.second()) {
+			return Tuple.create(key.toString(), executorTaskDomainPart);
+			// }
+			// }
 		}
 		return null;
 	}
@@ -209,8 +210,17 @@ public class Task implements Serializable, Comparable<Task> {
 	public String concatenationString(Tuple<String, Integer> executorTaskDomainPart) {
 		Tuple<String, Tuple<String, Integer>> executorTaskDomain = executorTaskDomain(executorTaskDomainPart);
 		if (jobProcedureDomain != null && executorTaskDomain != null) {
-			DomainProvider.INSTANCE.concatenation(jobProcedureDomain, executorTaskDomain);
+			return DomainProvider.INSTANCE.concatenation(jobProcedureDomain, executorTaskDomain);
 		}
 		return null;
+	}
+
+	public void addInitialExecutorTaskDomain(Tuple<String, Tuple<String, Integer>> initialDataLocation) {
+		this.initialDataLocation.add(initialDataLocation);
+
+	}
+
+	public List<Tuple<String, Tuple<String, Integer>>> initialExecutorTaskDomain() {
+		return this.initialDataLocation;
 	}
 }

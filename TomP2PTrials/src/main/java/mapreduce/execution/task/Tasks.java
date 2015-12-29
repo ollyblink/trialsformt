@@ -171,7 +171,8 @@ public class Tasks {
 				int nrOfResultsWithHash = task.updateResultHash(Tuple.create(sender, locationIndex), toUpdate.resultHash);
 				boolean bestOfAchieved = nrOfResultsWithHash == bestOfMaxNrOfFinishedWorkersWithSameResultHash(maxNrOfFinishedWorkers);
 				boolean enoughWorkersFinished = totalNumberOfFinishedExecutions(task) >= maxNrOfFinishedWorkers;
-
+				logger.info("bestOfAchieved || enoughWorkersFinished: " + bestOfAchieved + "||" + enoughWorkersFinished+"?"
+						+ (bestOfAchieved || enoughWorkersFinished));
 				if (bestOfAchieved || enoughWorkersFinished) {
 					task.isFinished(true);
 					task.addFinalExecutorTaskDomainPart(Tuple.create(sender, locationIndex));

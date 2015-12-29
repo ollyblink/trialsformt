@@ -94,20 +94,18 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			Collections.sort(jobs);
 		}
 		logger.info("Jobs: " + jobs);
-		if (jobExecutor.currentlyExecutedJob() == null) { // No job is executed atm
+		if (jobExecutor.currentlyExecutedJob() != null && !jobExecutor.currentlyExecutedJob().equals(jobs.get(0))) { // No job is executed atm
 
-			logger.info("jobExecutor.currentlyExecutedJob() == null");
-			jobExecutor.execute(jobs.get(0)); // Execute job with highest priority
-		} else {// Some job is executed atm
 			logger.info("jobExecutor.currentlyExecutedJob() != null");
-			if (!jobExecutor.currentlyExecutedJob().equals(jobs.get(0))) { // The job currently executing is not the one with highest priority
-																			// anymore
-				jobExecutor.isExecutionAborted(true); // Abort the currently executing job (meaning, interrupt until later resume... This
-														// finishes the
-				// task executing atm
-			}
-			jobExecutor.execute(jobs.get(0));
+			// The job currently executing is not the one with highest priority
+			// anymore
+			jobExecutor.isExecutionAborted(true); // Abort the currently executing job (meaning, interrupt until later resume... This
+													// finishes the
+			// task executing atm
+
 		}
+		jobExecutor.execute(jobs.get(0));
+
 	}
 
 	@Override
@@ -119,7 +117,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				logger.info(job.id() + ".equals(" + taskToUpdate.jobId() + ")" + job.id().equals(taskToUpdate.jobId()));
 				if (job.id().equals(taskToUpdate.jobId())) {
 					logger.info("found job: " + job);
-					List<Task> tasks = job.currentProcedure().tasks();
+					List<Task> tasks = job.subsequentProcedure().tasks();
 					logger.info("found tasks: " + tasks);
 					synchronized (tasks) {
 						int taskIndex = tasks.indexOf(taskToUpdate);
@@ -164,13 +162,16 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		// this.bcMessages = tmp;
 		// }
 
-		List<Task> tasks = job.currentProcedure().tasks();
+		List<Task> tasks = job.subsequentProcedure().tasks();
 		List<FutureGet> futureGets = SyncedCollectionProvider.syncedArrayList();
 		List<FuturePut> futurePuts = SyncedCollectionProvider.syncedArrayList();
 		for (Task task : tasks) {
+			logger.info("task: " + task);
 			List<Tuple<String, Integer>> finalExecutorTaskDomainParts = task.finalExecutorTaskDomainParts();
+			logger.info("finalExecutorTaskDomainParts: " + finalExecutorTaskDomainParts);
 			for (Tuple<String, Integer> finalDataLocationDomain : finalExecutorTaskDomainParts) {
-
+				logger.info("finalDataLocationDomain: " + finalDataLocationDomain);
+				Tuple<String, Tuple<String, Integer>> executorTaskDomain = task.executorTaskDomain(finalDataLocationDomain);
 				String combination = task.concatenationString(finalDataLocationDomain);
 				logger.info("get task keys for task executor domain: " + combination);
 				futureGets.add(this.jobExecutor.dhtConnectionProvider().getAll(DomainProvider.TASK_KEYS, combination)
@@ -181,15 +182,19 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 								if (future.isSuccess()) {
 									logger.info("Success on retrieving task keys for task executor domain: " + combination);
 									try {
-										if (future.dataMap() != null) {
-											for (Number640 n : future.dataMap().keySet()) {
-												String key = (String) future.dataMap().get(n).object();
-												futurePuts.add(jobExecutor.dhtConnectionProvider().add(key, finalDataLocationDomain,
-														job.subsequentProcedure().jobProcedureDomainString(), false));
-												futurePuts.add(jobExecutor.dhtConnectionProvider().add(DomainProvider.PROCEDURE_KEYS, key,
-														job.subsequentProcedure().jobProcedureDomainString(), false));
-											}
+										// logger.info("future.dataMap() != null: " + (future.dataMap() != null));
+										// if (future.dataMap() != null) {
+										Set<Number640> keySet = future.dataMap().keySet();
+										logger.info("KeySet: " + keySet);
+										for (Number640 n : keySet) {
+											String key = (String) future.dataMap().get(n).object();
+											logger.info("Key: " + key);
+											futurePuts.add(jobExecutor.dhtConnectionProvider().add(key, executorTaskDomain,
+													job.subsequentProcedure().jobProcedureDomainString(), false));
+											futurePuts.add(jobExecutor.dhtConnectionProvider().add(DomainProvider.PROCEDURE_KEYS, key,
+													job.subsequentProcedure().jobProcedureDomainString(), false));
 										}
+										// }
 									} catch (IOException e) {
 										logger.warn("IOException on getting the data", e);
 									}
@@ -202,21 +207,24 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			}
 
 		}
+		logger.info("futureGets: " + futureGets);
 		if (futureGets.size() > 0) {
 			Futures.whenAllSuccess(futureGets).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 
 				@Override
 				public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
+					logger.info("futurePuts: " + futurePuts);
 					if (future.isSuccess()) {
 						Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 
 							@Override
 							public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
+
 								if (future.isSuccess()) {
 									// well... check if there is actually any procedure left... Else job is finished...
+									job.incrementCurrentProcedureIndex();
 									ProcedureInformation subsequentProcedure = job.subsequentProcedure();
 									job.currentProcedure().tasks().clear();
-									job.incrementCurrentProcedureIndex();
 									if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndReached.class.getSimpleName())) {
 										// Finished job :)
 										logger.info("Finished job");
@@ -226,10 +234,9 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 									} else {
 										// Next procedure!!
 										logger.info("Execute next procedure");
-										job.incrementCurrentProcedureIndex();
 										DistributedJobBCMessage message = jobExecutor.dhtConnectionProvider().broadcastNewJob(job);
 										bcMessages.add(message);
-										logger.info("job.currentProcedure()  : " + job.currentProcedure()); 
+										logger.info("job.currentProcedure()  : " + job.currentProcedure());
 									}
 								} else {
 									// TODO Well... something has to be done instead... am I right?
