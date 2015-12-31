@@ -7,8 +7,8 @@ import java.util.List;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.ProcedureInformation;
-import mapreduce.execution.computation.standardprocedures.EndReached;
-import mapreduce.execution.computation.standardprocedures.Start;
+import mapreduce.execution.computation.standardprocedures.EndProcedure;
+import mapreduce.execution.computation.standardprocedures.StartProcedure;
 import mapreduce.execution.task.Task;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
@@ -50,7 +50,7 @@ public class Job implements Serializable, Comparable<Job> {
 	/**
 	 * Internal counter that specifies the currently processed procedure
 	 */
-	private int currentProcedureIndex;
+	private int previousProcedureIndex;
 
 	/** maximal file size to be put on the DHT at once */
 	private FileSize maxFileSize = DEFAULT_FILE_SIZE;
@@ -89,10 +89,10 @@ public class Job implements Serializable, Comparable<Job> {
 		this.priorityLevel = (priorityLevel == null || priorityLevel.length == 0 || priorityLevel.length > 1 ? DEFAULT_PRIORITY_LEVEL
 				: priorityLevel[0]);
 		this.creationTime = System.currentTimeMillis();
-		this.currentProcedureIndex = 0;
+		this.previousProcedureIndex = 0;
 		this.procedures = Collections.synchronizedList(new ArrayList<>());
-		//Add initial
-		ProcedureInformation procedureInformation = ProcedureInformation.create(id(), Start.create(), this.procedures.size());
+		// Add initial
+		ProcedureInformation procedureInformation = ProcedureInformation.create(id(), StartProcedure.create(), this.procedures.size());
 		this.procedures.add(procedureInformation);
 	}
 
@@ -122,7 +122,10 @@ public class Job implements Serializable, Comparable<Job> {
 		try {
 			return procedures.get(index);
 		} catch (Exception e) {
-			return ProcedureInformation.create(id(), EndReached.create(), procedures.size());
+			if (index < 0) {
+				return ProcedureInformation.create(id(), StartProcedure.create(), 0);
+			}
+			return ProcedureInformation.create(id(), EndProcedure.create(), procedures.size());
 		}
 	}
 
@@ -131,8 +134,8 @@ public class Job implements Serializable, Comparable<Job> {
 	 * 
 	 * @return
 	 */
-	public ProcedureInformation currentProcedure() {
-		return this.procedure(this.currentProcedureIndex);
+	public ProcedureInformation previousProcedure() {
+		return this.procedure(this.previousProcedureIndex);
 	}
 
 	/**
@@ -141,8 +144,8 @@ public class Job implements Serializable, Comparable<Job> {
 	 * 
 	 * @return
 	 */
-	public ProcedureInformation subsequentProcedure() {
-		return this.procedure(this.currentProcedureIndex + 1);
+	public ProcedureInformation currentProcedure() {
+		return this.procedure(this.previousProcedureIndex + 1);
 	}
 
 	/**
@@ -158,10 +161,9 @@ public class Job implements Serializable, Comparable<Job> {
 		this.procedures.add(procedureInformation);
 		return this;
 	}
- 
- 
-	public void incrementCurrentProcedureIndex() {
-		++this.currentProcedureIndex;
+
+	public void incrementProcedureIndex() {
+		++this.previousProcedureIndex;
 	}
 
 	public int submissionCounter() {
@@ -272,7 +274,7 @@ public class Job implements Serializable, Comparable<Job> {
 	public Job copy() {
 		Job job = new Job(jobSubmitterID, priorityLevel);
 		job.id = id;
-		job.currentProcedureIndex = currentProcedureIndex;
+		job.previousProcedureIndex = previousProcedureIndex;
 		job.fileInputFolderPath = fileInputFolderPath;
 		job.maxFileSize = maxFileSize;
 		job.maxNrOfDHTActions = maxNrOfDHTActions;
@@ -315,6 +317,16 @@ public class Job implements Serializable, Comparable<Job> {
 		for (Job job : jobs) {
 			System.err.println(job.jobSubmitterID() + ", " + job.priorityLevel);
 		}
+	}
+
+	public PriorityLevel priorityLevel() {
+		// TODO Auto-generated method stub
+		return priorityLevel;
+	}
+
+	public Long creationTime() {
+		// TODO Auto-generated method stub
+		return creationTime;
 	}
 
 }

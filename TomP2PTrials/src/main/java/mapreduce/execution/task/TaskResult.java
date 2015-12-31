@@ -1,6 +1,6 @@
 package mapreduce.execution.task;
 
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -36,7 +36,7 @@ public class TaskResult {
 		return this;
 	}
 
-	public static TaskResult newInstance() { 
+	public static TaskResult create() { 
 		return new TaskResult();
 	}
 

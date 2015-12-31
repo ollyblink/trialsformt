@@ -9,7 +9,7 @@ import org.junit.Test;
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.execution.job.Job;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 import mapreduce.utils.IDCreator;
 import net.tomp2p.peers.Number160;
 
@@ -22,7 +22,7 @@ public class TaskTest {
 	public static void setUpBeforeClass() throws Exception {
 		String jobId = IDCreator.INSTANCE.createTimeRandomID(Job.class.getSimpleName());
 
-		task = Task.create(jobId, "word");
+		task = Task.create(jobId, null);
 	}
 
 	@AfterClass
@@ -32,7 +32,7 @@ public class TaskTest {
 	@Test
 	public void testUpdateExecutingPeerStatus() {
 		String peerAddress = "1";
-		TaskResult tR = TaskResult.newInstance().sender(peerAddress).resultHash(new Number160(1));
+		TaskResult tR = TaskResult.create().sender(peerAddress).resultHash(new Number160(1));
 		// Wrong job status
 		Tasks.updateStati(task, tR.status(BCMessageStatus.DISTRIBUTED_JOB), NUMBER_OF_FINISHED_WORKERS);
 		assertEquals(0, Tasks.numberOfDifferentPeersExecutingOrFinishedTask(task));
@@ -241,7 +241,7 @@ public class TaskTest {
 		task.isFinished(false);
 
 		String peerAddress2 = "2";
-		TaskResult tR2 = TaskResult.newInstance().sender(peerAddress2).resultHash(new Number160(1)).status(BCMessageStatus.DISTRIBUTED_JOB);
+		TaskResult tR2 = TaskResult.create().sender(peerAddress2).resultHash(new Number160(1)).status(BCMessageStatus.DISTRIBUTED_JOB);
 		// Wrong job status
 		Tasks.updateStati(task, tR2, NUMBER_OF_FINISHED_WORKERS);
 		assertEquals(1, Tasks.numberOfDifferentPeersExecutingOrFinishedTask(task));
@@ -423,7 +423,7 @@ public class TaskTest {
 		task.isFinished(false);
 
 		String peerAddress3 = "3";
-		TaskResult tR3 = TaskResult.newInstance().sender(peerAddress3).resultHash(new Number160(1));
+		TaskResult tR3 = TaskResult.create().sender(peerAddress3).resultHash(new Number160(1));
 
 		Tasks.updateStati(task, tR3.status(BCMessageStatus.EXECUTING_TASK), NUMBER_OF_FINISHED_WORKERS);
 		assertEquals(3, Tasks.numberOfDifferentPeersExecutingOrFinishedTask(task));

@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasthandler.broadcastmessages;
+package mapreduce.manager.broadcasting.broadcastmessages;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

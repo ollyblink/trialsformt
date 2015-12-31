@@ -15,7 +15,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
+import mapreduce.utils.DomainProvider;
+import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -25,84 +27,86 @@ public class MinAssignedWorkersTaskSchedulerTest {
 
 	private static LinkedList<Task> tasks;
 
+	private Tuple<String, Tuple<String, Integer>> jobProcedureDomain;
+
 	@Before
 	public void setUpBeforeTest() throws Exception {
 		taskScheduler = MinAssignedWorkersTaskExecutionScheduler.newInstance();
 
 		tasks = new LinkedList<Task>();
-
-		Task task = Task.create("1", "0");
+		jobProcedureDomain = Tuple.create("0", null);
+		Task task = Task.create("1", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.FINISHED_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.create("2", "0");
+		task = Task.create("2", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.create("3", "0");
+		task = Task.create("3", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.create("4", "0");
+		task = Task.create("4", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.create("5", "0");
+		task = Task.create("5", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("2", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.create("6", "0");
+		task = Task.create("6", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.create("7", "0");
+		task = Task.create("7", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.create("8", "0");
+		task = Task.create("8", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.create("9", "0");
+		task = Task.create("9", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 		//
-		task = Task.create("10", "0");
+		task = Task.create("10", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(false);
 		tasks.add(task);
 
-		task = Task.create("11", "0");
+		task = Task.create("11", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.isFinished(true);
 		tasks.add(task);
 
-		task = Task.create("12", "0");
+		task = Task.create("12", jobProcedureDomain);
 		task.executingPeers().put("1", BCMessageStatus.FINISHED_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
 		task.executingPeers().put("1", BCMessageStatus.EXECUTING_TASK);
@@ -175,7 +179,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 
 			@Override
 			public void run() {
-				assertEquals(Task.create("1", "0"), taskScheduler.schedule(tasks2));
+				assertEquals(Task.create("1", jobProcedureDomain), taskScheduler.schedule(tasks2));
 			}
 
 		});
@@ -197,7 +201,7 @@ public class MinAssignedWorkersTaskSchedulerTest {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				tasks2.add(Task.create("1", "0"));
+				tasks2.add(Task.create("1", jobProcedureDomain));
 
 			}
 

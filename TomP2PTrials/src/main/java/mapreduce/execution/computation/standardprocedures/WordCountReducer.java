@@ -12,13 +12,17 @@ public class WordCountReducer implements IMapReduceProcedure {
 	 */
 	private static final long serialVersionUID = 6674686068934510011L;
 
-	public static IMapReduceProcedure newInstance() {
+	public static IMapReduceProcedure create() {
 		return new WordCountReducer();
 	}
 
 	@Override
 	public void process(Object keyIn, Collection<Object> valuesIn, IContext context) {
-		context.write(keyIn, valuesIn.size());
+		int sum = 0;
+		for (Object o : valuesIn) {
+			sum += (Integer) o;
+		}
+		context.write(keyIn, sum);
 	}
 
 }

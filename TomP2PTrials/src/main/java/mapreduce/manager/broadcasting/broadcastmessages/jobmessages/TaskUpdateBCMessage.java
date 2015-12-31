@@ -1,17 +1,18 @@
-package mapreduce.manager.broadcasthandler.broadcastmessages;
+package mapreduce.manager.broadcasting.broadcastmessages.jobmessages;
 
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
-import mapreduce.utils.Tuple;
+import mapreduce.manager.broadcasting.broadcastmessageconsumer.IMessageConsumer;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 import net.tomp2p.peers.Number160;
 
-public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
+public class TaskUpdateBCMessage extends AbstractJobBCMessage {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 7388714464226222965L;
+	protected Task task;
 	protected BCMessageStatus status;
 	private Number160 resultHash;
 
@@ -22,30 +23,22 @@ public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 
 	@Override
 	public void execute(final IMessageConsumer messageConsumer) {
-		TaskResult taskResult = TaskResult.newInstance().sender(sender).status(status).resultHash(resultHash);
-		messageConsumer.handleTaskExecutionStatusUpdate(task, taskResult);
+		TaskResult taskResult = TaskResult.create().sender(sender).status(status).resultHash(resultHash);
+		messageConsumer.handleTaskExecutionStatusUpdate(job, task, taskResult);
 
 	}
 
-	public static TaskUpdateBCMessage newExecutingTaskInstance() {
+	public static TaskUpdateBCMessage createTaskExecutingBCMessage() {
 		return new TaskUpdateBCMessage(BCMessageStatus.EXECUTING_TASK);
 	}
 
-	public static TaskUpdateBCMessage newFinishedTaskInstance() {
+	public static TaskUpdateBCMessage createTaskFinishedBCMessage() {
 		return new TaskUpdateBCMessage(BCMessageStatus.FINISHED_TASK);
 	}
 
-	public static TaskUpdateBCMessage newFailedTaskInstance() {
-
+	public static TaskUpdateBCMessage createTaskFailedBCMessage() {
 		return new TaskUpdateBCMessage(BCMessageStatus.FAILED_TASK);
 	}
-	// public static TaskUpdateBCMessage newExecutingTaskResultComparisonInstance() {
-	// return new TaskUpdateBCMessage(BCMessageStatus.EXECUTING_TASK_COMPARISON);
-	// }
-	//
-	// public static TaskUpdateBCMessage newFinishedTaskResultComparisonInstance() {
-	// return new TaskUpdateBCMessage(BCMessageStatus.FINISHED_TASK_COMPARISON);
-	// }
 
 	private TaskUpdateBCMessage(BCMessageStatus status) {
 		this.status = status;
@@ -65,11 +58,12 @@ public class TaskUpdateBCMessage extends AbstractTaskBCMessage {
 		return (TaskUpdateBCMessage) super.sender(sender);
 	}
 
-	@Override
 	public TaskUpdateBCMessage task(Task task) {
-		super.task(task);
+		this.task = task;
 		return this;
 	}
- 
 
+	public Task task() {
+		return task;
+	}
 }

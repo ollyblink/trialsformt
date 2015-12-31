@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
+package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
-import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.PeerAddress;
 
@@ -38,12 +38,12 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	@Override
 	public void run() {
-		
+
 		try {
 			while (canTake()) {
-				System.err.println("Before Take message");
+				logger.info("Before Take message");
 				IBCMessage nextMessage = bcMessages.take();
-				logger.info("Next message: " + nextMessage);
+				logger.info("Execute next message: " + nextMessage);
 				nextMessage.execute(this);
 			}
 		} catch (InterruptedException e) {
@@ -97,7 +97,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	}
 
 	@Override
-	public void handleTaskExecutionStatusUpdate(Task task, TaskResult toUpdate) {
+	public void handleTaskExecutionStatusUpdate(Job job, Task task, TaskResult toUpdate) {
 
 	}
 

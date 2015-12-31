@@ -14,14 +14,15 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
-import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
-import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedJobBCMessage;
-import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedProcedureBCMessage;
-import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.manager.broadcasthandler.broadcastmessages.JobFailedBCMessage;
-import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
+import mapreduce.manager.broadcasting.MRBroadcastHandler;
+import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobDistributedBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobFailedBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobFinishedBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.ProcedureFinishedBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.TaskUpdateBCMessage;
 import mapreduce.utils.DomainProvider;
+import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Tuple;
 import mapreduce.utils.Value;
@@ -60,12 +61,14 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private String storageFilePath;
 	private int numberOfPeers = DEFAULT_NUMBER_OF_PEERS;
 	private int currentExecutingPeerCounter = 0;
+	private BlockingQueue<IBCMessage> bcMessages;
 
 	private DHTConnectionProvider() {
 
 	}
 
 	private DHTConnectionProvider(String bootstrapIP, int bootstrapPort) {
+		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
 		this.bootstrapIP = bootstrapIP;
 		this.bootstrapPort = bootstrapPort;
 		this.peerDHTs = SyncedCollectionProvider.syncedArrayList();
@@ -99,7 +102,11 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public DHTConnectionProvider addMessageQueueToBroadcastHandler(BlockingQueue<IBCMessage> bcMessages) {
-		broadcastHandler.queue(bcMessages);
+		this.bcMessages = bcMessages;
+
+		if (this.broadcastHandler != null) {
+			this.broadcastHandler.queue(bcMessages);
+		}
 		return this;
 	}
 
@@ -158,15 +165,16 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		int bootstrapper = 0; // I use this to only make one peer be the master that creates everything... all others simply connect to the
 								// bootstrapper
 		if (broadcastHandler == null) {
-			this.broadcastHandler = MRBroadcastHandler.create();
+			this.broadcastHandler = MRBroadcastHandler.create().queue(bcMessages);
 		}
 
 		for (int i = 0; i < this.numberOfPeers; ++i) {
 
 			try {
 				if (this.isBootstrapper && bootstrapper == 0) {
-
 					this.port = this.bootstrapPort;
+				} else {
+					this.port = this.bootstrapPort++;
 				}
 				Peer peer = new PeerBuilder(Number160.createHash(this.id)).ports(this.port).broadcastHandler(broadcastHandler).start();
 
@@ -208,8 +216,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public DistributedJobBCMessage broadcastNewJob(Job job) {
-		DistributedJobBCMessage message = DistributedJobBCMessage.newInstance().job(job).sender(this.owner());
+	public JobDistributedBCMessage broadcastNewJob(Job job) {
+		JobDistributedBCMessage message = JobDistributedBCMessage.newInstance().job(job).sender(this.owner());
 		broadcastJobUpdate(job, message);
 		return message;
 	}
@@ -222,30 +230,31 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	// }
 
 	@Override
-	public FinishedProcedureBCMessage broadcastFinishedAllTasksOfProcedure(Job job) {
-		FinishedProcedureBCMessage message = FinishedProcedureBCMessage.create().job(job).sender(this.owner());
+	public ProcedureFinishedBCMessage broadcastFinishedAllTasksOfProcedure(Job job) {
+		ProcedureFinishedBCMessage message = ProcedureFinishedBCMessage.create().job(job).sender(this.owner());
 		broadcastJobUpdate(job, message);
 		return message;
 
 	}
 
 	@Override
-	public FinishedJobBCMessage broadcastFinishedJob(Job job) {
-		FinishedJobBCMessage message = FinishedJobBCMessage.newInstance().job(job).sender(this.owner());
+	public JobFinishedBCMessage broadcastFinishedJob(Job job) {
+		JobFinishedBCMessage message = JobFinishedBCMessage.newInstance().job(job).sender(this.owner());
 		broadcastJobUpdate(job, message);
 		return message;
 	}
 
 	@Override
 	public TaskUpdateBCMessage broadcastExecutingTask(Task task, Tuple<String, Integer> taskExecutor) {
-		TaskUpdateBCMessage message = TaskUpdateBCMessage.newExecutingTaskInstance().task(task).sender(taskExecutor.first());
+		TaskUpdateBCMessage message = TaskUpdateBCMessage.createTaskExecutingBCMessage().task(task).sender(taskExecutor.first());
 		broadcastTaskUpdate(task, taskExecutor, message);
-		return message; 
+		return message;
 	}
 
 	@Override
 	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Tuple<String, Integer> taskExecutor, Number160 resultHash) {
-		TaskUpdateBCMessage message = TaskUpdateBCMessage.newFinishedTaskInstance().task(task).sender(taskExecutor.first()).resultHash(resultHash);
+		TaskUpdateBCMessage message = TaskUpdateBCMessage.createTaskFinishedBCMessage().task(task).sender(taskExecutor.first())
+				.resultHash(resultHash);
 		broadcastTaskUpdate(task, taskExecutor, message);
 		return message;
 	}
@@ -270,7 +279,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	public void broadcastJobUpdate(Job job, IBCMessage message) {
 		try {
-			Number160 jobHash = Number160.createHash(job.subsequentProcedure().jobProcedureDomainString());
+			Number160 jobHash = Number160.createHash(job.currentProcedure().jobProcedureDomainString());
 			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 			dataMap.put(new Number640(jobHash, jobHash, jobHash, jobHash), new Data(message));
 			currentExecutingPeer().peer().broadcast(jobHash).dataMap(dataMap).start();
@@ -311,7 +320,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public DHTConnectionProvider owner(String owner) {
 		this.owner = owner;
-		System.err.println(broadcastHandler);
+		// System.err.println(broadcastHandler);
 		if (this.broadcastHandler != null) {
 			this.broadcastHandler.owner(owner);
 		}
@@ -338,10 +347,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 				valueData = new Data(new Value(value));
 			}
 
-			return this.currentExecutingPeer()
-					.add(Number160.createHash(keyString))
-					.data(valueData)
-					.domainKey(Number160.createHash(domainString))
+			return this.currentExecutingPeer().add(Number160.createHash(keyString)).data(valueData).domainKey(Number160.createHash(domainString))
 					.start();
 
 		} catch (IOException e) {
@@ -363,6 +369,11 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	@Override
+	public MRBroadcastHandler broadcastHandler() { 
+		return broadcastHandler;
 	}
 
 }

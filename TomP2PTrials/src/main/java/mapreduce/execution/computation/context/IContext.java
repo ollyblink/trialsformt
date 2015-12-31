@@ -26,9 +26,9 @@ public interface IContext {
 
 	public List<FuturePut> futurePutData();
 
-	public DHTStorageContext taskExecutor(Tuple<String, Integer> taskExecutor);
+	public IContext taskExecutor(Tuple<String, Integer> taskExecutor);
 
-	public AbstractBaseContext subsequentProcedure(ProcedureInformation subsequentProcedure);
+	public IContext subsequentProcedure(ProcedureInformation subsequentProcedure);
 
 	public ProcedureInformation subsequentProcedure();
 

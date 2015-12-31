@@ -57,7 +57,7 @@ public class MRJobSubmissionManagerTest {
 			e.printStackTrace();
 		}
 		System.err.println("HERE");
-		ProcedureInformation pI = job.currentProcedure();
+		ProcedureInformation pI = job.previousProcedure();
 		String jobProcedureDomain = pI.jobProcedureDomain();
 		
 		ArrayList<FutureGet> keysFutures = new ArrayList<>();
@@ -167,12 +167,12 @@ public class MRJobSubmissionManagerTest {
 										if (future.isSuccess()) {
 
 											PseudoStorageContext context = (PseudoStorageContext) PseudoStorageContext.newInstance()
-													.combiner(WordCountReducer.newInstance());
+													.combiner(WordCountReducer.create());
 											for (String key : vals.keySet())
 
 											{
 												context.task(Task.create(key, job.id()));
-												job.currentProcedure().procedure().process(key, vals.get(key), context);
+												job.previousProcedure().procedure().process(key, vals.get(key), context);
 
 											}
 
@@ -235,7 +235,7 @@ public class MRJobSubmissionManagerTest {
 	}
 
 	private ListMultimap<Object, Object> getToCheck(String fileInputFolderPath) {
-		PseudoStorageContext storage = (PseudoStorageContext) PseudoStorageContext.newInstance().combiner(WordCountReducer.newInstance());
+		PseudoStorageContext storage = (PseudoStorageContext) PseudoStorageContext.newInstance().combiner(WordCountReducer.create());
 
 		try {
 			System.err.println(new File(fileInputFolderPath + "/testfile.txt").exists());

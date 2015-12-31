@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
+package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -6,7 +6,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 
 import mapreduce.execution.job.Job;
 import mapreduce.manager.MRJobSubmissionManager;
-import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.utils.DomainProvider;
 
 public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsumer {
@@ -30,7 +30,7 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 	@Override
 	public void handleFinishedJob(Job job) {
 		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
-			String jobProcedureDomain = job.subsequentProcedure().jobProcedureDomainString();
+			String jobProcedureDomain = job.currentProcedure().jobProcedureDomainString();
 			logger.warn("handleFinishedJob()::1::Finished job " + jobProcedureDomain);
 			this.jobSubmissionManager.finishedJob(jobProcedureDomain);
 		}

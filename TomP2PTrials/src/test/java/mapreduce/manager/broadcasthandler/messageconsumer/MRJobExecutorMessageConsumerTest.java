@@ -24,8 +24,8 @@ import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
 import mapreduce.manager.MRJobExecutionManager;
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
+import mapreduce.manager.broadcasting.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.FileUtils;
@@ -64,10 +64,10 @@ public class MRJobExecutorMessageConsumerTest {
 
 	private static void resetJob() {
 		job = Job.create("TEST", PriorityLevel.MODERATE).addSubsequentProcedure(WordCountMapper.create()).maxNrOfFinishedWorkersPerTask(5);
-		ProcedureInformation currentProc = job.currentProcedure();
+		ProcedureInformation currentProc = job.previousProcedure();
 
 		for (String taskKey : TEST_KEYS) {
-			currentProc.addTask(Task.create(taskKey, job.id()));
+			currentProc.addTask(Task.create(taskKey, currentProc.jobProcedureDomain()));
 		}
 	}
 
@@ -79,33 +79,32 @@ public class MRJobExecutorMessageConsumerTest {
 	public void testHandleReceivedJob() {
 		testMessageConsumer.jobs().clear();
 		Job job = Job.create("TEST", PriorityLevel.MODERATE);
- 
+
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
 		testMessageConsumer.handleReceivedJob(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
-		
+
 		Job job2 = Job.create("TEST", PriorityLevel.HIGH);
 		testMessageConsumer.handleReceivedJob(job2);
 		assertEquals(2, testMessageConsumer.jobs().size());
 		assertEquals(job2.id(), testMessageConsumer.jobs().get(0).id());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(1).id());
-		
-		
+
 		Job job3 = Job.create("TEST", PriorityLevel.LOW);
 		testMessageConsumer.handleReceivedJob(job3);
 		assertEquals(3, testMessageConsumer.jobs().size());
 		assertEquals(job2.id(), testMessageConsumer.jobs().get(0).id());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(1).id());
 		assertEquals(job3.id(), testMessageConsumer.jobs().get(2).id());
-		
+
 		Job job4 = Job.create("TEST", PriorityLevel.MODERATE);
 		testMessageConsumer.handleReceivedJob(job4);
 
-		assertEquals(4, testMessageConsumer.jobs().size()); 
-		assertEquals(job2.id(), testMessageConsumer.jobs().get(0).id()); 
+		assertEquals(4, testMessageConsumer.jobs().size());
+		assertEquals(job2.id(), testMessageConsumer.jobs().get(0).id());
 		assertEquals(job3.id(), testMessageConsumer.jobs().get(3).id());
 	}
 
@@ -115,25 +114,25 @@ public class MRJobExecutorMessageConsumerTest {
 
 		testMessageConsumer.jobs().clear();
 
-		testMessageConsumer.handleReceivedJob(job);
+		testMessageConsumer.jobs().add(job);
 
 		List<Task> copy = new ArrayList<Task>(TEST_KEYS.length);
 		for (String taskKey : TEST_KEYS) {
-			copy.add(Task.create(taskKey, job.id()));
+			copy.add(Task.create(taskKey, job.previousProcedure().jobProcedureDomain()));
 		}
 
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
-				TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
+				TaskResult.create().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
-				TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
+				TaskResult.create().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
-				TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
+				TaskResult.create().sender(peer2).status(BCMessageStatus.EXECUTING_TASK));
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
-				TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
+				TaskResult.create().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
-				TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
+				TaskResult.create().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
-				TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
+				TaskResult.create().sender(peer1).status(BCMessageStatus.EXECUTING_TASK));
 
 		Job job1 = testMessageConsumer.jobs().get(0);
 		List<Task> job1Tasks = job1.currentProcedure().tasks();
@@ -144,7 +143,7 @@ public class MRJobExecutorMessageConsumerTest {
 		assertEquals(BCMessageStatus.EXECUTING_TASK, Tasks.statiForPeer(job1Tasks.get(0), peer1).get(1));
 
 		testMessageConsumer.handleTaskExecutionStatusUpdate(copy.get(0),
-				TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
+				TaskResult.create().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)));
 
 		assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(job1Tasks.get(0), peer1).get(1));
 
@@ -160,16 +159,16 @@ public class MRJobExecutorMessageConsumerTest {
 		testMessageConsumer.jobs().clear();
 		List<Task> tasks = job.currentProcedure().tasks();
 		for (Task task : tasks) {
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK),
+			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.EXECUTING_TASK),
 					job.maxNrOfFinishedWorkersPerTask());
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)),
+			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)),
 					job.maxNrOfFinishedWorkersPerTask());
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK),
+			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.EXECUTING_TASK),
 					job.maxNrOfFinishedWorkersPerTask());
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)),
+			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)),
 					job.maxNrOfFinishedWorkersPerTask());
 		}
-		testMessageConsumer.handleReceivedJob(job);
+		testMessageConsumer.jobs().add(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
 		assertEquals(job.id(), testMessageConsumer.jobs().get(0).id());
 		List<Task> tasks2 = testMessageConsumer.jobs().get(0).currentProcedure().tasks();
@@ -182,29 +181,29 @@ public class MRJobExecutorMessageConsumerTest {
 		//
 		List<Task> copy = new ArrayList<Task>(TEST_KEYS.length);
 		for (String taskKey : TEST_KEYS) {
-			copy.add(Task.create(taskKey, job.id()));
+			copy.add(Task.create(taskKey, job.previousProcedure().jobProcedureDomain()));
 		}
 		int max = job.maxNrOfFinishedWorkersPerTask();
 		for (Task task : copy) {
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK), max);
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.EXECUTING_TASK), max);
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);
+			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.EXECUTING_TASK), max);
+			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
+			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.EXECUTING_TASK), max);
+			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
+			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);
 
-			TaskResult next = TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1));
+			TaskResult next = TaskResult.create().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1));
 			Tasks.updateStati(task, next, max);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 
-			next = TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK);
+			next = TaskResult.create().sender(peer2).status(BCMessageStatus.EXECUTING_TASK);
 			Tasks.updateStati(task, next, max);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 
-			next = TaskResult.newInstance().sender(peer3).status(BCMessageStatus.EXECUTING_TASK);
+			next = TaskResult.create().sender(peer3).status(BCMessageStatus.EXECUTING_TASK);
 			Tasks.updateStati(task, next, max);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 
-			next = TaskResult.newInstance().sender(peer3).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1));
+			next = TaskResult.create().sender(peer3).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1));
 			Tasks.updateStati(task, next, max);
 			testMessageConsumer.handleTaskExecutionStatusUpdate(task, next);
 		}
@@ -220,23 +219,23 @@ public class MRJobExecutorMessageConsumerTest {
 		assertEquals(BCMessageStatus.FINISHED_TASK, Tasks.statiForPeer(taskToCheck, peer3).get(0));
 
 		Job jobCopy1 = job.copy();
-		jobCopy1.currentProcedure().tasks(copy);
+		jobCopy1.previousProcedure().tasks(copy);
 		testMessageConsumer.handleFinishedProcedure(jobCopy1);
 
 		List<Task> copy2 = new ArrayList<Task>(TEST_KEYS.length);
 		for (String taskKey : TEST_KEYS) {
-			copy2.add(Task.create(taskKey, job.id()));
+			copy2.add(Task.create(taskKey, job.previousProcedure().jobProcedureDomain()));
 		}
 		for (Task task : copy2) {
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);
-			Tasks.updateStati(task, TaskResult.newInstance().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
+			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);
+			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
+			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), max);
+			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);
 			System.err.println("Task is finished? " + task.isFinished());
 		}
 
 		Job jobCopy2 = job.copy();
-		jobCopy2.currentProcedure().tasks(copy2);
+		jobCopy2.previousProcedure().tasks(copy2);
 		testMessageConsumer.handleFinishedProcedure(jobCopy2);
 
 		List<Task> tasks3 = testMessageConsumer.jobs().get(0).currentProcedure().tasks();
@@ -251,8 +250,8 @@ public class MRJobExecutorMessageConsumerTest {
 					number = 2;
 				}
 				System.err.println(cntr++ + " i is " + i);
-				assertEquals(number, Tasks.statiForPeer(task, "EXECUTOR_"+i).size());
-				for (BCMessageStatus s : Tasks.statiForPeer(task, "EXECUTOR_"+i)) {
+				assertEquals(number, Tasks.statiForPeer(task, "EXECUTOR_" + i).size());
+				for (BCMessageStatus s : Tasks.statiForPeer(task, "EXECUTOR_" + i)) {
 					assertEquals(BCMessageStatus.FINISHED_TASK, s);
 				}
 			}

@@ -5,7 +5,7 @@ import java.util.Collection;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 
-public class Start implements IMapReduceProcedure {
+public class StartProcedure implements IMapReduceProcedure {
 
 	/**
 	 * 
@@ -17,11 +17,11 @@ public class Start implements IMapReduceProcedure {
 		return;
 	}
 
-	public static Start create() {
-		return new Start();
+	public static StartProcedure create() {
+		return new StartProcedure();
 	}
 
-	private Start() {
+	private StartProcedure() {
 
 	}
 

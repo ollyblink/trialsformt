@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;

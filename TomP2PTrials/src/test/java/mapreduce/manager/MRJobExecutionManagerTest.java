@@ -1,6 +1,8 @@
 package mapreduce.manager;
 
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -14,10 +16,7 @@ import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.computation.standardprocedures.WordCountReducer;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.TaskResult;
-import mapreduce.execution.task.Tasks;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
-import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobDistributedBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
@@ -43,7 +42,8 @@ public class MRJobExecutionManagerTest {
 
 		// String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";
 
-		dhtConnectionProvider = TestUtils.getTestConnectionProvider(9000);
+		Random rnd = new Random();
+		dhtConnectionProvider = TestUtils.getTestConnectionProvider(54321, 4);
 		jobExecutor = MRJobExecutionManager.newInstance(dhtConnectionProvider);
 		jobExecutor.start();
 
@@ -59,12 +59,16 @@ public class MRJobExecutionManagerTest {
 
 	@Test
 	public void test() throws Exception {
-		Job job = Job.create("TEST").addSubsequentProcedure(WordCountMapper.create()).addSubsequentProcedure(WordCountReducer.newInstance());
+		Job job = Job.create("TEST").addSubsequentProcedure(WordCountMapper.create()).addSubsequentProcedure(WordCountReducer.create());
 		String key = "file1";
-		String value = "hello world hello world hello world world world world";
+		String value = "";
+		for (int i = 0; i < 5; ++i) {
+			value += "hello world this is me ";
+		}
+		System.err.println("To process: " + value);
 
-//		String id = dhtConnectionProvider.owner();
-		ProcedureInformation pI = job.currentProcedure();
+		// String id = dhtConnectionProvider.owner();
+		ProcedureInformation pI = job.previousProcedure();
 
 		Task task = Task.create("START", pI.jobProcedureDomain());
 		pI.addTask(task);
@@ -115,7 +119,7 @@ public class MRJobExecutionManagerTest {
 									public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
 										if (future.isSuccess()) {
 											System.err.println("Broadcast job");
-											DistributedJobBCMessage message = dhtConnectionProvider.owner("TEST").broadcastNewJob(job);
+											JobDistributedBCMessage message = dhtConnectionProvider.owner("TEST").broadcastNewJob(job);
 											dhtConnectionProvider.owner(jobExecutor.id());
 										}
 									}
@@ -131,30 +135,30 @@ public class MRJobExecutionManagerTest {
 
 		System.err.println("Here2");
 		Thread.sleep(10000);
-		job.incrementCurrentProcedureIndex();
+		job.incrementProcedureIndex();
 		ListMultimap<String, Integer> toCheck = ArrayListMultimap.create();
 
 		List<FutureGet> futureGetData = SyncedCollectionProvider.syncedArrayList();
 		List<FutureGet> futureGetTEDomain = SyncedCollectionProvider.syncedArrayList();
 		List<FutureGet> futureGetProcKey = SyncedCollectionProvider.syncedArrayList();
 
-		System.err.println(job.currentProcedure());
+//		System.err.println(job.subsequentProcedure());
 		// job.incrementCurrentProcedureIndex();
-		String jobProcedureDomainString = job.currentProcedure().jobProcedureDomainString();
-		futureGetProcKey.add(
-				dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, jobProcedureDomainString).addListener(new BaseFutureAdapter<FutureGet>() {
+		// job.incrementCurrentProcedureIndex();
+		String dataLocationJobProcedureDomainString = job.currentProcedure().jobProcedureDomainString();
+		futureGetProcKey.add(dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, dataLocationJobProcedureDomainString)
+				.addListener(new BaseFutureAdapter<FutureGet>() {
 
 					@Override
 					public void operationComplete(FutureGet future) throws Exception {
 						if (future.isSuccess()) {
-							System.err.println("Current Procedure Domain: " + jobProcedureDomainString);
+//							System.err.println("Current Procedure Domain: " + dataLocationJobProcedureDomainString);
 							if (future.dataMap() != null) {
 								for (Number640 n : future.dataMap().keySet()) {
 									String key = (String) future.dataMap().get(n).object();
-									// System.err.println("Found key: " + key);
-									System.err.println("Key: " + key);
+//									System.err.println("Key: " + key);
 									Task task = Task.create(key, job.currentProcedure().jobProcedureDomain());
-									futureGetTEDomain.add(dhtConnectionProvider.getAll(task.id(), jobProcedureDomainString)
+									futureGetTEDomain.add(dhtConnectionProvider.getAll(task.id(), dataLocationJobProcedureDomainString)
 											.addListener(new BaseFutureAdapter<FutureGet>() {
 
 										@Override
@@ -162,27 +166,29 @@ public class MRJobExecutionManagerTest {
 											if (future.isSuccess()) {
 												if (future.dataMap() != null) {
 													for (Number640 n : future.dataMap().keySet()) {
-														Tuple<String, Integer> executorTaskDomainPart = (Tuple<String, Integer>) future.dataMap()
-																.get(n).object();
-														// System.err.println("Found taskExecutorDomain: " + taskExecutorDomain);
-														futureGetData.add(
-																dhtConnectionProvider.getAll(key, task.concatenationString(executorTaskDomainPart))
-																		.addListener(new BaseFutureAdapter<FutureGet>() {
+														Tuple<String, Tuple<String, Integer>> executorTaskDomainPart = (Tuple<String, Tuple<String, Integer>>) future
+																.dataMap().get(n).object();
+//														System.err.println("Found taskExecutorDomain: " + executorTaskDomainPart);
+														String concatenationString = task.concatenationString(executorTaskDomainPart.second());
+//														System.err.println("As concatenation: " + concatenationString);
+														futureGetData.add(dhtConnectionProvider.getAll(key, concatenationString)
+																.addListener(new BaseFutureAdapter<FutureGet>() {
 
 															@Override
 															public void operationComplete(FutureGet future) throws Exception {
 																if (future.isSuccess()) {
-																	if (future.dataMap() != null) {
-																		// System.err.println("Found values");
-																		String values = "";
-																		for (Number640 n : future.dataMap().keySet()) {
-																			Integer value = (Integer) ((Value) future.dataMap().get(n).object())
-																					.value();
-																			toCheck.put(key, value);
-																			values += value + ",";
-																		}
- 																		System.err.println(key + ": " + values);
+																	// if (future.dataMap() != null) {
+																	// System.err.println("Found values");
+//																	String values = "";
+																	Set<Number640> keySet = future.dataMap().keySet();
+																	// System.err.println("KeySet: " + keySet);
+																	for (Number640 n : keySet) {
+																		Integer value = (Integer) ((Value) future.dataMap().get(n).object()).value();
+																		toCheck.put(key, value);
+																		// values += value + ",";
 																	}
+																	// System.err.println(key + ": " + values);
+																	// }
 																}
 															}
 														}));
@@ -228,6 +234,7 @@ public class MRJobExecutionManagerTest {
 											for (String key : toCheck.keySet()) {
 												System.err.println(key + ": " + toCheck.get(key));
 											}
+											dhtConnectionProvider.shutdown();
 										}
 									}
 								});

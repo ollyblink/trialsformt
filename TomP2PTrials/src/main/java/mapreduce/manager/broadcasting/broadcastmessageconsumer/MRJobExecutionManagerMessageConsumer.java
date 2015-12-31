@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
+package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -9,21 +9,21 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import mapreduce.execution.computation.ProcedureInformation;
-import mapreduce.execution.computation.standardprocedures.EndReached;
+import mapreduce.execution.computation.standardprocedures.EndProcedure;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
 import mapreduce.manager.MRJobExecutionManager;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
-import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
-import mapreduce.manager.broadcasthandler.broadcastmessages.FinishedJobBCMessage;
-import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasthandler.messageconsumer.MessageConsumerTestSuite;
-import mapreduce.manager.conditions.JobBCMessageUpdateCondition;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
+import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobDistributedBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobFinishedBCMessage;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Tuple;
+import mapreduce.utils.conditions.JobBCMessageUpdateCondition;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -33,20 +33,10 @@ import net.tomp2p.peers.Number640;
 
 public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsumer {
 
-	private static final BCMessageStatus[] FINISHED_ALL_TASKS_MESSAGES_TO_REMOVE = { BCMessageStatus.EXECUTING_TASK, BCMessageStatus.FINISHED_TASK,
-			BCMessageStatus.FINISHED_PROCEDURE };
-
-	private Set<BCMessageStatus> finishedAllTasksMessagesToRemove;
-	private JobBCMessageUpdateCondition jobBCMessageUpdateCondition;
 	private MRJobExecutionManager jobExecutor;
 
 	private MRJobExecutionManagerMessageConsumer(BlockingQueue<IBCMessage> bcMessages, List<Job> jobs) {
 		super(bcMessages, jobs);
-
-		this.finishedAllTasksMessagesToRemove = new HashSet<BCMessageStatus>();
-		Collections.addAll(finishedAllTasksMessagesToRemove, FINISHED_ALL_TASKS_MESSAGES_TO_REMOVE);
-
-		this.jobBCMessageUpdateCondition = JobBCMessageUpdateCondition.create();
 	}
 
 	public static MRJobExecutionManagerMessageConsumer newInstance() {
@@ -81,12 +71,12 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			int index = jobs.indexOf(job);
 			logger.info("Index: " + index);
 			Job job2 = jobs.get(index);
-			logger.info("job2.currentProcedureIndex() == job.currentProcedureIndex()" + job2.currentProcedure() + " == " + job.currentProcedure()
-					+ " ? " + (job2.currentProcedure().equals(job.currentProcedure())));
-			if (job2.currentProcedure().equals(job.currentProcedure())) { // next procedure
+			logger.info("job2.currentProcedureIndex() == job.currentProcedureIndex()" + job2.previousProcedure() + " == " + job.previousProcedure()
+					+ " ? " + (job2.previousProcedure().equals(job.previousProcedure())));
+			if (job2.previousProcedure().equals(job.previousProcedure())) { // next procedure
 				jobs.set(index, job); // replaced
-				logger.info("replaced old job with new version as the procedure index increased: from " + job2.currentProcedure() + " to "
-						+ job.currentProcedure());
+				logger.info("replaced old job with new version as the procedure index increased: from " + job2.previousProcedure() + " to "
+						+ job.previousProcedure());
 				// }
 			}
 		}
@@ -104,39 +94,59 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			// task executing atm
 
 		}
+		Job currentlyExecutedJob = jobs.get(0);
+		jobExecutor.dhtConnectionProvider().broadcastHandler().currentlyExecutedJob(currentlyExecutedJob);
 		jobExecutor.execute(jobs.get(0));
 
 	}
 
 	@Override
-	public void handleTaskExecutionStatusUpdate(Task taskToUpdate, TaskResult toUpdate) {
-
+	public void handleTaskExecutionStatusUpdate(Job jobToUpdate, Task task, TaskResult updateInformation) {
+		boolean containsJob = false; // Use this to check if eventually, a new job was received that is being executed (in case of a newly online
+										// executor)
 		synchronized (jobs) {
 			logger.info("Looking for job in " + jobs);
 			for (Job job : jobs) {
-				logger.info(job.id() + ".equals(" + taskToUpdate.jobId() + ")" + job.id().equals(taskToUpdate.jobId()));
-				if (job.id().equals(taskToUpdate.jobId())) {
+				logger.info(job.id() + ".equals(" + jobToUpdate.id() + ")" + job.id().equals(task.jobId()));
+				if (job.equals(jobToUpdate)) {
+					containsJob = true; // Do nothing in the end, we already received that job once
 					logger.info("found job: " + job);
-					List<Task> tasks = job.subsequentProcedure().tasks();
-					logger.info("found tasks: " + tasks);
-					synchronized (tasks) {
-						int taskIndex = tasks.indexOf(taskToUpdate);
-						if (taskIndex < 0) {// Received a new task currently not yet assigned
-							tasks.add(taskToUpdate);
-							taskIndex = tasks.size() - 1;
+					Job currentlyExecutedJob = jobExecutor.currentlyExecutedJob();
+					if (currentlyExecutedJob != null) { // Ignore the message if it's only using up space and
+														// syncing time
+						if (job.equals(currentlyExecutedJob)) {
+							List<Task> tasks = job.currentProcedure().tasks();
+							logger.info("found tasks: " + tasks);
+							synchronized (tasks) {
+								int taskIndex = tasks.indexOf(task);
+								if (taskIndex < 0) {// Received a new task currently not yet assigned
+									tasks.add(task);
+									taskIndex = tasks.size() - 1;
+								}
+								logger.info("Updating task: " + tasks.get(taskIndex) + " with " + updateInformation);
+								Tasks.updateStati(tasks.get(taskIndex), updateInformation, job.maxNrOfFinishedWorkersPerTask());
+								break;
+							}
+						} else {
+							logger.warn("Ignored job update as it is not one for the currently executed job");
 						}
-						logger.info("Updating task: " + tasks.get(taskIndex) + " with " + toUpdate);
-						Tasks.updateStati(tasks.get(taskIndex), toUpdate, job.maxNrOfFinishedWorkersPerTask());
-						break;
+					} else {
+						logger.info("Problem: job found but currently, there is no job executing. Why? Makes no sense");
+						// TODO what could be the reason for this...
 					}
 				}
 			}
+		}
+		// Apparently we received a new job... Especially possible in cases this executor joint into a current execution and received a first status
+		// update as a broadcast
+		if (!containsJob) {
+			handleReceivedJob(jobToUpdate);
 		}
 	}
 
 	@Override
 	public void handleFinishedProcedure(Job job) {
-		logger.info("handleFinishedProcedure " + job);
+		logger.info("handleFinishedProcedure " + job.currentProcedure());
 		// if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
 		// return;
 		// }
@@ -162,15 +172,16 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		// this.bcMessages = tmp;
 		// }
 
-		List<Task> tasks = job.subsequentProcedure().tasks();
+		List<Task> tasks = job.currentProcedure().tasks();
+		logger.info("Tasks: " + tasks);
 		List<FutureGet> futureGets = SyncedCollectionProvider.syncedArrayList();
 		List<FuturePut> futurePuts = SyncedCollectionProvider.syncedArrayList();
 		for (Task task : tasks) {
 			logger.info("task: " + task);
 			List<Tuple<String, Integer>> finalExecutorTaskDomainParts = task.finalExecutorTaskDomainParts();
-			logger.info("finalExecutorTaskDomainParts: " + finalExecutorTaskDomainParts);
+			// logger.info("finalExecutorTaskDomainParts: " + finalExecutorTaskDomainParts);
 			for (Tuple<String, Integer> finalDataLocationDomain : finalExecutorTaskDomainParts) {
-				logger.info("finalDataLocationDomain: " + finalDataLocationDomain);
+				// logger.info("finalDataLocationDomain: " + finalDataLocationDomain);
 				Tuple<String, Tuple<String, Integer>> executorTaskDomain = task.executorTaskDomain(finalDataLocationDomain);
 				String combination = task.concatenationString(finalDataLocationDomain);
 				logger.info("get task keys for task executor domain: " + combination);
@@ -190,9 +201,9 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 											String key = (String) future.dataMap().get(n).object();
 											logger.info("Key: " + key);
 											futurePuts.add(jobExecutor.dhtConnectionProvider().add(key, executorTaskDomain,
-													job.subsequentProcedure().jobProcedureDomainString(), false));
+													job.currentProcedure().jobProcedureDomainString(), false));
 											futurePuts.add(jobExecutor.dhtConnectionProvider().add(DomainProvider.PROCEDURE_KEYS, key,
-													job.subsequentProcedure().jobProcedureDomainString(), false));
+													job.currentProcedure().jobProcedureDomainString(), false));
 										}
 										// }
 									} catch (IOException e) {
@@ -221,22 +232,24 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 							public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
 
 								if (future.isSuccess()) {
+									logger.info("Successfully put tasks into jobProcedure domain.JobProcedureDomain: "
+											+ job.currentProcedure().jobProcedureDomainString() + ", Tasks: " + tasks);
 									// well... check if there is actually any procedure left... Else job is finished...
-									job.incrementCurrentProcedureIndex();
-									ProcedureInformation subsequentProcedure = job.subsequentProcedure();
-									job.currentProcedure().tasks().clear();
-									if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndReached.class.getSimpleName())) {
+									job.incrementProcedureIndex();
+									ProcedureInformation subsequentProcedure = job.currentProcedure();
+									job.previousProcedure().tasks().clear();
+									if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
 										// Finished job :)
 										logger.info("Finished job");
-										FinishedJobBCMessage message = jobExecutor.dhtConnectionProvider().broadcastFinishedJob(job);
+										JobFinishedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastFinishedJob(job);
 										bcMessages.add(message);
 										// jobs.remove(job);
 									} else {
 										// Next procedure!!
 										logger.info("Execute next procedure");
-										DistributedJobBCMessage message = jobExecutor.dhtConnectionProvider().broadcastNewJob(job);
+										JobDistributedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastNewJob(job);
 										bcMessages.add(message);
-										logger.info("job.currentProcedure()  : " + job.currentProcedure());
+										logger.info("job.currentProcedure()  : " + job.previousProcedure());
 									}
 								} else {
 									// TODO Well... something has to be done instead... am I right?

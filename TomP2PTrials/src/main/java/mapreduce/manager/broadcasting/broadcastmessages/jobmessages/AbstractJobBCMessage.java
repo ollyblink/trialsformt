@@ -1,6 +1,7 @@
-package mapreduce.manager.broadcasthandler.broadcastmessages;
+package mapreduce.manager.broadcasting.broadcastmessages.jobmessages;
 
 import mapreduce.execution.job.Job;
+import mapreduce.manager.broadcasting.broadcastmessages.AbstractBCMessage;
 
 /**
  * Any message updating a job should extend this class

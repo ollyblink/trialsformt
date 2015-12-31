@@ -1,4 +1,4 @@
-package mapreduce.manager.conditions;
+package mapreduce.utils.conditions;
 
 import java.util.List;
 

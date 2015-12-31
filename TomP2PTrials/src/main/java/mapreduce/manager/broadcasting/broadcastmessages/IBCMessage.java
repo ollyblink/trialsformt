@@ -1,8 +1,8 @@
-package mapreduce.manager.broadcasthandler.broadcastmessages;
+package mapreduce.manager.broadcasting.broadcastmessages;
 
 import java.io.Serializable;
 
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
+import mapreduce.manager.broadcasting.broadcastmessageconsumer.IMessageConsumer;
 
 public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
 	public BCMessageStatus status();

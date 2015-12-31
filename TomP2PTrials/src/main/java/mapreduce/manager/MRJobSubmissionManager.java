@@ -21,9 +21,9 @@ import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
 import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.MRJobSubmissionManagerMessageConsumer;
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
-import mapreduce.manager.broadcasthandler.broadcastmessages.DistributedJobBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessageconsumer.MRJobSubmissionManagerMessageConsumer;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobDistributedBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
@@ -105,12 +105,12 @@ public class MRJobSubmissionManager {
 		String fileName = keyfilePath.replace(file.getPath(), "").replace(".", "").replace("\\", "");
 		String taskKey = fileName + "_" + filePartCounter++;
 
-		ProcedureInformation pI = job.currentProcedure();
+		ProcedureInformation pI = job.previousProcedure();
 		
 		Task task = Task.create(taskKey, pI.jobProcedureDomain());
 		for (int i = 0; i < Tasks.bestOfMaxNrOfFinishedWorkersWithSameResultHash(job.maxNrOfFinishedWorkersPerTask()); ++i) {
-			Tasks.updateStati(task, TaskResult.newInstance().sender(id).status(BCMessageStatus.EXECUTING_TASK), job.maxNrOfFinishedWorkersPerTask());
-			Tasks.updateStati(task, TaskResult.newInstance().sender(id).status(BCMessageStatus.FINISHED_TASK), job.maxNrOfFinishedWorkersPerTask());
+			Tasks.updateStati(task, TaskResult.create().sender(id).status(BCMessageStatus.EXECUTING_TASK), job.maxNrOfFinishedWorkersPerTask());
+			Tasks.updateStati(task, TaskResult.create().sender(id).status(BCMessageStatus.FINISHED_TASK), job.maxNrOfFinishedWorkersPerTask());
 		}
 		Tuple<String, Integer> taskExecutor = Tuple.create(id, task.executingPeers().get(id).size() - 1);
 
@@ -140,7 +140,7 @@ public class MRJobSubmissionManager {
 										if (future.isSuccess()) {
 											logger.info("Successfully added data. Broadcasting job.");
 
-											DistributedJobBCMessage message = dhtConnectionProvider.broadcastNewJob(job);
+											JobDistributedBCMessage message = dhtConnectionProvider.broadcastNewJob(job);
 											messageConsumer.queue().add(message);
 										} else {
 											logger.warn(future.failedReason());

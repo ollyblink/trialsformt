@@ -5,7 +5,7 @@ import java.util.Collection;
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 
-public class EndReached implements IMapReduceProcedure {
+public class EndProcedure implements IMapReduceProcedure {
 
 	/**
 	 * 
@@ -17,11 +17,11 @@ public class EndReached implements IMapReduceProcedure {
 		return;
 	}
 
-	public static EndReached create() {
-		return new EndReached();
+	public static EndProcedure create() {
+		return new EndProcedure();
 	}
 
-	private EndReached() {
+	private EndProcedure() {
 
 	}
 }

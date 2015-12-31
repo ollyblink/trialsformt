@@ -5,14 +5,14 @@ import java.util.Collections;
 import java.util.List;
 
 import generictests.Example;
-import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
+import mapreduce.manager.broadcasting.MRBroadcastHandler;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.PeerDHT;
 
 public class TestUtils {
-	public static IDHTConnectionProvider getTestConnectionProvider(int port, Boolean... hasBCHandler) {
+	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers, Boolean... hasBCHandler) {
 		String bootstrapIP = "";
 		int bootstrapPort = port;
 		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
@@ -22,9 +22,9 @@ public class TestUtils {
 		if (hasBCHandler != null && hasBCHandler.length == 1 && !hasBCHandler[0]) {
 			bcHandler = null;
 		}
-		System.err.println(bcHandler);
+//		System.err.println(bcHandler);
 		try {
-			peerArray = Example.createAndAttachPeersDHT(10, bootstrapPort, bcHandler);
+			peerArray = Example.createAndAttachPeersDHT(nrOfPeers, bootstrapPort, bcHandler);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
-import mapreduce.manager.broadcasthandler.MRBroadcastHandler;
+import mapreduce.manager.broadcasting.MRBroadcastHandler;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -149,8 +149,7 @@ public class Example {
 			bcH = new MyBroadcastHandler();
 		}else{
 			bcH = bcHandler;
-		}
-		System.err.println(bcH);
+		} 
 		PeerDHT[] peers = new PeerDHT[nr];
 		for (int i = 0; i < nr; i++) {
 			if (i == 0) {
@@ -158,6 +157,10 @@ public class Example {
 			} else {
 				peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).masterPeer(peers[0].peer()).start()).start();
 			}
+		}
+		System.err.println("createAndAttachPeersDHT: ALL PEERS");
+		for(PeerDHT p: peers){
+			System.err.println(p.peerID());
 		}
 		return peers;
 	}

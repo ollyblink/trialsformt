@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
+package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -6,7 +6,7 @@ import java.util.concurrent.BlockingQueue;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
-import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 
 public interface IMessageConsumer extends Runnable {
 
@@ -23,7 +23,7 @@ public interface IMessageConsumer extends Runnable {
 
 	public void handleFailedJob(Job job);
 
-	public void handleTaskExecutionStatusUpdate(Task task, TaskResult toUpdate);
+	public void handleTaskExecutionStatusUpdate(Job job, Task task, TaskResult updateInformation);
 
 	public void handleFinishedProcedure(Job job);
 

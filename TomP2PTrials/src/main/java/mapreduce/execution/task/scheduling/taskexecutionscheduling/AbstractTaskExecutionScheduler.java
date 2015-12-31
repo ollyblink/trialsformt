@@ -6,8 +6,8 @@ import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.Tasks;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
-import mapreduce.manager.conditions.EmptyListCondition;
 import mapreduce.utils.TimeToLive;
+import mapreduce.utils.conditions.EmptyListCondition;
 
 public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 

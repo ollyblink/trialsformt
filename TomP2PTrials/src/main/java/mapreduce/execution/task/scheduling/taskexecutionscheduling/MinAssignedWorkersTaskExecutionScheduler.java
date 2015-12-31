@@ -38,7 +38,10 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 
 	@Override
 	protected Task scheduleNonNull(List<Task> tasksToSchedule) {
-		logger.info("to schedule: " + tasksToSchedule);
+		logger.info("Tasks to schedule");
+		for(Task task: tasksToSchedule){
+			logger.info(task.id() + ", ExecutingPeers stati: "+task.executingPeers().values());
+		}
 		Task assignedTask = null;
 		if (!allTasksAreFinished(tasksToSchedule)) {
 			if (randomTaskScheduler != null && noTaskAssignedYet(tasksToSchedule)) {

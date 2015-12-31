@@ -2,7 +2,7 @@ package mapreduce.utils;
 
 import java.util.List;
 
-import mapreduce.manager.conditions.ICondition;
+import mapreduce.utils.conditions.ICondition;
 
 public enum TimeToLive {
 	INSTANCE;

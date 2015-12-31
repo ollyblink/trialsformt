@@ -26,7 +26,13 @@
 <!--    <logger name="net.tomp2p.connection.HeartBeat" level="ERROR"/> -->
 <!--    <logger name="net.tomp2p.connection.PeerCreator" level="ERROR"/> -->
     
-  <!--  <logger name="net.tomp2p.message.TomP2PDecoderTCP" level="TRACE"/> -->
+<!--    <logger name="mapreduce.manager.broadcasthandler.broadcastmessageconsumer.AbstractMessageConsumer" level="OFF"/> -->
+<!--    <logger name="mapreduce.manager.broadcasthandler.MRBroadcastHandler" level="OFF"/> -->
+<!--    <logger name="mapreduce.manager.MRJobExecutionManager" level="OFF"/> -->
+<!--    <logger name="mapreduce.storage.DHTConnectionProvider" level="OFF"/> -->
+<!--    <logger name="mapreduce.execution.computation.context.DHTStorageContext" level="OFF"/> -->
+<!--    <logger name="mapreduce.execution.task.Tasks" level="OFF"/> -->
+<!--    <logger name="mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler" level="OFF"/> -->
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderUDP" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.message.Decoder" level="TRACE"/> -->
   

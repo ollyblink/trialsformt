@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasthandler.broadcastmessages.TaskUpdateBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.TaskUpdateBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -52,6 +52,7 @@ public class DHTStorageContext extends AbstractBaseContext {
 		updateResultHash(keyOut, valueOut);
 
 		String combinedExecutorTaskDomain = task.concatenationString(taskExecutor);
+		logger.info("Combined executor task domain: " + combinedExecutorTaskDomain);
 
 		this.futurePutData.add(this.dhtConnectionProvider.add(keyOut.toString(), valueOut, combinedExecutorTaskDomain, true)
 				.addListener(new BaseFutureAdapter<FuturePut>() {

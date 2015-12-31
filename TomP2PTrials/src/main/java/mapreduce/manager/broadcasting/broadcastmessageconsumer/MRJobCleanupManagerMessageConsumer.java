@@ -1,10 +1,10 @@
-package mapreduce.manager.broadcasthandler.broadcastmessageconsumer;
+package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 import mapreduce.execution.job.Job;
-import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.storage.dhtmaintenance.IDHTDataCleaner;
 

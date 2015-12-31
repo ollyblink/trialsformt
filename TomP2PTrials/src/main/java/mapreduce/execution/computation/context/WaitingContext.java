@@ -3,7 +3,7 @@ package mapreduce.execution.computation.context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.AbstractMessageConsumer;
+import mapreduce.manager.broadcasting.broadcastmessageconsumer.AbstractMessageConsumer;
 
 public class WaitingContext extends AbstractBaseContext {
 	private static final int DEFAULT_WAITING_TIME = 1;

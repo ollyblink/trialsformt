@@ -1,7 +1,8 @@
-package mapreduce.manager.broadcasthandler.broadcastmessages;
+package mapreduce.manager.broadcasting.broadcastmessages.jobmessages;
 
 import mapreduce.execution.job.Job;
-import mapreduce.manager.broadcasthandler.broadcastmessageconsumer.IMessageConsumer;
+import mapreduce.manager.broadcasting.broadcastmessageconsumer.IMessageConsumer;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 
 public class JobFailedBCMessage extends AbstractJobBCMessage {
 

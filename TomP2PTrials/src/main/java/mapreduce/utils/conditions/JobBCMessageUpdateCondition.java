@@ -1,10 +1,10 @@
-package mapreduce.manager.conditions;
+package mapreduce.utils.conditions;
 
 import java.util.Set;
 
-import mapreduce.manager.broadcasthandler.broadcastmessages.BCMessageStatus;
-import mapreduce.manager.broadcasthandler.broadcastmessages.IBCMessage;
-import mapreduce.manager.broadcasthandler.broadcastmessages.IJobBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
+import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.IJobBCMessage;
 
 public final class JobBCMessageUpdateCondition implements ICondition<IBCMessage> {
 
