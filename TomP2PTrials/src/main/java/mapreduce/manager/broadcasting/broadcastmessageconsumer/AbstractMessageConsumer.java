@@ -28,8 +28,6 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	protected List<Job> jobs;
 
 	private boolean canTake;
-	/** Used to signal e.g. the job executor that currently this message consumer is busy */
-	private boolean isBusy;
 
 	protected AbstractMessageConsumer(BlockingQueue<IBCMessage> bcMessages, List<Job> jobs) {
 		this.bcMessages = bcMessages;
@@ -72,15 +70,6 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 		return jobs;
 	}
 
-	public AbstractMessageConsumer isBusy(boolean isBusy) {
-		this.isBusy = isBusy;
-		return this;
-	}
-
-	public boolean isBusy() {
-		return this.isBusy;
-	}
-
 	// Dummy implementations
 	@Override
 	public void handleFinishedJob(Job job) {
@@ -104,5 +93,9 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 	@Override
 	public void handleFinishedProcedure(Job job) {
 
+	}
+
+	@Override
+	public void handleFailedJob(Job job) {
 	}
 }

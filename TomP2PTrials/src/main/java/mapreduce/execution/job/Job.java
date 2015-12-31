@@ -83,6 +83,8 @@ public class Job implements Serializable, Comparable<Job> {
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
 	private int jobSubmissionCounter;
 
+	private boolean isActive;
+
 	private Job(String jobSubmitterID, PriorityLevel... priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
@@ -324,9 +326,17 @@ public class Job implements Serializable, Comparable<Job> {
 		return priorityLevel;
 	}
 
-	public Long creationTime() {
-		// TODO Auto-generated method stub
+	public Long creationTime() { 
 		return creationTime;
+	}
+
+	public boolean isActive() {
+		return isActive;
+	}
+
+	public Job isActive(boolean isActive) {
+		this.isActive = isActive;
+		return this;
 	}
 
 }
