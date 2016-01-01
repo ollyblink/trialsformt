@@ -55,8 +55,7 @@ public class MRJobExecutionManager {
 	// private List<Future<?>> activeThreads = SyncedCollectionProvider.syncedArrayList();
 
 	private ITaskScheduler taskExecutionScheduler;
-
-	private boolean isExecutionAborted;
+ 
 
 	private MRJobExecutionManager() {
 
@@ -115,12 +114,8 @@ public class MRJobExecutionManager {
 	// End Maintenance
 	// Execution
 
-	public void execute(Job job) {
-		isExecutionAborted = false;
-		this.currentlyExecutedJob = job;
-		// ProcedureInformation previousProcedureInformation = job.currentProcedure();
-		// this.taskExecutionScheduler.procedureInformation(previousProcedureInformation);
-
+	public void execute(Job job) { 
+		this.currentlyExecutedJob = job.isActive(true);
 		// Get the data for the job's current procedure
 		// this.server = new ThreadPoolExecutor(2, 2, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
@@ -128,7 +123,6 @@ public class MRJobExecutionManager {
 		logger.info("Got job: " + currentlyExecutedJob.id() + ", retrieving data for , " + dataLocationJobProcedureDomainString);
 
 		Tuple<String, Tuple<String, Integer>> subsequentJobProcedureDomain = job.currentProcedure().jobProcedureDomain();
-		// List<FutureGet> futureGetTaskExecutorDomains = syncedArrayList();
 
 		// Get all procedure keys!! Create all the tasks for each key!!!
 		List<Task> tasks = job.currentProcedure().tasks();
@@ -141,65 +135,56 @@ public class MRJobExecutionManager {
 						logger.info("Job Proc domain: " + dataLocationJobProcedureDomainString);
 						if (future.isSuccess()) {
 							try {
-								if (future.dataMap() != null) {
-									for (Number640 n : future.dataMap().keySet()) {
-										String key = (String) future.dataMap().get(n).object();
-										logger.info("Key: " + key);
-										Task task = Task.create(key, subsequentJobProcedureDomain);
+								for (Number640 n : future.dataMap().keySet()) {
+									String key = (String) future.dataMap().get(n).object();
+									logger.info("Key: " + key);
+									Task task = Task.create(key, subsequentJobProcedureDomain);
 
-										if (tasks.contains(task)) {// Don't need to add it more, got it e.g. from a BC
-											logger.info("tasks.contains(" + task + "): " + tasks.contains(task));
-											return;
-										} else {
-											logger.info("Get <" + task.id() + "," + dataLocationJobProcedureDomainString + ">");
-											dhtConnectionProvider.getAll(task.id(), dataLocationJobProcedureDomainString)
-													.addListener(new BaseFutureAdapter<FutureGet>() {
+									if (tasks.contains(task)) {// Don't need to add it more, got it e.g. from a BC
+										logger.info("tasks.contains(" + task + "): " + tasks.contains(task));
+										return;
+									} else {
+										logger.info("Get <" + task.id() + "," + dataLocationJobProcedureDomainString + ">");
+										dhtConnectionProvider.getAll(task.id(), dataLocationJobProcedureDomainString)
+												.addListener(new BaseFutureAdapter<FutureGet>() {
 
-												@Override
-												public void operationComplete(FutureGet future) throws Exception {
-													if (future.isSuccess()) {
-														try {
-															if (future.dataMap() != null) {
+											@Override
+											public void operationComplete(FutureGet future) throws Exception {
+												if (future.isSuccess()) {
+													try {
+														for (Number640 n : future.dataMap().keySet()) {
+															Tuple<String, Tuple<String, Integer>> initialDataLocation = (Tuple<String, Tuple<String, Integer>>) future
+																	.dataMap().get(n).object();
 
-																for (Number640 n : future.dataMap().keySet()) {
-																	Tuple<String, Tuple<String, Integer>> initialDataLocation = (Tuple<String, Tuple<String, Integer>>) future
-																			.dataMap().get(n).object();
-
-																	logger.info("taskExecutor: " + initialDataLocation);
-																	task.addInitialExecutorTaskDomain(initialDataLocation);
-																}
-																if (!tasks.contains(task)) {
-																	logger.info("!tasks.contains(task)");
-																	tasks.add(task);
-																	if (canExecute()) {
-																		executeTask(taskExecutionScheduler.schedule(tasks));
-																	}
-																}
-															}
-														} catch (IOException e) {
-															logger.info("failed");
-															logger.info("failed");
-															// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
+															logger.info("taskExecutor: " + initialDataLocation);
+															task.addInitialExecutorTaskDomain(initialDataLocation);
 														}
-													} else {
-														// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
+														if (!tasks.contains(task)) {
+															logger.info("!tasks.contains(task)");
+															tasks.add(task);
+															if (canExecute()) {
+																executeTask(taskExecutionScheduler.schedule(tasks));
+															}
+														}
+													} catch (IOException e) {
 														logger.info("failed");
-														logger.info("failed");
+														// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
 													}
+												} else {
+													// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
+													logger.info("failed");
 												}
+											}
 
-											});
-										}
+										});
 									}
 								}
 							} catch (IOException e) {
 								// dhtConnectionProvider.broadcastFailedTask(taskToDistribute);
 								logger.info("failed");
-								logger.info("failed");
 							}
 						} else {
 							// dhtConnectionProvider.broadcastFailedJob(jobs.get(0));
-							logger.info("failed");
 							logger.info("failed");
 						}
 					}
@@ -216,8 +201,11 @@ public class MRJobExecutionManager {
 			List<Tuple<String, Tuple<String, Integer>>> executorTaskDomains = task.initialExecutorTaskDomain();
 			List<Object> valuesCollector = syncedArrayList();
 			List<FutureGet> futureGetData = syncedArrayList();
-
-			Tuple<String, Integer> taskExecutor = Tuple.create(id, task.executingPeers().get(id).size());
+			Tuple<String, Integer> taskExecutor = null;
+			synchronized (task.executingPeers()) {
+				task.executingPeers().put(id, BCMessageStatus.EXECUTING_TASK);
+				taskExecutor = Tuple.create(id, task.executingPeers().get(id).size() - 1);
+			}
 
 			messageConsumer.queue().add(dhtConnectionProvider.broadcastExecutingTask(task, taskExecutor));
 
@@ -250,13 +238,12 @@ public class MRJobExecutionManager {
 						public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 							if (future.isSuccess()) {
 								task.isActive(false);
-								executionCounter--; 
+								executionCounter--;
 								Task nextTask = taskExecutionScheduler.procedureInformation(currentPI).schedule(currentPI.tasks());
 								if (currentPI.isFinished()) {
 									// May have been aborted from outside and thus, hasn't finished yet (in case abortExecution(job) was called
-									ProcedureFinishedBCMessage message = dhtConnectionProvider
-											.broadcastFinishedAllTasksOfProcedure(currentlyExecutedJob);
-									messageConsumer.queue().add(message);
+									currentlyExecutedJob.isActive(false);
+									messageConsumer.queue().add(dhtConnectionProvider.broadcastFinishedAllTasksOfProcedure(currentlyExecutedJob));
 									logger.info("Broadcast finished Procedure");
 								} else {
 									messageConsumer.queue()
@@ -313,24 +300,18 @@ public class MRJobExecutionManager {
 		});
 	}
 
-	// private void cleanUp() {
-	// server.shutdown();
-	// while (!server.isTerminated()) {
-	// try {
-	// Thread.sleep(10);
-	// } catch (InterruptedException e) {
-	// e.printStackTrace();
-	// }
-	// }
-	// this.server = new ThreadPoolExecutor(2, 2, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-	// }
-
 	public boolean isExecutionAborted() {
-		return isExecutionAborted;
+		if (this.currentlyExecutedJob != null) {
+			return this.currentlyExecutedJob.isActive();
+		} else {
+			return true;
+		}
 	}
 
 	public void isExecutionAborted(boolean isExecutionAborted) {
-		this.isExecutionAborted = isExecutionAborted;
+		if (this.currentlyExecutedJob != null) {
+			this.currentlyExecutedJob.isActive(false);
+		}
 	}
 
 	public boolean canExecute() {
@@ -340,10 +321,6 @@ public class MRJobExecutionManager {
 	public ITaskScheduler taskExecutionScheduler() {
 		return this.taskExecutionScheduler;
 	}
-
-	// public List<Job> jobs() {
-	// return jobs;
-	// }
 
 	// End Execution
 

@@ -50,6 +50,8 @@ public class Task implements Serializable, Comparable<Task> {
 
 	private List<Tuple<String, Tuple<String, Integer>>> initialDataLocation;
 
+	private boolean isSuccessfullyAdded;
+
 	private Task(Object key, Tuple<String, Tuple<String, Integer>> jobProcedureDomain) {
 		this.key = key;
 		this.jobProcedureDomain = jobProcedureDomain;
@@ -83,8 +85,58 @@ public class Task implements Serializable, Comparable<Task> {
 		return this;
 	}
 
-	public ListMultimap<String, BCMessageStatus> executingPeers() {
-		return this.executingPeers;
+	public boolean isSuccessfullyAdded() {
+		return this.isSuccessfullyAdded;
+	}
+
+	public Task isSuccessfullyAdded(boolean isSuccessfullyAdded) {
+		this.isSuccessfullyAdded = isSuccessfullyAdded;
+		return this;
+	}
+
+	// public ListMultimap<String, BCMessageStatus> executingPeers() {
+	// Tasks.updateStatiNonChecked(taskToUpdate, receivedTask, resultHash, jobToUpdate.maxNrOfFinishedWorkersPerTask());
+	// //Update dht and remove task
+	// if(taskToUpdate.isFinished()){
+	// ListMultimap<String, BCMessageStatus> executors = taskToUpdate.executingPeers();
+	// synchronized (executors) {
+	// for (String p : executors.keySet()) {
+	// List<BCMessageStatus> list = executors.get(p);
+	// for (int j = 0; j < list.size(); ++j) {
+	// Tuple<String, Integer> toRemove = Tuple.create(p, j);
+	// if (!taskToUpdate.finalExecutorTaskDomainParts().contains(toRemove)) {
+	// taskToUpdate.addRejectedExecutorTaskDomainPart(toRemove);
+	// }
+	// }
+	// }
+	// }
+	// }
+	// return this.executingPeers;
+	// }
+
+	public void addExecutor(String executor, BCMessageStatus status, Integer location, int maxNrOfFinishedWorkers, Number160 resultHash) {
+		if (status == BCMessageStatus.FINISHED_TASK && resultHash != null) {
+			int nrOfResultsWithHash = updateResultHash(Tuple.create(executor, location), resultHash);
+			boolean bestOfAchieved = (nrOfResultsWithHash == Tasks.bestOfMaxNrOfFinishedWorkersWithSameResultHash(maxNrOfFinishedWorkers));
+			boolean enoughWorkersFinished = Tasks.totalNumberOfFinishedExecutions(this) >= maxNrOfFinishedWorkers;
+
+			if (bestOfAchieved || enoughWorkersFinished) { // Task is finished
+				isFinished(true);
+				this.addFinalExecutorTaskDomainPart(Tuple.create(executor, location));
+
+				synchronized (this.executingPeers) {
+					for (String p : executingPeers.keySet()) {
+						List<BCMessageStatus> list = executingPeers.get(p);
+						for (int j = 0; j < list.size(); ++j) {
+							Tuple<String, Integer> toRemove = Tuple.create(p, j);
+							if (!finalExecutorTaskDomainParts.contains(toRemove)) {
+								addRejectedExecutorTaskDomainPart(toRemove);
+							}
+						}
+					}
+				}
+			}
+		}  
 	}
 
 	public ListMultimap<Number160, String> taskResults() {

@@ -36,6 +36,7 @@ public interface IDHTConnectionProvider {
 	// public void createTasks(Job job, List<FutureGet> procedureTaskFutureGetCollector, List<Task> procedureTaskCollector);
 
 	public FutureGet getAll(String keyString, String domainString);
+	public FutureGet get(String job, String receivedJobId);
 
 	// DHT access
 
@@ -104,5 +105,6 @@ public interface IDHTConnectionProvider {
 	public IDHTConnectionProvider addMessageQueueToBroadcastHandler(BlockingQueue<IBCMessage> bcMessages);
 
 	public MRBroadcastHandler broadcastHandler();
+
 
 }

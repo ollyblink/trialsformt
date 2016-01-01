@@ -16,11 +16,14 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	protected String sender;
 	protected Long creationTime = System.currentTimeMillis();
 
-	private boolean isAlreadyProcessed;;
+	private boolean isAlreadyProcessed;
+
+	protected AbstractBCMessage() { 
+		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
+	}
 
 	@Override
 	public AbstractBCMessage sender(final String sender) {
-		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.sender = sender;
 		return this;
 	}
@@ -36,17 +39,29 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	}
 
 	@Override
-	public int compareTo(IBCMessage o) {
-		AbstractBCMessage other = (AbstractBCMessage) o;
-		if (sender != null) {
-			if (sender.equals(other.sender)) {
-				// The sender is the same, in that case, the messages should be sorted by creation time (preserve total ordering)
-				return creationTime.compareTo(other.creationTime);
+	public int compareTo(IBCMessage o) {// TODO: CHEcK
+		if (isAlreadyProcessed && !o.isAlreadyProcessed()) {
+			return 1;
+		} else if (!isAlreadyProcessed && o.isAlreadyProcessed()) {
+			return -1;
+		} else if (!isAlreadyProcessed && !o.isAlreadyProcessed()) {
+			AbstractBCMessage other = (AbstractBCMessage) o;
+			if (sender != null) {
+				if (sender.equals(other.sender)) {
+					// The sender is the same, in that case, the messages should be sorted by creation time (preserve total ordering)
+					return creationTime.compareTo(other.creationTime);
+				} else {
+
+					// else don't bother, just make sure more important messages come before less important, such that e.g. an executing peer can be
+					// stopped if
+					// enough tasks were already finished
+					return status().compareTo(other.status());
+				}
 			}
+		} else {
+			return 0;
 		}
-		// else don't bother, just make sure more important messages come before less important, such that e.g. an executing peer can be stopped if
-		// enough tasks were already finished
-		return status().compareTo(other.status());
+		return 0;
 	}
 
 	@Override
@@ -58,14 +73,14 @@ public abstract class AbstractBCMessage implements IBCMessage {
 	public IBCMessage isAlreadyProcessed(boolean isAlreadyProcessed) {
 		this.isAlreadyProcessed = isAlreadyProcessed;
 		return this;
-	}
-
-	 
-
+	} 
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((creationTime == null) ? 0 : creationTime.hashCode());
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result + ((sender == null) ? 0 : sender.hashCode());
 		return result;
 	}
@@ -79,6 +94,16 @@ public abstract class AbstractBCMessage implements IBCMessage {
 		if (getClass() != obj.getClass())
 			return false;
 		AbstractBCMessage other = (AbstractBCMessage) obj;
+		if (creationTime == null) {
+			if (other.creationTime != null)
+				return false;
+		} else if (!creationTime.equals(other.creationTime))
+			return false;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
 		if (sender == null) {
 			if (other.sender != null)
 				return false;

@@ -1,21 +1,18 @@
 package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
-import java.io.IOException;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
+
+import com.google.common.collect.ListMultimap;
 
 import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.standardprocedures.EndProcedure;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
 import mapreduce.manager.MRJobExecutionManager;
-import mapreduce.manager.broadcasthandler.messageconsumer.MessageConsumerTestSuite;
 import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobDistributedBCMessage;
@@ -23,13 +20,12 @@ import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobFinishedB
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Tuple;
-import mapreduce.utils.conditions.JobBCMessageUpdateCondition;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
-import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.Number160;
 
 public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsumer {
 
@@ -60,113 +56,165 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	@Override
-	public void handleReceivedJob(Job job) {
-		logger.info("Received job: " + job);
+	public void handleReceivedJob(String receivedJobId, int currentProcedureIndex) {
+		// logger.info("Received job: " + job);
 
-		if (!jobs.contains(job)) { // Job was not yet received
-			jobs.add(job);
-			logger.info("Added new job");
-		} else { // Job was already received once. So probably the procedure changed 
+		Job jobDummyToRetrieve = Job.create(receivedJobId);
+		if (!jobs.contains(jobDummyToRetrieve)) { // Job was not yet received
+			jobExecutor.dhtConnectionProvider().get(DomainProvider.JOB, receivedJobId).addListener(new BaseFutureAdapter<FutureGet>() {
+
+				@Override
+				public void operationComplete(FutureGet future) throws Exception {
+					if (future.isSuccess()) {
+						Job job = (Job) future.data().object();
+						// Make sure it's on the right procedure
+						logger.info("Successfully retrieved and added job");
+
+						while (currentProcedureIndex > job.currentProcedure().procedureIndex()) {
+							job.incrementProcedureIndex();
+						}
+						jobs.add(job);
+						executeNext();
+					} else {
+						logger.warn("No success on retrieving job with id: " + receivedJobId);
+					}
+				}
+
+			});
+			// logger.info("Added new job");
+		} else { // Job was already received once. So probably the procedure changed
 			// if (!sender.equals(jobExecutor.id())) {
-			int index = jobs.indexOf(job);
-			logger.info("Index: " + index);
-			Job job2 = jobs.get(index);
-			logger.info("job2.currentProcedureIndex() == job.currentProcedureIndex()" + job2.previousProcedure() + " == " + job.previousProcedure()
-					+ " ? " + (job2.previousProcedure().equals(job.previousProcedure())));
-			if (job2.previousProcedure().equals(job.previousProcedure())) { // next procedure
-				jobs.set(index, job); // replaced
-				logger.info("replaced old job with new version as the procedure index increased: from " + job2.previousProcedure() + " to "
-						+ job.previousProcedure());
-				// }
+			int index = jobs.indexOf(jobDummyToRetrieve);
+			// logger.info("Index: " + index);
+			Job actualJob = jobs.get(index);
+
+			while (currentProcedureIndex > actualJob.currentProcedure().procedureIndex()) {
+				actualJob.incrementProcedureIndex();
 			}
+			executeNext();
+			// logger.info("job2.currentProcedureIndex() == job.currentProcedureIndex()" + job2.previousProcedure() + " == " + job.previousProcedure()
+			// + " ? " + (job2.previousProcedure().equals(job.previousProcedure())));
+			// if (job2.previousProcedure().equals(job.previousProcedure())) { // next procedure
+			// jobs.set(index, job); // replaced
+			// logger.info("replaced old job with new version as the procedure index increased: from " + job2.previousProcedure() + " to "
+			// + job.previousProcedure());
+			// }
+			// }
 		}
-		synchronized (jobs) {
-			Collections.sort(jobs);
-		}
-		logger.info("Jobs: " + jobs);
-		if (jobExecutor.currentlyExecutedJob() != null && !jobExecutor.currentlyExecutedJob().equals(jobs.get(0))) { // No job is executed atm
-
-			logger.info("jobExecutor.currentlyExecutedJob() != null");
-			// The job currently executing is not the one with highest priority
-			// anymore
-			jobExecutor.isExecutionAborted(true); // Abort the currently executing job (meaning, interrupt until later resume... This
-													// finishes the
-			// task executing atm
-
-		} 
-		jobExecutor.execute(jobs.get(0).isActive(true));
 
 	}
 
+	private void executeNext() {
+		synchronized (jobs) {
+			Collections.sort(jobs);
+		}
+		// logger.info("Jobs: " + jobs);
+		if (jobExecutor.currentlyExecutedJob() != null) {
+			if (!jobExecutor.currentlyExecutedJob().equals(jobs.get(0))) {
+
+				// logger.info("jobExecutor.currentlyExecutedJob() != null");
+				// The job currently executing is not the one with highest priority
+				// anymore
+				// Abort the currently executing job (meaning, interrupt until later resume... This finishes the task executing atm
+				jobExecutor.isExecutionAborted(true);
+				jobExecutor.execute(jobs.get(0));
+			} else {
+				if (!jobExecutor.currentlyExecutedJob().isActive()) {
+					jobExecutor.execute(jobs.get(0));
+				}
+			}
+
+		} else {
+			jobExecutor.execute(jobs.get(0));
+		}
+	}
+
 	@Override
-	public void handleTaskExecutionStatusUpdate(Job receivedJob, Task receivedTask, TaskResult taskResultUpdate) {
+	public void handleTaskExecutionStatusUpdate(String receivedJobID, int receivedCurrentProcedureIndex, Task receivedTask, Number160 resultHash) {
 		// Make sure the transmitted job only contains procedure information for the tasks that need to be updated...
 		// Don't forget the isFinished for all Job/Procedure/Task and isActive Job/Task
 		// public void TaskUpdate(Job receivedJob, Task receivedTask, TaskResult taskResultUpdate) {
 		// Checking the jobs
 		// Job here needs to only have tasks for the currently executed procedure used
-		if (jobs.contains(receivedJob)) { // If it contains it, we may update it
-			int jobIndex = jobs.indexOf(receivedJob);
+		Job receivedJobDummy = Job.create(receivedJobID);
+		if (jobs.contains(receivedJobDummy)) { // If it contains it, we may update it
+			int jobIndex = jobs.indexOf(receivedJobDummy);
 			Job jobToUpdate = jobs.get(jobIndex);
 
 			if (jobToUpdate.isActive()) { // We only want to update a currently executed job
 				// Check the current procedure's actuality...
 				ProcedureInformation currentPI = jobToUpdate.currentProcedure();
-				ProcedureInformation receivedPI = receivedJob.currentProcedure();
+				// ProcedureInformation receivedPI = receivedJobDummy.currentProcedure();
 				// Checking the procedures' orders: are the same procedures executed?
-				if (currentPI.procedureIndex() == receivedPI.procedureIndex()) {
+				if (currentPI.procedureIndex() == receivedCurrentProcedureIndex) {
 					// This is what we hope for... the received index is the same as the currently executed job... Everything fine and can start
 					// comparing the tasks...
 					List<Task> tasks = currentPI.tasks(); // Be aware, these task list is also used by the taskScheduler in jobExecutor!
 					// Checking the tasks... Either there is a new task received that we were not yet executing, or an already executed task has to be
 					// updated
 
-					if (tasks.contains(receivedTask)) { // The task was already once created or received... How cool
-						Tasks.updateStati(receivedTask, taskResultUpdate, receivedJob.maxNrOfFinishedWorkersPerTask());
-					} else { // This executor has not yet had that task which means it has not created it yet... simply add id to the tasks
-								// and it
-								// can
-								// be scheduled for execution
+					if (!tasks.contains(receivedTask)) {
+						// This executor has not yet had that task which means it has not created it yet... simply add id to the tasks and it can be
+						// scheduled for execution
 						tasks.add(receivedTask);
 						// Task scheduler takes care of scheduling the task in case the execution stopped and the time to live did not yet run
-						// out...
-						// This is a treaky one... If we use a TimeToLive to decide if the Procedure is finished
-						// Hmn...
-						// Why not use a little average time for that? Always add received message time and use the max waiting time (Plus
-						// some
-						// delta)
-						// to wait in the scheduler...
+						// out... This is a treaky one... If we use a TimeToLive to decide if the Procedure is finished
+						// Hmn... Why not use a little average time for that? Always add received message time and use the max waiting time (Plus some
+						// delta) to wait in the scheduler...
+					} else {
+						// The task was already once created or received... So simply update the executors of the task
+						int taskIndex = tasks.indexOf(receivedTask);
+						Task taskToUpdate = tasks.get(taskIndex);
+						if (!taskToUpdate.isFinished()) {
+							if (receivedTask.isFinished()) { // Don't care... this task is finished
+								tasks.set(taskIndex, receivedTask);
+							} else {
+							
+							}
+						}
 					}
 				} else /* if(currentPI.procedureIndex() != receivedPI.procedureIndex()) */ { // Abnormal case, something wrong because the executed
 																								// procedure is not the same...
-					if (currentPI.procedureIndex() < receivedPI.procedureIndex()) { // The current job is outdated
+					if (currentPI.procedureIndex() < receivedCurrentProcedureIndex) { // The current job is outdated
 						// BTW currentProcedureIndex is needed as we don't know how FAR AWAY it is (e.g. current1 = 0, current2 = 2.. So don't
 						// simply use previousProcedure()
 						// Let's hope at least the procedureIndex is in a reasonable range (>=0 and smaller than number of procedures...
-						List<Task> oldTasksOfReceivedJob = receivedJob.procedure(currentPI.procedureIndex()).tasks();
+						List<Task> oldTasksOfReceivedJob = receivedJobDummy.procedure(currentPI.procedureIndex()).tasks();
 						// Or get it over DHT (getAll(PROCEDURE_KEYS)) if we clear that data after the procedure finished...
 						if (!oldTasksOfReceivedJob.contains(receivedTask)) {
 							// Well that's good for THIS executor... It executes correctly, meaning that it got a task that was not yet
 							// executed... All the others need to rewind as soon as they notice...
 						} else {
 							// We are outdated!! Need to update to received job
-							handleReceivedJob(receivedJob);
+							handleReceivedJob(receivedJobDummy);
 						}
-					} else if (currentPI.procedureIndex() > receivedPI.procedureIndex()) { // received message that is presumably outdated
+					} else if (currentPI.procedureIndex() > receivedCurrentProcedureIndex) { // received message that is presumably outdated
 						// This executor executes a procedure that is further in the processing chain than the received one
 						// Hmn, may be because either the message received is out of date, or there was a task assigned that was not yet assigned
 						// before the procedure in this executor ended...
 						// Or get it over DHT (getAll(PROCEDURE_KEYS)) if we clear that data after the procedure finished...
-						List<Task> oldTasksOfJob = receivedJob.procedure(currentPI.procedureIndex()).tasks();
+						List<Task> oldTasksOfJob = receivedJobDummy.procedure(currentPI.procedureIndex()).tasks();
 						if (!oldTasksOfJob.contains(receivedTask)) {
 							/*
 							 * This is crap. That means the received task is from an older procedure and was not yet executed. So the currently
 							 * executed procedure needs to be stopped, data removed, and the jobs current procedure index needs to be set back to the
 							 * received one... But even better... I don't care here and simply remove it from the list and reschedule...
 							 */
+							if (jobExecutor.currentlyExecutedJob() != null && !jobExecutor.currentlyExecutedJob().equals(jobToUpdate)) { // No job is
+																																			// executed
+																																			// atm
+
+								// logger.info("jobExecutor.currentlyExecutedJob() != null");
+								// The job currently executing is not the one with highest priority
+								// anymore
+								// Abort the currently executing job (meaning, interrupt until later resume... This finishes the task executing atm
+								jobExecutor.isExecutionAborted(true);
+
+							}
 							jobs.remove(jobToUpdate);
-							// jobExecutor.broadcastRemoveData(job); // Let Michigan handle it (... meaning the DHT cleaner process ;))
-							handleReceivedJob(receivedJob);
+							// jobExecutor.broadcastRemoveData(job); // Let Michigan handle it (... meaning the DHT cleaner process))
+							// Will reschedule the job with the updated procedure...
+							handleReceivedJob(receivedJobDummy);
 						} else {
 							// Nothing to worry, this is just an old message and thus can be discarded...
 						}
@@ -177,12 +225,12 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				}
 			} else /* if (!jobToUpdate.isActive()) */ {
 				// Well another job is executing... so simply treat it as new job received and let Michigan handle it (will probably be discarded)
-				handleReceivedJob(receivedJob);
+				handleReceivedJob(receivedJobDummy);
 			}
 		} else /* if(!jobs.contains(job)) */ {
 			// Apparently we have not received this job yet (in case a new executor comes online)...
 			// Treat it as if a new job was received... Which is the same as if the next procedure is executed
-			handleReceivedJob(receivedJob);
+			handleReceivedJob(receivedJobDummy);
 		}
 	}
 
@@ -225,10 +273,10 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	// // update as a broadcast
 	// if (!containsJob) {
 	// handleReceivedJob(jobToUpdate);
-	// } 
+	// }
 
 	@Override
-	public void handleFinishedProcedure(Job job) {
+	public void handleFinishedProcedure(String jobId, ) {
 		logger.info("handleFinishedProcedure " + job.currentProcedure());
 		// if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
 		// return;
@@ -240,9 +288,10 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			// through... Only if it was the last procedure and the job is finished, else if we take the next procedure of the same job, there isn't
 			// any data to collect for tasks yet (will be done below)... Sooo will think about it...
 
-		} 
+		}
 
 		List<Task> tasks = job.currentProcedure().tasks();
+		 
 		logger.info("Tasks: " + tasks);
 		List<FutureGet> futureGets = SyncedCollectionProvider.syncedArrayList();
 		List<FuturePut> futurePuts = SyncedCollectionProvider.syncedArrayList();
@@ -292,56 +341,59 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		if (futureGets.size() > 0) {
 			Futures.whenAllSuccess(futureGets).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 
-	@Override
-	public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-		logger.info("futurePuts: " + futurePuts);
-		if (future.isSuccess()) {
-			Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
-
 				@Override
 				public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-
+					logger.info("futurePuts: " + futurePuts);
 					if (future.isSuccess()) {
-						logger.info("Successfully put tasks into jobProcedure domain.JobProcedureDomain: "
-								+ job.currentProcedure().jobProcedureDomainString() + ", Tasks: " + tasks);
-						// well... check if there is actually any procedure left... Else job is finished...
-						job.incrementProcedureIndex();
-						ProcedureInformation subsequentProcedure = job.currentProcedure();
-						job.previousProcedure().tasks().clear();
-						if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
-							// Finished job :)
-							logger.info("Finished job");
-							JobFinishedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastFinishedJob(job);
-							bcMessages.add(message);
-							// jobs.remove(job);
-						} else {
-							// Next procedure!!
-							logger.info("Execute next procedure");
-							JobDistributedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastNewJob(job);
-							bcMessages.add(message);
-							logger.info("job.currentProcedure()  : " + job.previousProcedure());
-						}
+						Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
+
+							@Override
+							public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
+
+								if (future.isSuccess()) {
+									logger.info("Successfully put tasks into jobProcedure domain.JobProcedureDomain: "
+											+ job.currentProcedure().jobProcedureDomainString() + ", Tasks: " + tasks);
+									// well... check if there is actually any procedure left... Else job is finished...
+									job.incrementProcedureIndex();
+									ProcedureInformation subsequentProcedure = job.currentProcedure();
+									job.previousProcedure().tasks().clear();
+									if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
+										// Finished job :)
+										logger.info("Finished job");
+										JobFinishedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastFinishedJob(job);
+										bcMessages.add(message);
+										// jobs.remove(job);
+									} else {
+										// Next procedure!!
+										logger.info("Execute next procedure");
+										JobDistributedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastNewJob(job);
+										bcMessages.add(message);
+										logger.info("job.currentProcedure()  : " + job.previousProcedure());
+									}
+								} else {
+									// TODO Well... something has to be done instead... am I right?
+									logger.info("No success");
+								}
+							}
+
+						});
 					} else {
-						// TODO Well... something has to be done instead... am I right?
 						logger.info("No success");
 					}
 				}
 
 			});
+
 		} else {
-			logger.info("No success");
+			logger.warn("No FuturePuts created. Check why?");
 		}
+		System.err.println("END");
 	}
-
-	});
-
-	}else{logger.warn("No FuturePuts created. Check why?");}System.err.println("END");}
 
 	@Override
 	public void handleFinishedJob(Job job) {
 		logger.info("received job finished message: " + job.id());
 		jobs.remove(jobs.indexOf(job));
 	}
- 
 
 }

@@ -8,6 +8,7 @@ public enum DomainProvider {
 	INSTANCE;
 	public static final String PROCEDURE_KEYS = "PROCEDURE_KEYS";
 	public static final String TASK_KEYS = "TASK_KEYS";
+	public static final String JOB = "JOB";
 
 	public String executorTaskDomain(Tuple<String, Tuple<String, Integer>> executorTaskDomain) {
 		// ETD = EXECUTOR_TASK_DOMAIN

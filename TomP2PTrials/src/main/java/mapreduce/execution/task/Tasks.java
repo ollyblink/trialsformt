@@ -2,8 +2,10 @@ package mapreduce.execution.task;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +15,6 @@ import com.google.common.collect.ListMultimap;
 import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
 
 public class Tasks {
 	private static Logger logger = LoggerFactory.getLogger(Tasks.class);
@@ -149,8 +150,55 @@ public class Tasks {
 	}
 
 	public static int numberOfDifferentPeersExecutingOrFinishedTask(Task task) {
-		synchronized (task.executingPeers()) {
-			return task.executingPeers().keySet().size();
+		return task.executingPeers().keySet().size();
+	}
+
+	public static void updateStatiNonChecked(Task taskToUpdate, Task receivedTask, Number160 resultHash, int maxNrOfFinishedWorkers) {
+		ListMultimap<String, BCMessageStatus> executors = taskToUpdate.executingPeers();
+		ListMultimap<String, BCMessageStatus> receivedExecutors = receivedTask.executingPeers();
+
+		// synchronized (executors) {
+		Set<String> allExecutors = new HashSet<>();
+		allExecutors.addAll(executors.keySet());
+		allExecutors.addAll(receivedExecutors.keySet());
+		for (String executor : allExecutors) {
+			List<BCMessageStatus> executorStati = executors.get(executor);
+			List<BCMessageStatus> rExecutorStati = receivedExecutors.get(executor);
+
+			// Determine the smallest index for iteration
+			int minIndex = executorStati.size() > rExecutorStati.size() ? rExecutorStati.size() : executorStati.size();
+
+			synchronized (executorStati) {
+				for (int i = 0; i < minIndex; ++i) {
+					if (executorStati.get(i) == BCMessageStatus.EXECUTING_TASK && rExecutorStati.get(i) == BCMessageStatus.FINISHED_TASK) {
+						executorStati.set(i, BCMessageStatus.FINISHED_TASK);
+						Tuple<String, Integer> loc = Tuple.create(executor, i);
+						checkIfTaskIsFinished(taskToUpdate, maxNrOfFinishedWorkers, executors, loc, resultHash);
+					}
+				}
+				if (executorStati.size() < rExecutorStati.size()) {
+					for (int i = executorStati.size(); i < rExecutorStati.size(); ++i) {// Add the remaining in case received had more already
+						executorStati.add(rExecutorStati.get(i));
+						if (rExecutorStati.get(i) == BCMessageStatus.FINISHED_TASK) {
+							Tuple<String, Integer> loc = Tuple.create(executor, i);
+							checkIfTaskIsFinished(taskToUpdate, maxNrOfFinishedWorkers, executors, loc, resultHash);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private static void checkIfTaskIsFinished(Task taskToUpdate, int maxNrOfFinishedWorkers, ListMultimap<String, BCMessageStatus> executors,
+			Tuple<String, Integer> loc, Number160 resultHash) {
+		int nrOfResultsWithHash = taskToUpdate.updateResultHash(loc, resultHash);
+
+		boolean bestOfAchieved = nrOfResultsWithHash == bestOfMaxNrOfFinishedWorkersWithSameResultHash(maxNrOfFinishedWorkers);
+		boolean enoughWorkersFinished = totalNumberOfFinishedExecutions(taskToUpdate) >= maxNrOfFinishedWorkers;
+		logger.info("bestOfAchieved || enoughWorkersFinished: " + bestOfAchieved + "||" + enoughWorkersFinished + "?"
+				+ (bestOfAchieved || enoughWorkersFinished));
+		if (bestOfAchieved || enoughWorkersFinished) {
+			taskToUpdate.isFinished(true);
 		}
 	}
 
@@ -171,7 +219,7 @@ public class Tasks {
 				int nrOfResultsWithHash = task.updateResultHash(Tuple.create(sender, locationIndex), toUpdate.resultHash);
 				boolean bestOfAchieved = nrOfResultsWithHash == bestOfMaxNrOfFinishedWorkersWithSameResultHash(maxNrOfFinishedWorkers);
 				boolean enoughWorkersFinished = totalNumberOfFinishedExecutions(task) >= maxNrOfFinishedWorkers;
-				logger.info("bestOfAchieved || enoughWorkersFinished: " + bestOfAchieved + "||" + enoughWorkersFinished+"?"
+				logger.info("bestOfAchieved || enoughWorkersFinished: " + bestOfAchieved + "||" + enoughWorkersFinished + "?"
 						+ (bestOfAchieved || enoughWorkersFinished));
 				if (bestOfAchieved || enoughWorkersFinished) {
 					task.isFinished(true);
@@ -227,4 +275,5 @@ public class Tasks {
 			}
 		}
 	}
+
 }

@@ -28,17 +28,17 @@ public class TaskUpdateBCMessage extends AbstractJobBCMessage {
 
 	}
 
-	public static TaskUpdateBCMessage createTaskExecutingBCMessage() {
-		return new TaskUpdateBCMessage(BCMessageStatus.EXECUTING_TASK);
-	}
+//	public static TaskUpdateBCMessage createTaskExecutingBCMessage() {
+//		return new TaskUpdateBCMessage(BCMessageStatus.EXECUTING_TASK);
+//	}
 
 	public static TaskUpdateBCMessage createTaskFinishedBCMessage() {
 		return new TaskUpdateBCMessage(BCMessageStatus.FINISHED_TASK);
 	}
 
-	public static TaskUpdateBCMessage createTaskFailedBCMessage() {
-		return new TaskUpdateBCMessage(BCMessageStatus.FAILED_TASK);
-	}
+//	public static TaskUpdateBCMessage createTaskFailedBCMessage() {
+//		return new TaskUpdateBCMessage(BCMessageStatus.FAILED_TASK);
+//	}
 
 	private TaskUpdateBCMessage(BCMessageStatus status) {
 		this.status = status;

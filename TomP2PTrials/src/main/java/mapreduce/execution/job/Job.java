@@ -104,7 +104,14 @@ public class Job implements Serializable, Comparable<Job> {
 	}
 
 	public String id() {
-		return this.id + "_SUBMISSION_NR(" + jobSubmissionCounter + ")";
+		// S == Submitter
+		// SNR == Submission counter
+		return this.id + "_S(" + jobSubmitterID + ")_SNR(" + jobSubmissionCounter + ")";
+	}
+
+	public Job id(String id) {
+		this.id = id;
+		return this;
 	}
 
 	public String jobSubmitterID() {
@@ -244,8 +251,6 @@ public class Job implements Serializable, Comparable<Job> {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((id() == null) ? 0 : id().hashCode());
-		result = prime * result + ((jobSubmitterID == null) ? 0 : jobSubmitterID.hashCode());
-		result = prime * result + jobSubmissionCounter;
 		return result;
 	}
 
@@ -262,13 +267,6 @@ public class Job implements Serializable, Comparable<Job> {
 			if (other.id() != null)
 				return false;
 		} else if (!id().equals(other.id()))
-			return false;
-		if (jobSubmitterID == null) {
-			if (other.jobSubmitterID != null)
-				return false;
-		} else if (!jobSubmitterID.equals(other.jobSubmitterID))
-			return false;
-		if (jobSubmissionCounter != other.jobSubmissionCounter)
 			return false;
 		return true;
 	}
@@ -294,6 +292,7 @@ public class Job implements Serializable, Comparable<Job> {
 		job.jobSubmissionCounter = jobSubmissionCounter;
 		job.timeToLiveInMs = timeToLiveInMs;
 		job.useLocalStorageFirst = useLocalStorageFirst;
+		job.isActive = isActive;
 		return job;
 	}
 
@@ -326,7 +325,7 @@ public class Job implements Serializable, Comparable<Job> {
 		return priorityLevel;
 	}
 
-	public Long creationTime() { 
+	public Long creationTime() {
 		return creationTime;
 	}
 

@@ -332,6 +332,11 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		return currentExecutingPeer().get(Number160.createHash(keyString)).domainKey(Number160.createHash(domainString)).all().start();
 	}
 
+	@Override
+	public FutureGet get(String keyString, String domainString) {
+		return currentExecutingPeer().get(Number160.createHash(keyString)).domainKey(Number160.createHash(domainString)).start();
+	}
+
 	private PeerDHT currentExecutingPeer() {
 		int index = this.currentExecutingPeerCounter;
 		this.currentExecutingPeerCounter = (currentExecutingPeerCounter + 1) % peerDHTs.size();
@@ -372,7 +377,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public MRBroadcastHandler broadcastHandler() { 
+	public MRBroadcastHandler broadcastHandler() {
 		return broadcastHandler;
 	}
 
