@@ -1,4 +1,4 @@
-package mapreduce.execution.computation.context;
+package mapreduce.execution.context;
 
 import java.util.Collection;
 import java.util.HashSet;

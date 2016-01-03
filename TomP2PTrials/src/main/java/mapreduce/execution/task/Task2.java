@@ -28,6 +28,8 @@ public class Task2 implements IFinishable, Serializable {
 	private final String key;
 	/** Specifies if the task is currently executed */
 	private volatile boolean isActive;
+	/** final output domain for where this tasks output key/values are stored */
+	private IDomain resultOutputDomain;
 
 	private Task2(String key) {
 		this.key = key;
@@ -52,12 +54,13 @@ public class Task2 implements IFinishable, Serializable {
 	@Override
 	public boolean isFinished() {
 		boolean isFinished = true;
-		ListMultimap<IDomain, Number160> results = ArrayListMultimap.create();
+		ListMultimap<Number160, IDomain> results = ArrayListMultimap.create();
 		for (IDomain domain : outputDomains) {
-			results.put(domain, domain.resultHash());
+			results.put(domain.resultHash(), domain);
 		}
-		for (IDomain domain : results.keySet()) {
-			if (results.get(domain).size() >= nrOfSameResultHash) {
+		for (Number160 resultHash : results.keySet()) {
+			if (results.get(resultHash).size() >= nrOfSameResultHash) {
+				this.resultOutputDomain = results.get(resultHash).get(0);
 				isFinished = true;
 				break;
 			}
@@ -69,9 +72,10 @@ public class Task2 implements IFinishable, Serializable {
 	public void addOutputDomain(IDomain domain) {
 		this.outputDomains.add(domain);
 	}
+
 	public void addInputDomain(ExecutorTaskDomain domain) {
 		this.inputDomains.add(domain);
-	} 
+	}
 
 	public List<ExecutorTaskDomain> inputDomains() {
 		return this.inputDomains;
@@ -100,5 +104,25 @@ public class Task2 implements IFinishable, Serializable {
 		return counter;
 	}
 
-	
+	@Override
+	public Number160 calculateResultHash() {
+		if (resultOutputDomain == null) {
+			isFinished();
+			if (resultOutputDomain == null) {
+				return Number160.ZERO; // Means not yet finished
+			}
+		}
+		return resultOutputDomain.resultHash();
+	}
+
+	@Override
+	public IDomain resultOutputDomain() {
+		return resultOutputDomain;
+	}
+
+	public void reset() {
+		outputDomains.clear();
+		resultOutputDomain = null;
+	}
+
 }

@@ -1,4 +1,4 @@
-package mapreduce.execution.computation.context;
+package mapreduce.execution.context;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

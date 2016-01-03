@@ -132,7 +132,7 @@ public class MRJobSubmissionManager {
 						public void operationComplete(FuturePut future) throws Exception {
 							if (future.isSuccess()) {
 								// Add <PROCEDURE_KEYS, key, jobProcedureDomain> to collect all domains for all keys
-								dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, task.id(), jobProcedureDomainString, false)
+								dhtConnectionProvider.add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, task.id(), jobProcedureDomainString, false)
 										.addListener(new BaseFutureListener<FuturePut>() {
 
 									@Override

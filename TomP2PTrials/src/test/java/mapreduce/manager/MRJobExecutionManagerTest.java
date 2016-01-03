@@ -95,7 +95,7 @@ public class MRJobExecutionManagerTest {
 								public void operationComplete(FuturePut future) throws Exception {
 									if (future.isSuccess()) {
 										futurePutProcKey
-												.add(dhtConnectionProvider.add(DomainProvider.PROCEDURE_KEYS, key, jobProcedureDomain, false));
+												.add(dhtConnectionProvider.add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, key, jobProcedureDomain, false));
 									}
 								}
 							}));
@@ -146,7 +146,7 @@ public class MRJobExecutionManagerTest {
 		// job.incrementCurrentProcedureIndex();
 		// job.incrementCurrentProcedureIndex();
 		String dataLocationJobProcedureDomainString = job.currentProcedure().jobProcedureDomainString();
-		futureGetProcKey.add(dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, dataLocationJobProcedureDomainString)
+		futureGetProcKey.add(dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, dataLocationJobProcedureDomainString)
 				.addListener(new BaseFutureAdapter<FutureGet>() {
 
 					@Override

@@ -2,7 +2,7 @@ package mapreduce;
 
 import java.io.IOException;
 
-import mapreduce.execution.computation.context.DHTStorageContext;
+import mapreduce.execution.context.DHTStorageContext;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 import mapreduce.manager.MRJobExecutionManager;
 import mapreduce.storage.DHTConnectionProvider;

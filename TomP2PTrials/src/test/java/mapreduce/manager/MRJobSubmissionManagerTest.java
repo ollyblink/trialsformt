@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.computation.context.PseudoStorageContext;
+import mapreduce.execution.context.PseudoStorageContext;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.WordCountMapper;
@@ -65,7 +65,7 @@ public class MRJobSubmissionManagerTest {
 		ArrayList<FutureGet> valueFutures = new ArrayList<>();
 		ListMultimap<String, Object> vals = ArrayListMultimap.create();
 		keysFutures
-				.add(dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_KEYS, jobProcedureDomain).addListener(new BaseFutureListener<FutureGet>() {
+				.add(dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, jobProcedureDomain).addListener(new BaseFutureListener<FutureGet>() {
 
 					@Override
 					public void operationComplete(FutureGet future) throws Exception {

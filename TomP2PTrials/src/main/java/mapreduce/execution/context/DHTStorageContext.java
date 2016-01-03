@@ -1,4 +1,4 @@
-package mapreduce.execution.computation.context;
+package mapreduce.execution.context;
 
 import java.util.List;
 
@@ -66,7 +66,7 @@ public class DHTStorageContext extends AbstractBaseContext {
 						}
 					}
 				}));
-		this.futurePutData.add(this.dhtConnectionProvider.add(DomainProvider.TASK_KEYS, keyOut.toString(), oETDString, false)
+		this.futurePutData.add(this.dhtConnectionProvider.add(DomainProvider.TASK_OUTPUT_RESULT_KEYS, keyOut.toString(), oETDString, false)
 				.addListener(new BaseFutureAdapter<FuturePut>() {
 
 					@Override

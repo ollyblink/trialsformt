@@ -19,7 +19,7 @@ import mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcompar
  *
  */
 public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecutionScheduler {
-	 private static Logger logger = LoggerFactory.getLogger(MinAssignedWorkersTaskExecutionScheduler.class);
+	private static Logger logger = LoggerFactory.getLogger(MinAssignedWorkersTaskExecutionScheduler.class);
 	// private boolean isFirstTaskRandom;
 	private MinAssignedWorkerTaskExecutionSortingComparator comparator;
 	private RandomTaskExecutionScheduler randomTaskScheduler;
@@ -40,9 +40,9 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 	@Override
 	protected Task2 scheduleNonNull(List<Task2> tasksToSchedule) {
 		logger.info("Tasks to schedule");
-//		for(Task2 task: tasksToSchedule){
-//			logger.info(task.id() + ", ExecutingPeers stati: "+task.executingPeers().values());
-//		}
+		// for(Task2 task: tasksToSchedule){
+		// logger.info(task.id() + ", ExecutingPeers stati: "+task.executingPeers().values());
+		// }
 		Task2 assignedTask = null;
 		if (!allTasksAreFinished(tasksToSchedule)) {
 			if (randomTaskScheduler != null && noTaskAssignedYet(tasksToSchedule)) {
@@ -51,15 +51,15 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 			} else {
 				Collections.sort(tasksToSchedule, this.comparator);
 				Task2 task = tasksToSchedule.get(0);
-				if (!task.isFinished() || task.isActive()) {
+				if (!task.isFinished()) {
 					assignedTask = task;
-				} 
+				}
 				logger.info("compared task assigned" + assignedTask);
 			}
 		} else {
 			logger.info("finished procedure " + procedureInformation);
 			// all tasks finished... set procedure to be finished
-//			this.procedureInformation.isFinished(true);
+			// this.procedureInformation.isFinished(true);
 		}
 		return assignedTask;
 	}

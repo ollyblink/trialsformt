@@ -1,4 +1,4 @@
-package mapreduce.execution.computation.context;
+package mapreduce.execution.context;
 
 public class PrintContext extends AbstractBaseContext {
 

@@ -2,7 +2,7 @@ package mapreduce.execution.task.taskexecutor;
 
 import java.util.List;
 
-import mapreduce.execution.computation.context.IContext;
+import mapreduce.execution.context.IContext;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.utils.IAbortableExecution;
 

@@ -3,7 +3,7 @@ package mapreduce.execution.procedures;
 import java.util.Collection;
 import java.util.StringTokenizer;
 
-import mapreduce.execution.computation.context.IContext;
+import mapreduce.execution.context.IContext;
 
 public class WordCountMapper implements IExecutable {
 

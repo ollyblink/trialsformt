@@ -31,6 +31,7 @@ public final class Procedure implements IFinishable, Serializable {
 	/** Specifies if the task is currently executed */
 	private volatile boolean isActive;
 	private int tasksSize;
+	private IDomain resultOutputDomain;
 
 	private Procedure(IExecutable procedure, int procedureIndex) {
 		this.procedure = procedure;
@@ -68,12 +69,13 @@ public final class Procedure implements IFinishable, Serializable {
 
 	public boolean isFinished() {
 		boolean isFinished = true;
-		ListMultimap<IDomain, Number160> results = ArrayListMultimap.create();
+		ListMultimap<Number160, IDomain> results = ArrayListMultimap.create();
 		for (IDomain domain : outputDomains) {
-			results.put(domain, domain.resultHash());
+			results.put(domain.resultHash(), domain);
 		}
-		for (IDomain domain : results.keySet()) {
-			if (results.get(domain).size() >= nrOfSameResultHash) {
+		for (Number160 resultHash : results.keySet()) {
+			if (results.get(resultHash).size() >= nrOfSameResultHash) {
+				this.resultOutputDomain = results.get(resultHash).get(0);
 				isFinished = true;
 				break;
 			}
@@ -119,7 +121,27 @@ public final class Procedure implements IFinishable, Serializable {
 	}
 
 	@Override
-	public List<IDomain> outputDomains() { 
+	public List<IDomain> outputDomains() {
 		return this.outputDomains;
+	}
+
+	@Override
+	public Number160 calculateResultHash() {
+		Number160 resultHash = Number160.ZERO;
+		for (Task2 task : tasks) {
+			resultHash = resultHash.xor(task.calculateResultHash());
+		}
+		return resultHash;
+	}
+
+	@Override
+	public IDomain resultOutputDomain() {
+		return resultOutputDomain;
+	}
+
+	public void reset() {
+		for(Task2 task: tasks){
+			task.reset();
+		}
 	}
 }

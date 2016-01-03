@@ -9,6 +9,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.execution.context.DHTStorageContext;
+import mapreduce.execution.context.IContext;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.job.PriorityLevel;
 import mapreduce.execution.task.Task;

@@ -5,8 +5,8 @@ import mapreduce.execution.procedures.JobProcedureDomain;
 
 public enum DomainProvider {
 	INSTANCE;
-	public static final String PROCEDURE_KEYS = "PROCEDURE_KEYS";
-	public static final String TASK_KEYS = "TASK_KEYS";
+	public static final String PROCEDURE_OUTPUT_RESULT_KEYS = "PROCEDURE_OUTPUT_RESULT_KEYS";
+	public static final String TASK_OUTPUT_RESULT_KEYS = "TASK_OUTPUT_RESULT_KEYS";
 	public static final String JOB = "JOB";
 
 	public String executorTaskDomain(ExecutorTaskDomain executorTaskDomainParameter) {
@@ -43,7 +43,7 @@ public enum DomainProvider {
 	}
 
 	public static void main(String[] args) {
-		 
+
 	}
 
 }
