@@ -2,9 +2,9 @@ package mapreduce.execution.computation.context;
 
 import java.util.List;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.computation.ProcedureInformation;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.procedures.IExecutable;
+import mapreduce.execution.procedures.Procedure;
+import mapreduce.execution.task.Task2;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
@@ -16,9 +16,9 @@ public interface IContext {
 
 	public Number160 resultHash();
 
-	public IContext combiner(IMapReduceProcedure combiner);
+	public IContext combiner(IExecutable combiner);
 
-	public IMapReduceProcedure combiner();
+	public IExecutable combiner();
 
 	public void combine();
 
@@ -28,11 +28,11 @@ public interface IContext {
 
 	public IContext taskExecutor(Tuple<String, Integer> taskExecutor);
 
-	public IContext subsequentProcedure(ProcedureInformation subsequentProcedure);
+	public IContext subsequentProcedure(Procedure subsequentProcedure);
 
-	public ProcedureInformation subsequentProcedure();
+	public Procedure subsequentProcedure();
 
-	public IContext task(Task task);
+	public IContext task(Task2 task);
 
-	public Task task();
+	public Task2 task();
 }

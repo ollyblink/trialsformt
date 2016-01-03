@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.computation.ProcedureInformation;
-import mapreduce.execution.computation.standardprocedures.EndProcedure;
-import mapreduce.execution.computation.standardprocedures.StartProcedure;
+import mapreduce.execution.procedures.EndProcedure;
+import mapreduce.execution.procedures.IExecutable;
+import mapreduce.execution.procedures.Procedure;
+import mapreduce.execution.procedures.StartProcedure;
 import mapreduce.execution.task.Task;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
@@ -45,7 +45,7 @@ public class Job implements Serializable, Comparable<Job> {
 	 * Contains all procedures for this job. Processing is done from 0 to procedures.size()-1, meaning that the first procedure added using
 	 * Job.nextProcedure(procedure) is also the first one to be processed.
 	 */
-	private List<ProcedureInformation> procedures;
+	private List<Procedure> procedures;
 
 	/**
 	 * Internal counter that specifies the currently processed procedure
@@ -83,7 +83,7 @@ public class Job implements Serializable, Comparable<Job> {
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
 	private int jobSubmissionCounter;
 
-	private boolean isActive;
+//	private boolean isActive;
 
 	private Job(String jobSubmitterID, PriorityLevel... priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
@@ -94,7 +94,7 @@ public class Job implements Serializable, Comparable<Job> {
 		this.previousProcedureIndex = 0;
 		this.procedures = Collections.synchronizedList(new ArrayList<>());
 		// Add initial
-		ProcedureInformation procedureInformation = ProcedureInformation.create(id(), StartProcedure.create(), this.procedures.size());
+		Procedure procedureInformation = Procedure.create(id(), StartProcedure.create(), this.procedures.size());
 		this.procedures.add(procedureInformation);
 	}
 
@@ -127,14 +127,14 @@ public class Job implements Serializable, Comparable<Job> {
 	 * @param index
 	 * @return the procedure at the specified index
 	 */
-	public ProcedureInformation procedure(int index) {
+	public Procedure procedure(int index) {
 		try {
 			return procedures.get(index);
 		} catch (Exception e) {
 			if (index < 0) {
-				return ProcedureInformation.create(id(), StartProcedure.create(), 0);
+				return Procedure.create(id(), StartProcedure.create(), 0);
 			}
-			return ProcedureInformation.create(id(), EndProcedure.create(), procedures.size());
+			return Procedure.create(id(), EndProcedure.create(), procedures.size());
 		}
 	}
 
@@ -143,7 +143,7 @@ public class Job implements Serializable, Comparable<Job> {
 	 * 
 	 * @return
 	 */
-	public ProcedureInformation previousProcedure() {
+	public Procedure previousProcedure() {
 		return this.procedure(this.previousProcedureIndex);
 	}
 
@@ -153,7 +153,7 @@ public class Job implements Serializable, Comparable<Job> {
 	 * 
 	 * @return
 	 */
-	public ProcedureInformation currentProcedure() {
+	public Procedure currentProcedure() {
 		return this.procedure(this.previousProcedureIndex + 1);
 	}
 
@@ -165,8 +165,8 @@ public class Job implements Serializable, Comparable<Job> {
 	 * @param procedure
 	 * @return
 	 */
-	public Job addSubsequentProcedure(IMapReduceProcedure procedure) {
-		ProcedureInformation procedureInformation = ProcedureInformation.create(id(), procedure, this.procedures.size());
+	public Job addSubsequentProcedure(IExecutable procedure) {
+		Procedure procedureInformation = Procedure.create(id(), procedure, this.procedures.size());
 		this.procedures.add(procedureInformation);
 		return this;
 	}
@@ -280,8 +280,8 @@ public class Job implements Serializable, Comparable<Job> {
 		job.maxNrOfDHTActions = maxNrOfDHTActions;
 		job.maxNrOfFinishedWorkersPerTask = maxNrOfFinishedWorkersPerTask;
 		job.procedures = SyncedCollectionProvider.syncedArrayList();
-		for (ProcedureInformation pI : procedures) {
-			ProcedureInformation copyPI = ProcedureInformation.create(job.id(), pI.procedure(), pI.procedureIndex()).isFinished(pI.isFinished());
+		for (Procedure pI : procedures) {
+			Procedure copyPI = Procedure.create(job.id(), pI.executable(), pI.procedureIndex()).isFinished(pI.isFinished());
 			List<Task> tasks = copyPI.tasks();
 			for (Task task : pI.tasks()) {
 				Task taskCopy = Task.create(task.id(), copyPI.jobProcedureDomain()); // NO DEEP TASK COPY
@@ -328,14 +328,14 @@ public class Job implements Serializable, Comparable<Job> {
 	public Long creationTime() {
 		return creationTime;
 	}
-
-	public boolean isActive() {
-		return isActive;
-	}
-
-	public Job isActive(boolean isActive) {
-		this.isActive = isActive;
-		return this;
-	}
+//
+//	public boolean isActive() {
+//		return isActive;
+//	}
+//
+//	public Job isActive(boolean isActive) {
+//		this.isActive = isActive;
+//		return this;
+//	}
 
 }

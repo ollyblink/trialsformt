@@ -4,7 +4,7 @@ import mapreduce.execution.job.Job;
 import mapreduce.manager.broadcasting.broadcastmessageconsumer.IMessageConsumer;
 import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 
-public class ProcedureFinishedBCMessage extends AbstractJobBCMessage {
+public class ProcedureCompletedBCMessage extends AbstractJobBCMessage {
 
 	/**
 	 * 
@@ -17,12 +17,12 @@ public class ProcedureFinishedBCMessage extends AbstractJobBCMessage {
 		return status;
 	}
 
-	private ProcedureFinishedBCMessage(BCMessageStatus status) {
+	private ProcedureCompletedBCMessage(BCMessageStatus status) {
 		this.status = status;
 	}
 
-	public static ProcedureFinishedBCMessage create() {
-		return new ProcedureFinishedBCMessage(BCMessageStatus.FINISHED_PROCEDURE);
+	public static ProcedureCompletedBCMessage create() {
+		return new ProcedureCompletedBCMessage(BCMessageStatus.FINISHED_PROCEDURE);
 	}
 
 	@Override
@@ -31,12 +31,12 @@ public class ProcedureFinishedBCMessage extends AbstractJobBCMessage {
 	}
 
 	@Override
-	public ProcedureFinishedBCMessage sender(final String sender) {
-		return (ProcedureFinishedBCMessage) super.sender(sender);
+	public ProcedureCompletedBCMessage sender(final String sender) {
+		return (ProcedureCompletedBCMessage) super.sender(sender);
 	}
 
 	@Override
-	public ProcedureFinishedBCMessage job(Job job) {
+	public ProcedureCompletedBCMessage job(Job job) {
 		super.job(job);
 		return this;
 	}

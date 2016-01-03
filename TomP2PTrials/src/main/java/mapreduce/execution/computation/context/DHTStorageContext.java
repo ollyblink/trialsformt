@@ -5,16 +5,15 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.TaskUpdateBCMessage;
+import mapreduce.execution.procedures.ExecutorTaskDomain;
+import mapreduce.execution.procedures.IExecutable;
+import mapreduce.execution.task.Task2;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number160;
 
 public class DHTStorageContext extends AbstractBaseContext {
@@ -25,6 +24,8 @@ public class DHTStorageContext extends AbstractBaseContext {
 	private List<FuturePut> futurePutData = SyncedCollectionProvider.syncedArrayList();
 
 	private Tuple<String, Integer> taskExecutor;
+
+	private ExecutorTaskDomain outputExecutorTaskDomain;
 
 	// private ListMultimap<String, Object> tmpKeyValues;
 	//
@@ -51,46 +52,36 @@ public class DHTStorageContext extends AbstractBaseContext {
 	public void write(Object keyOut, Object valueOut) {
 		updateResultHash(keyOut, valueOut);
 
-		String combinedExecutorTaskDomain = task.concatenationString(taskExecutor);
-		logger.info("Combined executor task domain: " + combinedExecutorTaskDomain);
-
-		this.futurePutData.add(this.dhtConnectionProvider.add(keyOut.toString(), valueOut, combinedExecutorTaskDomain, true)
-				.addListener(new BaseFutureAdapter<FuturePut>() {
-
-					@Override
-					public void operationComplete(FuturePut future) throws Exception {
-						if (future.isSuccess()) {
-							logger.info("Successfully performed add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain("
-									+ combinedExecutorTaskDomain + ")");
-						} else {
-							logger.info("Failed to perform add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain("
-									+ combinedExecutorTaskDomain + ")");
-						}
-					}
-				}));
-		this.futurePutData.add(this.dhtConnectionProvider.add(DomainProvider.TASK_KEYS, keyOut.toString(), combinedExecutorTaskDomain, false)
-				.addListener(new BaseFutureAdapter<FuturePut>() {
+		String oETDString = outputExecutorTaskDomain.toString();
+		this.futurePutData
+				.add(this.dhtConnectionProvider.add(keyOut.toString(), valueOut, oETDString, true).addListener(new BaseFutureAdapter<FuturePut>() {
 
 					@Override
 					public void operationComplete(FuturePut future) throws Exception {
 						if (future.isSuccess()) {
 							logger.info(
-									"Successfully performed add(TASK_KEYS, " + keyOut.toString() + ").domain(" + combinedExecutorTaskDomain + ")");
+									"Successfully performed add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain(" + oETDString + ")");
+						} else {
+							logger.info("Failed to perform add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain(" + oETDString + ")");
+						}
+					}
+				}));
+		this.futurePutData.add(this.dhtConnectionProvider.add(DomainProvider.TASK_KEYS, keyOut.toString(), oETDString, false)
+				.addListener(new BaseFutureAdapter<FuturePut>() {
+
+					@Override
+					public void operationComplete(FuturePut future) throws Exception {
+						if (future.isSuccess()) {
+							logger.info("Successfully performed add(TASK_KEYS, " + keyOut.toString() + ").domain(" + oETDString + ")");
 						} else {
 
-							logger.warn("Failed to perform add(TASK_KEYS, " + keyOut.toString() + ").domain(" + combinedExecutorTaskDomain + ")");
+							logger.warn("Failed to perform add(TASK_KEYS, " + keyOut.toString() + ").domain(" + oETDString + ")");
 						}
 					}
 				}));
 
 	}
-
-	@Override
-	public DHTStorageContext taskExecutor(Tuple<String, Integer> taskExecutor) {
-		this.taskExecutor = taskExecutor;
-		return this;
-	}
-
+ 
 	@Override
 	public DHTStorageContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
@@ -103,13 +94,13 @@ public class DHTStorageContext extends AbstractBaseContext {
 	}
 
 	@Override
-	public DHTStorageContext combiner(IMapReduceProcedure combiner) {
+	public DHTStorageContext combiner(IExecutable combiner) {
 		this.combiner = combiner;
 		return this;
 	}
 
 	@Override
-	public IMapReduceProcedure combiner() {
+	public IExecutable combiner() {
 		return this.combiner;
 	}
 
@@ -119,8 +110,13 @@ public class DHTStorageContext extends AbstractBaseContext {
 	}
 
 	@Override
-	public AbstractBaseContext task(Task task) {
+	public AbstractBaseContext task(Task2 task) {
 		super.task(task);
+		return this;
+	}
+
+	public DHTStorageContext outputExecutorTaskDomain(ExecutorTaskDomain outputExecutorTaskDomain) {
+		this.outputExecutorTaskDomain = outputExecutorTaskDomain;
 		return this;
 	}
 

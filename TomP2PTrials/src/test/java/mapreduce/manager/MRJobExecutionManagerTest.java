@@ -11,10 +11,10 @@ import org.junit.Test;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.computation.ProcedureInformation;
-import mapreduce.execution.computation.standardprocedures.WordCountMapper;
-import mapreduce.execution.computation.standardprocedures.WordCountReducer;
 import mapreduce.execution.job.Job;
+import mapreduce.execution.procedures.Procedure;
+import mapreduce.execution.procedures.WordCountMapper;
+import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobDistributedBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
@@ -68,7 +68,7 @@ public class MRJobExecutionManagerTest {
 		System.err.println("To process: " + value);
 
 		// String id = dhtConnectionProvider.owner();
-		ProcedureInformation pI = job.previousProcedure();
+		Procedure pI = job.previousProcedure();
 
 		Task task = Task.create("START", pI.jobProcedureDomain());
 		pI.addTask(task);

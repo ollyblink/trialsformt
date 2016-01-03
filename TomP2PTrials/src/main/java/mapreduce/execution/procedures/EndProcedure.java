@@ -1,11 +1,10 @@
-package mapreduce.execution.computation.standardprocedures;
+package mapreduce.execution.procedures;
 
 import java.util.Collection;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 
-public class EndProcedure implements IMapReduceProcedure {
+public class EndProcedure implements IExecutable {
 
 	/**
 	 * 

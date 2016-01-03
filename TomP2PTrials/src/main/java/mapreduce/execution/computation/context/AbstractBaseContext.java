@@ -5,9 +5,9 @@ import java.util.List;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
-import mapreduce.execution.computation.ProcedureInformation;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.procedures.IExecutable;
+import mapreduce.execution.procedures.Procedure;
+import mapreduce.execution.task.Task2;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
@@ -15,21 +15,21 @@ import net.tomp2p.peers.Number160;
 
 public abstract class AbstractBaseContext implements IContext {
 
-	protected IMapReduceProcedure combiner;
+	protected IExecutable combiner;
 	protected Number160 resultHash;
 	protected ListMultimap<String, Object> keyValues = ArrayListMultimap.create();
 	protected boolean combine;
 
 	/** NEXT!!! not the current, because the next procedure will use the keys produced for this procedure */
-	protected ProcedureInformation subsequentProcedure;
-	protected Task task;
+	protected Procedure subsequentProcedure;
+	protected Task2 task;
 
 	protected AbstractBaseContext() {
 		resetResultHash();
 	}
 
 	@Override
-	public IContext combiner(IMapReduceProcedure combiner) {
+	public IContext combiner(IExecutable combiner) {
 		this.combiner = combiner;
 		return this;
 	}
@@ -45,7 +45,7 @@ public abstract class AbstractBaseContext implements IContext {
 	}
 
 	@Override
-	public IMapReduceProcedure combiner() {
+	public IExecutable combiner() {
 		return this.combiner;
 	}
 
@@ -58,12 +58,12 @@ public abstract class AbstractBaseContext implements IContext {
 	}
 
 	@Override
-	public ProcedureInformation subsequentProcedure() {
+	public Procedure subsequentProcedure() {
 		return this.subsequentProcedure;
 	}
 
 	@Override
-	public AbstractBaseContext subsequentProcedure(ProcedureInformation subsequentProcedure) {
+	public AbstractBaseContext subsequentProcedure(Procedure subsequentProcedure) {
 		this.subsequentProcedure = subsequentProcedure;
 		return this;
 	}
@@ -97,14 +97,13 @@ public abstract class AbstractBaseContext implements IContext {
 	}
 
 	@Override
-	public AbstractBaseContext task(Task task) {
+	public AbstractBaseContext task(Task2 task) {
 		this.task = task;
 		return this;
 	}
 
 	@Override
-	public Task task() {
-		// TODO Auto-generated method stub
+	public Task2 task() { 
 		return task;
 	}
 }

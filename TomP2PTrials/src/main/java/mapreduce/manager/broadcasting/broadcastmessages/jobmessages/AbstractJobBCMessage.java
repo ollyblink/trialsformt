@@ -14,7 +14,7 @@ public abstract class AbstractJobBCMessage extends AbstractBCMessage implements 
 	 * 
 	 */
 	private static final long serialVersionUID = 5982534238858537033L;
-	protected Job job;
+	protected Job job; 
 
 	public Job job() {
 		return this.job;

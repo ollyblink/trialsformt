@@ -2,25 +2,24 @@ package mapreduce.execution.task.scheduling.taskexecutionscheduling;
 
 import java.util.List;
 
-import mapreduce.execution.computation.ProcedureInformation;
+import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task;
+import mapreduce.execution.task.Task2;
 import mapreduce.execution.task.Tasks;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
-import mapreduce.utils.TimeToLive;
-import mapreduce.utils.conditions.EmptyListCondition;
 
 public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 
 	// private boolean failedWhileWaiting = false;
-	protected ProcedureInformation procedureInformation;
+	protected Procedure procedureInformation;
 
-	public AbstractTaskExecutionScheduler procedureInformation(ProcedureInformation procedureInformation) {
+	public AbstractTaskExecutionScheduler procedureInformation(Procedure procedureInformation) {
 		this.procedureInformation = procedureInformation;
 		return this;
 	}
 
 	@Override
-	public Task schedule(List<Task> tasksToSchedule) {
+	public Task2 schedule(List<Task2> tasksToSchedule) {
 		if (tasksToSchedule != null) {
 			// if (TimeToLive.INSTANCE.cancelOnTimeout(tasksToSchedule, EmptyListCondition.create())) {
 			return scheduleNonNull(tasksToSchedule);
@@ -33,11 +32,11 @@ public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 	// return failedWhileWaiting;
 	// }
 
-	protected abstract Task scheduleNonNull(List<Task> tasksToSchedule);
+	protected abstract Task2 scheduleNonNull(List<Task2> tasksToSchedule);
 
-	protected boolean allTasksAreFinished(List<Task> tasksToSchedule) {
+	protected boolean allTasksAreFinished(List<Task2> tasksToSchedule) {
 		synchronized (tasksToSchedule) {
-			for (Task task : tasksToSchedule) {
+			for (Task2 task : tasksToSchedule) {
 				if (!task.isFinished()) {
 					return false;
 				}
@@ -46,10 +45,10 @@ public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 		return true;
 	}
 
-	protected boolean noTaskAssignedYet(List<Task> tasksToSchedule) {
+	protected boolean noTaskAssignedYet(List<Task2> tasksToSchedule) {
 		synchronized (tasksToSchedule) {
-			for (Task task : tasksToSchedule) {
-				if (task != null && Tasks.allAssignedPeers(task).size() > 0) {
+			for (Task2 task : tasksToSchedule) {
+				if (task != null && task.outputDomains().size() > 0) {
 					return false;
 				}
 			}

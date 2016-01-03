@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.task.Task;
+import mapreduce.execution.task.Task2;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcomparators.MinAssignedWorkerTaskExecutionSortingComparator;
 
 /**
@@ -37,19 +38,19 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 	}
 
 	@Override
-	protected Task scheduleNonNull(List<Task> tasksToSchedule) {
+	protected Task2 scheduleNonNull(List<Task2> tasksToSchedule) {
 		logger.info("Tasks to schedule");
-		for(Task task: tasksToSchedule){
-			logger.info(task.id() + ", ExecutingPeers stati: "+task.executingPeers().values());
-		}
-		Task assignedTask = null;
+//		for(Task2 task: tasksToSchedule){
+//			logger.info(task.id() + ", ExecutingPeers stati: "+task.executingPeers().values());
+//		}
+		Task2 assignedTask = null;
 		if (!allTasksAreFinished(tasksToSchedule)) {
 			if (randomTaskScheduler != null && noTaskAssignedYet(tasksToSchedule)) {
 				assignedTask = randomTaskScheduler.scheduleNonNull(tasksToSchedule);
 				logger.info("random task assigned" + assignedTask);
 			} else {
 				Collections.sort(tasksToSchedule, this.comparator);
-				Task task = tasksToSchedule.get(0);
+				Task2 task = tasksToSchedule.get(0);
 				if (!task.isFinished() || task.isActive()) {
 					assignedTask = task;
 				} 
@@ -58,7 +59,7 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 		} else {
 			logger.info("finished procedure " + procedureInformation);
 			// all tasks finished... set procedure to be finished
-			this.procedureInformation.isFinished(true);
+//			this.procedureInformation.isFinished(true);
 		}
 		return assignedTask;
 	}

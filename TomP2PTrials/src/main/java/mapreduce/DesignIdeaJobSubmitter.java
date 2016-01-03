@@ -1,8 +1,8 @@
 package mapreduce;
 
-import mapreduce.execution.computation.standardprocedures.WordCountMapper;
-import mapreduce.execution.computation.standardprocedures.WordCountReducer;
 import mapreduce.execution.job.Job;
+import mapreduce.execution.procedures.WordCountMapper;
+import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.manager.MRJobSubmissionManager;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileSize;

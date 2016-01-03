@@ -16,10 +16,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import mapreduce.execution.computation.ProcedureInformation;
-import mapreduce.execution.computation.standardprocedures.WordCountMapper;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.job.PriorityLevel;
+import mapreduce.execution.procedures.Procedure;
+import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
@@ -64,7 +64,7 @@ public class MRJobExecutorMessageConsumerTest {
 
 	private static void resetJob() {
 		job = Job.create("TEST", PriorityLevel.MODERATE).addSubsequentProcedure(WordCountMapper.create()).maxNrOfFinishedWorkersPerTask(5);
-		ProcedureInformation currentProc = job.previousProcedure();
+		Procedure currentProc = job.previousProcedure();
 
 		for (String taskKey : TEST_KEYS) {
 			currentProc.addTask(Task.create(taskKey, currentProc.jobProcedureDomain()));

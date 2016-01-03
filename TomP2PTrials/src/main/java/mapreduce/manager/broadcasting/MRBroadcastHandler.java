@@ -2,13 +2,16 @@ package mapreduce.manager.broadcasting;
 
 import java.io.IOException;
 import java.util.NavigableMap;
-import java.util.concurrent.BlockingQueue;
+import java.util.TreeMap;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.job.Job;
 import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
+import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.utils.DomainProvider;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.StructuredBroadcastHandler;
 import net.tomp2p.peers.Number640;
@@ -18,9 +21,9 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	private static Logger logger = LoggerFactory.getLogger(MRBroadcastHandler.class);
 
 	private String owner;
-	private BlockingQueue<IBCMessage> bcMessages;
+	private TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs;
 
-	private Job currentlyExecutedJob;
+	private IDHTConnectionProvider dhtConnectionProvider;
 
 	private MRBroadcastHandler() {
 
@@ -38,25 +41,16 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		}
 		try {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
-			// logger.info("Received message with data : " + dataMap);
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
-				// logger.info("Message: " + bcMessage.status() + ", " + bcMessage.sender() + ", " + bcMessage.creationTime());
-				if (owner != null && !bcMessage.sender().equals(owner) && !bcMessages.contains(bcMessage)) {
-					logger.info("Added message (i'm owner: " + owner + "): " + bcMessage.status() + ", " + bcMessage.sender() + ", "
-							+ bcMessage.creationTime());
-					bcMessages.add(bcMessage);
-
+				Job job = getJob(bcMessage.jobId());
+				if (job != null) {
+					if (owner != null && !bcMessage.sender().equals(owner)) {
+						jobs.get(job).add(bcMessage);
+					}
 				} else {
-					logger.info("Discarded message (i'm owner: " + owner + "): " + bcMessage.status() + ", " + bcMessage.sender() + ", "
-							+ bcMessage.creationTime());
-
+					tryGet(job, bcMessage.jobId());
 				}
-				String all = "All messages:\n";
-				for (IBCMessage m : bcMessages) {
-					all += bcMessage.status() + ", " + bcMessage.sender() + ", " + bcMessage.creationTime() + "\n";
-				}
-				logger.info(all);
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
@@ -64,8 +58,26 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		return super.receive(message);
 	}
 
-	public MRBroadcastHandler queue(BlockingQueue<IBCMessage> bcMessages) {
-		this.bcMessages = bcMessages;
+	private void tryGet(Job job, String jobId) {
+		this.dhtConnectionProvider.getAll(DomainProvider.INSTANCE, jobId);
+	}
+
+	private Job getJob(String jobId) {
+		for (Job job : jobs.keySet()) {
+			if (job.id().equals(jobId)) {
+				return job;
+			}
+		}
+		return null;
+	}
+
+	public MRBroadcastHandler dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		this.dhtConnectionProvider = dhtConnectionProvider;
+		return this;
+	}
+
+	public MRBroadcastHandler jobs(TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
+		this.jobs = jobs;
 		return this;
 	}
 
@@ -74,7 +86,4 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		return this;
 	}
 
-	public void currentlyExecutedJob(Job currentlyExecutedJob) {
-		this.currentlyExecutedJob = currentlyExecutedJob;
-	}
 }

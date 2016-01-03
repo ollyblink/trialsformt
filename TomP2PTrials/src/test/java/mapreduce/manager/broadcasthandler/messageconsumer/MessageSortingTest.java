@@ -15,7 +15,7 @@ import org.mockito.Mockito;
 
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
-import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.TaskUpdateBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.TaskCompletedBCMessage;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -51,9 +51,9 @@ public class MessageSortingTest {
 						e.printStackTrace();
 					}
 					if ((in) % ((int) in) == 0.5) {
-						messages.add(TaskUpdateBCMessage.createTaskFinishedBCMessage().task(task).sender(sender));
+						messages.add(TaskCompletedBCMessage.createTaskFinishedBCMessage().task(task).sender(sender));
 					} else {
-						messages.add(TaskUpdateBCMessage.createTaskExecutingBCMessage().task(task).sender(sender));
+						messages.add(TaskCompletedBCMessage.createTaskExecutingBCMessage().task(task).sender(sender));
 					}
 				}
 
@@ -99,9 +99,9 @@ public class MessageSortingTest {
 						e.printStackTrace();
 					}
 					if ((in) % ((int) in) == 0.5) {
-						messages.add(TaskUpdateBCMessage.createTaskFinishedBCMessage().task(task).sender("EXECUTOR_"+inCnt));
+						messages.add(TaskCompletedBCMessage.createTaskFinishedBCMessage().task(task).sender("EXECUTOR_"+inCnt));
 					} else {
-						messages.add(TaskUpdateBCMessage.createTaskExecutingBCMessage().task(task).sender("EXECUTOR_" + inCnt));
+						messages.add(TaskCompletedBCMessage.createTaskExecutingBCMessage().task(task).sender("EXECUTOR_" + inCnt));
 					}
 				}
 

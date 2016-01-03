@@ -1,8 +1,7 @@
-package mapreduce.execution.computation.standardprocedures;
+package mapreduce.execution.procedures;
 
 import java.util.Collection;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 
 /**
@@ -11,7 +10,7 @@ import mapreduce.execution.computation.context.IContext;
  * @author ozihler
  *
  */
-public class NullMapReduceProcedure implements IMapReduceProcedure {
+public class NullMapReduceProcedure implements IExecutable {
 
 	/**
 	 * 
@@ -31,7 +30,7 @@ public class NullMapReduceProcedure implements IMapReduceProcedure {
 	private NullMapReduceProcedure() {
 	}
 
-	public static IMapReduceProcedure newInstance() {
+	public static IExecutable newInstance() {
 		// TODO Auto-generated method stub
 		return new NullMapReduceProcedure();
 	}

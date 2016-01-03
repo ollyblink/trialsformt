@@ -6,7 +6,7 @@ import mapreduce.manager.broadcasting.broadcastmessageconsumer.IMessageConsumer;
 import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 import net.tomp2p.peers.Number160;
 
-public class TaskUpdateBCMessage extends AbstractJobBCMessage {
+public class TaskCompletedBCMessage extends AbstractJobBCMessage {
 
 	/**
 	 * 
@@ -28,19 +28,11 @@ public class TaskUpdateBCMessage extends AbstractJobBCMessage {
 
 	}
 
-//	public static TaskUpdateBCMessage createTaskExecutingBCMessage() {
-//		return new TaskUpdateBCMessage(BCMessageStatus.EXECUTING_TASK);
-//	}
-
-	public static TaskUpdateBCMessage createTaskFinishedBCMessage() {
-		return new TaskUpdateBCMessage(BCMessageStatus.FINISHED_TASK);
+	public static TaskCompletedBCMessage createTaskFinishedBCMessage() {
+		return new TaskCompletedBCMessage(BCMessageStatus.FINISHED_TASK);
 	}
 
-//	public static TaskUpdateBCMessage createTaskFailedBCMessage() {
-//		return new TaskUpdateBCMessage(BCMessageStatus.FAILED_TASK);
-//	}
-
-	private TaskUpdateBCMessage(BCMessageStatus status) {
+	private TaskCompletedBCMessage(BCMessageStatus status) {
 		this.status = status;
 	}
 
@@ -48,17 +40,17 @@ public class TaskUpdateBCMessage extends AbstractJobBCMessage {
 		return this.resultHash;
 	}
 
-	public TaskUpdateBCMessage resultHash(Number160 resultHash) {
+	public TaskCompletedBCMessage resultHash(Number160 resultHash) {
 		this.resultHash = resultHash;
 		return this;
 	}
 
 	@Override
-	public TaskUpdateBCMessage sender(final String sender) {
-		return (TaskUpdateBCMessage) super.sender(sender);
+	public TaskCompletedBCMessage sender(final String sender) {
+		return (TaskCompletedBCMessage) super.sender(sender);
 	}
 
-	public TaskUpdateBCMessage task(Task task) {
+	public TaskCompletedBCMessage task(Task task) {
 		this.task = task;
 		return this;
 	}

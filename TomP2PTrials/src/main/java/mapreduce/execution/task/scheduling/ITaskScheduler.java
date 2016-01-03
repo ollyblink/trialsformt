@@ -2,8 +2,9 @@ package mapreduce.execution.task.scheduling;
 
 import java.util.List;
 
-import mapreduce.execution.computation.ProcedureInformation;
+import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task;
+import mapreduce.execution.task.Task2;
 
 public interface ITaskScheduler {
 
@@ -13,7 +14,7 @@ public interface ITaskScheduler {
 	 * @param tasksToSchedule
 	 * @return
 	 */
-	public Task schedule(List<Task> tasksToSchedule);
+	public Task2 schedule(List<Task2> tasksToSchedule);
 
 	/**
 	 * Although this actually contains the task list, I thought it was easier to imagine schedule(tasks) than schedule(procedureInformation) and then
@@ -23,5 +24,6 @@ public interface ITaskScheduler {
 	 * @param procedureInformation
 	 * @return
 	 */
-	public ITaskScheduler procedureInformation(ProcedureInformation procedureInformation);
+	public ITaskScheduler procedureInformation(Procedure procedureInformation);
+
 }

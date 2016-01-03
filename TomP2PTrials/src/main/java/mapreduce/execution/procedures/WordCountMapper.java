@@ -1,12 +1,11 @@
-package mapreduce.execution.computation.standardprocedures;
+package mapreduce.execution.procedures;
 
 import java.util.Collection;
 import java.util.StringTokenizer;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 
-public class WordCountMapper implements IMapReduceProcedure {
+public class WordCountMapper implements IExecutable {
 
 	/**
 	 * 
@@ -24,7 +23,7 @@ public class WordCountMapper implements IMapReduceProcedure {
 		}
 	}
 
-	public static IMapReduceProcedure create() {
+	public static IExecutable create() {
 		return new WordCountMapper();
 	}
 

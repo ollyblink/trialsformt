@@ -1,18 +1,17 @@
-package mapreduce.execution.computation.standardprocedures;
+package mapreduce.execution.procedures;
 
 import java.util.Collection;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
 
-public class WordCountReducer implements IMapReduceProcedure {
+public class WordCountReducer implements IExecutable {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 6674686068934510011L;
 
-	public static IMapReduceProcedure create() {
+	public static IExecutable create() {
 		return new WordCountReducer();
 	}
 

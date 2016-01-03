@@ -14,8 +14,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.job.Job;
+import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
@@ -105,7 +105,7 @@ public class MRJobSubmissionManager {
 		String fileName = keyfilePath.replace(file.getPath(), "").replace(".", "").replace("\\", "");
 		String taskKey = fileName + "_" + filePartCounter++;
 
-		ProcedureInformation pI = job.previousProcedure();
+		Procedure pI = job.previousProcedure();
 		
 		Task task = Task.create(taskKey, pI.jobProcedureDomain());
 		for (int i = 0; i < Tasks.bestOfMaxNrOfFinishedWorkersWithSameResultHash(job.maxNrOfFinishedWorkersPerTask()); ++i) {

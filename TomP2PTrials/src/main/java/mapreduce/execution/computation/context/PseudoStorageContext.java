@@ -8,7 +8,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
+import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.task.Task;
 import net.tomp2p.peers.Number160;
 

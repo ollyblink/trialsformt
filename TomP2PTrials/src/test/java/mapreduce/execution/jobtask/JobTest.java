@@ -12,11 +12,11 @@ import org.omg.CORBA.PRIVATE_MEMBER;
 
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.computation.standardprocedures.NullMapReduceProcedure;
-import mapreduce.execution.computation.standardprocedures.WordCountMapper;
-import mapreduce.execution.computation.standardprocedures.WordCountReducer;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.job.PriorityLevel;
+import mapreduce.execution.procedures.NullMapReduceProcedure;
+import mapreduce.execution.procedures.WordCountMapper;
+import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
@@ -30,47 +30,47 @@ public class JobTest {
 		Job job = Job.create("TEST", PriorityLevel.MODERATE).addSubsequentProcedure(WordCountMapper.create())
 				.addSubsequentProcedure(WordCountReducer.create());
 
-		assertEquals("StartProcedure", job.procedure(-100).procedure().getClass().getSimpleName());
-		assertEquals("StartProcedure", job.procedure(-10).procedure().getClass().getSimpleName());
-		assertEquals("StartProcedure", job.procedure(-1).procedure().getClass().getSimpleName());
-		assertEquals("StartProcedure", job.procedure(0).procedure().getClass().getSimpleName());
+		assertEquals("StartProcedure", job.procedure(-100).executable().getClass().getSimpleName());
+		assertEquals("StartProcedure", job.procedure(-10).executable().getClass().getSimpleName());
+		assertEquals("StartProcedure", job.procedure(-1).executable().getClass().getSimpleName());
+		assertEquals("StartProcedure", job.procedure(0).executable().getClass().getSimpleName());
 
-		assertEquals("StartProcedure", job.procedure(0).procedure().getClass().getSimpleName());
-		assertEquals("WordCountMapper", job.procedure(1).procedure().getClass().getSimpleName());
-		assertEquals("WordCountReducer", job.procedure(2).procedure().getClass().getSimpleName());
-		assertEquals("EndProcedure", job.procedure(3).procedure().getClass().getSimpleName());
+		assertEquals("StartProcedure", job.procedure(0).executable().getClass().getSimpleName());
+		assertEquals("WordCountMapper", job.procedure(1).executable().getClass().getSimpleName());
+		assertEquals("WordCountReducer", job.procedure(2).executable().getClass().getSimpleName());
+		assertEquals("EndProcedure", job.procedure(3).executable().getClass().getSimpleName());
 
-		assertEquals("StartProcedure", job.previousProcedure().procedure().getClass().getSimpleName());
-		assertEquals("WordCountMapper", job.currentProcedure().procedure().getClass().getSimpleName());
-
-		job.incrementProcedureIndex();
-		assertEquals("StartProcedure", job.procedure(0).procedure().getClass().getSimpleName());
-		assertEquals("WordCountMapper", job.procedure(1).procedure().getClass().getSimpleName());
-		assertEquals("WordCountReducer", job.procedure(2).procedure().getClass().getSimpleName());
-		assertEquals("EndProcedure", job.procedure(3).procedure().getClass().getSimpleName());
-
-		assertEquals("WordCountMapper", job.previousProcedure().procedure().getClass().getSimpleName());
-		assertEquals("WordCountReducer", job.currentProcedure().procedure().getClass().getSimpleName());
+		assertEquals("StartProcedure", job.previousProcedure().executable().getClass().getSimpleName());
+		assertEquals("WordCountMapper", job.currentProcedure().executable().getClass().getSimpleName());
 
 		job.incrementProcedureIndex();
-		assertEquals("StartProcedure", job.procedure(0).procedure().getClass().getSimpleName());
-		assertEquals("WordCountMapper", job.procedure(1).procedure().getClass().getSimpleName());
-		assertEquals("WordCountReducer", job.procedure(2).procedure().getClass().getSimpleName());
-		assertEquals("EndProcedure", job.procedure(3).procedure().getClass().getSimpleName());
+		assertEquals("StartProcedure", job.procedure(0).executable().getClass().getSimpleName());
+		assertEquals("WordCountMapper", job.procedure(1).executable().getClass().getSimpleName());
+		assertEquals("WordCountReducer", job.procedure(2).executable().getClass().getSimpleName());
+		assertEquals("EndProcedure", job.procedure(3).executable().getClass().getSimpleName());
 
-		assertEquals("WordCountReducer", job.previousProcedure().procedure().getClass().getSimpleName());
-		assertEquals("EndProcedure", job.currentProcedure().procedure().getClass().getSimpleName());
+		assertEquals("WordCountMapper", job.previousProcedure().executable().getClass().getSimpleName());
+		assertEquals("WordCountReducer", job.currentProcedure().executable().getClass().getSimpleName());
 
 		job.incrementProcedureIndex();
-		assertEquals("StartProcedure", job.procedure(0).procedure().getClass().getSimpleName());
-		assertEquals("WordCountMapper", job.procedure(1).procedure().getClass().getSimpleName());
-		assertEquals("WordCountReducer", job.procedure(2).procedure().getClass().getSimpleName());
-		assertEquals("EndProcedure", job.procedure(3).procedure().getClass().getSimpleName());
-		assertEquals("EndProcedure", job.procedure(4).procedure().getClass().getSimpleName());
-		assertEquals("EndProcedure", job.procedure(5).procedure().getClass().getSimpleName());
+		assertEquals("StartProcedure", job.procedure(0).executable().getClass().getSimpleName());
+		assertEquals("WordCountMapper", job.procedure(1).executable().getClass().getSimpleName());
+		assertEquals("WordCountReducer", job.procedure(2).executable().getClass().getSimpleName());
+		assertEquals("EndProcedure", job.procedure(3).executable().getClass().getSimpleName());
 
-		assertEquals("EndProcedure", job.previousProcedure().procedure().getClass().getSimpleName());
-		assertEquals("EndProcedure", job.currentProcedure().procedure().getClass().getSimpleName());
+		assertEquals("WordCountReducer", job.previousProcedure().executable().getClass().getSimpleName());
+		assertEquals("EndProcedure", job.currentProcedure().executable().getClass().getSimpleName());
+
+		job.incrementProcedureIndex();
+		assertEquals("StartProcedure", job.procedure(0).executable().getClass().getSimpleName());
+		assertEquals("WordCountMapper", job.procedure(1).executable().getClass().getSimpleName());
+		assertEquals("WordCountReducer", job.procedure(2).executable().getClass().getSimpleName());
+		assertEquals("EndProcedure", job.procedure(3).executable().getClass().getSimpleName());
+		assertEquals("EndProcedure", job.procedure(4).executable().getClass().getSimpleName());
+		assertEquals("EndProcedure", job.procedure(5).executable().getClass().getSimpleName());
+
+		assertEquals("EndProcedure", job.previousProcedure().executable().getClass().getSimpleName());
+		assertEquals("EndProcedure", job.currentProcedure().executable().getClass().getSimpleName());
 	}
 
 	@Test

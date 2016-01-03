@@ -11,8 +11,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.computation.IMapReduceProcedure;
 import mapreduce.execution.computation.context.IContext;
+import mapreduce.execution.procedures.IExecutable;
 import mapreduce.utils.SyncedCollectionProvider;
 
 public class ParallelTaskExecutor implements ITaskExecutor {
@@ -40,7 +40,7 @@ public class ParallelTaskExecutor implements ITaskExecutor {
 	}
 
 	@Override
-	public void execute(final IMapReduceProcedure procedure, final Object key, final List<Object> values, final IContext context) {
+	public void execute(final IExecutable procedure, final Object key, final List<Object> values, final IContext context) {
 //		System.err.println(nThreads + "==" + server.getActiveCount());
 //		while (nThreads == server.getActiveCount()) {
 //			try {

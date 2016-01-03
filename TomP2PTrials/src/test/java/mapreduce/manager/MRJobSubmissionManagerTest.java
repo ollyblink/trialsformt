@@ -16,11 +16,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.computation.ProcedureInformation;
 import mapreduce.execution.computation.context.PseudoStorageContext;
-import mapreduce.execution.computation.standardprocedures.WordCountMapper;
-import mapreduce.execution.computation.standardprocedures.WordCountReducer;
 import mapreduce.execution.job.Job;
+import mapreduce.execution.procedures.Procedure;
+import mapreduce.execution.procedures.WordCountMapper;
+import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.execution.task.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
@@ -57,7 +57,7 @@ public class MRJobSubmissionManagerTest {
 			e.printStackTrace();
 		}
 		System.err.println("HERE");
-		ProcedureInformation pI = job.previousProcedure();
+		Procedure pI = job.previousProcedure();
 		String jobProcedureDomain = pI.jobProcedureDomain();
 		
 		ArrayList<FutureGet> keysFutures = new ArrayList<>();
@@ -172,7 +172,7 @@ public class MRJobSubmissionManagerTest {
 
 											{
 												context.task(Task.create(key, job.id()));
-												job.previousProcedure().procedure().process(key, vals.get(key), context);
+												job.previousProcedure().executable().process(key, vals.get(key), context);
 
 											}
 

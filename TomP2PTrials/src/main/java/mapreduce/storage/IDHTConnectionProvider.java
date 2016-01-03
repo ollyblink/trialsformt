@@ -5,12 +5,13 @@ import java.util.concurrent.BlockingQueue;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.Task;
 import mapreduce.manager.broadcasting.MRBroadcastHandler;
+import mapreduce.manager.broadcasting.broadcastmessages.CompletedBCMessage;
 import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobDistributedBCMessage;
 import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobFailedBCMessage;
 import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobFinishedBCMessage;
-import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.ProcedureFinishedBCMessage;
-import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.TaskUpdateBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.ProcedureCompletedBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.TaskCompletedBCMessage;
 import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -36,6 +37,7 @@ public interface IDHTConnectionProvider {
 	// public void createTasks(Job job, List<FutureGet> procedureTaskFutureGetCollector, List<Task> procedureTaskCollector);
 
 	public FutureGet getAll(String keyString, String domainString);
+
 	public FutureGet get(String job, String receivedJobId);
 
 	// DHT access
@@ -48,13 +50,13 @@ public interface IDHTConnectionProvider {
 
 	// public JobFailedBCMessage broadcastFailedJob(Job job);
 
-	public TaskUpdateBCMessage broadcastExecutingTask(Task task, Tuple<String, Integer> taskExecutor);
+	public TaskCompletedBCMessage broadcastExecutingTask(Task task, Tuple<String, Integer> taskExecutor);
 
 	// public TaskUpdateBCMessage broadcastFailedTask(Task taskToDistribute);
 
-	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Tuple<String, Integer> taskExecutor, Number160 resultHash);
+	public TaskCompletedBCMessage broadcastFinishedTask(Task task, Tuple<String, Integer> taskExecutor, Number160 resultHash);
 
-	public ProcedureFinishedBCMessage broadcastFinishedAllTasksOfProcedure(Job job);
+	public ProcedureCompletedBCMessage broadcastFinishedAllTasksOfProcedure(Job job);
 
 	public JobFinishedBCMessage broadcastFinishedJob(Job job);
 
@@ -106,5 +108,8 @@ public interface IDHTConnectionProvider {
 
 	public MRBroadcastHandler broadcastHandler();
 
+	public void broadcastTaskCompleted(CompletedBCMessage completedTaskMessage);
+
+	public void broadcastProcedureCompleted(CompletedBCMessage completedProcedureMessage);
 
 }

@@ -19,8 +19,8 @@ import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobDistributedBCMessage;
 import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobFailedBCMessage;
 import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobFinishedBCMessage;
-import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.ProcedureFinishedBCMessage;
-import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.TaskUpdateBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.ProcedureCompletedBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.TaskCompletedBCMessage;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -230,8 +230,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	// }
 
 	@Override
-	public ProcedureFinishedBCMessage broadcastFinishedAllTasksOfProcedure(Job job) {
-		ProcedureFinishedBCMessage message = ProcedureFinishedBCMessage.create().job(job).sender(this.owner());
+	public ProcedureCompletedBCMessage broadcastFinishedAllTasksOfProcedure(Job job) {
+		ProcedureCompletedBCMessage message = ProcedureCompletedBCMessage.create().job(job).sender(this.owner());
 		broadcastJobUpdate(job, message);
 		return message;
 
@@ -245,15 +245,15 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public TaskUpdateBCMessage broadcastExecutingTask(Task task, Tuple<String, Integer> taskExecutor) {
-		TaskUpdateBCMessage message = TaskUpdateBCMessage.createTaskExecutingBCMessage().task(task).sender(taskExecutor.first());
+	public TaskCompletedBCMessage broadcastExecutingTask(Task task, Tuple<String, Integer> taskExecutor) {
+		TaskCompletedBCMessage message = TaskCompletedBCMessage.createTaskExecutingBCMessage().task(task).sender(taskExecutor.first());
 		broadcastTaskUpdate(task, taskExecutor, message);
 		return message;
 	}
 
 	@Override
-	public TaskUpdateBCMessage broadcastFinishedTask(Task task, Tuple<String, Integer> taskExecutor, Number160 resultHash) {
-		TaskUpdateBCMessage message = TaskUpdateBCMessage.createTaskFinishedBCMessage().task(task).sender(taskExecutor.first())
+	public TaskCompletedBCMessage broadcastFinishedTask(Task task, Tuple<String, Integer> taskExecutor, Number160 resultHash) {
+		TaskCompletedBCMessage message = TaskCompletedBCMessage.createTaskFinishedBCMessage().task(task).sender(taskExecutor.first())
 				.resultHash(resultHash);
 		broadcastTaskUpdate(task, taskExecutor, message);
 		return message;
