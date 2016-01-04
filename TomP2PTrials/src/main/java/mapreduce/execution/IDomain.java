@@ -18,6 +18,12 @@ public interface IDomain extends Serializable {
 
 	public void incrementSubmissionCount();
 
-	
+	@Override
+	public int hashCode();
 
+	@Override
+	public boolean equals(Object obj);
+
+	@Override
+	public String toString();
 }

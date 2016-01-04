@@ -8,9 +8,9 @@ import java.util.Set;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.IFinishable;
-import mapreduce.execution.procedures.ExecutorTaskDomain;
 import net.tomp2p.peers.Number160;
 
 public class Task2 implements IFinishable, Serializable {
@@ -30,6 +30,7 @@ public class Task2 implements IFinishable, Serializable {
 	private volatile boolean isActive;
 	/** final output domain for where this tasks output key/values are stored */
 	private IDomain resultOutputDomain;
+	private boolean isInProcedureDomain;
 
 	private Task2(String key) {
 		this.key = key;
@@ -123,6 +124,15 @@ public class Task2 implements IFinishable, Serializable {
 	public void reset() {
 		outputDomains.clear();
 		resultOutputDomain = null;
+	}
+
+	public boolean isInProcedureDomain() {
+		// TODO Auto-generated method stub
+		return this.isInProcedureDomain;
+	}
+
+	public void isInProcedureDomain(boolean isInProcedureDomain) {
+		this.isInProcedureDomain = isInProcedureDomain;
 	}
 
 }

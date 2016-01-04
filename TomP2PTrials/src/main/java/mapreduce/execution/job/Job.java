@@ -29,6 +29,7 @@ public class Job implements Serializable, Comparable<Job> {
 	private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
 	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
+	private static final int DEFAULT_MAX_NR_OF_FINISHED_WORKERS = 3;
 
 	/** specifies a unique id for this job */
 	private String id;
@@ -83,7 +84,7 @@ public class Job implements Serializable, Comparable<Job> {
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
 	private int jobSubmissionCounter;
 
-//	private boolean isActive;
+	// private boolean isActive;
 
 	private Job(String jobSubmitterID, PriorityLevel... priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
@@ -94,13 +95,14 @@ public class Job implements Serializable, Comparable<Job> {
 		this.previousProcedureIndex = 0;
 		this.procedures = Collections.synchronizedList(new ArrayList<>());
 		// Add initial
-		Procedure procedureInformation = Procedure.create(id(), StartProcedure.create(), this.procedures.size());
+		Procedure procedureInformation = Procedure.create(StartProcedure.create(), 0);
 		this.procedures.add(procedureInformation);
 	}
 
 	public static Job create(String jobSubmitterID, PriorityLevel... priorityLevel) {
 		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).timeToLiveInMs(DEFAULT_TIME_TO_LIVE_IN_MS)
-				.maxNrOfDHTActions(DEFAULT_NUMBER_OF_ADD_TRIALS).useLocalStorageFirst(true).maxNrOfFinishedWorkersPerTask(3);
+				.maxNrOfDHTActions(DEFAULT_NUMBER_OF_ADD_TRIALS).useLocalStorageFirst(true)
+				.maxNrOfFinishedWorkersPerTask(DEFAULT_MAX_NR_OF_FINISHED_WORKERS);
 	}
 
 	public String id() {
@@ -128,13 +130,12 @@ public class Job implements Serializable, Comparable<Job> {
 	 * @return the procedure at the specified index
 	 */
 	public Procedure procedure(int index) {
-		try {
+		if (index < 0) {
+			return procedures.get(0);
+		} else if (index >= procedures.size()) {
+			return Procedure.create(EndProcedure.create(), procedures.size());
+		} else {
 			return procedures.get(index);
-		} catch (Exception e) {
-			if (index < 0) {
-				return Procedure.create(id(), StartProcedure.create(), 0);
-			}
-			return Procedure.create(id(), EndProcedure.create(), procedures.size());
 		}
 	}
 
@@ -166,7 +167,7 @@ public class Job implements Serializable, Comparable<Job> {
 	 * @return
 	 */
 	public Job addSubsequentProcedure(IExecutable procedure) {
-		Procedure procedureInformation = Procedure.create(id(), procedure, this.procedures.size());
+		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size());
 		this.procedures.add(procedureInformation);
 		return this;
 	}
@@ -270,31 +271,7 @@ public class Job implements Serializable, Comparable<Job> {
 			return false;
 		return true;
 	}
-
-	public Job copy() {
-		Job job = new Job(jobSubmitterID, priorityLevel);
-		job.id = id;
-		job.previousProcedureIndex = previousProcedureIndex;
-		job.fileInputFolderPath = fileInputFolderPath;
-		job.maxFileSize = maxFileSize;
-		job.maxNrOfDHTActions = maxNrOfDHTActions;
-		job.maxNrOfFinishedWorkersPerTask = maxNrOfFinishedWorkersPerTask;
-		job.procedures = SyncedCollectionProvider.syncedArrayList();
-		for (Procedure pI : procedures) {
-			Procedure copyPI = Procedure.create(job.id(), pI.executable(), pI.procedureIndex()).isFinished(pI.isFinished());
-			List<Task> tasks = copyPI.tasks();
-			for (Task task : pI.tasks()) {
-				Task taskCopy = Task.create(task.id(), copyPI.jobProcedureDomain()); // NO DEEP TASK COPY
-				tasks.add(taskCopy);
-			}
-			job.procedures.add(pI);
-		}
-		job.jobSubmissionCounter = jobSubmissionCounter;
-		job.timeToLiveInMs = timeToLiveInMs;
-		job.useLocalStorageFirst = useLocalStorageFirst;
-		job.isActive = isActive;
-		return job;
-	}
+ 
 
 	@Override
 	public int compareTo(Job job) {
@@ -305,37 +282,36 @@ public class Job implements Serializable, Comparable<Job> {
 		}
 	}
 
-	public static void main(String[] args) {
-		List<Job> jobs = new ArrayList<>();
-		jobs.add(Job.create("1", PriorityLevel.LOW));
-		jobs.add(Job.create("2", PriorityLevel.MODERATE));
-		jobs.add(Job.create("3", PriorityLevel.HIGH));
-		jobs.add(Job.create("4", PriorityLevel.MODERATE));
-		jobs.add(Job.create("5", PriorityLevel.LOW));
-		jobs.add(Job.create("6", PriorityLevel.HIGH));
+//	public static void main(String[] args) {
+//		List<Job> jobs = new ArrayList<>();
+//		jobs.add(Job.create("1", PriorityLevel.LOW));
+//		jobs.add(Job.create("2", PriorityLevel.MODERATE));
+//		jobs.add(Job.create("3", PriorityLevel.HIGH));
+//		jobs.add(Job.create("4", PriorityLevel.MODERATE));
+//		jobs.add(Job.create("5", PriorityLevel.LOW));
+//		jobs.add(Job.create("6", PriorityLevel.HIGH));
+//
+//		Collections.sort(jobs);
+//		for (Job job : jobs) {
+//			System.err.println(job.jobSubmitterID() + ", " + job.priorityLevel);
+//		}
+//	}
 
-		Collections.sort(jobs);
-		for (Job job : jobs) {
-			System.err.println(job.jobSubmitterID() + ", " + job.priorityLevel);
-		}
-	}
-
-	public PriorityLevel priorityLevel() {
-		// TODO Auto-generated method stub
+	public PriorityLevel priorityLevel() { 
 		return priorityLevel;
 	}
 
 	public Long creationTime() {
 		return creationTime;
 	}
-//
-//	public boolean isActive() {
-//		return isActive;
-//	}
-//
-//	public Job isActive(boolean isActive) {
-//		this.isActive = isActive;
-//		return this;
-//	}
+	//
+	// public boolean isActive() {
+	// return isActive;
+	// }
+	//
+	// public Job isActive(boolean isActive) {
+	// this.isActive = isActive;
+	// return this;
+	// }
 
 }

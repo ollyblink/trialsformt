@@ -8,6 +8,7 @@ import com.google.common.collect.ListMultimap;
 
 import mapreduce.execution.IDomain;
 import mapreduce.execution.IFinishable;
+import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.task.Task2;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
@@ -144,4 +145,6 @@ public final class Procedure implements IFinishable, Serializable {
 			task.reset();
 		}
 	}
+	
+	
 }

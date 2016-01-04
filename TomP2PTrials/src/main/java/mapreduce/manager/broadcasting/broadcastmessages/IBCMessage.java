@@ -3,7 +3,7 @@ package mapreduce.manager.broadcasting.broadcastmessages;
 import java.io.Serializable;
 
 import mapreduce.execution.IDomain;
-import mapreduce.execution.procedures.JobProcedureDomain;
+import mapreduce.execution.JobProcedureDomain;
 import mapreduce.manager.broadcasting.broadcastmessageconsumer.IMessageConsumer;
 
 public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
@@ -39,8 +39,8 @@ public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
 //
 //	public String jobId();
 
-	IDomain outputDomain();
+	public IDomain outputDomain();
 
-	JobProcedureDomain inputDomain();
+	public JobProcedureDomain inputDomain();
 
 }

@@ -6,7 +6,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.procedures.ExecutorTaskDomain;
+import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.Value;
@@ -42,6 +42,7 @@ public class GetTaskValuesListener extends BaseFutureAdapter<FutureGet> {
 					for (Number640 n : future.dataMap().keySet()) {
 						valuesCollector.add(((Value) future.dataMap().get(n).object()).value());
 					}
+
 				}
 			} catch (IOException e) {
 				logger.warn("IOException on getting the data", e);

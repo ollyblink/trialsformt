@@ -1,6 +1,7 @@
 package mapreduce.manager;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -10,27 +11,35 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimaps;
+
+import mapreduce.execution.ExecutorTaskDomain;
+import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.Procedure;
-import mapreduce.execution.task.Task;
-import mapreduce.execution.task.TaskResult;
-import mapreduce.execution.task.Tasks;
 import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.manager.broadcasting.broadcastmessageconsumer.MRJobSubmissionManagerMessageConsumer;
-import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
-import mapreduce.manager.broadcasting.broadcastmessages.jobmessages.JobDistributedBCMessage;
+import mapreduce.manager.broadcasting.broadcastmessages.CompletedBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
-import mapreduce.utils.Tuple;
+import mapreduce.utils.SyncedCollectionProvider;
+import mapreduce.utils.Value;
+import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.futures.Futures;
+import net.tomp2p.peers.Number640;
 
 public class MRJobSubmissionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManager.class);
@@ -40,19 +49,27 @@ public class MRJobSubmissionManager {
 	private MRJobSubmissionManagerMessageConsumer messageConsumer;
 	private ITaskDataComposer taskDataComposer;
 	private String id;
-	private String resultDomain;
+	private JobProcedureDomain resultDomain;
+	private String outputFolder;
 
 	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, List<Job> jobs) {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
-		this.dhtConnectionProvider(dhtConnectionProvider.owner(this.id));
-		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.newInstance(this, jobs).canTake(true);
+		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.create(this).canTake(true);
 		new Thread(messageConsumer).start();
-		dhtConnectionProvider.addMessageQueueToBroadcastHandler(messageConsumer.queue());
+		this.dhtConnectionProvider = dhtConnectionProvider.owner(this.id).jobQueues(messageConsumer.jobs());
 	}
 
 	public static MRJobSubmissionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
 		return new MRJobSubmissionManager(dhtConnectionProvider, Collections.synchronizedList(new ArrayList<>()))
-				.taskComposer(DEFAULT_TASK_DATA_COMPOSER);
+				.taskComposer(DEFAULT_TASK_DATA_COMPOSER).outputFolder(System.getProperty("user.dir") + "/tmp/");
+	}
+
+	public MRJobSubmissionManager outputFolder(String outputFolder) {
+		if (!new File(outputFolder).exists()) {
+			new File(outputFolder).mkdir();
+		}
+		this.outputFolder = outputFolder;
+		return this;
 	}
 
 	public void connect() {
@@ -68,7 +85,8 @@ public class MRJobSubmissionManager {
 	 * @return
 	 */
 	public void submit(final Job job) {
-		taskDataComposer.maxFileSize(job.maxFileSize());
+		messageConsumer.jobs().put(job, new PriorityBlockingQueue<>());
+		taskDataComposer.splitValue("\n").maxFileSize(job.maxFileSize());
 
 		List<String> keysFilePaths = new ArrayList<String>();
 		File file = new File(job.fileInputFolderPath());
@@ -106,42 +124,31 @@ public class MRJobSubmissionManager {
 		String taskKey = fileName + "_" + filePartCounter++;
 
 		Procedure pI = job.previousProcedure();
-		
-		Task task = Task.create(taskKey, pI.jobProcedureDomain());
-		for (int i = 0; i < Tasks.bestOfMaxNrOfFinishedWorkersWithSameResultHash(job.maxNrOfFinishedWorkersPerTask()); ++i) {
-			Tasks.updateStati(task, TaskResult.create().sender(id).status(BCMessageStatus.EXECUTING_TASK), job.maxNrOfFinishedWorkersPerTask());
-			Tasks.updateStati(task, TaskResult.create().sender(id).status(BCMessageStatus.FINISHED_TASK), job.maxNrOfFinishedWorkersPerTask());
-		}
-		Tuple<String, Integer> taskExecutor = Tuple.create(id, task.executingPeers().get(id).size() - 1);
 
-		String jobProcedureDomainString = pI.jobProcedureDomainString();
+		JobProcedureDomain jobProcedureDomain = new JobProcedureDomain(job.id(), id, pI.executable().getClass().getSimpleName(), pI.procedureIndex());
+		ExecutorTaskDomain executorTaskDomain = new ExecutorTaskDomain(taskKey, id, 0, jobProcedureDomain);
 
-		String taskExecutorDomainConcatenation = task.concatenationString(taskExecutor);
-
-		// Add <key, value, taskExecutorDomain>
-		dhtConnectionProvider.add(taskKey, taskValue, taskExecutorDomainConcatenation, true).addListener(new BaseFutureListener<FuturePut>() {
+		dhtConnectionProvider.add(taskKey, taskValue, executorTaskDomain.toString(), true).addListener(new BaseFutureListener<FuturePut>() {
 
 			@Override
 			public void operationComplete(FuturePut future) throws Exception {
 				if (future.isSuccess()) {
-					// Add <key, taskExecutorDomainPart, jobProcedureDomain> to collect all keys
-					dhtConnectionProvider.add(task.id(), taskExecutor, jobProcedureDomainString, false)
-							.addListener(new BaseFutureListener<FuturePut>() {
+					dhtConnectionProvider.add(taskKey, id, jobProcedureDomain.toString(), false).addListener(new BaseFutureListener<FuturePut>() {
 
 						@Override
 						public void operationComplete(FuturePut future) throws Exception {
 							if (future.isSuccess()) {
 								// Add <PROCEDURE_KEYS, key, jobProcedureDomain> to collect all domains for all keys
-								dhtConnectionProvider.add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, task.id(), jobProcedureDomainString, false)
+								dhtConnectionProvider.add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, taskKey, jobProcedureDomain.toString(), false)
 										.addListener(new BaseFutureListener<FuturePut>() {
 
 									@Override
 									public void operationComplete(FuturePut future) throws Exception {
 										if (future.isSuccess()) {
 											logger.info("Successfully added data. Broadcasting job.");
-
-											JobDistributedBCMessage message = dhtConnectionProvider.broadcastNewJob(job);
-											messageConsumer.queue().add(message);
+											CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(jobProcedureDomain, null);
+											messageConsumer.queueFor(job).add(msg);// Adds it to itself, does not receive broadcasts...
+											dhtConnectionProvider.broadcastCompletion(msg);
 										} else {
 											logger.warn(future.failedReason());
 										}
@@ -199,9 +206,132 @@ public class MRJobSubmissionManager {
 		return this.id;
 	}
 
-	public void finishedJob(String resultDomain) {
-		logger.info("Received final job procedure domain to get the data from: " + resultDomain);
+	public void finishedJob(JobProcedureDomain resultDomain) {
 		this.resultDomain = resultDomain;
+		taskDataComposer.splitValue(",");
+		List<FutureGet> getKeys = SyncedCollectionProvider.syncedArrayList();
+		List<FutureGet> getDomains = SyncedCollectionProvider.syncedArrayList();
+
+		ListMultimap<String, ExecutorTaskDomain> keyDomains = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
+
+		getKeys.add(dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, resultDomain.toString())
+				.addListener(new BaseFutureAdapter<FutureGet>() {
+
+					@Override
+					public void operationComplete(FutureGet future) throws Exception {
+						logger.info("Job Proc domain: " + resultDomain);
+						if (future.isSuccess()) {
+							try {
+								for (Number640 keyNumber : future.dataMap().keySet()) {
+									String key = (String) future.dataMap().get(keyNumber).object();
+									logger.info("Key: " + key);
+									logger.info("Get <" + key + "," + resultDomain.toString() + ">");
+									getDomains.add(dhtConnectionProvider.getAll(key, resultDomain.toString())
+											.addListener(new BaseFutureAdapter<FutureGet>() {
+
+										@Override
+										public void operationComplete(FutureGet future) throws Exception {
+											if (future.isSuccess()) {
+												try {
+													for (Number640 executorTaskDomainNumber : future.dataMap().keySet()) {
+														ExecutorTaskDomain inputDomain = (ExecutorTaskDomain) future.dataMap()
+																.get(executorTaskDomainNumber).object();
+														logger.info("inputDomain: " + inputDomain);
+														keyDomains.put(key, inputDomain);
+
+													}
+												} catch (IOException e) {
+													logger.info("failed");
+												}
+											} else {
+												logger.info("failed");
+											}
+										}
+
+									}));
+
+								}
+							} catch (IOException e) {
+								logger.info("failed");
+							}
+						} else {
+							logger.info("failed");
+						}
+					}
+				}));
+
+		List<FutureGet> getValues = SyncedCollectionProvider.syncedArrayList();
+		Futures.whenAllSuccess(getKeys).addListener(new BaseFutureAdapter<FutureGet>() {
+
+			@Override
+			public void operationComplete(FutureGet future) throws Exception {
+				if (future.isSuccess()) {
+					Futures.whenAllSuccess(getDomains).addListener(new BaseFutureAdapter<FutureGet>() {
+
+						@Override
+						public void operationComplete(FutureGet future) throws Exception {
+							if (future.isSuccess()) {
+								for (String key : keyDomains.keySet()) {
+									getValues.add(dhtConnectionProvider.getAll(key, keyDomains.get(key).toString())
+											.addListener(new BaseFutureAdapter<FutureGet>() {
+
+										@Override
+										public void operationComplete(FutureGet future) throws Exception {
+											if (future.isSuccess()) {
+												try {
+													write(key.toString(), true);
+													for (Number640 valueNr : future.dataMap().keySet()) {
+														Object value = ((Value) future.dataMap().get(valueNr).object()).value();
+														write(value.toString(), false);
+													}
+												} catch (IOException e) {
+													logger.info("failed");
+												}
+											} else {
+												logger.info("failed");
+											}
+										}
+
+									}));
+								}
+							} else {
+
+							}
+						}
+
+					});
+				} else {
+					// Try again
+				}
+			}
+
+		});
+		Futures.whenAllSuccess(getValues).addListener(new BaseFutureAdapter<FutureGet>() {
+
+			@Override
+			public void operationComplete(FutureGet future) throws Exception {
+				if (future.isSuccess()) {
+					logger.info("Successfully wrote data to file system at location: " + outputFolder);
+				}
+			}
+		});
 	}
 
+	private void write(String toAppend, boolean isKey) {
+		if (isKey) {
+			toAppend = "\n" + toAppend;
+		}
+		String values = taskDataComposer.append(toAppend);
+		if (values != null) {
+			Path file = Paths.get(outputFolder);
+			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
+			try (BufferedWriter writer = Files.newBufferedWriter(file, charset)) {
+				writer.write(values);
+				writer.flush();
+			} catch (IOException x) {
+				System.err.format("IOException: %s%n", x);
+			}
+		}
+
+	}
 }

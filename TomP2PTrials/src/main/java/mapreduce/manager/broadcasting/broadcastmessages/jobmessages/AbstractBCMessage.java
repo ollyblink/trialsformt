@@ -1,8 +1,9 @@
-package mapreduce.manager.broadcasting.broadcastmessages;
+package mapreduce.manager.broadcasting.broadcastmessages.jobmessages;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.utils.IDCreator;
 
 public abstract class AbstractBCMessage implements IBCMessage {

@@ -1,28 +1,35 @@
 package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-
-import mapreduce.execution.job.Job;
-import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
-import mapreduce.storage.IDHTConnectionProvider;
-import mapreduce.storage.dhtmaintenance.IDHTDataCleaner;
+import mapreduce.execution.ExecutorTaskDomain;
+import mapreduce.execution.JobProcedureDomain;
 
 public class MRJobCleanupManagerMessageConsumer extends AbstractMessageConsumer {
 
-	private IDHTDataCleaner dhtDataCleaner;
-	private IDHTConnectionProvider dhtConnectionProvider;
-
-	protected MRJobCleanupManagerMessageConsumer(BlockingQueue<IBCMessage> bcMessages, List<Job> jobs, IDHTConnectionProvider dhtConnectionProvider) {
-		super(bcMessages, jobs);
-		this.dhtConnectionProvider = dhtConnectionProvider;
-		this.dhtConnectionProvider.connect();
+	@Override
+	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
-	public void handleFailedJob(Job job) {
-//		dhtConnectionProvider.removeAll(job, task, dataForTask);
-//		this.dhtDataCleaner.removeDataFromDHT();
+	public void handleCompletedProcedure(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
+		// TODO Auto-generated method stub
+		
 	}
+//
+//	private IDHTDataCleaner dhtDataCleaner;
+//	private IDHTConnectionProvider dhtConnectionProvider;
+//
+//	protected MRJobCleanupManagerMessageConsumer(BlockingQueue<IBCMessage> bcMessages, List<Job> jobs, IDHTConnectionProvider dhtConnectionProvider) {
+//		super(bcMessages, jobs);
+//		this.dhtConnectionProvider = dhtConnectionProvider;
+//		this.dhtConnectionProvider.connect();
+//	}
+//
+//	@Override
+//	public void handleFailedJob(Job job) {
+////		dhtConnectionProvider.removeAll(job, task, dataForTask);
+////		this.dhtDataCleaner.removeDataFromDHT();
+//	}
 
 }

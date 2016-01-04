@@ -1,6 +1,5 @@
-package mapreduce.execution.procedures;
+package mapreduce.execution;
 
-import mapreduce.execution.IDomain;
 import mapreduce.utils.DomainProvider;
 import net.tomp2p.peers.Number160;
 
@@ -126,5 +125,5 @@ public class ExecutorTaskDomain implements IDomain {
 	public void resultHash(Number160 resultHash) {
 		this.resultHash = resultHash;
 	}
-
+ 
 }

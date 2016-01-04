@@ -5,7 +5,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.procedures.ExecutorTaskDomain;
+import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.task.Task2;
 import mapreduce.storage.IDHTConnectionProvider;

@@ -1,6 +1,5 @@
-package mapreduce.execution.procedures;
+package mapreduce.execution;
 
-import mapreduce.execution.IDomain;
 import mapreduce.utils.DomainProvider;
 import net.tomp2p.peers.Number160;
 
@@ -9,13 +8,13 @@ public class JobProcedureDomain implements IDomain {
 	 * 
 	 */
 	private static final long serialVersionUID = 1860215470614190272L;
-	public String jobId;
-	public String procedureExecutor;
-	public String procedureSimpleName;
-	public int procedureIndex;
-	public int procedureSubmissionCount;
-	public long procedureCreationTime;
-	public Number160 resultHash;
+	private String jobId;
+	private String procedureExecutor;
+	private String procedureSimpleName;
+	private int procedureIndex;
+	private int procedureSubmissionCount;
+	private long procedureCreationTime;
+	private Number160 resultHash;
 
 	public JobProcedureDomain(String jobId, String procedureExecutor, String procedureSimpleName, int procedureIndex) {
 

@@ -1,25 +1,21 @@
 package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
-
+import mapreduce.execution.ExecutorTaskDomain;
+import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
+import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.manager.MRJobSubmissionManager;
-import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
-import mapreduce.utils.DomainProvider;
 
 public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsumer {
 
 	private MRJobSubmissionManager jobSubmissionManager;
 
-	private MRJobSubmissionManagerMessageConsumer(MRJobSubmissionManager jobSubmissionManager, BlockingQueue<IBCMessage> bcMessages, List<Job> jobs) {
-		super(bcMessages, jobs);
+	private MRJobSubmissionManagerMessageConsumer(MRJobSubmissionManager jobSubmissionManager) {
 		this.jobSubmissionManager = jobSubmissionManager;
 	}
 
-	public static MRJobSubmissionManagerMessageConsumer newInstance(MRJobSubmissionManager jobSubmissionManager, List<Job> jobs) {
-		return new MRJobSubmissionManagerMessageConsumer(jobSubmissionManager, new PriorityBlockingQueue<IBCMessage>(), jobs);
+	public static MRJobSubmissionManagerMessageConsumer create(MRJobSubmissionManager jobSubmissionManager) {
+		return new MRJobSubmissionManagerMessageConsumer(jobSubmissionManager);
 	}
 
 	@Override
@@ -28,37 +24,27 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 	}
 
 	@Override
-	public void handleFinishedJob(Job job) {
-		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
-			String jobProcedureDomain = job.currentProcedure().jobProcedureDomainString();
-			logger.warn("handleFinishedJob()::1::Finished job " + jobProcedureDomain);
-			this.jobSubmissionManager.finishedJob(jobProcedureDomain);
-		}
+	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
+		// TODO Auto-generated method stub
+
 	}
 
-	@Override
-	public void handleFailedJob(Job job) {
-		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
-			logger.warn("handleFailedJob()::1::Job failed:" + job.id());
-			if (job.submissionCounter() < job.maxNrOfDHTActions()) {
-				job.incrementSubmissionCounter();
-				logger.warn("handleFailedJob()::2::Resubmitting job, " + job.submissionCounter() + ". time.");
-				jobSubmissionManager.submit(job);
-			} else {
-				logger.warn("handleFailedJob()::3::Failed to submit job " + job.id() + ". ");
+	private Job getJob(String jobId) {
+		for (Job job : jobs.keySet()) {
+			if (job.id().equals(jobId)) {
+				return job;
 			}
-
 		}
+		return null;
 	}
 
 	@Override
-	public void handleReceivedJob(Job job) {
-		if (this.jobSubmissionManager.id().equals(job.jobSubmitterID())) {
-			if (!jobs.contains(job)) {
-				jobs.add(job);
-				logger.warn("handleReceivedJob()::1::Received own job, added to jobs: " + job);
-			} else {
-				logger.warn("handleReceivedJob()::2::Received own job, discarded as its already received: " + job);
+	public void handleCompletedProcedure(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
+		Job job = getJob(inputDomain.jobId());
+		if (job.jobSubmitterID().equals(jobSubmissionManager.id())) {
+			if (outputDomain.procedureSimpleName().equals(EndProcedure.class.getSimpleName())) {
+				logger.info("Job is finished. Final data location domain: " + outputDomain);
+				jobSubmissionManager.finishedJob(outputDomain);
 			}
 		}
 	}

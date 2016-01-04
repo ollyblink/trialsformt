@@ -2,12 +2,11 @@ package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
 import java.util.List;
 import java.util.TreeMap;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import mapreduce.execution.ExecutorTaskDomain;
+import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
-import mapreduce.execution.procedures.ExecutorTaskDomain;
-import mapreduce.execution.procedures.JobProcedureDomain;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task2;
 import mapreduce.manager.MRJobExecutionManager;
@@ -42,8 +41,8 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	@Override
-	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
-		Procedure currentProcedure = currentJob.currentProcedure();
+	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain, int tasksSize) {
+		Procedure currentProcedure = jobs.firstKey().currentProcedure();
 		if (currentProcedure.procedureIndex() == outputDomain.jobProcedureDomain().procedureIndex()) { // Same procedure is executed
 			if (currentProcedure.inputDomain().equals(inputDomain)) {
 				Task2 receivedTask = Task2.create(outputDomain.taskId());
@@ -56,6 +55,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 							if (thisTask.isActive()) { // Currently executing... needs abortion and cleanup
 								jobExecutor.abortExecution();
 							}
+							// Add data to procedure domain!
 						}
 					}
 				} else {
@@ -78,18 +78,25 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					// Do nothing... Continue execution
 				}
 			}
+			if (currentProcedure.tasksSize() == 0) { // Means it was not yet set when retrieving data
+				currentProcedure.tasksSize(tasksSize); // not really the place to put it but where else...
+			}
 		} else if (currentProcedure.procedureIndex() < outputDomain.jobProcedureDomain().procedureIndex()) {
 			// Means this executor is behind in the execution than the one that sent this message
 			if (currentProcedure.isActive()) {
 				jobExecutor.abortExecution();
 			}
 			while (currentProcedure.procedureIndex() < outputDomain.jobProcedureDomain().procedureIndex()) {
-				currentJob.incrementProcedureIndex();
+				jobs.firstKey().incrementProcedureIndex();
 			}
 			currentProcedure.inputDomain(inputDomain);
 			currentProcedure.addOutputDomain(outputDomain);
+			currentProcedure.tasksSize(tasksSize);
 
 			this.jobExecutor.executeJob(nextJob());
+			if (currentProcedure.tasksSize() == 0) { // Means it was not yet set when retrieving data
+				currentProcedure.tasksSize(tasksSize); // not really the place to put it but where else...
+			}
 		} else { // if(currentJob.currentProcedure().procedureIndex() > outputDomain.procedureIndex)
 			// Means this executor is further in the execution than the one that sent this message
 			// Ignore...
@@ -97,23 +104,23 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	@Override
-	public void handleCompletedProcedure(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
-		Procedure currentProcedure = currentJob.currentProcedure();
-		if (currentProcedure.procedureIndex() == outputDomain.procedureIndex) { // Same procedure is executed
+	public void handleCompletedProcedure(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain, int tasksSize) {
+		Procedure currentProcedure = jobs.firstKey().currentProcedure();
+		if (currentProcedure.procedureIndex() == outputDomain.procedureIndex()) { // Same procedure is executed
 			if (currentProcedure.inputDomain().equals(inputDomain)) {
 				currentProcedure.addOutputDomain(outputDomain);
 				if (currentProcedure.isFinished()) {
 					if (currentProcedure.isActive()) {
 						jobExecutor.abortExecution();
 					}
-					currentJob.incrementProcedureIndex();
+					jobs.firstKey().incrementProcedureIndex();
 
 					this.jobExecutor.executeJob(nextJob());
 				}
 			} else { // May have to change input data location (inputDomain)
 				// executor of received message executes on different input data! Need to synchronize
 				// Simply compare which one was earlier
-				if (currentProcedure.inputDomain().procedureCreationTime > inputDomain.procedureCreationTime) {
+				if (currentProcedure.inputDomain().creationTime() > inputDomain.creationTime()) {
 					// We were later...
 					if (currentProcedure.isActive()) {
 						jobExecutor.abortExecution();
@@ -126,13 +133,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					// Do nothing... Continue execution
 				}
 			}
-		} else if (currentProcedure.procedureIndex() < outputDomain.procedureIndex) {
+		} else if (currentProcedure.procedureIndex() < outputDomain.procedureIndex()) {
 			// Means this executor is behind in the execution than the one that sent this message
 			if (currentProcedure.isActive()) {
 				this.jobExecutor.executeJob(jobs.firstKey());
 			}
-			while (currentProcedure.procedureIndex() < outputDomain.procedureIndex) {
-				currentJob.incrementProcedureIndex();
+			while (currentProcedure.procedureIndex() < outputDomain.procedureIndex()) {
+				jobs.firstKey().incrementProcedureIndex();
 			}
 			currentProcedure.inputDomain(inputDomain);
 			currentProcedure.addOutputDomain(outputDomain);
@@ -142,18 +149,6 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			// Means this executor is further in the execution than the one that sent this message
 			// Ignore...
 		}
-	}
-
-	public PriorityBlockingQueue<IBCMessage> queueFor(Job job) {
-		return jobs.get(job);
-	}
-
-	public Job nextJob() {
-		return jobs.firstKey();
-	}
-
-	public TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs() {
-		return jobs;
 	}
 
 	// @Override
@@ -370,118 +365,118 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	// handleReceivedJob(jobToUpdate);
 	// }
 
-//	public void handleFinishedProcedure(String jobId) {
-//		logger.info("handleFinishedProcedure " + job.currentProcedure());
-//		// if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
-//		// return;
-//		// }
-//		if (this.jobExecutor.currentlyExecutedJob() != null && this.jobExecutor.currentlyExecutedJob().equals(job)) {
-//			jobExecutor.isExecutionAborted(true); // finished already... doesn't need to be executed anymore
-//
-//			// TODO: hmnn... Should I start another job here while we wait for the evaluatiion of this job? I DON'T KNOW... Well let's think this
-//			// through... Only if it was the last procedure and the job is finished, else if we take the next procedure of the same job, there isn't
-//			// any data to collect for tasks yet (will be done below)... Sooo will think about it...
-//
-//		}
-//
-//		List<Task> tasks = job.currentProcedure().tasks();
-// 
-//		List<FutureGet> futureGets = SyncedCollectionProvider.syncedArrayList();
-//		List<FuturePut> futurePuts = SyncedCollectionProvider.syncedArrayList();
-//		for (Task task : tasks) {
-//			logger.info("task: " + task);
-//			List<Tuple<String, Integer>> finalExecutorTaskDomainParts = task.finalExecutorTaskDomainParts();
-//			// logger.info("finalExecutorTaskDomainParts: " + finalExecutorTaskDomainParts);
-//			for (Tuple<String, Integer> finalDataLocationDomain : finalExecutorTaskDomainParts) {
-//				// logger.info("finalDataLocationDomain: " + finalDataLocationDomain);
-//				Tuple<String, Tuple<String, Integer>> executorTaskDomain = task.executorTaskDomain(finalDataLocationDomain);
-//				String combination = task.concatenationString(finalDataLocationDomain);
-//				logger.info("get task keys for task executor domain: " + combination);
-//				futureGets.add(this.jobExecutor.dhtConnectionProvider().getAll(DomainProvider.TASK_KEYS, combination)
-//						.addListener(new BaseFutureAdapter<FutureGet>() {
-//
-//							@Override
-//							public void operationComplete(FutureGet future) throws Exception {
-//								if (future.isSuccess()) {
-//									logger.info("Success on retrieving task keys for task executor domain: " + combination);
-//									try {
-//										// logger.info("future.dataMap() != null: " + (future.dataMap() != null));
-//										// if (future.dataMap() != null) {
-//										Set<Number640> keySet = future.dataMap().keySet();
-//										logger.info("KeySet: " + keySet);
-//										for (Number640 n : keySet) {
-//											String key = (String) future.dataMap().get(n).object();
-//											logger.info("Key: " + key);
-//											futurePuts.add(jobExecutor.dhtConnectionProvider().add(key, executorTaskDomain,
-//													job.currentProcedure().jobProcedureDomainString(), false));
-//											futurePuts.add(jobExecutor.dhtConnectionProvider().add(DomainProvider.PROCEDURE_KEYS, key,
-//													job.currentProcedure().jobProcedureDomainString(), false));
-//										}
-//										// }
-//									} catch (IOException e) {
-//										logger.warn("IOException on getting the data", e);
-//									}
-//								} else {
-//									logger.info("No success retrieving task keys form task executor domain: " + combination);
-//								}
-//							}
-//						}));
-//
-//			}
-//
-//		}
-//		logger.info("futureGets: " + futureGets);
-//		if (futureGets.size() > 0) {
-//			Futures.whenAllSuccess(futureGets).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
-//
-//				@Override
-//				public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-//					logger.info("futurePuts: " + futurePuts);
-//					if (future.isSuccess()) {
-//						Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
-//
-//							@Override
-//							public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-//
-//								if (future.isSuccess()) {
-//									logger.info("Successfully put tasks into jobProcedure domain.JobProcedureDomain: "
-//											+ job.currentProcedure().jobProcedureDomainString() + ", Tasks: " + tasks);
-//									// well... check if there is actually any procedure left... Else job is finished...
-//									job.incrementProcedureIndex();
-//									ProcedureInformation subsequentProcedure = job.currentProcedure();
-//									job.previousProcedure().tasks().clear();
-//									if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
-//										// Finished job :)
-//										logger.info("Finished job");
-//										JobFinishedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastFinishedJob(job);
-//										bcMessages.add(message);
-//										// jobs.remove(job);
-//									} else {
-//										// Next procedure!!
-//										logger.info("Execute next procedure");
-//										JobDistributedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastNewJob(job);
-//										bcMessages.add(message);
-//										logger.info("job.currentProcedure() : " + job.previousProcedure());
-//									}
-//								} else {
-//									// TODO Well... something has to be done instead... am I right?
-//									logger.info("No success");
-//								}
-//							}
-//
-//						});
-//					} else {
-//						logger.info("No success");
-//					}
-//				}
-//
-//			});
-//
-//		} else {
-//			logger.warn("No FuturePuts created. Check why?");
-//		}
-//		System.err.println("END");
-//	}
+	// public void handleFinishedProcedure(String jobId) {
+	// logger.info("handleFinishedProcedure " + job.currentProcedure());
+	// // if (jobExecutor.dhtConnectionProvider().peerAddress().equals(sender)) { // sent it to myself... Nothing to do
+	// // return;
+	// // }
+	// if (this.jobExecutor.currentlyExecutedJob() != null && this.jobExecutor.currentlyExecutedJob().equals(job)) {
+	// jobExecutor.isExecutionAborted(true); // finished already... doesn't need to be executed anymore
+	//
+	// // TODO: hmnn... Should I start another job here while we wait for the evaluatiion of this job? I DON'T KNOW... Well let's think this
+	// // through... Only if it was the last procedure and the job is finished, else if we take the next procedure of the same job, there isn't
+	// // any data to collect for tasks yet (will be done below)... Sooo will think about it...
+	//
+	// }
+	//
+	// List<Task> tasks = job.currentProcedure().tasks();
+	//
+	// List<FutureGet> futureGets = SyncedCollectionProvider.syncedArrayList();
+	// List<FuturePut> futurePuts = SyncedCollectionProvider.syncedArrayList();
+	// for (Task task : tasks) {
+	// logger.info("task: " + task);
+	// List<Tuple<String, Integer>> finalExecutorTaskDomainParts = task.finalExecutorTaskDomainParts();
+	// // logger.info("finalExecutorTaskDomainParts: " + finalExecutorTaskDomainParts);
+	// for (Tuple<String, Integer> finalDataLocationDomain : finalExecutorTaskDomainParts) {
+	// // logger.info("finalDataLocationDomain: " + finalDataLocationDomain);
+	// Tuple<String, Tuple<String, Integer>> executorTaskDomain = task.executorTaskDomain(finalDataLocationDomain);
+	// String combination = task.concatenationString(finalDataLocationDomain);
+	// logger.info("get task keys for task executor domain: " + combination);
+	// futureGets.add(this.jobExecutor.dhtConnectionProvider().getAll(DomainProvider.TASK_KEYS, combination)
+	// .addListener(new BaseFutureAdapter<FutureGet>() {
+	//
+	// @Override
+	// public void operationComplete(FutureGet future) throws Exception {
+	// if (future.isSuccess()) {
+	// logger.info("Success on retrieving task keys for task executor domain: " + combination);
+	// try {
+	// // logger.info("future.dataMap() != null: " + (future.dataMap() != null));
+	// // if (future.dataMap() != null) {
+	// Set<Number640> keySet = future.dataMap().keySet();
+	// logger.info("KeySet: " + keySet);
+	// for (Number640 n : keySet) {
+	// String key = (String) future.dataMap().get(n).object();
+	// logger.info("Key: " + key);
+	// futurePuts.add(jobExecutor.dhtConnectionProvider().add(key, executorTaskDomain,
+	// job.currentProcedure().jobProcedureDomainString(), false));
+	// futurePuts.add(jobExecutor.dhtConnectionProvider().add(DomainProvider.PROCEDURE_KEYS, key,
+	// job.currentProcedure().jobProcedureDomainString(), false));
+	// }
+	// // }
+	// } catch (IOException e) {
+	// logger.warn("IOException on getting the data", e);
+	// }
+	// } else {
+	// logger.info("No success retrieving task keys form task executor domain: " + combination);
+	// }
+	// }
+	// }));
+	//
+	// }
+	//
+	// }
+	// logger.info("futureGets: " + futureGets);
+	// if (futureGets.size() > 0) {
+	// Futures.whenAllSuccess(futureGets).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
+	//
+	// @Override
+	// public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
+	// logger.info("futurePuts: " + futurePuts);
+	// if (future.isSuccess()) {
+	// Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
+	//
+	// @Override
+	// public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
+	//
+	// if (future.isSuccess()) {
+	// logger.info("Successfully put tasks into jobProcedure domain.JobProcedureDomain: "
+	// + job.currentProcedure().jobProcedureDomainString() + ", Tasks: " + tasks);
+	// // well... check if there is actually any procedure left... Else job is finished...
+	// job.incrementProcedureIndex();
+	// ProcedureInformation subsequentProcedure = job.currentProcedure();
+	// job.previousProcedure().tasks().clear();
+	// if (subsequentProcedure.procedure().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
+	// // Finished job :)
+	// logger.info("Finished job");
+	// JobFinishedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastFinishedJob(job);
+	// bcMessages.add(message);
+	// // jobs.remove(job);
+	// } else {
+	// // Next procedure!!
+	// logger.info("Execute next procedure");
+	// JobDistributedBCMessage message = jobExecutor.dhtConnectionProvider().broadcastNewJob(job);
+	// bcMessages.add(message);
+	// logger.info("job.currentProcedure() : " + job.previousProcedure());
+	// }
+	// } else {
+	// // TODO Well... something has to be done instead... am I right?
+	// logger.info("No success");
+	// }
+	// }
+	//
+	// });
+	// } else {
+	// logger.info("No success");
+	// }
+	// }
+	//
+	// });
+	//
+	// } else {
+	// logger.warn("No FuturePuts created. Check why?");
+	// }
+	// System.err.println("END");
+	// }
 	//
 	// @Override
 	// public void handleFinishedJob(Job job) {

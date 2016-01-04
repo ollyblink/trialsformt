@@ -19,16 +19,24 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	protected static Logger logger = LoggerFactory.getLogger(AbstractMessageConsumer.class);
 
-	// protected BlockingQueue<IBCMessage> bcMessages;
-	// protected List<Job> jobs;
 	protected TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs;
 
 	private boolean canTake;
 
-	protected Job currentJob;
-
 	protected AbstractMessageConsumer() {
 		this.jobs = new TreeMap<>();
+	}
+
+	public PriorityBlockingQueue<IBCMessage> queueFor(Job job) {
+		return jobs.get(job);
+	}
+
+	public Job nextJob() {
+		return jobs.firstKey();
+	}
+
+	public TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs() {
+		return jobs;
 	}
 
 	@Override
@@ -44,7 +52,6 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 		try {
 			while (canTake()) {
 				logger.info("Before Take message");
-				this.currentJob = jobs.firstKey();
 				IBCMessage nextMessage = jobs.get(jobs.firstKey()).take();
 				logger.info("Execute next message: " + nextMessage);
 				nextMessage.execute(this);
