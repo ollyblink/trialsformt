@@ -187,12 +187,18 @@ public class MRJobExecutionManager {
 					logger.info("Do nothing, as there may come more tasks from dht");
 				} else if (currentProcedure.tasksSize() == currentProcedure.tasks().size()) {
 					logger.info("Finishing procedure");
-					// Todo: CHECK OB ALLE TASKS IN PROCEDUREDOMAIN (e.g. task.inProcedureDomain())
+					// TODO: CHECK OB ALLE TASKS IN PROCEDUREDOMAIN (e.g. task.inProcedureDomain())
+					List<FutureDone<List<FutureGet>>> allKeysPut = syncedArrayList();
 					for (Task2 task : currentProcedure.tasks()) {
-						if (!task.isInProcedureDomain()) {
-							tryToAddTaskDataToProcedureDomain(task, maxNrOfSubmissions, outputJobProcedureDomain);
+						if (task.isFinished()) {
+							if (!task.isInProcedureDomain()) {
+								allKeysPut.add(tryToAddTaskDataToProcedureDomain(task, maxNrOfSubmissions, outputJobProcedureDomain));
+							}
+						} else {
+							logger.info("Should not get here: tasks is not finished!");
 						}
 					}
+					Futures.whenAllSuccess(allKeysPut).addListener();
 				} else if (currentProcedure.tasksSize() < currentProcedure.tasks().size()) {
 					logger.warn("Can only happen when a task is received from a broadcast first --> Set in broadcast (should have happend)");
 				}
@@ -205,11 +211,10 @@ public class MRJobExecutionManager {
 		}
 	}
 
-	public void tryToAddTaskDataToProcedureDomain(Task2 task, int maxNrOfSubmissions, JobProcedureDomain outputJobProcedureDomain) {
-
-		List<FutureGet> futureGetValues = syncedArrayList();
+	public FutureDone<List<FutureGet>> tryToAddTaskDataToProcedureDomain(Task2 task, int maxNrOfSubmissions,
+			JobProcedureDomain outputJobProcedureDomain) {
+		task.isActive(true);
 		List<FutureGet> futureGetKeys = syncedArrayList();
-		List<FuturePut> futureProcedureDomainPuts = syncedArrayList();
 
 		logger.info("task: " + task);
 		ExecutorTaskDomain resultOutputDomain = (ExecutorTaskDomain) task.resultOutputDomain();
@@ -221,87 +226,107 @@ public class MRJobExecutionManager {
 					@Override
 					public void operationComplete(FutureGet future) throws Exception {
 						if (future.isSuccess()) {
+							List<FutureGet> futureGetValues = syncedArrayList();
 							logger.info("Success on retrieving task keys for task executor domain: " + resultOutputDomain.toString());
-							try {
-								Set<Number640> keySet = future.dataMap().keySet();
-								logger.info("KeySet: " + keySet);
-								for (Number640 n : keySet) {
-									String taskKey = (String) future.dataMap().get(n).object();
-									futureGetValues
-											.add(dhtConnectionProvider.getAll(taskKey, resultOutputDomain.toString())
-													.addListener(new PutTaskKeysAndValuesOnRetrieval(task, taskKey, futureProcedureDomainPuts,
-															resultOutputDomain, outputJobProcedureDomain, 1, 1, maxNrOfSubmissions,
-															dhtConnectionProvider)));
+							Set<Number640> keySet = future.dataMap().keySet();
+							logger.info("KeySet: " + keySet);
+
+							for (Number640 n : keySet) {
+								String taskKey = (String) future.dataMap().get(n).object();
+								futureGetValues.add(dhtConnectionProvider.getAll(taskKey, resultOutputDomain.toString())
+										.addListener(new BaseFutureAdapter<FutureGet>() {
+
+									@Override
+									public void operationComplete(FutureGet future) throws Exception {
+										if (future.isSuccess()) {
+											List<FuturePut> taskKeyPut = syncedArrayList();
+											List<FuturePut> taskKeyValuesPut = syncedArrayList();
+											taskKeyValuesPut.add(dhtConnectionProvider
+													.addAll(taskKey, future.dataMap().values(), outputJobProcedureDomain.toString())
+													.addListener(new BaseFutureAdapter<FuturePut>() {
+
+												@Override
+												public void operationComplete(FuturePut future) throws Exception {
+													if (future.isSuccess()) {
+														taskKeyPut.add(dhtConnectionProvider
+																.add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, taskKey,
+																		outputJobProcedureDomain.toString(), false)
+																.addListener(new BaseFutureAdapter<FuturePut>() {
+
+															@Override
+															public void operationComplete(FuturePut future) throws Exception {
+																if (future.isSuccess()) {
+
+																} else {
+
+																}
+															}
+
+														}));
+													}
+												}
+
+											}));
+											Futures.whenAllSuccess(taskKeyValuesPut).addListener(new BaseFutureAdapter<FutureDone<FuturePut>>() {
+
+												@Override
+												public void operationComplete(FutureDone<FuturePut> future) throws Exception {
+													if (future.isSuccess()) {
+														Futures.whenAllSuccess(taskKeyPut)
+																.addListener(new BaseFutureAdapter<FutureDone<FuturePut>>() {
+
+															@Override
+															public void operationComplete(FutureDone<FuturePut> future) throws Exception {
+																if (future.isSuccess()) {
+
+																} else {
+
+																}
+															}
+														});
+													} else {
+
+													}
+												}
+											});
+										} else {
+											// TODO
+										}
+									}
+								}));
+
+							}
+							Futures.whenAllSuccess(futureGetValues).addListener(new BaseFutureAdapter<FutureDone<FuturePut>>() {
+
+								@Override
+								public void operationComplete(FutureDone<FuturePut> future) throws Exception {
+									if (future.isSuccess()) {
+
+									} else {
+
+									}
 
 								}
-								// }
-							} catch (IOException e) {
-								logger.warn("IOException on getting the data", e);
-							}
+							});
+							// }
+
 						} else {
 							logger.info("No success retrieving task keys form task executor domain: " + outputJobProcedureDomain.toString());
 						}
 					}
 				}));
 
-		Futures.whenAllSuccess(futureGetKeys).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+		return Futures.whenAllSuccess(futureGetKeys).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 
 			@Override
 			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 				if (future.isSuccess()) {
-					Futures.whenAllSuccess(futureGetValues).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
-
-						@Override
-						public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-							if (future.isSuccess()) {
-								Futures.whenAllSuccess(futureProcedureDomainPuts).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
-
-									@Override
-									public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-										if (future.isSuccess()) {
-											task.isInProcedureDomain(true);
-										} else {
-											if (getCount++ < maxNrOfRetrievalTrials) {
-												dhtConnectionProvider
-														.getAll(inputDomain.taskId(),
-																DomainProvider.INSTANCE.concatenation(inputDomain.jobProcedureDomain(), inputDomain))
-														.addListener(new PutTaskKeysAndValuesOnRetrieval(task, key, inputDomain, outputDomain,
-																getCount, putCount, maxNrOfRetrievalTrials, dhtConnectionProvider));
-											} else {
-												logger.warn(
-														"No success on putting data for " + inputDomain.taskId() + ", tried " + getCount + " times");
-												// Remove again using key and domain
-											}
-										}
-									}
-
-								});
-								task.isActive(false);
-								procedure.isActive(false);
-								--executionCounter;
-								if (future.isSuccess()) {
-									procedure.addOutputDomain(outputJobProcedureDomain);
-									if (procedure.isFinished()) {
-										CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(outputJobProcedureDomain,
-												initialInputDomain);
-										bcMessages.add(msg); // Adds it to itself, does not receive broadcasts...
-										dhtConnectionProvider.broadcastCompletion(msg);
-
-									} else {
-										procedure.reset();
-										executeJob(messageConsumer.nextJob());
-									}
-								} else {
-									// TODO Well... something has to be done instead... am I right?
-									logger.info("No success");
-								}
-							}
-						}
-
-					});
+					task.isInProcedureDomain(true);
 				} else {
-					logger.info("No success");
+
 				}
+				task.isActive(false);
+				--executionCounter;
 			}
 
 		});
@@ -347,7 +372,7 @@ public class MRJobExecutionManager {
 									outputExecutorTaskDomain.resultHash(context.resultHash());
 									task.addOutputDomain(outputExecutorTaskDomain);
 									CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputExecutorTaskDomain,
-											initialInputDomain);
+											initialInputDomain, procedure.tasksSize());
 									bcMessages.add(msg); // Adds it to itself, does not receive broadcasts...
 									dhtConnectionProvider.broadcastCompletion(msg);
 									task.isActive(false);
@@ -359,7 +384,7 @@ public class MRJobExecutionManager {
 
 						});
 					} else {
-
+						logger.warn("No success on task execution. Reason: " + future.failedReason());
 					}
 				}
 			});

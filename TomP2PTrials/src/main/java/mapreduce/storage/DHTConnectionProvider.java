@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -340,6 +341,11 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	@Override
+	public FuturePut addAll(String keyString, Collection<Data> values, String domainString) { 
+		return this.currentExecutingPeer().add(Number160.createHash(keyString)).dataSet(values).domainKey(Number160.createHash(domainString)).start();
 	}
 
 	@Override

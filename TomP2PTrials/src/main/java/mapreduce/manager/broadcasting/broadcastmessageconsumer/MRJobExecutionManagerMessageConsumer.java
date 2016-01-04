@@ -56,6 +56,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 								jobExecutor.abortExecution();
 							}
 							// Add data to procedure domain!
+							if (!thisTask.isInProcedureDomain()) {
+
+								JobProcedureDomain outputJobProcedureDomain = new JobProcedureDomain(jobs.firstKey().id(), this.jobExecutor.id(),
+										currentProcedure.executable().getClass().getSimpleName(), currentProcedure.procedureIndex());
+								jobExecutor.tryToAddTaskDataToProcedureDomain(thisTask, jobs.firstKey().maxNrOfDHTActions(),
+										outputJobProcedureDomain);
+							}
 						}
 					}
 				} else {
