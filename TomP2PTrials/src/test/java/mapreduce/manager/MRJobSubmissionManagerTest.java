@@ -3,9 +3,11 @@ package mapreduce.manager;
 import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,19 +18,16 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.context.PseudoStorageContext;
 import mapreduce.execution.job.Job;
-import mapreduce.execution.procedures.Procedure;
-import mapreduce.execution.procedures.WordCountMapper;
-import mapreduce.execution.procedures.WordCountReducer;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
+import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
-import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number640;
@@ -40,221 +39,139 @@ public class MRJobSubmissionManagerTest {
 
 	@Test
 	public void test() throws IOException {
-
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";
 
-		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(5001);
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(5001, 1);
 		jobSubmissionManager = MRJobSubmissionManager.newInstance(dhtConnectionProvider);
 
-		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_KILO_BYTES)
-				.addSubsequentProcedure(WordCountMapper.create());
+		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_KILO_BYTES);
 		jobSubmissionManager.submit(job);
 
-		final ListMultimap<Object, Object> toCheck = getToCheck(fileInputFolderPath);
 		try {
-			Thread.sleep(5000);
+			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		System.err.println("HERE");
-		Procedure pI = job.previousProcedure();
-		String jobProcedureDomain = pI.jobProcedureDomain();
-		
 		ArrayList<FutureGet> keysFutures = new ArrayList<>();
-		ArrayList<FutureGet> taskExecutorDomainFutures = new ArrayList<>();
 		ArrayList<FutureGet> valueFutures = new ArrayList<>();
 		ListMultimap<String, Object> vals = ArrayListMultimap.create();
-		keysFutures
-				.add(dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, jobProcedureDomain).addListener(new BaseFutureListener<FutureGet>() {
+		String dataLocationDomain = job.currentProcedure().resultOutputDomain().toString();
+		logger.info("Data location domain " + dataLocationDomain);
+		keysFutures.add(dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, dataLocationDomain)
+				.addListener(new BaseFutureAdapter<FutureGet>() {
 
 					@Override
 					public void operationComplete(FutureGet future) throws Exception {
 						if (future.isSuccess()) {
-							try {
-								if (future.dataMap() != null) {
-									for (Number640 n : future.dataMap().keySet()) {
-										String key = (String) future.dataMap().get(n).object();
-										// System.err.println("Key: " + key);
-										taskExecutorDomainFutures.add(dhtConnectionProvider.getAll(key, jobProcedureDomain)
-												.addListener(new BaseFutureListener<FutureGet>() {
+							for (Number640 n : future.dataMap().keySet()) {
+								String key = (String) future.dataMap().get(n).object();
+								logger.info("Found key " + key);
+								valueFutures
+										.add(dhtConnectionProvider.getAll(key, dataLocationDomain).addListener(new BaseFutureAdapter<FutureGet>() {
 
-											@Override
-											public void operationComplete(FutureGet future) throws Exception {
-												if (future.isSuccess()) {
-													try {
-														if (future.dataMap() != null) {
-															for (Number640 n : future.dataMap().keySet()) {
-																String taskExecutorDomain = (String) future.dataMap().get(n).object();
-																String taskExecutorDomainCombination = jobProcedureDomain + "_" + taskExecutorDomain;
-
-																// System.err.println("taskExecutorDomain: " + taskExecutorDomainCombination);
-																valueFutures.add(dhtConnectionProvider.getAll(key, taskExecutorDomainCombination)
-																		.addListener(new BaseFutureListener<FutureGet>() {
-
-																	@Override
-																	public void operationComplete(FutureGet future) throws Exception {
-																		if (future.dataMap() != null) {
-																			for (Number640 n : future.dataMap().keySet()) {
-																				Object value = ((Value) future.dataMap().get(n).object()).value();
-																				vals.put(key, value);
-																				// System.err.println("Value: <"+key+", "+value+">");
-																			}
-
-																		}
-																	}
-
-																	@Override
-																	public void exceptionCaught(Throwable t) throws Exception {
-																		logger.warn("Exception", t);
-																	}
-																}));
-															}
-														} else {
-
-															logger.warn("Failed: " + future.failedReason());
-														}
-
-													} catch (Exception e) {
-
-														logger.warn("Exception", e);
-													}
-												}
+									@Override
+									public void operationComplete(FutureGet future) throws Exception {
+										if (future.isSuccess()) {
+											for (Number640 n : future.dataMap().keySet()) {
+												Object value = ((Value) future.dataMap().get(n).object()).value();
+												vals.put(key, value);
+												logger.info("Found value for key " + key + ": " + value);
+												// C:\Users\Oliver\git\trialsformt3\TomP2PTrials/src/test/java/mapreduce/manager/testFiles/testfile.txt_1
 											}
-
-											@Override
-											public void exceptionCaught(Throwable t) throws Exception {
-												logger.warn("Exception", t);
-											}
-										}));
-
+										} else {
+											logger.warn("Failed: " + future.failedReason());
+										}
 									}
-
-								}
-							} catch (IOException e) {
-								logger.warn("Exception", e);
-
+								}));
 							}
 						} else {
 							logger.warn("Failed: " + future.failedReason());
 						}
-
-					}
-
-					@Override
-					public void exceptionCaught(Throwable t) throws Exception {
-						logger.warn("Exception", t);
 					}
 				}));
-		final List<Boolean> finished = new ArrayList<>();
+		// C:\Users\Oliver\git\trialsformt3\TomP2PTrials\src\test\java\mapreduce\manager\testFiles\testfile.txt_0
+		final List<Boolean> finished = SyncedCollectionProvider.syncedArrayList();
 		finished.add(false);
-		Futures.whenAllSuccess(keysFutures).addListener(new BaseFutureListener<FutureDone<FutureGet[]>>() {
+		Futures.whenAllSuccess(keysFutures).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 
 			@Override
 			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 
 				if (future.isSuccess()) {
-					Futures.whenAllSuccess(taskExecutorDomainFutures).addListener(new BaseFutureListener<FutureDone<FutureGet[]>>() {
+
+					logger.info("Retrieved all values for keys");
+					Futures.whenAllSuccess(valueFutures).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 
 						@Override
 						public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
+							logger.info("Retrieved all values");
 
 							if (future.isSuccess()) {
-								Futures.whenAllSuccess(valueFutures).addListener(new BaseFutureListener<FutureDone<FutureGet[]>>() {
+								ListMultimap<String, Object> toCheck = getToCheck(fileInputFolderPath, job.maxFileSize());
 
-									@Override
-									public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-
-										if (future.isSuccess()) {
-
-											PseudoStorageContext context = (PseudoStorageContext) PseudoStorageContext.newInstance()
-													.combiner(WordCountReducer.create());
-											for (String key : vals.keySet())
-
-											{
-												context.task(Task.create(key, job.id()));
-												job.previousProcedure().executable().process(key, vals.get(key), context);
-
-											}
-
-											ListMultimap<Object, Object> storage = context.storage();
-											for (Object key : storage.keySet())
-
-											{
-												System.err.println("DHT: " + key + " " + storage.get(key));
-												System.err.println("To check: " + key + " " + toCheck.get(key).get(0));
-												assertEquals(true, toCheck.containsKey(key));
-												assertEquals(true, toCheck.get(key).get(0).equals(storage.get(key).get(0)));
-												finished.set(0, true);
-											}
-										}
-
+								for (String key : toCheck.keySet()) {
+									List<Object> values = toCheck.get(key);
+									logger.info("Retrieved all values for key " + key + ":" + values);
+									assertEquals(true, vals.containsKey(key));
+									for (Object o : values) {
+										assertEquals(true, vals.containsValue(o));
 									}
-
-									@Override
-									public void exceptionCaught(Throwable t) throws Exception {
-										// TODO Auto-generated method stub
-
-									}
-
-								});
+								}
+								finished.set(0, true);
+							} else {
+								logger.info("No success on retrieving all values");
 							}
 
 						}
 
-						@Override
-						public void exceptionCaught(Throwable t) throws Exception {
-							// TODO Auto-generated method stub
-
-						}
-
 					});
+				} else {
+					logger.info("No success on retrieving all keys");
 				}
-
-			}
-
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				// TODO Auto-generated method stub
 
 			}
 
 		});
 
+		int waitCounter = 0;
 		try {
-			while (!finished.get(0)) {
-				Thread.sleep(10);
+			while (!finished.get(0) && waitCounter++ < 5) {
+				Thread.sleep(1000);
 			}
-		} catch (
-
-		InterruptedException e)
-
-		{
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 
 	}
 
-	private ListMultimap<Object, Object> getToCheck(String fileInputFolderPath) {
-		PseudoStorageContext storage = (PseudoStorageContext) PseudoStorageContext.newInstance().combiner(WordCountReducer.create());
+	private ListMultimap<String, Object> getToCheck(String fileInputFolderPath, FileSize maxFileSize) {
+		ListMultimap<String, Object> data = ArrayListMultimap.create();
+		MaxFileSizeTaskDataComposer taskDataComposer = MaxFileSizeTaskDataComposer.create().maxFileSize(maxFileSize);
 
-		try {
-			System.err.println(new File(fileInputFolderPath + "/testfile.txt").exists());
-			BufferedReader reader = new BufferedReader(new FileReader(new File(fileInputFolderPath + "/testfile.txt")));
+		String keyFilePath = fileInputFolderPath + "/testfile.txt";
+		Path path = Paths.get(keyFilePath);
+		Charset charset = Charset.forName(taskDataComposer.fileEncoding());
+
+		int filePartCounter = 0;
+		try (BufferedReader reader = Files.newBufferedReader(path, charset)) {
 			String line = null;
-
 			while ((line = reader.readLine()) != null) {
-				List<Object> values = new ArrayList<>();
-				values.add(line);
-				System.err.println(line);
-				WordCountMapper.create().process(fileInputFolderPath + "/testfile.txt", values, storage);
+				String taskValues = taskDataComposer.append(line);
+				if (taskValues != null) {
+					String fileName = keyFilePath.replace("/", "\\");
+					String taskKey = fileName + "_" + filePartCounter++;
+					data.put(taskKey, taskValues);
+				}
 			}
-
-			reader.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException x) {
+			System.err.format("IOException: %s%n", x);
 		}
-
-		return storage.storage();
+		if (taskDataComposer.currentValues() != null) {
+			String fileName = keyFilePath.replace("/", "\\");
+			String taskKey = fileName + "_" + filePartCounter++;
+			data.put(taskKey, taskDataComposer.currentValues());
+		}
+		return data;
 	}
 
 }

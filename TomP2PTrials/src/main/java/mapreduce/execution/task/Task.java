@@ -8,18 +8,20 @@ import java.util.Set;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.IFinishable;
 import mapreduce.execution.JobProcedureDomain;
+import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
-public class Task2 implements IFinishable, Serializable {
+public class Task implements IFinishable, Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 4696324648240806323L;
 	/** Domain (ExecutorTaskDomains) of keys for next procedure */
-	private List<IDomain> outputDomains;
+	private List<ExecutorTaskDomain> outputDomains;
 	/** How many times this object needs to be executed before it is declared finished */
 	private int nrOfSameResultHash;
 	/** Key of this task to get the values for */
@@ -28,14 +30,15 @@ public class Task2 implements IFinishable, Serializable {
 	private volatile boolean isActive;
 	/** final output domain for where this tasks output key/values are stored */
 	private IDomain resultOutputDomain;
-	private boolean isInProcedureDomain;
+	private volatile boolean isInProcedureDomain;
 
-	private Task2(String key) {
+	private Task(String key) {
 		this.key = key;
+		this.outputDomains = SyncedCollectionProvider.syncedArrayList();
 	}
 
-	public static Task2 create(String key) {
-		return new Task2(key);
+	public static Task create(String key) {
+		return new Task(key);
 	}
 
 	public String key() {
@@ -52,29 +55,12 @@ public class Task2 implements IFinishable, Serializable {
 
 	@Override
 	public boolean isFinished() {
-		boolean isFinished = true;
-		ListMultimap<Number160, IDomain> results = ArrayListMultimap.create();
-		for (IDomain domain : outputDomains) {
-			results.put(domain.resultHash(), domain);
-		}
-		for (Number160 resultHash : results.keySet()) {
-			if (results.get(resultHash).size() >= nrOfSameResultHash) {
-				this.resultOutputDomain = results.get(resultHash).get(0);
-				isFinished = true;
-				break;
-			}
-		}
-		return isFinished;
+		return resultOutputDomain != null;
 	}
 
 	@Override
 	public void addOutputDomain(IDomain domain) {
-		this.outputDomains.add(domain);
-	}
-
-	@Override
-	public List<IDomain> outputDomains() {
-		return this.outputDomains;
+		this.outputDomains.add((ExecutorTaskDomain) domain);
 	}
 
 	public int differentExecutors() {
@@ -100,7 +86,7 @@ public class Task2 implements IFinishable, Serializable {
 		if (resultOutputDomain == null) {
 			isFinished();
 			if (resultOutputDomain == null) {
-				return Number160.ZERO; // Means not yet finished
+				return null;
 			}
 		}
 		return resultOutputDomain.resultHash();
@@ -108,6 +94,16 @@ public class Task2 implements IFinishable, Serializable {
 
 	@Override
 	public IDomain resultOutputDomain() {
+		ListMultimap<Number160, ExecutorTaskDomain> results = ArrayListMultimap.create();
+		for (ExecutorTaskDomain domain : outputDomains) {
+			results.put(domain.resultHash(), domain);
+		}
+		for (Number160 resultHash : results.keySet()) {
+			if (results.get(resultHash).size() >= nrOfSameResultHash) {
+				this.resultOutputDomain = results.get(resultHash).get(0);
+				break;
+			}
+		}
 		return resultOutputDomain;
 	}
 
@@ -122,6 +118,17 @@ public class Task2 implements IFinishable, Serializable {
 
 	public void isInProcedureDomain(boolean isInProcedureDomain) {
 		this.isInProcedureDomain = isInProcedureDomain;
+	}
+
+	@Override
+	public int nrOfOutputDomains() {
+		return outputDomains.size();
+	}
+
+	@Override
+	public Task nrOfSameResultHash(int nrOfSameResultHash) {
+		this.nrOfSameResultHash = nrOfSameResultHash;
+		return this;
 	}
 
 }

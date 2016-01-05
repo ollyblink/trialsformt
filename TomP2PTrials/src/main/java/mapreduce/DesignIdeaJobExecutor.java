@@ -24,7 +24,7 @@ public class DesignIdeaJobExecutor {
 		if (id == 1) {
 			newInstance.isBootstrapper(true);
 		}
-		MRJobExecutionManager jobExecutor = MRJobExecutionManager.newInstance(newInstance);
+		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(newInstance);
 
 		jobExecutor.start();
 

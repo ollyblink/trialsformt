@@ -9,7 +9,7 @@ import com.google.common.collect.ListMultimap;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.IFinishable;
 import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.task.Task2;
+import mapreduce.execution.task.Task;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
@@ -22,17 +22,17 @@ public final class Procedure implements IFinishable, Serializable {
 	private final IExecutable procedure;
 	private final int procedureIndex;
 
-	private List<Task2> tasks;
+	private List<Task> tasks;
 	/** Location of keys for this procedure */
 	private JobProcedureDomain inputDomain;
 	/** Location of keys for next procedure */
-	private List<IDomain> outputDomains;
+	private List<JobProcedureDomain> outputDomains;
 	/** How many times this object needs to be executed before it is declared finished */
 	private int nrOfSameResultHash;
 	/** Specifies if the task is currently executed */
 	private volatile boolean isActive;
 	private int tasksSize;
-	private IDomain resultOutputDomain;
+	private JobProcedureDomain resultOutputDomain;
 
 	private Procedure(IExecutable procedure, int procedureIndex) {
 		this.procedure = procedure;
@@ -69,24 +69,12 @@ public final class Procedure implements IFinishable, Serializable {
 	}
 
 	public boolean isFinished() {
-		boolean isFinished = true;
-		ListMultimap<Number160, IDomain> results = ArrayListMultimap.create();
-		for (IDomain domain : outputDomains) {
-			results.put(domain.resultHash(), domain);
-		}
-		for (Number160 resultHash : results.keySet()) {
-			if (results.get(resultHash).size() >= nrOfSameResultHash) {
-				this.resultOutputDomain = results.get(resultHash).get(0);
-				isFinished = true;
-				break;
-			}
-		}
-		return isFinished;
+		return resultOutputDomain != null;
 	}
 
 	@Override
 	public void addOutputDomain(IDomain domain) {
-		this.outputDomains.add(domain);
+		this.outputDomains.add((JobProcedureDomain) domain);
 
 	}
 
@@ -94,11 +82,11 @@ public final class Procedure implements IFinishable, Serializable {
 		return this.procedureIndex;
 	}
 
-	public List<Task2> tasks() {
+	public List<Task> tasks() {
 		return this.tasks;
 	}
 
-	public Procedure addTask(Task2 task) {
+	public Procedure addTask(Task task) {
 		synchronized (this.tasks) {
 			if (!this.tasks.contains(task)) {
 				this.tasks.add(task);
@@ -107,14 +95,15 @@ public final class Procedure implements IFinishable, Serializable {
 		return this;
 	}
 
-	public Procedure tasks(List<Task2> tasks) {
+	public Procedure tasks(List<Task> tasks) {
 		this.tasks.clear();
 		this.tasks.addAll(tasks);
 		return this;
 	}
 
-	public void tasksSize(int tasksSize) {
+	public Procedure tasksSize(int tasksSize) {
 		this.tasksSize = tasksSize;
+		return this;
 	}
 
 	public int tasksSize() {
@@ -122,29 +111,43 @@ public final class Procedure implements IFinishable, Serializable {
 	}
 
 	@Override
-	public List<IDomain> outputDomains() {
-		return this.outputDomains;
-	}
-
-	@Override
 	public Number160 calculateResultHash() {
 		Number160 resultHash = Number160.ZERO;
-		for (Task2 task : tasks) {
+		for (Task task : tasks) {
 			resultHash = resultHash.xor(task.calculateResultHash());
 		}
 		return resultHash;
 	}
 
 	@Override
-	public IDomain resultOutputDomain() {
+	public JobProcedureDomain resultOutputDomain() {
+		ListMultimap<Number160, JobProcedureDomain> results = ArrayListMultimap.create();
+		for (JobProcedureDomain domain : outputDomains) {
+			results.put(domain.resultHash(), domain);
+		}
+		for (Number160 resultHash : results.keySet()) {
+			if (results.get(resultHash).size() >= nrOfSameResultHash) {
+				this.resultOutputDomain = results.get(resultHash).get(0);
+				break;
+			}
+		}
 		return resultOutputDomain;
 	}
 
 	public void reset() {
-		for(Task2 task: tasks){
+		for (Task task : tasks) {
 			task.reset();
 		}
 	}
-	
-	
+
+	@Override
+	public Procedure nrOfSameResultHash(int nrOfSameResultHash) {
+		this.nrOfSameResultHash = nrOfSameResultHash;
+		return this;
+	}
+
+	@Override
+	public int nrOfOutputDomains() {
+		return outputDomains.size();
+	}
 }

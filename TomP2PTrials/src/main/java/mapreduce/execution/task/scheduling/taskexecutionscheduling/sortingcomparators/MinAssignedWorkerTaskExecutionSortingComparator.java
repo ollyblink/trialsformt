@@ -2,12 +2,12 @@ package mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcompa
 
 import java.util.Comparator;
 
-import mapreduce.execution.task.Task2;
+import mapreduce.execution.task.Task;
 
-public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparator<Task2> {
+public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparator<Task> {
 
 	@Override
-	public int compare(Task2 t1, Task2 t2) {
+	public int compare(Task t1, Task t2) {
 
 		if (t1.isFinished() && t2.isFinished()) {
 			return 0;
@@ -16,8 +16,8 @@ public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparat
 		} else if (t1.isFinished() && !t2.isFinished()) {
 			return 1;
 		} else {
-			int t1Finished = t1.outputDomains().size();
-			int t2Finished = t1.outputDomains().size();
+			int t1Finished = t1.nrOfOutputDomains();
+			int t2Finished = t1.nrOfOutputDomains();
 			if (t1Finished > t2Finished) {
 				return 1;
 			} else if (t1Finished < t2Finished) {

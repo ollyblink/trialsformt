@@ -2,7 +2,7 @@ package mapreduce.execution.task.scheduling;
 
 import java.util.List;
 
-import mapreduce.execution.task.Task2;
+import mapreduce.execution.task.Task;
 
 public interface ITaskScheduler {
 
@@ -12,6 +12,6 @@ public interface ITaskScheduler {
 	 * @param tasksToSchedule
 	 * @return
 	 */
-	public Task2 schedule(List<Task2> tasksToSchedule);
+	public Task schedule(List<Task> tasksToSchedule);
 
 }

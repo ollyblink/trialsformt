@@ -31,10 +31,6 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 		return jobs.get(job);
 	}
 
-	public Job nextJob() {
-		return jobs.firstKey();
-	}
-
 	public TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs() {
 		return jobs;
 	}
@@ -72,4 +68,12 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 		return this.canTake;
 	}
 
+	protected Job getJob(String jobId) {
+		for (Job job : jobs.keySet()) {
+			if (job.id().equals(jobId)) {
+				return job;
+			}
+		}
+		return null;
+	}
 }

@@ -63,7 +63,7 @@ public class MRJobExecutorMessageConsumerTest {
 	}
 
 	private static void resetJob() {
-		job = Job.create("TEST", PriorityLevel.MODERATE).addSubsequentProcedure(WordCountMapper.create()).maxNrOfFinishedWorkersPerTask(5);
+		job = Job.create("TEST", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountMapper.create()).maxNrOfFinishedWorkersPerTask(5);
 		Procedure currentProc = job.previousProcedure();
 
 		for (String taskKey : TEST_KEYS) {

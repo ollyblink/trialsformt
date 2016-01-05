@@ -1,7 +1,5 @@
 package mapreduce.execution;
 
-import java.util.List;
-
 import net.tomp2p.peers.Number160;
 
 /**
@@ -15,9 +13,11 @@ public interface IFinishable {
 
 	public void addOutputDomain(IDomain domain);
 
-	public List<IDomain> outputDomains();
-
 	public Number160 calculateResultHash();
 
 	public IDomain resultOutputDomain();
+
+	int nrOfOutputDomains();
+
+	public IFinishable nrOfSameResultHash(int nrOfSameResultHash);
 }

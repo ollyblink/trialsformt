@@ -23,23 +23,15 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 		return (MRJobSubmissionManagerMessageConsumer) super.canTake(canTake);
 	}
 
+
+
 	@Override
-	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
-		// TODO Auto-generated method stub
+	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain, int tasksSize) {
 
 	}
 
-	private Job getJob(String jobId) {
-		for (Job job : jobs.keySet()) {
-			if (job.id().equals(jobId)) {
-				return job;
-			}
-		}
-		return null;
-	}
-
 	@Override
-	public void handleCompletedProcedure(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
+	public void handleCompletedProcedure(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain, int tasksSize) {
 		Job job = getJob(inputDomain.jobId());
 		if (job.jobSubmitterID().equals(jobSubmissionManager.id())) {
 			if (outputDomain.procedureSimpleName().equals(EndProcedure.class.getSimpleName())) {

@@ -344,7 +344,8 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public FuturePut addAll(String keyString, Collection<Data> values, String domainString) { 
+	public FuturePut addAll(String keyString, Collection<Data> values, String domainString) {
+		logger.info("add: Trying to perform: dHashtable.add(" + keyString + ", " + values + ").domain(" + domainString + ")");
 		return this.currentExecutingPeer().add(Number160.createHash(keyString)).dataSet(values).domainKey(Number160.createHash(domainString)).start();
 	}
 

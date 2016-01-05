@@ -3,7 +3,7 @@ package mapreduce.execution.task.scheduling.taskexecutionscheduling;
 import java.util.List;
 import java.util.Random;
 
-import mapreduce.execution.task.Task2;
+import mapreduce.execution.task.Task;
 
 public class RandomTaskExecutionScheduler extends AbstractTaskExecutionScheduler {
 	private static final Random RND = new Random();
@@ -17,8 +17,8 @@ public class RandomTaskExecutionScheduler extends AbstractTaskExecutionScheduler
 	}
 
 	@Override
-	protected Task2 scheduleNonNull(List<Task2> tasksToSchedule) {
-		Task2 assignedTask = null;
+	protected Task scheduleNonNull(List<Task> tasksToSchedule) {
+		Task assignedTask = null;
 		if (!allTasksAreFinished(tasksToSchedule)) {
 			do {
 				assignedTask = tasksToSchedule.get(RND.nextInt(tasksToSchedule.size()));

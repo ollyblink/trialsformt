@@ -6,7 +6,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.task.Task2;
+import mapreduce.execution.task.Task;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcomparators.MinAssignedWorkerTaskExecutionSortingComparator;
 
 /**
@@ -37,19 +37,19 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 	}
 
 	@Override
-	protected Task2 scheduleNonNull(List<Task2> tasksToSchedule) {
+	protected Task scheduleNonNull(List<Task> tasksToSchedule) {
 		logger.info("Tasks to schedule");
 		// for(Task2 task: tasksToSchedule){
 		// logger.info(task.id() + ", ExecutingPeers stati: "+task.executingPeers().values());
 		// }
-		Task2 assignedTask = null;
+		Task assignedTask = null;
 		if (!allTasksAreFinished(tasksToSchedule)) {
 			if (randomTaskScheduler != null && noTaskAssignedYet(tasksToSchedule)) {
 				assignedTask = randomTaskScheduler.scheduleNonNull(tasksToSchedule);
 				logger.info("random task assigned" + assignedTask);
 			} else {
 				Collections.sort(tasksToSchedule, this.comparator);
-				Task2 task = tasksToSchedule.get(0);
+				Task task = tasksToSchedule.get(0);
 				if (!task.isFinished()) {
 					assignedTask = task;
 				}

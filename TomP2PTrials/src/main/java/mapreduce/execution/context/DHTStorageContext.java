@@ -6,32 +6,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.procedures.IExecutable;
-import mapreduce.execution.task.Task2;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
-import mapreduce.utils.Tuple;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number160;
 
-public class DHTStorageContext extends AbstractBaseContext {
+public class DHTStorageContext implements IContext {
 	private static Logger logger = LoggerFactory.getLogger(DHTStorageContext.class);
-
+	// private IExecutable combiner;
+	private Number160 resultHash = Number160.ZERO; 
 	private IDHTConnectionProvider dhtConnectionProvider;
-
 	private List<FuturePut> futurePutData = SyncedCollectionProvider.syncedArrayList();
-
-	private Tuple<String, Integer> taskExecutor;
-
 	private ExecutorTaskDomain outputExecutorTaskDomain;
-
-	// private ListMultimap<String, Object> tmpKeyValues;
-	//
-	// private FileSize maxDataSize = FileSize.FOUR_KILO_BYTES;
-
-	// private ITaskResultComparator taskResultComparator;
+ 
 
 	/**
 	 * 
@@ -40,8 +29,6 @@ public class DHTStorageContext extends AbstractBaseContext {
 	 *            may add certain speed ups such that the task result comparison afterwards becomes faster
 	 */
 	private DHTStorageContext() {
-		// ListMultimap<String, Object> multimap = ArrayListMultimap.create();
-		// this.tmpKeyValues = Multimaps.synchronizedListMultimap(multimap);
 	}
 
 	public static DHTStorageContext create() {
@@ -81,7 +68,7 @@ public class DHTStorageContext extends AbstractBaseContext {
 				}));
 
 	}
- 
+
 	@Override
 	public DHTStorageContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
@@ -94,30 +81,30 @@ public class DHTStorageContext extends AbstractBaseContext {
 	}
 
 	@Override
-	public DHTStorageContext combiner(IExecutable combiner) {
-		this.combiner = combiner;
-		return this;
-	}
-
-	@Override
-	public IExecutable combiner() {
-		return this.combiner;
-	}
-
-	@Override
 	public List<FuturePut> futurePutData() {
 		return this.futurePutData;
 	}
+ 
 
 	@Override
-	public AbstractBaseContext task(Task2 task) {
-		super.task(task);
-		return this;
-	}
-
 	public DHTStorageContext outputExecutorTaskDomain(ExecutorTaskDomain outputExecutorTaskDomain) {
 		this.outputExecutorTaskDomain = outputExecutorTaskDomain;
 		return this;
+	}
+
+	// @Override
+	// public IContext combiner(IExecutable combiner) {
+	// this.combiner = combiner;
+	// return this;
+	// }
+	//
+	// @Override
+	// public IExecutable combiner() {
+	// return this.combiner;
+	// }
+
+	private void updateResultHash(Object keyOut, Object valueOut) {
+		resultHash.xor(Number160.createHash(keyOut.toString())).xor(Number160.createHash(valueOut.toString()));
 	}
 
 }

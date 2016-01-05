@@ -27,8 +27,8 @@ public class JobTest {
 	@Test
 	public void testAddingProcedure() {
 
-		Job job = Job.create("TEST", PriorityLevel.MODERATE).addSubsequentProcedure(WordCountMapper.create())
-				.addSubsequentProcedure(WordCountReducer.create());
+		Job job = Job.create("TEST", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountMapper.create())
+				.addSucceedingProcedure(WordCountReducer.create());
 
 		assertEquals("StartProcedure", job.procedure(-100).executable().getClass().getSimpleName());
 		assertEquals("StartProcedure", job.procedure(-10).executable().getClass().getSimpleName());
@@ -78,7 +78,7 @@ public class JobTest {
 		int counter = 0;
 
 		Job job = Job.create("TEST", PriorityLevel.MODERATE).maxNrOfFinishedWorkersPerTask(3)
-				.addSubsequentProcedure(NullMapReduceProcedure.newInstance());
+				.addSucceedingProcedure(NullMapReduceProcedure.newInstance());
 		List<Task> list = new ArrayList<Task>();
 		list.add(Task.create("word" + (counter++), job.previousProcedure().jobProcedureDomain()));
 		list.add(Task.create("word" + (counter++), job.previousProcedure().jobProcedureDomain()));

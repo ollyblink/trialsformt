@@ -21,8 +21,8 @@ public class Job implements Serializable, Comparable<Job> {
 	 */
 	private static final long serialVersionUID = 1152022246679324578L;
 
-	private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
-	private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
+//	private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
+//	private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
 	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
 	private static final int DEFAULT_MAX_NR_OF_FINISHED_WORKERS = 3;
@@ -47,7 +47,7 @@ public class Job implements Serializable, Comparable<Job> {
 	/**
 	 * Internal counter that specifies the currently processed procedure
 	 */
-	private int previousProcedureIndex;
+	private int currentProcedureIndex;
 
 	/** maximal file size to be put on the DHT at once */
 	private FileSize maxFileSize = DEFAULT_FILE_SIZE;
@@ -71,14 +71,8 @@ public class Job implements Serializable, Comparable<Job> {
 	 */
 	private boolean useLocalStorageFirst;
 
-	/** How many times should the dht operation be tried before it is declared as failed? */
-	private int maxNrOfDHTActions;
-
-	/** For how long should be waited until it declares the dht operation to be failed? In milliseconds */
-	private long timeToLiveInMs;
-
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
-	private int jobSubmissionCounter;
+	// private int jobSubmissionCounter;
 
 	// private boolean isActive;
 
@@ -88,7 +82,7 @@ public class Job implements Serializable, Comparable<Job> {
 		this.priorityLevel = (priorityLevel == null || priorityLevel.length == 0 || priorityLevel.length > 1 ? DEFAULT_PRIORITY_LEVEL
 				: priorityLevel[0]);
 		this.creationTime = System.currentTimeMillis();
-		this.previousProcedureIndex = 0;
+		this.currentProcedureIndex = 0;
 		this.procedures = Collections.synchronizedList(new ArrayList<>());
 		// Add initial
 		Procedure procedureInformation = Procedure.create(StartProcedure.create(), 0);
@@ -96,15 +90,14 @@ public class Job implements Serializable, Comparable<Job> {
 	}
 
 	public static Job create(String jobSubmitterID, PriorityLevel... priorityLevel) {
-		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).timeToLiveInMs(DEFAULT_TIME_TO_LIVE_IN_MS)
-				.maxNrOfDHTActions(DEFAULT_NUMBER_OF_ADD_TRIALS).useLocalStorageFirst(true)
+		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(true)
 				.maxNrOfFinishedWorkersPerTask(DEFAULT_MAX_NR_OF_FINISHED_WORKERS);
 	}
 
 	public String id() {
 		// S == Submitter
 		// SNR == Submission counter
-		return this.id + "_S(" + jobSubmitterID + ")_SNR(" + jobSubmissionCounter + ")";
+		return this.id + "_S(" + jobSubmitterID + ")";// _SNR(" + jobSubmissionCounter + ")";
 	}
 
 	public Job id(String id) {
@@ -136,22 +129,13 @@ public class Job implements Serializable, Comparable<Job> {
 	}
 
 	/**
-	 * Convenience method. Same as Job.procedure(Job.currentProcedureIndex())
-	 * 
-	 * @return
-	 */
-	public Procedure previousProcedure() {
-		return this.procedure(this.previousProcedureIndex);
-	}
-
-	/**
 	 * Convenience method. Same as Job.procedure(Job.currentProcedureIndex()+1). Retrieves the procedure information for the next procedure to be
 	 * executed after the current procedure
 	 * 
 	 * @return
 	 */
 	public Procedure currentProcedure() {
-		return this.procedure(this.previousProcedureIndex + 1);
+		return this.procedure(this.currentProcedureIndex);
 	}
 
 	/**
@@ -162,26 +146,14 @@ public class Job implements Serializable, Comparable<Job> {
 	 * @param procedure
 	 * @return
 	 */
-	public Job addSubsequentProcedure(IExecutable procedure) {
+	public Job addSucceedingProcedure(IExecutable procedure) {
 		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size());
 		this.procedures.add(procedureInformation);
 		return this;
 	}
 
 	public void incrementProcedureIndex() {
-		++this.previousProcedureIndex;
-	}
-
-	public int submissionCounter() {
-		return this.jobSubmissionCounter;
-	}
-
-	public int incrementSubmissionCounter() {
-		return ++this.jobSubmissionCounter;
-	}
-
-	public void resetSubmissionCounter() {
-		this.jobSubmissionCounter = 0;
+		++this.currentProcedureIndex;
 	}
 
 	public int maxNrOfFinishedWorkersPerTask() {
@@ -220,24 +192,6 @@ public class Job implements Serializable, Comparable<Job> {
 		return this;
 	}
 
-	public Job timeToLiveInMs(long timeToLiveInMs) {
-		this.timeToLiveInMs = timeToLiveInMs;
-		return this;
-	}
-
-	public long timeToLiveInMs() {
-		return this.timeToLiveInMs;
-	}
-
-	public Job maxNrOfDHTActions(int maxNrOfDHTActions) {
-		this.maxNrOfDHTActions = maxNrOfDHTActions;
-		return this;
-	}
-
-	public int maxNrOfDHTActions() {
-		return this.maxNrOfDHTActions;
-	}
-
 	@Override
 	public String toString() {
 		return id();
@@ -267,7 +221,6 @@ public class Job implements Serializable, Comparable<Job> {
 			return false;
 		return true;
 	}
- 
 
 	@Override
 	public int compareTo(Job job) {
@@ -278,22 +231,22 @@ public class Job implements Serializable, Comparable<Job> {
 		}
 	}
 
-//	public static void main(String[] args) {
-//		List<Job> jobs = new ArrayList<>();
-//		jobs.add(Job.create("1", PriorityLevel.LOW));
-//		jobs.add(Job.create("2", PriorityLevel.MODERATE));
-//		jobs.add(Job.create("3", PriorityLevel.HIGH));
-//		jobs.add(Job.create("4", PriorityLevel.MODERATE));
-//		jobs.add(Job.create("5", PriorityLevel.LOW));
-//		jobs.add(Job.create("6", PriorityLevel.HIGH));
-//
-//		Collections.sort(jobs);
-//		for (Job job : jobs) {
-//			System.err.println(job.jobSubmitterID() + ", " + job.priorityLevel);
-//		}
-//	}
+	// public static void main(String[] args) {
+	// List<Job> jobs = new ArrayList<>();
+	// jobs.add(Job.create("1", PriorityLevel.LOW));
+	// jobs.add(Job.create("2", PriorityLevel.MODERATE));
+	// jobs.add(Job.create("3", PriorityLevel.HIGH));
+	// jobs.add(Job.create("4", PriorityLevel.MODERATE));
+	// jobs.add(Job.create("5", PriorityLevel.LOW));
+	// jobs.add(Job.create("6", PriorityLevel.HIGH));
+	//
+	// Collections.sort(jobs);
+	// for (Job job : jobs) {
+	// System.err.println(job.jobSubmitterID() + ", " + job.priorityLevel);
+	// }
+	// }
 
-	public PriorityLevel priorityLevel() { 
+	public PriorityLevel priorityLevel() {
 		return priorityLevel;
 	}
 

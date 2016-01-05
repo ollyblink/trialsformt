@@ -1,16 +1,12 @@
 package mapreduce.manager.broadcasting.broadcastmessageconsumer;
 
 import java.util.List;
-import java.util.TreeMap;
-import java.util.concurrent.PriorityBlockingQueue;
 
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.Procedure;
-import mapreduce.execution.task.Task2;
+import mapreduce.execution.task.Task;
 import mapreduce.manager.MRJobExecutionManager;
-import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 
 public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsumer {
 
@@ -43,12 +39,14 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	@Override
 	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain, int tasksSize) {
 		Procedure currentProcedure = jobs.firstKey().currentProcedure();
-		if (currentProcedure.procedureIndex() == outputDomain.jobProcedureDomain().procedureIndex()) { // Same procedure is executed
+		JobProcedureDomain outputJPD = outputDomain.jobProcedureDomain();
+
+		if (currentProcedure.procedureIndex() == outputJPD.procedureIndex()) { // Same procedure is executed
 			if (currentProcedure.inputDomain().equals(inputDomain)) {
-				Task2 receivedTask = Task2.create(outputDomain.taskId());
-				List<Task2> tasksToUpdate = currentProcedure.tasks();
+				Task receivedTask = Task.create(outputDomain.taskId());
+				List<Task> tasksToUpdate = currentProcedure.tasks();
 				if (tasksToUpdate.contains(receivedTask)) {
-					Task2 thisTask = tasksToUpdate.get(tasksToUpdate.indexOf(receivedTask));
+					Task thisTask = tasksToUpdate.get(tasksToUpdate.indexOf(receivedTask));
 					if (!thisTask.isFinished()) {
 						thisTask.addOutputDomain(inputDomain);
 						if (thisTask.isFinished()) { // May be finished now...
@@ -57,10 +55,9 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 							}
 							// Add data to procedure domain!
 							if (!thisTask.isInProcedureDomain()) {
-
-								JobProcedureDomain outputJobProcedureDomain = new JobProcedureDomain(jobs.firstKey().id(), this.jobExecutor.id(),
-										currentProcedure.executable().getClass().getSimpleName(), currentProcedure.procedureIndex());
-								jobExecutor.tryToAddTaskDataToProcedureDomain(thisTask, jobs.firstKey().maxNrOfDHTActions(),
+								JobProcedureDomain outputJobProcedureDomain = new JobProcedureDomain(outputJPD.jobId(), this.jobExecutor.id(),
+										outputJPD.procedureSimpleName(), outputJPD.procedureIndex());
+								jobExecutor.transferDataFromETDtoJPD(thisTask, (ExecutorTaskDomain) thisTask.resultOutputDomain(),
 										outputJobProcedureDomain);
 							}
 						}
@@ -80,7 +77,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					}
 					currentProcedure.inputDomain(inputDomain);
 					currentProcedure.addOutputDomain(outputDomain);
-					this.jobExecutor.executeJob(nextJob());
+					this.jobExecutor.executeJob(jobs.firstKey());
 				} else {// if (currentJob.currentProcedure().inputDomain().procedureCreationTime <= inputDomain.procedureCreationTime)
 					// Do nothing... Continue execution
 				}
@@ -88,19 +85,19 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			if (currentProcedure.tasksSize() == 0) { // Means it was not yet set when retrieving data
 				currentProcedure.tasksSize(tasksSize); // not really the place to put it but where else...
 			}
-		} else if (currentProcedure.procedureIndex() < outputDomain.jobProcedureDomain().procedureIndex()) {
+		} else if (currentProcedure.procedureIndex() < outputJPD.procedureIndex()) {
 			// Means this executor is behind in the execution than the one that sent this message
 			if (currentProcedure.isActive()) {
 				jobExecutor.abortExecution();
 			}
-			while (currentProcedure.procedureIndex() < outputDomain.jobProcedureDomain().procedureIndex()) {
+			while (currentProcedure.procedureIndex() < outputJPD.procedureIndex()) {
 				jobs.firstKey().incrementProcedureIndex();
 			}
 			currentProcedure.inputDomain(inputDomain);
 			currentProcedure.addOutputDomain(outputDomain);
 			currentProcedure.tasksSize(tasksSize);
 
-			this.jobExecutor.executeJob(nextJob());
+			this.jobExecutor.executeJob(jobs.firstKey());
 			if (currentProcedure.tasksSize() == 0) { // Means it was not yet set when retrieving data
 				currentProcedure.tasksSize(tasksSize); // not really the place to put it but where else...
 			}
@@ -122,7 +119,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					}
 					jobs.firstKey().incrementProcedureIndex();
 
-					this.jobExecutor.executeJob(nextJob());
+					this.jobExecutor.executeJob(jobs.firstKey());
 				}
 			} else { // May have to change input data location (inputDomain)
 				// executor of received message executes on different input data! Need to synchronize
@@ -135,7 +132,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					currentProcedure.inputDomain(inputDomain);
 					currentProcedure.addOutputDomain(outputDomain);
 
-					this.jobExecutor.executeJob(nextJob());
+					this.jobExecutor.executeJob(jobs.firstKey());
 				} else {// if (currentJob.currentProcedure().inputDomain().procedureCreationTime <= inputDomain.procedureCreationTime)
 					// Do nothing... Continue execution
 				}
@@ -151,7 +148,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			currentProcedure.inputDomain(inputDomain);
 			currentProcedure.addOutputDomain(outputDomain);
 
-			this.jobExecutor.executeJob(nextJob());
+			this.jobExecutor.executeJob(jobs.firstKey());
 		} else { // if(currentJob.currentProcedure().procedureIndex() > outputDomain.procedureIndex)
 			// Means this executor is further in the execution than the one that sent this message
 			// Ignore...

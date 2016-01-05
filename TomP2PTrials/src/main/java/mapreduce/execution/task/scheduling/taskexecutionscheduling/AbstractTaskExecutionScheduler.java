@@ -2,24 +2,24 @@ package mapreduce.execution.task.scheduling.taskexecutionscheduling;
 
 import java.util.List;
 
-import mapreduce.execution.task.Task2;
+import mapreduce.execution.task.Task;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
 
 public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 
 	@Override
-	public Task2 schedule(List<Task2> tasksToSchedule) {
+	public Task schedule(List<Task> tasksToSchedule) {
 		if (tasksToSchedule != null) {
 			return scheduleNonNull(tasksToSchedule);
 		}
 		return null;
 	}
 
-	protected abstract Task2 scheduleNonNull(List<Task2> tasksToSchedule);
+	protected abstract Task scheduleNonNull(List<Task> tasksToSchedule);
 
-	protected boolean allTasksAreFinished(List<Task2> tasksToSchedule) {
+	protected boolean allTasksAreFinished(List<Task> tasksToSchedule) {
 		synchronized (tasksToSchedule) {
-			for (Task2 task : tasksToSchedule) {
+			for (Task task : tasksToSchedule) {
 				if (!task.isFinished()) {
 					return false;
 				}
@@ -28,10 +28,10 @@ public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 		return true;
 	}
 
-	protected boolean noTaskAssignedYet(List<Task2> tasksToSchedule) {
+	protected boolean noTaskAssignedYet(List<Task> tasksToSchedule) {
 		synchronized (tasksToSchedule) {
-			for (Task2 task : tasksToSchedule) {
-				if (task != null && task.outputDomains().size() > 0) {
+			for (Task task : tasksToSchedule) {
+				if (task != null && task.nrOfOutputDomains() > 0) {
 					return false;
 				}
 			}
