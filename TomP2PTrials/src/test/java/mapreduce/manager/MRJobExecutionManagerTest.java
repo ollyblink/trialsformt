@@ -28,6 +28,7 @@ import mapreduce.manager.broadcasting.broadcastmessageconsumer.AbstractMessageCo
 import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
+import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -93,6 +94,7 @@ public class MRJobExecutionManagerTest {
 	@Test
 	public void testExecuteTask() throws InterruptedException {
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountReducer.create());
+		dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).awaitUninterruptibly();
 		Task task = Task.create("file1");
 		String executor = "Executor_1";
 		JobProcedureDomain outputJPD = new JobProcedureDomain(job.id(), executor, job.currentProcedure().executable().getClass().getSimpleName(),
@@ -116,7 +118,7 @@ public class MRJobExecutionManagerTest {
 
 		});
 		Thread.sleep(2000);
-
+//
 		job.incrementProcedureIndex();
 		PriorityBlockingQueue<IBCMessage> bcMessages = new PriorityBlockingQueue<>();
 		Procedure procedure = job.currentProcedure().inputDomain(outputJPD);
@@ -125,15 +127,15 @@ public class MRJobExecutionManagerTest {
 
 		List<Task> tasks = new ArrayList<>();
 		tasks.add(Task.create("where"));
-		tasks.add(Task.create("is"));
-		tasks.add(Task.create("hello"));
-		tasks.add(Task.create("world"));
-		tasks.add(Task.create("test"));
+//		tasks.add(Task.create("is"));
+//		tasks.add(Task.create("hello"));
+//		tasks.add(Task.create("world"));
+//		tasks.add(Task.create("test"));
 		for (Task t : tasks) {
 			jobExecutor.executeTask(bcMessages, t, procedure, outputJPD2);
 		}
 
-		Thread.sleep(2000);
+		Thread.sleep(2000); 
 
 	}
 

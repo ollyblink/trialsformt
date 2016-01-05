@@ -84,7 +84,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	public DHTConnectionProvider externalPeers(List<PeerDHT> peerDHTs, MRBroadcastHandler bcHandler) {
 		this.peerDHTs = peerDHTs;
-		this.broadcastHandler = bcHandler;
+		this.broadcastHandler = bcHandler.dhtConnectionProvider(this);
 		return this;
 	}
 
@@ -95,8 +95,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public DHTConnectionProvider jobQueues(TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
-		this.jobs = jobs;
-
+		this.jobs = jobs; 
 		if (this.broadcastHandler != null) {
 			this.broadcastHandler.jobQueues(jobs);
 		}
@@ -159,7 +158,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 								// bootstrapper
 		if (broadcastHandler == null) {
 			this.broadcastHandler = MRBroadcastHandler.create().dhtConnectionProvider(this).jobQueues(jobs);
-		}
+		} 
 
 		for (int i = 0; i < this.numberOfPeers; ++i) {
 

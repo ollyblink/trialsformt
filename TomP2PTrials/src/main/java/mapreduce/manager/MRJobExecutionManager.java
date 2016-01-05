@@ -110,15 +110,15 @@ public class MRJobExecutionManager {
 		JobProcedureDomain outputJPD = new JobProcedureDomain(job.id(), outputPExecutor, outputPExecutable, outputPIndex);
 
 		// Tries to find task keys on the network
-		getTaskKeys(job, bcMessages, procedure, outputJPD);
+		getTaskKeysFromNetwork(job, bcMessages, procedure, outputJPD);
 
 		logger.info("Scheduling tasks for execution in case task was received from broadcast.");
-		// In parallel to finding task keys on the network, execution starts in case a task was received from broadcast
-		execute(job, bcMessages, procedure, outputJPD);
+		// In parallel to finding task keys on the network, execution starts in case a task was received from broadcast... Else just wait for the broadcast or the dht call
+		tryExecutingTask(job, bcMessages, procedure, outputJPD);
 
 	}
 
-	private void getTaskKeys(Job job, PriorityBlockingQueue<IBCMessage> bcMessages, Procedure procedure, JobProcedureDomain outputJPD) {
+	private void getTaskKeysFromNetwork(Job job, PriorityBlockingQueue<IBCMessage> bcMessages, Procedure procedure, JobProcedureDomain outputJPD) {
 		logger.info("Retrieve task keys for input procedure domain: " + procedure.inputDomain() + ".");
 		dhtCon.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.inputDomain().toString())
 				.addListener(new BaseFutureAdapter<FutureGet>() {
@@ -134,7 +134,7 @@ public class MRJobExecutionManager {
 								if (!procedure.tasks().contains(task)) {// Don't need to add it more, got it e.g. from a BC
 									logger.info("Added key " + key + ", scheduling task for execution.");
 									procedure.tasks().add(task);
-									execute(job, bcMessages, procedure, outputJPD);
+									tryExecutingTask(job, bcMessages, procedure, outputJPD);
 								}
 							}
 						} else {
@@ -203,7 +203,7 @@ public class MRJobExecutionManager {
 
 	}
 
-	private void execute(Job job, PriorityBlockingQueue<IBCMessage> bcMessages, Procedure procedure, JobProcedureDomain outputJPD) {
+	private void tryExecutingTask(Job job, PriorityBlockingQueue<IBCMessage> bcMessages, Procedure procedure, JobProcedureDomain outputJPD) {
 		if (procedure.tasks().size() != 0) {
 			Task nextTask = taskExecutionScheduler.schedule(procedure.tasks());
 			if (nextTask == null) {
@@ -273,6 +273,7 @@ public class MRJobExecutionManager {
 
 										@Override
 										public void operationComplete(FuturePut future) throws Exception {
+							 
 											if (future.isSuccess()) {
 												logger.info(
 														"Successfully added task output values {" + realValues + "} of task output key \"" + taskOutputKey
