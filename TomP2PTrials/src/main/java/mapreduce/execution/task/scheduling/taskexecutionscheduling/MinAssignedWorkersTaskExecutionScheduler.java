@@ -6,7 +6,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.execution.task.Task;
 import mapreduce.execution.task.Task2;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcomparators.MinAssignedWorkerTaskExecutionSortingComparator;
 
@@ -56,10 +55,6 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 				}
 				logger.info("compared task assigned" + assignedTask);
 			}
-		} else {
-			logger.info("finished procedure " + procedureInformation);
-			// all tasks finished... set procedure to be finished
-			// this.procedureInformation.isFinished(true);
 		}
 		return assignedTask;
 	}

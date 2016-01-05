@@ -3,7 +3,6 @@ package mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcompa
 import java.util.Comparator;
 
 import mapreduce.execution.task.Task2;
-import mapreduce.execution.task.Tasks;
 
 public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparator<Task2> {
 

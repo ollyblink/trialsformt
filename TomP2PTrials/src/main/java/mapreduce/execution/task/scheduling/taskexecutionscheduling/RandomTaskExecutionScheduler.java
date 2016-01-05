@@ -3,7 +3,6 @@ package mapreduce.execution.task.scheduling.taskexecutionscheduling;
 import java.util.List;
 import java.util.Random;
 
-import mapreduce.execution.task.Task;
 import mapreduce.execution.task.Task2;
 
 public class RandomTaskExecutionScheduler extends AbstractTaskExecutionScheduler {

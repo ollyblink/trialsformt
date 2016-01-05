@@ -8,9 +8,9 @@ import java.util.Set;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.IFinishable;
+import mapreduce.execution.JobProcedureDomain;
 import net.tomp2p.peers.Number160;
 
 public class Task2 implements IFinishable, Serializable {
@@ -18,8 +18,6 @@ public class Task2 implements IFinishable, Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 4696324648240806323L;
-	/** Domains of keys for this procedure (this key comes from this domain) */
-	private List<ExecutorTaskDomain> inputDomains;
 	/** Domain (ExecutorTaskDomains) of keys for next procedure */
 	private List<IDomain> outputDomains;
 	/** How many times this object needs to be executed before it is declared finished */
@@ -74,14 +72,6 @@ public class Task2 implements IFinishable, Serializable {
 		this.outputDomains.add(domain);
 	}
 
-	public void addInputDomain(ExecutorTaskDomain domain) {
-		this.inputDomains.add(domain);
-	}
-
-	public List<ExecutorTaskDomain> inputDomains() {
-		return this.inputDomains;
-	}
-
 	@Override
 	public List<IDomain> outputDomains() {
 		return this.outputDomains;
@@ -127,7 +117,6 @@ public class Task2 implements IFinishable, Serializable {
 	}
 
 	public boolean isInProcedureDomain() {
-		// TODO Auto-generated method stub
 		return this.isInProcedureDomain;
 	}
 

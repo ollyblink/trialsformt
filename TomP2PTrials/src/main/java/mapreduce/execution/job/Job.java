@@ -9,12 +9,8 @@ import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.StartProcedure;
-import mapreduce.execution.task.Task;
-import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
-import mapreduce.utils.SyncedCollectionProvider;
-import mapreduce.utils.Tuple;
 
 public class Job implements Serializable, Comparable<Job> {
 
