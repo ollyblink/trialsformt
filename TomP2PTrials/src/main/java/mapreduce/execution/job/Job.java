@@ -21,8 +21,8 @@ public class Job implements Serializable, Comparable<Job> {
 	 */
 	private static final long serialVersionUID = 1152022246679324578L;
 
-//	private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
-//	private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
+	// private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
+	// private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
 	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
 	private static final int DEFAULT_MAX_NR_OF_FINISHED_WORKERS = 3;
@@ -153,7 +153,9 @@ public class Job implements Serializable, Comparable<Job> {
 	}
 
 	public void incrementProcedureIndex() {
-		++this.currentProcedureIndex;
+		if (this.currentProcedureIndex <= procedures.size()) {
+			++this.currentProcedureIndex;
+		}
 	}
 
 	public int maxNrOfFinishedWorkersPerTask() {

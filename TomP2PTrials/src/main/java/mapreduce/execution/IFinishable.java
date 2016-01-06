@@ -11,7 +11,7 @@ import net.tomp2p.peers.Number160;
 public interface IFinishable {
 	public boolean isFinished();
 
-	public void addOutputDomain(IDomain domain);
+	public IFinishable addOutputDomain(IDomain domain);
 
 	public Number160 calculateResultHash();
 

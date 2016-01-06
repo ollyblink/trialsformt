@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasting.broadcastmessageconsumer;
+package mapreduce.engine.messageConsumer;
 
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;

@@ -1,12 +1,12 @@
-package mapreduce.manager.broadcasting.broadcastmessageconsumer;
+package mapreduce.engine.messageConsumer;
 
 import java.util.List;
 
+import mapreduce.engine.executor.MRJobExecutionManager;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task;
-import mapreduce.manager.MRJobExecutionManager;
 
 public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsumer {
 
@@ -55,7 +55,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 							}
 							// Add data to procedure domain!
 							if (!thisTask.isInProcedureDomain()) {
-								JobProcedureDomain outputJobProcedureDomain = new JobProcedureDomain(outputJPD.jobId(), this.jobExecutor.id(),
+								JobProcedureDomain outputJobProcedureDomain = JobProcedureDomain.create(outputJPD.jobId(), this.jobExecutor.id(),
 										outputJPD.procedureSimpleName(), outputJPD.procedureIndex());
 								jobExecutor.transferDataFromETDtoJPD(thisTask, (ExecutorTaskDomain) thisTask.resultOutputDomain(),
 										outputJobProcedureDomain);

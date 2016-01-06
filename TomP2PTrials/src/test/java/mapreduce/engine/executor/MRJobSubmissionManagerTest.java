@@ -1,4 +1,4 @@
-package mapreduce.manager;
+package mapreduce.engine.executor;
 
 import static org.junit.Assert.assertEquals;
 
@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import mapreduce.engine.executor.MRJobSubmissionManager;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.storage.IDHTConnectionProvider;

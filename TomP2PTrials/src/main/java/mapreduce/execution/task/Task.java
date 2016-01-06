@@ -1,9 +1,7 @@
 package mapreduce.execution.task;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -11,7 +9,6 @@ import com.google.common.collect.ListMultimap;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.IFinishable;
-import mapreduce.execution.JobProcedureDomain;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
@@ -23,7 +20,7 @@ public class Task implements IFinishable, Serializable {
 	/** Domain (ExecutorTaskDomains) of keys for next procedure */
 	private List<ExecutorTaskDomain> outputDomains;
 	/** How many times this object needs to be executed before it is declared finished */
-	private int nrOfSameResultHash;
+	private int nrOfSameResultHash = 1; // Needs at least one
 	/** Key of this task to get the values for */
 	private final String key;
 	/** Specifies if the task is currently executed */
@@ -49,26 +46,21 @@ public class Task implements IFinishable, Serializable {
 		return this.isActive;
 	}
 
-	public void isActive(boolean isActive) {
+	public Task isActive(boolean isActive) {
 		this.isActive = isActive;
+		return this;
 	}
 
 	@Override
 	public boolean isFinished() {
+		checkIfFinished();
 		return resultOutputDomain != null;
 	}
 
 	@Override
-	public void addOutputDomain(IDomain domain) {
+	public Task addOutputDomain(IDomain domain) {
 		this.outputDomains.add((ExecutorTaskDomain) domain);
-	}
-
-	public int differentExecutors() {
-		Set<String> differentExecutors = new HashSet<String>();
-		for (IDomain domain : outputDomains) {
-			differentExecutors.add(domain.executor());
-		}
-		return differentExecutors.size();
+		return this;
 	}
 
 	public int nextStatusIndexFor(String executor) {
@@ -83,28 +75,35 @@ public class Task implements IFinishable, Serializable {
 
 	@Override
 	public Number160 calculateResultHash() {
-		if (resultOutputDomain == null) {
-			isFinished();
-			if (resultOutputDomain == null) {
-				return null;
-			}
-		}
-		return resultOutputDomain.resultHash();
+		checkIfFinished(); 
+		return (resultOutputDomain == null ? null : resultOutputDomain.resultHash());
 	}
 
 	@Override
 	public IDomain resultOutputDomain() {
+		checkIfFinished();
+		return resultOutputDomain;
+	}
+
+	private void checkIfFinished() {
 		ListMultimap<Number160, ExecutorTaskDomain> results = ArrayListMultimap.create();
 		for (ExecutorTaskDomain domain : outputDomains) {
 			results.put(domain.resultHash(), domain);
 		}
+		boolean isFinished = false;
+		Number160 r = null;
 		for (Number160 resultHash : results.keySet()) {
 			if (results.get(resultHash).size() >= nrOfSameResultHash) {
-				this.resultOutputDomain = results.get(resultHash).get(0);
+				r = resultHash;
+				isFinished = true;
 				break;
 			}
 		}
-		return resultOutputDomain;
+		if (isFinished) {
+			this.resultOutputDomain = results.get(r).get(results.get(r).size() - 1);// Most recent... most likely even data still here...
+		} else {
+			this.resultOutputDomain = null;
+		}
 	}
 
 	public void reset() {
@@ -116,8 +115,9 @@ public class Task implements IFinishable, Serializable {
 		return this.isInProcedureDomain;
 	}
 
-	public void isInProcedureDomain(boolean isInProcedureDomain) {
+	public Task isInProcedureDomain(boolean isInProcedureDomain) {
 		this.isInProcedureDomain = isInProcedureDomain;
+		return this;
 	}
 
 	@Override
@@ -127,8 +127,42 @@ public class Task implements IFinishable, Serializable {
 
 	@Override
 	public Task nrOfSameResultHash(int nrOfSameResultHash) {
-		this.nrOfSameResultHash = nrOfSameResultHash;
+		if (nrOfSameResultHash > 1) {
+			this.nrOfSameResultHash = nrOfSameResultHash;
+		}
+
 		return this;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Task other = (Task) obj;
+		if (key == null) {
+			if (other.key != null)
+				return false;
+		} else if (!key.equals(other.key))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "Task [outputDomains=" + outputDomains + ", nrOfSameResultHash=" + nrOfSameResultHash + ", key=" + key + ", isActive=" + isActive
+				+ ", resultOutputDomain=" + resultOutputDomain + ", isInProcedureDomain=" + isInProcedureDomain + "]";
 	}
 
 }

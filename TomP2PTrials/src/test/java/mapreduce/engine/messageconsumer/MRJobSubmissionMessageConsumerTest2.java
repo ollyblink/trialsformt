@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasthandler.messageconsumer;
+package mapreduce.engine.messageconsumer;
 
 import static org.junit.Assert.assertEquals;
 
@@ -16,6 +16,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import mapreduce.engine.broadcasting.BCMessageStatus;
+import mapreduce.engine.executor.MRJobExecutionManager;
+import mapreduce.engine.messageConsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.job.PriorityLevel;
 import mapreduce.execution.procedures.Procedure;
@@ -23,9 +26,6 @@ import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.TaskResult;
 import mapreduce.execution.task.Tasks;
-import mapreduce.manager.MRJobExecutionManager;
-import mapreduce.manager.broadcasting.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
-import mapreduce.manager.broadcasting.broadcastmessages.BCMessageStatus;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.FileUtils;
@@ -35,7 +35,7 @@ import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
-public class MRJobExecutorMessageConsumerTest {
+public class MRJobSubmissionMessageConsumerTest2 {
 
 	private static final String[] TEST_KEYS = { "hello", "world", "this", "is", "a", "test" };
 	private static MRJobExecutionManagerMessageConsumer testMessageConsumer;
@@ -54,7 +54,7 @@ public class MRJobExecutorMessageConsumerTest {
 		DHTConnectionProvider dhtConnectionProvider = Mockito.mock(DHTConnectionProvider.class);
 		Mockito.when(jobExecutor.dhtConnectionProvider()).thenReturn(dhtConnectionProvider);
 		Mockito.when(dhtConnectionProvider.owner()).thenReturn(peer1);
-		testMessageConsumer = MRJobExecutionManagerMessageConsumer.newInstance().jobExecutor(jobExecutor);
+		testMessageConsumer = MRJobExecutionManagerMessageConsumer.create().jobExecutor(jobExecutor);
 		resetJob();
 
 		// m.updateTask(String jobId, String taskId, PeerAddress peerAddress, JobStatus currentStatus);

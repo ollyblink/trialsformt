@@ -1,9 +1,9 @@
-package mapreduce.manager.broadcasting.broadcastmessages;
+package mapreduce.engine.broadcasting;
 
+import mapreduce.engine.messageConsumer.IMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
-import mapreduce.manager.broadcasting.broadcastmessageconsumer.IMessageConsumer;
 
 public class CompletedBCMessage implements IBCMessage {
 	/**

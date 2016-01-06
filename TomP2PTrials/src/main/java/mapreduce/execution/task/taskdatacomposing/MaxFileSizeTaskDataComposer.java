@@ -18,21 +18,25 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 
 	@Override
 	public String append(String value) {
-		String nextValue = value + this.splitValue;
-		this.fileSizeCounter += (nextValue).getBytes(Charset.forName(this.fileEncoding)).length;
-		this.data += nextValue;
-		if (fileSizeCounter >= maxFileSize.value()) {
-			String result = data;
+		String newData = this.data + value + this.splitValue;
+		long newFileSizeCounter = newData.getBytes(Charset.forName(this.fileEncoding)).length;
+		if (newFileSizeCounter >= maxFileSize.value()) {
+			String currentData = this.data;
 			reset();
-			return result;
+			this.data = value + this.splitValue;
+			this.fileSizeCounter = data.getBytes(Charset.forName(this.fileEncoding)).length;
+			return currentData;
+		} else {
+			this.data = newData;
+			this.fileSizeCounter = newFileSizeCounter;
+			return null;
 		}
-		return null;
 	}
 
 	@Override
 	public void reset() {
-		this.fileSizeCounter = 0;
 		this.data = "";
+		this.fileSizeCounter = 0;
 	}
 
 	@Override

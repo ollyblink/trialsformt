@@ -16,7 +16,15 @@ public class JobProcedureDomain implements IDomain {
 	private long procedureCreationTime;
 	private Number160 resultHash;
 
-	public JobProcedureDomain(String jobId, String procedureExecutor, String procedureSimpleName, int procedureIndex) {
+	private JobProcedureDomain() {
+
+	}
+
+	public static JobProcedureDomain create(String jobId, String procedureExecutor, String procedureSimpleName, int procedureIndex) {
+		return new JobProcedureDomain(jobId, procedureExecutor, procedureSimpleName, procedureIndex);
+	}
+
+	private JobProcedureDomain(String jobId, String procedureExecutor, String procedureSimpleName, int procedureIndex) {
 
 		this.jobId = jobId;
 		this.procedureExecutor = procedureExecutor;
@@ -85,8 +93,9 @@ public class JobProcedureDomain implements IDomain {
 	}
 
 	@Override
-	public void resultHash(Number160 resultHash) {
+	public JobProcedureDomain resultHash(Number160 resultHash) {
 		this.resultHash = resultHash;
+		return this;
 	}
 
 	@Override

@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import generictests.Example;
-import mapreduce.manager.broadcasting.MRBroadcastHandler;
+import mapreduce.engine.broadcasting.MRBroadcastHandler;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.SyncedCollectionProvider;

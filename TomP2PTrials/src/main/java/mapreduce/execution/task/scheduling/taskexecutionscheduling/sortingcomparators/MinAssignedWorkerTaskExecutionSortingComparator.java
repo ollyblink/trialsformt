@@ -12,38 +12,26 @@ public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparat
 			return -1;
 		} else if (t1.isFinished() && !t2.isFinished()) {
 			return 1;
-		} else if (!t1.isFinished() && !t2.isFinished()) {
-			if (!t1.isActive() && t2.isActive()) {
+		} else {//if (!(t1.isFinished() && !t2.isFinished() || (t1.isFinished() && t2.isFinished())) {
+			int t1NrFinished = t1.nrOfOutputDomains();
+			int t2NrFinished = t2.nrOfOutputDomains();
+			if (t1NrFinished > t2NrFinished) {
 				return 1;
-			} else if (t1.isActive() && !t2.isActive()) {
+			} else if (t1NrFinished < t2NrFinished) {
 				return -1;
-			} else if (!t1.isActive() && !t2.isActive()) {
-				int t1Finished = t1.nrOfOutputDomains();
-				int t2Finished = t1.nrOfOutputDomains();
-				if (t1Finished > t2Finished) {
-					return 1;
-				} else if (t1Finished < t2Finished) {
+			} else {
+				if (!t1.isActive() && t2.isActive()) {
 					return -1;
-				} else {
-					int t1differentFinished = t1.differentExecutors();
-					int t2differentFinished = t2.differentExecutors();
-					if (t1differentFinished > t2differentFinished) {
-						return 1;
-					} else if (t1differentFinished < t2differentFinished) {
-						return -1;
-					} else {
-						return 0;
-					}
+				} else if (t1.isActive() && !t2.isActive()) {
+					return 1;
+				} else {// if (!t1.isActive() && !t2.isActive() ||t1.isActive() && t2.isActive()) {
+					return 0;
 				}
-			} else {// if(t1.isActive() && t2.isActive()){
-				return 0;
-			}
-		} else {// if(t1.isFinished() && t2.isFinished()){
-			return 0;
+			} 
 		}
 	}
 
-	public static MinAssignedWorkerTaskExecutionSortingComparator newInstance() {
+	public static MinAssignedWorkerTaskExecutionSortingComparator create() {
 		return new MinAssignedWorkerTaskExecutionSortingComparator();
 	}
 }

@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasting.broadcastmessages;
+package mapreduce.engine.broadcasting;
 
 public enum BCMessageStatus {
 	COMPLETED_PROCEDURE, COMPLETED_TASK;

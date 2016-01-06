@@ -1,4 +1,4 @@
-package mapreduce.manager;
+package mapreduce.engine.executor;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -20,13 +20,13 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 
+import mapreduce.engine.broadcasting.CompletedBCMessage;
+import mapreduce.engine.messageConsumer.MRJobSubmissionManagerMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
-import mapreduce.manager.broadcasting.broadcastmessageconsumer.MRJobSubmissionManagerMessageConsumer;
-import mapreduce.manager.broadcasting.broadcastmessages.CompletedBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
@@ -91,8 +91,8 @@ public class MRJobSubmissionManager {
 		File file = new File(job.fileInputFolderPath());
 		FileUtils.INSTANCE.getFiles(file, keysFilePaths);
 
-		JobProcedureDomain inputDomain = new JobProcedureDomain(job.id(), id, null, 0);
-		JobProcedureDomain outputDomain = new JobProcedureDomain(job.id(), id, job.currentProcedure().executable().getClass().getSimpleName(),
+		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, null, 0);
+		JobProcedureDomain outputDomain = JobProcedureDomain.create(job.id(), id, job.currentProcedure().executable().getClass().getSimpleName(),
 				job.currentProcedure().procedureIndex());
 		job.currentProcedure().tasksSize(keysFilePaths.size()).nrOfSameResultHash(1).inputDomain(inputDomain).addOutputDomain(outputDomain);
 

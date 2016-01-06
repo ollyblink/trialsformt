@@ -1,4 +1,4 @@
-package mapreduce.manager;
+package mapreduce.engine.executor;
 
 import static mapreduce.utils.SyncedCollectionProvider.syncedArrayList;
 
@@ -10,6 +10,9 @@ import java.util.concurrent.PriorityBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.engine.broadcasting.CompletedBCMessage;
+import mapreduce.engine.broadcasting.IBCMessage;
+import mapreduce.engine.messageConsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
@@ -19,9 +22,6 @@ import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
-import mapreduce.manager.broadcasting.broadcastmessageconsumer.MRJobExecutionManagerMessageConsumer;
-import mapreduce.manager.broadcasting.broadcastmessages.CompletedBCMessage;
-import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.IDCreator;
@@ -59,7 +59,7 @@ public class MRJobExecutionManager {
 	}
 
 	public static MRJobExecutionManager create(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobExecutionManager(dhtConnectionProvider).taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.newInstance())
+		return new MRJobExecutionManager(dhtConnectionProvider).taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.create())
 				.maxNrOfExecutions(Runtime.getRuntime().availableProcessors());
 	}
 
@@ -107,13 +107,14 @@ public class MRJobExecutionManager {
 		String outputPExecutable = procedure.executable().getClass().getSimpleName();
 		int outputPIndex = procedure.procedureIndex();
 		String outputPExecutor = this.id();
-		JobProcedureDomain outputJPD = new JobProcedureDomain(job.id(), outputPExecutor, outputPExecutable, outputPIndex);
+		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), outputPExecutor, outputPExecutable, outputPIndex);
 
 		// Tries to find task keys on the network
 		getTaskKeysFromNetwork(job, bcMessages, procedure, outputJPD);
 
 		logger.info("Scheduling tasks for execution in case task was received from broadcast.");
-		// In parallel to finding task keys on the network, execution starts in case a task was received from broadcast... Else just wait for the broadcast or the dht call
+		// In parallel to finding task keys on the network, execution starts in case a task was received from broadcast... Else just wait for the
+		// broadcast or the dht call
 		tryExecutingTask(job, bcMessages, procedure, outputJPD);
 
 	}
@@ -164,7 +165,7 @@ public class MRJobExecutionManager {
 						}
 						// Start execution on successful retrieval
 						// Everything here with subsequent procedure!!!!
-						ExecutorTaskDomain outputETD = new ExecutorTaskDomain(task.key(), id, task.nextStatusIndexFor(id), outputJPD);
+						ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.nextStatusIndexFor(id), outputJPD);
 						IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
 
 						logger.info("Executing task: " + task.key() + " with values " + values);
@@ -263,21 +264,21 @@ public class MRJobExecutionManager {
 							public void operationComplete(FutureGet future) throws Exception {
 								if (future.isSuccess()) {
 									Collection<Data> values = future.dataMap().values();
-									 List<Object> realValues = syncedArrayList();
-									 for (Data d : values) {
-									 realValues.add(((Value) d.object()).value());
-									 }
+									List<Object> realValues = syncedArrayList();
+									for (Data d : values) {
+										realValues.add(((Value) d.object()).value());
+									}
 
 									futurePut.add(
 											dhtCon.addAll(taskOutputKey, values, toJPD.toString()).addListener(new BaseFutureAdapter<FuturePut>() {
 
 										@Override
 										public void operationComplete(FuturePut future) throws Exception {
-							 
+
 											if (future.isSuccess()) {
-												logger.info(
-														"Successfully added task output values {" + realValues + "} of task output key \"" + taskOutputKey
-																+ "\" for task " + task.key() + " to output procedure domain " + toJPD.toString());
+												logger.info("Successfully added task output values {" + realValues + "} of task output key \""
+														+ taskOutputKey + "\" for task " + task.key() + " to output procedure domain "
+														+ toJPD.toString());
 
 											} else {
 												logger.info(

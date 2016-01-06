@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasting.broadcastmessageconsumer;
+package mapreduce.engine.messageConsumer;
 
 import java.util.TreeMap;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -6,8 +6,8 @@ import java.util.concurrent.PriorityBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.engine.broadcasting.IBCMessage;
 import mapreduce.execution.job.Job;
-import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 
 /**
  * <code>MessageConsumer</code> stores incoming <code>IBCMessage</code> on a queue for future processing

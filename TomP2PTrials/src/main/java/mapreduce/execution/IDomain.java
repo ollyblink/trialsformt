@@ -8,7 +8,7 @@ public interface IDomain extends Serializable {
 
 	public Number160 resultHash();
 
-	public void resultHash(Number160 resultHash);
+	public IDomain resultHash(Number160 resultHash);
 
 	public String executor();
 

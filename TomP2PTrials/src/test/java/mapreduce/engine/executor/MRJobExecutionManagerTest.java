@@ -1,4 +1,4 @@
-package mapreduce.manager;
+package mapreduce.engine.executor;
 
 import static org.junit.Assert.assertEquals;
 
@@ -14,6 +14,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.engine.broadcasting.IBCMessage;
+import mapreduce.engine.executor.MRJobExecutionManager;
+import mapreduce.engine.messageConsumer.AbstractMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
@@ -24,8 +27,6 @@ import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.execution.task.Task;
-import mapreduce.manager.broadcasting.broadcastmessageconsumer.AbstractMessageConsumer;
-import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;

@@ -1,4 +1,4 @@
-package mapreduce.execution.computation.context;
+package mapreduce.execution.context;
 
 import static org.junit.Assert.assertEquals;
 
@@ -38,8 +38,8 @@ public class DHTStorageContextTest {
 
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE);
 		Task task = Task.create("hello");
-		JobProcedureDomain outputJPD = new JobProcedureDomain(job.id(), executor, "NONE", 0);
-		ExecutorTaskDomain outputETD = new ExecutorTaskDomain(task.key(), executor, task.nextStatusIndexFor(executor), outputJPD);
+		JobProcedureDomain outputJPD =   JobProcedureDomain.create(job.id(), executor, "NONE", 0);
+		ExecutorTaskDomain outputETD =   ExecutorTaskDomain.create(task.key(), executor, task.nextStatusIndexFor(executor), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
 		for (int i = 0; i < 10; ++i) {

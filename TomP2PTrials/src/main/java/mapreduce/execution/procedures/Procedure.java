@@ -73,8 +73,9 @@ public final class Procedure implements IFinishable, Serializable {
 	}
 
 	@Override
-	public void addOutputDomain(IDomain domain) {
+	public Procedure addOutputDomain(IDomain domain) {
 		this.outputDomains.add((JobProcedureDomain) domain);
+		return this;
 
 	}
 

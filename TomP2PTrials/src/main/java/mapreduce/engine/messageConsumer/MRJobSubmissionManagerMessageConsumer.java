@@ -1,10 +1,10 @@
-package mapreduce.manager.broadcasting.broadcastmessageconsumer;
+package mapreduce.engine.messageConsumer;
 
+import mapreduce.engine.executor.MRJobSubmissionManager;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.EndProcedure;
-import mapreduce.manager.MRJobSubmissionManager;
 
 public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsumer {
 

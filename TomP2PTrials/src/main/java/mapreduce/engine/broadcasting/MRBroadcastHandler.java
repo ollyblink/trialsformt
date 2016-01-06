@@ -1,4 +1,4 @@
-package mapreduce.manager.broadcasting;
+package mapreduce.engine.broadcasting;
 
 import java.io.IOException;
 import java.util.NavigableMap;
@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.job.Job;
-import mapreduce.manager.broadcasting.broadcastmessages.IBCMessage;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import net.tomp2p.dht.FutureGet;

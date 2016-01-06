@@ -24,10 +24,10 @@ public class MinAssignedWorkersTaskExecutionScheduler extends AbstractTaskExecut
 	private RandomTaskExecutionScheduler randomTaskScheduler;
 
 	private MinAssignedWorkersTaskExecutionScheduler() {
-		this.comparator = MinAssignedWorkerTaskExecutionSortingComparator.newInstance();
+		this.comparator = MinAssignedWorkerTaskExecutionSortingComparator.create();
 	}
 
-	public static MinAssignedWorkersTaskExecutionScheduler newInstance() {
+	public static MinAssignedWorkersTaskExecutionScheduler create() {
 		return new MinAssignedWorkersTaskExecutionScheduler().randomizeFirstTask(true);
 	}
 
