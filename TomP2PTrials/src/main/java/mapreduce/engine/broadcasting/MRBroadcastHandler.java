@@ -2,7 +2,7 @@ package mapreduce.engine.broadcasting;
 
 import java.io.IOException;
 import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.SortedMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	private static Logger logger = LoggerFactory.getLogger(MRBroadcastHandler.class);
 
 	private String owner;
-	private TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs;
+	private SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs;
 	private IDHTConnectionProvider dhtConnectionProvider;
 
 	private MRBroadcastHandler() {
@@ -45,32 +45,38 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
-				Job job = getJob(bcMessage.inputDomain().jobId());
-				if (job != null) {
-					if (owner != null && !bcMessage.outputDomain().executor().equals(owner)) { // Don't receive it if I sent it to myself
-						jobs.get(job).add(bcMessage);
-					}
-				} else {
-					dhtConnectionProvider.get(DomainProvider.JOB, bcMessage.inputDomain().jobId()).addListener(new BaseFutureAdapter<FutureGet>() {
-
-						@Override
-						public void operationComplete(FutureGet future) throws Exception {
-							if (future.isSuccess()) {
-								Job job = (Job) future.data().object();
-								jobs.put(job, new PriorityBlockingQueue<>());
-								jobs.get(job).add(bcMessage);
-								logger.info("Successfully retrieved job (" + job.id() + ") from DHT .");
-							} else {
-								logger.info("No success retrieving Job (" + bcMessage.inputDomain().jobId() + ") from DHT. Try again");
-							}
-						}
-					});
-				}
+				addBCMessage(bcMessage);
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 		}
 		return this;
+	}
+
+	private void addBCMessage(IBCMessage bcMessage) {
+		Job job = getJob(bcMessage.inputDomain().jobId());
+		if (job != null) {
+			if (owner != null && !bcMessage.outputDomain().executor().equals(owner)) { // Don't receive it if I sent it to myself
+				jobs.get(job).add(bcMessage);
+			}
+		} else {
+			dhtConnectionProvider.get(DomainProvider.JOB, bcMessage.inputDomain().jobId()).addListener(new BaseFutureAdapter<FutureGet>() {
+
+				@Override
+				public void operationComplete(FutureGet future) throws Exception {
+					if (future.isSuccess()) {
+						if (future.data() != null) {
+							Job job = (Job) future.data().object();
+							jobs.put(job, new PriorityBlockingQueue<>());
+							jobs.get(job).add(bcMessage);
+							logger.info("Successfully retrieved job (" + job.id() + ") from DHT .");
+						}
+					} else {
+						logger.info("No success retrieving Job (" + bcMessage.inputDomain().jobId() + ") from DHT. Try again");
+					}
+				}
+			});
+		}
 	}
 
 	private Job getJob(String jobId) {
@@ -87,7 +93,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		return this;
 	}
 
-	public MRBroadcastHandler jobQueues(TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
+	public MRBroadcastHandler jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
 		this.jobs = jobs;
 		return this;
 	}

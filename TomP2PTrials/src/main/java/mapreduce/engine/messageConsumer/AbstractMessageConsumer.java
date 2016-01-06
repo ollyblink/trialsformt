@@ -1,5 +1,6 @@
 package mapreduce.engine.messageConsumer;
 
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.broadcasting.IBCMessage;
 import mapreduce.execution.job.Job;
+import mapreduce.utils.SyncedCollectionProvider;
 
 /**
  * <code>MessageConsumer</code> stores incoming <code>IBCMessage</code> on a queue for future processing
@@ -19,19 +21,19 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	protected static Logger logger = LoggerFactory.getLogger(AbstractMessageConsumer.class);
 
-	protected TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs;
+	protected SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs;
 
 	private boolean canTake;
 
 	protected AbstractMessageConsumer() {
-		this.jobs = new TreeMap<>();
+		this.jobs = SyncedCollectionProvider.syncedTreeMap();
 	}
 
 	public PriorityBlockingQueue<IBCMessage> queueFor(Job job) {
 		return jobs.get(job);
 	}
 
-	public TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs() {
+	public SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs() {
 		return jobs;
 	}
 

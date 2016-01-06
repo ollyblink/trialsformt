@@ -7,6 +7,7 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -53,7 +54,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private String id;
 	private String storageFilePath;
 	private int numberOfPeers = DEFAULT_NUMBER_OF_PEERS;
-	private TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs;
+	private SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs;
 	private int currentExecutingPeerCounter = 0;
 
 	private DHTConnectionProvider() {
@@ -94,7 +95,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public DHTConnectionProvider jobQueues(TreeMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
+	public DHTConnectionProvider jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
 		this.jobs = jobs; 
 		if (this.broadcastHandler != null) {
 			this.broadcastHandler.jobQueues(jobs);

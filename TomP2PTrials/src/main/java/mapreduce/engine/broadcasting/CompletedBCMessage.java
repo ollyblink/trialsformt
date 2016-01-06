@@ -13,22 +13,22 @@ public class CompletedBCMessage implements IBCMessage {
 	private final IDomain outputDomain;
 	private final JobProcedureDomain inputDomain;
 	private final BCMessageStatus status;
-	private int tasksSize;
+	private int inputTaskSize;
 
-	private CompletedBCMessage(IDomain outputDomain, JobProcedureDomain inputDomain, BCMessageStatus status, int tasksSize) {
+	private CompletedBCMessage(IDomain outputDomain, JobProcedureDomain inputDomain, BCMessageStatus status, int inputTaskSize) {
 		this.outputDomain = outputDomain;
 		this.inputDomain = inputDomain;
 		this.status = status;
-		this.tasksSize = tasksSize;
+		this.inputTaskSize = inputTaskSize;
 	}
 
-	public static CompletedBCMessage createCompletedTaskBCMessage(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain, int tasksSize) {
-		return new CompletedBCMessage(outputDomain, inputDomain, BCMessageStatus.COMPLETED_TASK, tasksSize);
+	public static CompletedBCMessage createCompletedTaskBCMessage(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain, int inputTaskSize) {
+		return new CompletedBCMessage(outputDomain, inputDomain, BCMessageStatus.COMPLETED_TASK, inputTaskSize);
 	}
 
 	public static CompletedBCMessage createCompletedProcedureBCMessage(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain,
-			int tasksSize) {
-		return new CompletedBCMessage(outputDomain, inputDomain, BCMessageStatus.COMPLETED_PROCEDURE, tasksSize);
+			int inputTaskSize) {
+		return new CompletedBCMessage(outputDomain, inputDomain, BCMessageStatus.COMPLETED_PROCEDURE, inputTaskSize);
 	}
 
 	@Override
@@ -54,15 +54,15 @@ public class CompletedBCMessage implements IBCMessage {
 	@Override
 	public void execute(IMessageConsumer messageConsumer) {
 		if (status == BCMessageStatus.COMPLETED_TASK) {
-			messageConsumer.handleCompletedTask((ExecutorTaskDomain) outputDomain, inputDomain, tasksSize);
+			messageConsumer.handleCompletedTask((ExecutorTaskDomain) outputDomain, inputDomain, inputTaskSize);
 		} else { // status == BCMessageStatus.COMPLETED_PROCEDURE
-			messageConsumer.handleCompletedProcedure((JobProcedureDomain) outputDomain, inputDomain, tasksSize);
+			messageConsumer.handleCompletedProcedure((JobProcedureDomain) outputDomain, inputDomain, inputTaskSize);
 		}
 	}
 
 	@Override
 	public String toString() {
-		return "CompletedBCMessage(" + status + ") [outputDomain=" + outputDomain.toString() + " from inputDomain=" + outputDomain.toString() + "]";
+		return "CompletedBCMessage(" + status + ") [outputDomain=" + outputDomain.toString() + " from inputDomain=" + inputDomain.toString() + ", with " + inputTaskSize +" input tasks]";
 	}
 
 	@Override
@@ -70,6 +70,7 @@ public class CompletedBCMessage implements IBCMessage {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((inputDomain == null) ? 0 : inputDomain.hashCode());
+		result = prime * result + inputTaskSize;
 		result = prime * result + ((outputDomain == null) ? 0 : outputDomain.hashCode());
 		result = prime * result + ((status == null) ? 0 : status.hashCode());
 		return result;
@@ -89,6 +90,8 @@ public class CompletedBCMessage implements IBCMessage {
 				return false;
 		} else if (!inputDomain.equals(other.inputDomain))
 			return false;
+		if (inputTaskSize != other.inputTaskSize)
+			return false;
 		if (outputDomain == null) {
 			if (other.outputDomain != null)
 				return false;
@@ -98,5 +101,7 @@ public class CompletedBCMessage implements IBCMessage {
 			return false;
 		return true;
 	}
+
+ 
 
 }

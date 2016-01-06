@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import org.junit.AfterClass;
@@ -15,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.broadcasting.IBCMessage;
-import mapreduce.engine.executor.MRJobExecutionManager;
 import mapreduce.engine.messageConsumer.AbstractMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
@@ -24,13 +22,11 @@ import mapreduce.execution.context.IContext;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.job.PriorityLevel;
 import mapreduce.execution.procedures.Procedure;
-import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.execution.task.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
-import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -68,8 +64,8 @@ public class MRJobExecutionManagerTest {
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE);
 		Task task = Task.create("file1");
 		String executor = "Executor_1";
-		JobProcedureDomain outputJPD = new JobProcedureDomain(job.id(), executor, "NONE", 0);
-		ExecutorTaskDomain outputETD = new ExecutorTaskDomain(task.key(), executor, task.nextStatusIndexFor(executor), outputJPD);
+		JobProcedureDomain outputJPD =   JobProcedureDomain.create(job.id(), executor, "NONE", 0);
+		ExecutorTaskDomain outputETD =   ExecutorTaskDomain.create(task.key(), executor, task.nextStatusIndexFor(executor), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
 		for (int i = 0; i < 1000; ++i) {
@@ -98,9 +94,9 @@ public class MRJobExecutionManagerTest {
 		dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).awaitUninterruptibly();
 		Task task = Task.create("file1");
 		String executor = "Executor_1";
-		JobProcedureDomain outputJPD = new JobProcedureDomain(job.id(), executor, job.currentProcedure().executable().getClass().getSimpleName(),
+		JobProcedureDomain outputJPD =   JobProcedureDomain.create(job.id(), executor, job.currentProcedure().executable().getClass().getSimpleName(),
 				job.currentProcedure().procedureIndex());
-		ExecutorTaskDomain outputETD = new ExecutorTaskDomain(task.key(), executor, task.nextStatusIndexFor(executor), outputJPD);
+		ExecutorTaskDomain outputETD =   ExecutorTaskDomain.create(task.key(), executor, task.nextStatusIndexFor(executor), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
 		for (int i = 0; i < 50; ++i) {
@@ -123,7 +119,7 @@ public class MRJobExecutionManagerTest {
 		job.incrementProcedureIndex();
 		PriorityBlockingQueue<IBCMessage> bcMessages = new PriorityBlockingQueue<>();
 		Procedure procedure = job.currentProcedure().inputDomain(outputJPD);
-		JobProcedureDomain outputJPD2 = new JobProcedureDomain(job.id(), executor, job.currentProcedure().executable().getClass().getSimpleName(),
+		JobProcedureDomain outputJPD2 =   JobProcedureDomain.create(job.id(), executor, job.currentProcedure().executable().getClass().getSimpleName(),
 				job.currentProcedure().procedureIndex());
 
 		List<Task> tasks = new ArrayList<>();
