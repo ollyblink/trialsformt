@@ -25,7 +25,7 @@ public class Job implements Serializable, Comparable<Job> {
 	// private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
 	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
-	private static final int DEFAULT_MAX_NR_OF_FINISHED_WORKERS = 3;
+	private static final int DEFAULT_MAX_NR_OF_FINISHED_WORKERS = 1;
 
 	/** specifies a unique id for this job */
 	private String id;
@@ -63,7 +63,7 @@ public class Job implements Serializable, Comparable<Job> {
 	 * achieved the same hash, the task is finished). The principle is the same as in tennis: best of 3 or best of 5. Always,
 	 * Math.Round(maxNrOfFinishedWorkersPerTask/2) workers need to achieve the same hash.
 	 */
-	private int maxNrOfFinishedWorkersPerTask;
+	private int nrOfSameResultHash = DEFAULT_MAX_NR_OF_FINISHED_WORKERS;
 
 	/**
 	 * if true, the peer tries to pull tasks from own storage before accessing the dht. If false, locality of data is ignored and instead the dht is
@@ -85,13 +85,12 @@ public class Job implements Serializable, Comparable<Job> {
 		this.currentProcedureIndex = 0;
 		this.procedures = Collections.synchronizedList(new ArrayList<>());
 		// Add initial
-		Procedure procedureInformation = Procedure.create(StartProcedure.create(), 0);
-		this.procedures.add(procedureInformation);
+		Procedure startProcedure = Procedure.create(StartProcedure.create(), 0).nrOfSameResultHash(nrOfSameResultHash);
+		this.procedures.add(startProcedure);
 	}
 
 	public static Job create(String jobSubmitterID, PriorityLevel... priorityLevel) {
-		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(true)
-				.maxNrOfFinishedWorkersPerTask(DEFAULT_MAX_NR_OF_FINISHED_WORKERS);
+		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(true);
 	}
 
 	public String id() {
@@ -122,7 +121,7 @@ public class Job implements Serializable, Comparable<Job> {
 		if (index < 0) {
 			return procedures.get(0);
 		} else if (index >= procedures.size()) {
-			return Procedure.create(EndProcedure.create(), procedures.size());
+			return Procedure.create(EndProcedure.create(), procedures.size()).nrOfSameResultHash(nrOfSameResultHash);
 		} else {
 			return procedures.get(index);
 		}
@@ -147,7 +146,7 @@ public class Job implements Serializable, Comparable<Job> {
 	 * @return
 	 */
 	public Job addSucceedingProcedure(IExecutable procedure) {
-		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size());
+		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size()).nrOfSameResultHash(nrOfSameResultHash);
 		this.procedures.add(procedureInformation);
 		return this;
 	}
@@ -158,13 +157,20 @@ public class Job implements Serializable, Comparable<Job> {
 		}
 	}
 
-	public int maxNrOfFinishedWorkersPerTask() {
-		return maxNrOfFinishedWorkersPerTask;
+	public int nrOfSameResultHash() {
+		return nrOfSameResultHash;
 	}
 
-	public Job maxNrOfFinishedWorkersPerTask(int maxNrOfFinishedWorkersPerTask) {
-		this.maxNrOfFinishedWorkersPerTask = maxNrOfFinishedWorkersPerTask;
+	public Job nrOfSameResultHash(int nrOfSameResultHash) {
+		this.nrOfSameResultHash = nrOfSameResultHash; 
+		updateNrOfSameResultHash();
 		return this;
+	}
+
+	private void updateNrOfSameResultHash() {
+		for(Procedure p: this.procedures) {
+			p.nrOfSameResultHash(this.nrOfSameResultHash);
+		}
 	}
 
 	public Job fileInputFolderPath(String fileInputFolderPath) {

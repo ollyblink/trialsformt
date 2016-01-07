@@ -35,7 +35,7 @@ import mapreduce.utils.Tuple;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
-public class MRJobSubmissionMessageConsumerTest2 {
+public class MRJobSubmissionMessageConsumerTest {
 
 	private static final String[] TEST_KEYS = { "hello", "world", "this", "is", "a", "test" };
 	private static MRJobExecutionManagerMessageConsumer testMessageConsumer;
@@ -63,7 +63,7 @@ public class MRJobSubmissionMessageConsumerTest2 {
 	}
 
 	private static void resetJob() {
-		job = Job.create("TEST", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountMapper.create()).maxNrOfFinishedWorkersPerTask(5);
+		job = Job.create("TEST", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountMapper.create()).nrOfSameResultHash(5);
 		Procedure currentProc = job.previousProcedure();
 
 		for (String taskKey : TEST_KEYS) {
@@ -162,12 +162,12 @@ public class MRJobSubmissionMessageConsumerTest2 {
 		job.isActive(true);
 		List<Task> tasks = job.currentProcedure().tasks();
 		for (Task task : tasks) {
-			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.EXECUTING_TASK), job.maxNrOfFinishedWorkersPerTask());
+			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.EXECUTING_TASK), job.nrOfSameResultHash());
 			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)),
-					job.maxNrOfFinishedWorkersPerTask());
-			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), job.maxNrOfFinishedWorkersPerTask());
+					job.nrOfSameResultHash());
+			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.EXECUTING_TASK), job.nrOfSameResultHash());
 			Tasks.updateStati(task, TaskResult.create().sender(peer2).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)),
-					job.maxNrOfFinishedWorkersPerTask());
+					job.nrOfSameResultHash());
 		}
 		testMessageConsumer.jobs().add(job);
 		assertEquals(1, testMessageConsumer.jobs().size());
@@ -185,7 +185,7 @@ public class MRJobSubmissionMessageConsumerTest2 {
 		for (String taskKey : TEST_KEYS) {
 			copy.add(Task.create(taskKey, job.previousProcedure().jobProcedureDomain()));
 		}
-		int max = job.maxNrOfFinishedWorkersPerTask();
+		int max = job.nrOfSameResultHash();
 		for (Task task : copy) {
 			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.EXECUTING_TASK), max);
 			Tasks.updateStati(task, TaskResult.create().sender(peer1).status(BCMessageStatus.FINISHED_TASK).resultHash(new Number160(1)), max);

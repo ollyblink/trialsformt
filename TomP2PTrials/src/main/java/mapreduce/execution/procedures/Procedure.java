@@ -28,9 +28,10 @@ public final class Procedure implements IFinishable, Serializable {
 	/** Location of keys for next procedure */
 	private List<JobProcedureDomain> outputDomains;
 	/** How many times this object needs to be executed before it is declared finished */
-	private int nrOfSameResultHash;
+	private int nrOfSameResultHash = 1;
 	/** Specifies if the task is currently executed */
 	private volatile boolean isActive;
+	/** Number of tasks for this procedure (may be different from tasks.size() because tasks are pulled after another and not all at the same time)*/
 	private int tasksSize;
 	private JobProcedureDomain resultOutputDomain;
 
@@ -90,7 +91,7 @@ public final class Procedure implements IFinishable, Serializable {
 	public Procedure addTask(Task task) {
 		synchronized (this.tasks) {
 			if (!this.tasks.contains(task)) {
-				this.tasks.add(task);
+				this.tasks.add(task.nrOfSameResultHash(nrOfSameResultHash));
 			}
 		}
 		return this;
@@ -99,7 +100,14 @@ public final class Procedure implements IFinishable, Serializable {
 	public Procedure tasks(List<Task> tasks) {
 		this.tasks.clear();
 		this.tasks.addAll(tasks);
+		updateNrOfSameResultHash();
 		return this;
+	}
+
+	private void updateNrOfSameResultHash() {
+		for(Task task: tasks) {
+			task.nrOfSameResultHash(nrOfSameResultHash);
+		}
 	}
 
 	public Procedure tasksSize(int tasksSize) {
@@ -144,6 +152,7 @@ public final class Procedure implements IFinishable, Serializable {
 	@Override
 	public Procedure nrOfSameResultHash(int nrOfSameResultHash) {
 		this.nrOfSameResultHash = nrOfSameResultHash;
+		updateNrOfSameResultHash();
 		return this;
 	}
 

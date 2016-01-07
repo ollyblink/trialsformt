@@ -27,6 +27,7 @@ public class Task implements IFinishable, Serializable {
 	private volatile boolean isActive;
 	/** final output domain for where this tasks output key/values are stored */
 	private IDomain resultOutputDomain;
+	/** Set true if this tasks's result keys and values were successfully transferred from executor task domain to executor job procedure domain*/
 	private volatile boolean isInProcedureDomain;
 
 	private Task(String key) {
