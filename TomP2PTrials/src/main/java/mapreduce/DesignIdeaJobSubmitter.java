@@ -15,7 +15,7 @@ public class DesignIdeaJobSubmitter {
 		int bootstrapPort = 4000;
 
 		MRJobSubmissionManager submitter = MRJobSubmissionManager
-				.newInstance(DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort));
+				.create(DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort));
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";;

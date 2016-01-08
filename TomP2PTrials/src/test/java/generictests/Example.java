@@ -6,12 +6,14 @@ import java.util.Random;
 import java.util.Scanner;
 
 import mapreduce.engine.broadcasting.MRBroadcastHandler;
+import mapreduce.engine.broadcasting.MRBroadcastHandlerTest;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.natpmp.MessageResponseInterface;
 import net.tomp2p.p2p.BroadcastHandler;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
@@ -144,25 +146,38 @@ public class Example {
 	}
 
 	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, MRBroadcastHandler bcHandler) throws IOException {
+		return createAndAttachPeersDHT(nr, port, bcHandler, null);
+	}
+
+	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, MRBroadcastHandler bcHandler, PeerDHT master) throws IOException {
 		StructuredBroadcastHandler bcH = null;
 		if (bcHandler == null) {
 			bcH = new MyBroadcastHandler();
-		}else{
+		} else {
 			bcH = bcHandler;
-		} 
+		}
+		// bcH = MRBroadcastHandler.create();
 		PeerDHT[] peers = new PeerDHT[nr];
-		for (int i = 0; i < nr; i++) {
-			if (i == 0) {
-				peers[0] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).broadcastHandler(bcH).start()).start();
-			} else {
-				peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).masterPeer(peers[0].peer()).start()).start();
+		if (master == null) {
+			for (int i = 0; i < nr; i++) {
+				if (i == 0) {
+					peers[0] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).broadcastHandler(bcH).start()).start();
+					System.err.println("Master: " + peers[0].peerID() + ", broadcast handler: " + bcH);
+				} else {
+					peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).masterPeer(peers[0].peer()).start())
+							.start();
+					System.err.println("Master: " + peers[0].peerID() + ", slave: " + peers[i].peerID() + ", broadcast handler: " + bcH);
+				}
+			}
+		} else {
+			for (int i = 0; i < nr; i++) {
+				peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).masterPeer(master.peer()).start()).start();
+
+				System.err.println("Master: " + master.peerID() + ", slave: " + peers[i].peerID() + ", broadcast handler: " + bcH);
 			}
 		}
-		System.err.println("createAndAttachPeersDHT: ALL PEERS");
-		for(PeerDHT p: peers){
-			System.err.println(p.peerID());
-		}
 		return peers;
+
 	}
 
 	public static PeerTracker[] createAndAttachPeersTracker(PeerDHT[] peers) throws IOException {

@@ -24,11 +24,11 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	private static Logger logger = LoggerFactory.getLogger(MRBroadcastHandler.class);
 
 	private String owner;
-	private SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs;
+	private SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobQueues;
 	private IDHTConnectionProvider dhtConnectionProvider;
 
 	private MRBroadcastHandler() {
-
+		logger.info("Created broadcasthandler");
 	}
 
 	public static MRBroadcastHandler create() {
@@ -37,7 +37,8 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
-		super.receive(message);
+
+		logger.info(owner + " received message");
 		if (owner == null) {
 			logger.info("Owner not set! call owner(String owner)");
 		}
@@ -45,30 +46,30 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
+				logger.info("message is " + bcMessage);
 				addBCMessage(bcMessage);
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 		}
-		return this;
+		return super.receive(message);
 	}
 
 	private void addBCMessage(IBCMessage bcMessage) {
+
 		Job job = getJob(bcMessage.inputDomain().jobId());
-		if (job != null) {
-			if (owner != null && !bcMessage.outputDomain().executor().equals(owner)) { // Don't receive it if I sent it to myself
-				jobs.get(job).add(bcMessage);
-			}
-		} else {
+		logger.info("Job is: " + job);
+		if (job == null) {
 			dhtConnectionProvider.get(DomainProvider.JOB, bcMessage.inputDomain().jobId()).addListener(new BaseFutureAdapter<FutureGet>() {
 
 				@Override
 				public void operationComplete(FutureGet future) throws Exception {
+					logger.info("Waiting");
 					if (future.isSuccess()) {
 						if (future.data() != null) {
 							Job job = (Job) future.data().object();
-							jobs.put(job, new PriorityBlockingQueue<>());
-							jobs.get(job).add(bcMessage);
+							jobQueues.put(job, new PriorityBlockingQueue<>());
+							jobQueues.get(job).add(bcMessage);
 							logger.info("Successfully retrieved job (" + job.id() + ") from DHT .");
 						}
 					} else {
@@ -76,11 +77,19 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 					}
 				}
 			});
+		} else {
+			logger.info("Before owner check");
+
+			if (owner != null && !bcMessage.outputDomain().executor().equals(owner)) { // Don't receive it if I sent it to myself
+				logger.info("Added message "+bcMessage+" for job "+ job + " to queue.");
+				jobQueues.get(job).add(bcMessage);
+			}
 		}
+
 	}
 
 	private Job getJob(String jobId) {
-		for (Job job : jobs.keySet()) {
+		for (Job job : jobQueues.keySet()) {
 			if (job.id().equals(jobId)) {
 				return job;
 			}
@@ -93,14 +102,19 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		return this;
 	}
 
-	public MRBroadcastHandler jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
-		this.jobs = jobs;
+	public MRBroadcastHandler jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobQueues) {
+		this.jobQueues = jobQueues;
 		return this;
 	}
 
 	public MRBroadcastHandler owner(String owner) {
+		logger.info("Added owner: " + owner);
 		this.owner = owner;
 		return this;
+	}
+
+	public SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobQueues() {
+		return this.jobQueues;
 	}
 
 }

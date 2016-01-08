@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import net.tomp2p.peers.Number160;
 
-public interface IDomain extends Serializable {
+public interface IDomain extends Serializable, Cloneable {
 
 	public Number160 resultHash();
 
@@ -26,4 +26,10 @@ public interface IDomain extends Serializable {
 
 	@Override
 	public String toString();
+
+	Object clone() throws CloneNotSupportedException;
+
+	public int procedureIndex();
+ 
+
 }

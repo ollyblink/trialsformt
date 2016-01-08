@@ -15,6 +15,9 @@ public class JobProcedureDomain implements IDomain {
 	private int procedureSubmissionCount;
 	private long procedureCreationTime;
 	private Number160 resultHash;
+	/** Number of tasks for this procedure (may be different from tasks.size() because tasks are pulled after another and not all at the same time) */
+	private int tasksSize;
+	private int nrOfFinishedTasks;
 
 	private JobProcedureDomain() {
 
@@ -133,6 +136,35 @@ public class JobProcedureDomain implements IDomain {
 	@Override
 	public String toString() {
 		return DomainProvider.INSTANCE.jobProcedureDomain(this);
+	}
+
+	@Override
+	public JobProcedureDomain clone() {
+		JobProcedureDomain jpd = null;
+		try {
+			jpd = (JobProcedureDomain) super.clone();
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		return jpd;
+	}
+
+	public int tasksSize() {
+		return tasksSize;
+	}
+
+	public JobProcedureDomain tasksSize(int tasksSize) {
+		this.tasksSize = tasksSize;
+		return this;
+	}
+
+	public int nrOfFinishedTasks() {
+		return this.nrOfFinishedTasks;
+	}
+
+	public JobProcedureDomain nrOfFinishedTasks(int nrOfFinishedTasks) {
+		this.nrOfFinishedTasks = nrOfFinishedTasks;
+		return this;
 	}
 
 }

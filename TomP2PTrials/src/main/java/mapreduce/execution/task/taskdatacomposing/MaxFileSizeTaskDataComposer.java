@@ -9,7 +9,6 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 	private String fileEncoding = "UTF-8";
 	private String splitValue = "\n";
 
-	private long fileSizeCounter = 0;
 	private String data = "";
 
 	public static MaxFileSizeTaskDataComposer create() {
@@ -24,11 +23,9 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 			String currentData = this.data;
 			reset();
 			this.data = value + this.splitValue;
-			this.fileSizeCounter = data.getBytes(Charset.forName(this.fileEncoding)).length;
 			return currentData;
 		} else {
 			this.data = newData;
-			this.fileSizeCounter = newFileSizeCounter;
 			return null;
 		}
 	}
@@ -36,7 +33,6 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 	@Override
 	public void reset() {
 		this.data = "";
-		this.fileSizeCounter = 0;
 	}
 
 	@Override

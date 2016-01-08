@@ -12,21 +12,29 @@ import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.PeerDHT;
 
 public class TestUtils {
-	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers, Boolean... hasBCHandler) {
+	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers) {
+		return getTestConnectionProvider(port, nrOfPeers, true, null);
+
+	}
+
+	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers, PeerDHT master) {
+		return getTestConnectionProvider(port, nrOfPeers, true, master);
+
+	}
+
+	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers, boolean hasBCHandler, PeerDHT master) {
 		String bootstrapIP = "";
 		int bootstrapPort = port;
 		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
 		List<PeerDHT> peers = SyncedCollectionProvider.syncedArrayList();
 		PeerDHT[] peerArray = null;
 		MRBroadcastHandler bcHandler = MRBroadcastHandler.create();
-		if (hasBCHandler != null && hasBCHandler.length == 1 && !hasBCHandler[0]) {
+		if (!hasBCHandler) {
 			bcHandler = null;
 		}
-//		System.err.println(bcHandler);
 		try {
-			peerArray = Example.createAndAttachPeersDHT(nrOfPeers, bootstrapPort, bcHandler);
+			peerArray = Example.createAndAttachPeersDHT(nrOfPeers, bootstrapPort, bcHandler, master);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

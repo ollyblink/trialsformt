@@ -4,7 +4,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import mapreduce.execution.context.DHTStorageContextTest;
-import mapreduce.execution.jobtask.JobTest;
+import mapreduce.execution.job.JobTest;
 import mapreduce.execution.task.TaskTest;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersComparatorTest;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskSchedulerTest;

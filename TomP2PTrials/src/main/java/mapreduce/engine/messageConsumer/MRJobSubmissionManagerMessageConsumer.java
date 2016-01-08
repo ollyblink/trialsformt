@@ -11,6 +11,7 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 	private MRJobSubmissionManager jobSubmissionManager;
 
 	private MRJobSubmissionManagerMessageConsumer(MRJobSubmissionManager jobSubmissionManager) {
+		super();
 		this.jobSubmissionManager = jobSubmissionManager;
 	}
 
@@ -23,15 +24,13 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 		return (MRJobSubmissionManagerMessageConsumer) super.canTake(canTake);
 	}
 
-
-
 	@Override
-	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain, int tasksSize) {
+	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
 
 	}
 
 	@Override
-	public void handleCompletedProcedure(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain, int tasksSize) {
+	public void handleCompletedProcedure(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
 		Job job = getJob(inputDomain.jobId());
 		if (job.jobSubmitterID().equals(jobSubmissionManager.id())) {
 			if (outputDomain.procedureSimpleName().equals(EndProcedure.class.getSimpleName())) {

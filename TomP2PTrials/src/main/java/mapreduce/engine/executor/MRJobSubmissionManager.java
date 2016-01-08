@@ -51,16 +51,16 @@ public class MRJobSubmissionManager {
 	private JobProcedureDomain resultDomain;
 	private String outputFolder;
 
-	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider, List<Job> jobs) {
+	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider) {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.create(this).canTake(true);
 		new Thread(messageConsumer).start();
 		this.dhtConnectionProvider = dhtConnectionProvider.owner(this.id).jobQueues(messageConsumer.jobs());
 	}
 
-	public static MRJobSubmissionManager newInstance(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobSubmissionManager(dhtConnectionProvider, Collections.synchronizedList(new ArrayList<>()))
-				.taskComposer(DEFAULT_TASK_DATA_COMPOSER).outputFolder(System.getProperty("user.dir") + "/tmp/");
+	public static MRJobSubmissionManager create(IDHTConnectionProvider dhtConnectionProvider) {
+		return new MRJobSubmissionManager(dhtConnectionProvider).taskComposer(DEFAULT_TASK_DATA_COMPOSER)
+				.outputFolder(System.getProperty("user.dir") + "/tmp/");
 	}
 
 	public MRJobSubmissionManager outputFolder(String outputFolder) {
@@ -91,10 +91,10 @@ public class MRJobSubmissionManager {
 		File file = new File(job.fileInputFolderPath());
 		FileUtils.INSTANCE.getFiles(file, keysFilePaths);
 
-		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, null, 0);
+		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, "INITIAL", 0).tasksSize(keysFilePaths.size());
 		JobProcedureDomain outputDomain = JobProcedureDomain.create(job.id(), id, job.currentProcedure().executable().getClass().getSimpleName(),
 				job.currentProcedure().procedureIndex());
-		job.currentProcedure().tasksSize(keysFilePaths.size()).nrOfSameResultHash(1).inputDomain(inputDomain).addOutputDomain(outputDomain);
+		job.currentProcedure().nrOfSameResultHash(1).inputDomain(inputDomain).addOutputDomain(outputDomain);
 
 		List<FuturePut> futurePutValues = SyncedCollectionProvider.syncedArrayList();
 		List<FuturePut> futurePutKeys = SyncedCollectionProvider.syncedArrayList();
@@ -131,11 +131,20 @@ public class MRJobSubmissionManager {
 						@Override
 						public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
 							if (future.isSuccess()) {
-								CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(
-										job.currentProcedure().resultOutputDomain(), job.currentProcedure().inputDomain(),
-										job.currentProcedure().tasksSize());
-								messageConsumer.queueFor(job).add(msg);// Adds it to itself, does not receive broadcasts...
-								dhtConnectionProvider.broadcastCompletion(msg);
+								dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).addListener(new BaseFutureAdapter<FuturePut>() {
+
+									@Override
+									public void operationComplete(FuturePut future) throws Exception {
+										logger.info("Broadcast initial complete procedure");
+										JobProcedureDomain inputDomain = job.currentProcedure().inputDomain()
+												.nrOfFinishedTasks(job.currentProcedure().nrOfFinishedTasks());
+										CompletedBCMessage msg = CompletedBCMessage
+												.createCompletedProcedureBCMessage(job.currentProcedure().resultOutputDomain(), inputDomain);
+										messageConsumer.queueFor(job).add(msg);// Adds it to itself, does not receive broadcasts...
+										dhtConnectionProvider.broadcastCompletion(msg);
+									}
+
+								});
 							} else {
 								logger.info("Could not add keys for " + job.fileInputFolderPath());
 							}

@@ -9,10 +9,12 @@ import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.StartProcedure;
+import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
+import mapreduce.utils.SyncedCollectionProvider;
 
-public class Job implements Serializable, Comparable<Job> {
+public class Job implements Serializable, Comparable<Job>, Cloneable {
 
 	// private static Logger logger = LoggerFactory.getLogger(Job.class);
 
@@ -31,13 +33,13 @@ public class Job implements Serializable, Comparable<Job> {
 	private String id;
 
 	/** identifier for the submitting entity (@see{MRJobSubmissionManager}) */
-	private final String jobSubmitterID;
+	private String jobSubmitterID;
 
 	/** Used for order of jobs @see{<code>PriorityLevel</code> */
-	private final PriorityLevel priorityLevel;
+	private PriorityLevel priorityLevel;
 
 	/** Used for order of jobs. System.currentTimeInMillis(): long */
-	private final Long creationTime;
+	private Long creationTime;
 	/**
 	 * Contains all procedures for this job. Processing is done from 0 to procedures.size()-1, meaning that the first procedure added using
 	 * Job.nextProcedure(procedure) is also the first one to be processed.
@@ -83,25 +85,27 @@ public class Job implements Serializable, Comparable<Job> {
 				: priorityLevel[0]);
 		this.creationTime = System.currentTimeMillis();
 		this.currentProcedureIndex = 0;
-		this.procedures = Collections.synchronizedList(new ArrayList<>());
+		this.procedures = SyncedCollectionProvider.syncedArrayList();
 		// Add initial
 		Procedure startProcedure = Procedure.create(StartProcedure.create(), 0).nrOfSameResultHash(nrOfSameResultHash);
 		this.procedures.add(startProcedure);
 	}
 
-	public static Job create(String jobSubmitterID, PriorityLevel... priorityLevel) {
+	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel, boolean useLocalStorageFirst) {
+		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(useLocalStorageFirst);
+	}
+
+	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel) {
 		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(true);
 	}
 
+	public static Job create(String jobSubmitterID) {
+		return new Job(jobSubmitterID, PriorityLevel.MODERATE).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(true);
+	}
 	public String id() {
 		// S == Submitter
 		// SNR == Submission counter
 		return this.id + "_S(" + jobSubmitterID + ")";// _SNR(" + jobSubmissionCounter + ")";
-	}
-
-	public Job id(String id) {
-		this.id = id;
-		return this;
 	}
 
 	public String jobSubmitterID() {
@@ -162,13 +166,13 @@ public class Job implements Serializable, Comparable<Job> {
 	}
 
 	public Job nrOfSameResultHash(int nrOfSameResultHash) {
-		this.nrOfSameResultHash = nrOfSameResultHash; 
+		this.nrOfSameResultHash = nrOfSameResultHash;
 		updateNrOfSameResultHash();
 		return this;
 	}
 
 	private void updateNrOfSameResultHash() {
-		for(Procedure p: this.procedures) {
+		for (Procedure p : this.procedures) {
 			p.nrOfSameResultHash(this.nrOfSameResultHash);
 		}
 	}
@@ -270,5 +274,44 @@ public class Job implements Serializable, Comparable<Job> {
 	// this.isActive = isActive;
 	// return this;
 	// }
+
+	@Override
+	public Job clone() {
+
+		try {
+			Job job = (Job) super.clone();
+
+			// job.creationTime = creationTime;
+			// job.currentProcedureIndex = currentProcedureIndex;
+			// job.fileInputFolderPath = fileInputFolderPath;
+			// job.id = id;
+			// job.jobSubmitterID = jobSubmitterID;
+			// job.maxFileSize = maxFileSize;
+			// job.nrOfSameResultHash = nrOfSameResultHash;
+			// job.priorityLevel = priorityLevel;
+			// job.useLocalStorageFirst = useLocalStorageFirst;
+			job.procedures = SyncedCollectionProvider.syncedArrayList();
+			for (Procedure p : procedures) {
+				job.procedures.add(p.clone());
+			}
+			return job;
+		} catch (CloneNotSupportedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public static void main(String[] args) {
+		Job job = Job.create("ME", PriorityLevel.HIGH).addSucceedingProcedure(WordCountReducer.create()).fileInputFolderPath("File input path")
+				.maxFileSize(FileSize.EIGHT_BYTES).nrOfSameResultHash(20);
+		Job job2 = job.clone();
+		System.out.println(job.currentProcedureIndex + ", " + job.fileInputFolderPath + ", " + job.id + ", " + job.jobSubmitterID + ", "
+				+ job.maxFileSize + ", " + job.nrOfSameResultHash + ", " + job.creationTime + ", " + job.serialVersionUID + ", "
+				+ job.useLocalStorageFirst + ", " + job.procedures);
+		System.out.println(job2.currentProcedureIndex + ", " + job2.fileInputFolderPath + ", " + job2.id + ", " + job2.jobSubmitterID + ", "
+				+ job2.maxFileSize + ", " + job2.nrOfSameResultHash + ", " + job2.creationTime + ", " + job2.serialVersionUID + ", "
+				+ job2.useLocalStorageFirst + ", " + job2.procedures);
+	}
 
 }

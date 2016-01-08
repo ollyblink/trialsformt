@@ -1,6 +1,7 @@
 package mapreduce.storage;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.SortedMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -10,6 +11,7 @@ import mapreduce.engine.broadcasting.MRBroadcastHandler;
 import mapreduce.execution.job.Job;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.storage.Data;
 
 public interface IDHTConnectionProvider {
@@ -106,5 +108,7 @@ public interface IDHTConnectionProvider {
 	public void broadcastCompletion(CompletedBCMessage completedMessage);
 
 	public IDHTConnectionProvider jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs);
+
+	public List<PeerDHT> peerDHTs();
 
 }

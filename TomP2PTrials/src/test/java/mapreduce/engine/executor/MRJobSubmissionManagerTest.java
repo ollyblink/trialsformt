@@ -40,10 +40,10 @@ public class MRJobSubmissionManagerTest {
 
 	@Test
 	public void test() throws IOException {
-		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";
+		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
 
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(5001, 1);
-		jobSubmissionManager = MRJobSubmissionManager.newInstance(dhtConnectionProvider);
+		jobSubmissionManager = MRJobSubmissionManager.create(dhtConnectionProvider);
 
 		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_KILO_BYTES);
 		jobSubmissionManager.submit(job);

@@ -1,7 +1,6 @@
 package mapreduce.engine.messageConsumer;
 
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import org.slf4j.Logger;
@@ -39,8 +38,9 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 
 	@Override
 	public void run() {
-
+		logger.info(jobs + "");
 		while (jobs.isEmpty()) {
+			logger.info("Waiting for first job");
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
@@ -49,14 +49,18 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 		}
 		try {
 			while (canTake()) {
-				logger.info("Before Take message");
-				IBCMessage nextMessage = jobs.get(jobs.firstKey()).take();
-				logger.info("Execute next message: " + nextMessage);
-				nextMessage.execute(this);
+				tryTake();
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+	}
+
+	protected void tryTake() throws InterruptedException {
+		logger.info("Before Take message");
+		IBCMessage nextMessage = jobs.get(jobs.firstKey()).take();
+		logger.info("Execute next message: " + nextMessage);
+		nextMessage.execute(this);
 	}
 
 	@Override

@@ -96,7 +96,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public DHTConnectionProvider jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
-		this.jobs = jobs; 
+		this.jobs = jobs;
 		if (this.broadcastHandler != null) {
 			this.broadcastHandler.jobQueues(jobs);
 		}
@@ -159,7 +159,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 								// bootstrapper
 		if (broadcastHandler == null) {
 			this.broadcastHandler = MRBroadcastHandler.create().dhtConnectionProvider(this).jobQueues(jobs);
-		} 
+		}
 
 		for (int i = 0; i < this.numberOfPeers; ++i) {
 
@@ -367,6 +367,11 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public MRBroadcastHandler broadcastHandler() {
 		return broadcastHandler;
+	}
+
+	@Override
+	public List<PeerDHT> peerDHTs() { 
+		return peerDHTs;
 	}
 
 }

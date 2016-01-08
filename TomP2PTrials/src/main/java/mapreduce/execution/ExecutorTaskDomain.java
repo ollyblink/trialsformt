@@ -15,6 +15,7 @@ public class ExecutorTaskDomain implements IDomain {
 	private long taskCreationTime;
 	private Number160 resultHash;
 	private JobProcedureDomain jobProcedureDomain;
+	private int procedureIndex;
 
 	public static ExecutorTaskDomain create(String taskId, String taskExecutor, int taskStatusIndex, JobProcedureDomain jobProcedureDomain) {
 		return new ExecutorTaskDomain(taskId, taskExecutor, taskStatusIndex, jobProcedureDomain);
@@ -132,6 +133,29 @@ public class ExecutorTaskDomain implements IDomain {
 	@Override
 	public ExecutorTaskDomain resultHash(Number160 resultHash) {
 		this.resultHash = resultHash;
+		return this;
+	}
+
+	@Override
+	public ExecutorTaskDomain clone() {
+		ExecutorTaskDomain etd = null;
+		try {
+			etd = (ExecutorTaskDomain) super.clone();
+			etd.jobProcedureDomain = jobProcedureDomain.clone();
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		return etd;
+
+	}
+
+	@Override
+	public int procedureIndex() {
+		return this.procedureIndex;
+	}
+
+	public ExecutorTaskDomain procedureIndex(int procedureIndex) {
+		this.procedureIndex = procedureIndex;
 		return this;
 	}
 

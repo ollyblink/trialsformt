@@ -1,4 +1,4 @@
-package mapreduce.execution.jobtask;
+package mapreduce.execution.job;
 
 import static org.junit.Assert.assertEquals;
 

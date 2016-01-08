@@ -31,7 +31,8 @@ public enum DomainProvider {
 		// S = procedureSubmissionCount
 		// C = procedureCreationTime
 		return "JPD[J(" + jobProcedureDomainParameter.jobId() + ")_E(" + jobProcedureDomainParameter.executor() + ")_P("
-				+ jobProcedureDomainParameter.procedureSimpleName().toUpperCase() + ")_PI(" + jobProcedureDomainParameter.procedureIndex() + ")_S("
+				+ jobProcedureDomainParameter.procedureSimpleName().toUpperCase() + 
+				")_PI(" + jobProcedureDomainParameter.procedureIndex() + ")_S("
 				+ jobProcedureDomainParameter.submissionCount() + ")_C(" + jobProcedureDomainParameter.creationTime() + ")]";
 	}
 

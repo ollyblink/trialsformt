@@ -41,7 +41,7 @@ public class MRBroadcastHandlerTest {
 		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), "ME", "WORDCOUNTREDUCER", 2);
 
 		// Before job was put into dht
-		CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(outputDomain, inputDomain, 10);
+		CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(outputDomain, inputDomain);
 		dht.broadcastCompletion(msg);
 		Thread.sleep(1000);
 		assertEquals(0, jobs.size());
