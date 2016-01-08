@@ -46,7 +46,7 @@ public class MRJobExecutionManager {
 
 	private ITaskScheduler taskExecutionScheduler;
 
-	private int maxNrOfExecutions;
+	private int maxNrOfExecutions = 1;
 
 	private MRJobExecutionManager() {
 
@@ -147,6 +147,7 @@ public class MRJobExecutionManager {
 	}
 
 	public void executeTask(PriorityBlockingQueue<IBCMessage> bcMessages, Task task, Procedure procedure, JobProcedureDomain outputJPD) {
+		logger.info("Can execute? "+executionCounter +"<"+maxNrOfExecutions +"?"+canExecute());
 		if (canExecute()) {
 			this.executionCounter++;
 			task.isActive(true);
@@ -208,18 +209,19 @@ public class MRJobExecutionManager {
 	private void tryExecutingTask(Job job, PriorityBlockingQueue<IBCMessage> bcMessages, Procedure procedure, JobProcedureDomain toJPD) {
 		if (procedure.tasks().size() != 0) {
 			Task nextTask = taskExecutionScheduler.schedule(procedure.tasks());
+
 			if (nextTask == null) {
 				if (procedure.inputDomain().tasksSize() > procedure.tasks().size()) {
 					logger.info("Do nothing, as there may come more tasks from dht or broadcast");
 				} else if (procedure.inputDomain().tasksSize() == procedure.tasks().size()) {
 					procedure.inputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks());
 					transferData(bcMessages, procedure.tasks(), toJPD, procedure.inputDomain());
-
 				} else {// if (procedure.tasksSize() < procedure.tasks().size()) {
 					logger.warn("Can only happen when a task is received from a broadcast first --> Set in broadcast (should have happend)");
 				}
 			} else {
 				logger.info("Executing task: " + nextTask.key());
+				nextTask.addAssignedExecutor(id);
 				executeTask(bcMessages, nextTask, procedure, toJPD);
 			}
 		} else {
@@ -383,7 +385,7 @@ public class MRJobExecutionManager {
 	}
 
 	public boolean canExecute() {
-		return executionCounter < this.maxNrOfExecutions;
+		return this.executionCounter < this.maxNrOfExecutions;
 	}
 
 	// End Execution

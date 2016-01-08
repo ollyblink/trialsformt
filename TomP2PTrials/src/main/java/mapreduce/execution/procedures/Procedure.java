@@ -19,20 +19,12 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 
 	private List<Task> tasks;
 	/** Location of keys for this procedure */
-	private JobProcedureDomain inputDomain;
-//	/** Location of keys for next procedure */
-//	private List<JobProcedureDomain> outputDomains;
-	/** How many times this object needs to be executed before it is declared finished */
-	private int nrOfSameResultHash = 1;
-	/** Specifies if the task is currently executed */
-	private volatile boolean isActive;
-	private JobProcedureDomain resultOutputDomain;
+	private JobProcedureDomain inputDomain; 
 
 	private Procedure(IExecutable procedure, int procedureIndex) {
 		this.procedure = procedure;
 		this.procedureIndex = procedureIndex;
 		this.tasks = SyncedCollectionProvider.syncedArrayList();
-//		this.outputDomains = SyncedCollectionProvider.syncedArrayList();
 		this.inputDomain = null;
 	}
 
@@ -53,22 +45,14 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		return procedure;
 	}
 
-	public boolean isActive() {
-		return this.isActive;
-	}
 
-	public Procedure isActive(boolean isActive) {
-		this.isActive = isActive;
-		return this;
-	}
- 
 
-//	@Override
-//	public Procedure addOutputDomain(IDomain domain) {
-//		this.outputDomains.add((JobProcedureDomain) domain);
-//		return this;
-//
-//	}
+	// @Override
+	// public Procedure addOutputDomain(IDomain domain) {
+	// this.outputDomains.add((JobProcedureDomain) domain);
+	// return this;
+	//
+	// }
 
 	public int procedureIndex() {
 		return this.procedureIndex;
@@ -111,29 +95,11 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		}
 	}
 
-//	@Override
-//	public Number160 calculateResultHash() {
-//		Number160 resultHash = Number160.ZERO;
-//		for (Task task : tasks) {
-//			resultHash = resultHash.xor(task.calculateResultHash());
-//		}
-//		return resultHash;
-//	}
-
-//	@Override
-//	public JobProcedureDomain resultOutputDomain() {
-//		ListMultimap<Number160, JobProcedureDomain> results = ArrayListMultimap.create();
-//		for (JobProcedureDomain domain : outputDomains) {
-//			results.put(domain.resultHash(), domain);
-//		}
-//		for (Number160 resultHash : results.keySet()) {
-//			if (results.get(resultHash).size() >= nrOfSameResultHash) {
-//				this.resultOutputDomain = results.get(resultHash).get(0);
-//				break;
-//			}
-//		}
-//		return resultOutputDomain;
-//	}
+ 
+	@Override
+	public String toString() {
+		return "Procedure [procedure=" + procedure + ", procedureIndex=" + procedureIndex + ", tasks=" + tasks + ", inputDomain=" + inputDomain + "]";
+	}
 
 	public void reset() {
 		for (Task task : tasks) {
@@ -147,11 +113,11 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		updateNrOfSameResultHash();
 		return this;
 	}
-//
-//	@Override
-//	public int nrOfOutputDomains() {
-//		return outputDomains.size();
-//	}
+	//
+	// @Override
+	// public int nrOfOutputDomains() {
+	// return outputDomains.size();
+	// }
 
 	@Override
 	public Procedure clone() {
@@ -167,11 +133,8 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		return null;
 	}
 
- 
- 
-
 	public static void main(String[] args) {
-		Procedure p = Procedure.create(WordCountReducer.create(), 2).isActive(true);
+		Procedure p = Procedure.create(WordCountReducer.create(), 2);
 		Procedure p2 = p.clone();
 		System.out.println(p);
 		System.out.println(p2);

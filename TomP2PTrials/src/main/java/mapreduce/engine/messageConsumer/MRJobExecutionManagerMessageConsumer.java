@@ -110,8 +110,9 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					if (jobToIncrement != null) {
 						jobToIncrement.incrementProcedureIndex();
 						jobToIncrement.currentProcedure().inputDomain(outputJPD);
+						jobs.get(getJob(inputDomain.jobId())).clear();
+						logger.info("executing next procedure: " + jobToIncrement.currentProcedure());
 					}
-					jobs.get(getJob(inputDomain.jobId())).clear();
 
 					jobExecutor.executeJob(jobs.firstKey());
 				}

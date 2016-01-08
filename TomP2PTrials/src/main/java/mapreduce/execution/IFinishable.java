@@ -17,7 +17,11 @@ public interface IFinishable {
 
 	public IDomain resultOutputDomain();
 
-	int nrOfOutputDomains();
+	public int nrOfOutputDomains();
 
 	public IFinishable nrOfSameResultHash(int nrOfSameResultHash);
+
+	public boolean isActive();
+
+	public IFinishable isActive(boolean isActive);
 }

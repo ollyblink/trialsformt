@@ -3,14 +3,8 @@ package mapreduce.execution.task;
 import java.io.Serializable;
 import java.util.List;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-
-import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
-import mapreduce.execution.IFinishable;
 import mapreduce.utils.SyncedCollectionProvider;
-import net.tomp2p.peers.Number160;
 
 public class Task extends AbstractFinishable implements Serializable, Cloneable {
 	/**
@@ -19,13 +13,14 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	private static final long serialVersionUID = 4696324648240806323L;
 	/** Key of this task to get the values for */
 	private final String key;
-	/** Specifies if the task is currently executed */
-	private volatile boolean isActive;
 	/** Set true if this tasks's result keys and values were successfully transferred from executor task domain to executor job procedure domain */
 	private volatile boolean isInProcedureDomain;
+	/** Specifies local execution assignments */
+	private List<String> assignedExecutors;
 
 	private Task(String key) {
 		this.key = key;
+		this.assignedExecutors = SyncedCollectionProvider.syncedArrayList();
 	}
 
 	public static Task create(String key) {
@@ -34,15 +29,6 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 
 	public String key() {
 		return this.key;
-	}
-
-	public boolean isActive() {
-		return this.isActive;
-	}
-
-	public Task isActive(boolean isActive) {
-		this.isActive = isActive;
-		return this;
 	}
 
 	public boolean isInProcedureDomain() {
@@ -73,16 +59,30 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 
 	public int nextStatusIndexFor(String executor) {
 		int counter = 0;
-		for (IDomain outputDomain : outputDomains) {
-			if (outputDomain.executor().equals(executor)) {
+		for (String e : assignedExecutors) {
+			if (e.equals(executor)) {
 				++counter;
 			}
 		}
 		return counter;
 	}
 
+	public Task addAssignedExecutor(String executor) {
+		this.assignedExecutors.add(executor);
+		return this;
+	}
+
 	public void reset() {
 		outputDomains.clear();
 		resultOutputDomain = null;
+	}
+
+	@Override
+	public String toString() {
+		return "Task [key=" + key + ", isInProcedureDomain=" + isInProcedureDomain + "]";
+	}
+
+	public int nrOfAssignedWorkers() {
+		return this.assignedExecutors.size();
 	}
 }

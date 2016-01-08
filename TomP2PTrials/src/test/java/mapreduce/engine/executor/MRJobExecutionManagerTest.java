@@ -142,7 +142,7 @@ public class MRJobExecutionManagerTest {
 		// @Override
 		// public void run() {
 		// IDHTConnectionProvider second = TestUtils.getTestConnectionProvider(port, 3, first.peerDHTs().get(0));
-		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(first);
+		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(first).maxNrOfExecutions(1);
 		jobExecutor.start();
 		jobExecutor.dhtConnectionProvider().broadcastHandler().jobQueues().put(job, new PriorityBlockingQueue<>());
 		// }
