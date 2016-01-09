@@ -150,7 +150,7 @@ public class MRJobExecutionManagerTest {
 
 		// }
 		// }).start();
-		Thread.sleep(3000);
+		Thread.sleep(Long.MAX_VALUE);
 		 // first.getAll(keyString, domainString)
 	}
 

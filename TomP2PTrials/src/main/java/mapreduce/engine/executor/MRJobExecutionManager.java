@@ -111,8 +111,9 @@ public class MRJobExecutionManager {
 					}
 					// Start execution on successful retrieval
 					// Everything here with subsequent procedure!!!!
-					task.addAssignedExecutor(id);
-					logger.info("next task status index: " + task.nextStatusIndexFor(id));
+					logger.info("next task status index: " + task.nextStatusIndexFor(id)+" for task: "+ task);
+					
+					task.addAssignedExecutor(id); 
 					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.nextStatusIndexFor(id), outputJPD);
 					IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
 
@@ -190,7 +191,7 @@ public class MRJobExecutionManager {
 												if (isProcedureCompleted) {
 
 													CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to,
-															procedure.inputDomain()); 
+															procedure.inputDomain());
 													messageConsumer.queueFor(job).add(msg);
 													dhtCon.broadcastCompletion(msg);
 												}
