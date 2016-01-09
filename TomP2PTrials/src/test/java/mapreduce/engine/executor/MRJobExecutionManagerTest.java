@@ -139,18 +139,19 @@ public class MRJobExecutionManagerTest {
 		logger.info("before executor start");
 		logger.info("before submitting job");
 		submitter.submit(job);
-//		new Thread(new Runnable() {
-//			//
-//			@Override
-//			public void run() {
-				// IDHTConnectionProvider second = TestUtils.getTestConnectionProvider(port, 3, first.peerDHTs().get(0));
-				MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(first);
-				jobExecutor.start();
-				jobExecutor.messageConsumer().jobs().put(job, new PriorityBlockingQueue<>());
-				
-//			}
-//		}).start(); 
-		Thread.sleep(Long.MAX_VALUE);
+		// new Thread(new Runnable() {
+		// //
+		// @Override
+		// public void run() {
+		// IDHTConnectionProvider second = TestUtils.getTestConnectionProvider(port, 3, first.peerDHTs().get(0));
+		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(first);
+		jobExecutor.start();
+		jobExecutor.messageConsumer().jobs().put(job, new PriorityBlockingQueue<>());
+
+		// }
+		// }).start();
+		Thread.sleep(3000);
+		 // first.getAll(keyString, domainString)
 	}
 
 }

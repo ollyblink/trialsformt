@@ -13,7 +13,7 @@ public class JobProcedureDomain implements IDomain {
 	private String procedureSimpleName;
 	private int procedureIndex;
 	private int procedureSubmissionCount;
-	private long procedureCreationTime;
+//	private long procedureCreationTime;
 	private Number160 resultHash;
 	/** Number of tasks for this procedure (may be different from tasks.size() because tasks are pulled after another and not all at the same time) */
 	private int tasksSize;
@@ -34,7 +34,7 @@ public class JobProcedureDomain implements IDomain {
 		this.procedureSimpleName = procedureSimpleName;
 		this.procedureIndex = procedureIndex;
 		this.procedureSubmissionCount = 0;
-		this.procedureCreationTime = System.currentTimeMillis();
+//		this.procedureCreationTime = System.currentTimeMillis();
 		this.resultHash = Number160.ZERO;
 	}
 
@@ -43,7 +43,7 @@ public class JobProcedureDomain implements IDomain {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((jobId == null) ? 0 : jobId.hashCode());
-		result = prime * result + (int) (procedureCreationTime ^ (procedureCreationTime >>> 32));
+//		result = prime * result + (int) (procedureCreationTime ^ (procedureCreationTime >>> 32));
 		result = prime * result + ((procedureExecutor == null) ? 0 : procedureExecutor.hashCode());
 		result = prime * result + procedureIndex;
 		result = prime * result + ((procedureSimpleName == null) ? 0 : procedureSimpleName.hashCode());
@@ -66,8 +66,8 @@ public class JobProcedureDomain implements IDomain {
 				return false;
 		} else if (!jobId.equals(other.jobId))
 			return false;
-		if (procedureCreationTime != other.procedureCreationTime)
-			return false;
+//		if (procedureCreationTime != other.procedureCreationTime)
+//			return false;
 		if (procedureExecutor == null) {
 			if (other.procedureExecutor != null)
 				return false;
@@ -106,10 +106,10 @@ public class JobProcedureDomain implements IDomain {
 		return procedureExecutor;
 	}
 
-	@Override
-	public long creationTime() {
-		return this.procedureCreationTime;
-	}
+//	@Override
+//	public long creationTime() {
+//		return this.procedureCreationTime;
+//	}
 
 	@Override
 	public int submissionCount() {

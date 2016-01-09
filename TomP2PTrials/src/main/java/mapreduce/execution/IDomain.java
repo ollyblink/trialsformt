@@ -12,7 +12,7 @@ public interface IDomain extends Serializable, Cloneable {
 
 	public String executor();
 
-	public long creationTime();
+//	public long creationTime();
 
 	public int submissionCount();
 

@@ -93,7 +93,6 @@ public class MRJobExecutionManager {
 
 		logger.info("Task to execute: " + task);
 		// Now we actually wanna retrieve the data from the specified locations...
-		task.addAssignedExecutor(id);
 		String jobId = procedure.inputDomain().jobId();
 		String outputPExecutable = procedure.executable().getClass().getSimpleName();
 		int outputPIndex = procedure.procedureIndex();
@@ -112,6 +111,8 @@ public class MRJobExecutionManager {
 					}
 					// Start execution on successful retrieval
 					// Everything here with subsequent procedure!!!!
+					task.addAssignedExecutor(id);
+					logger.info("next task status index: " + task.nextStatusIndexFor(id));
 					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.nextStatusIndexFor(id), outputJPD);
 					IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
 
@@ -179,9 +180,17 @@ public class MRJobExecutionManager {
 												logger.info("Successfully transfered task output keys and values for task " + taskToTransfer
 														+ " from task executor domain to job procedure domain: " + to.toString() + ". ");
 
-												if (procedure.isFinished()) {
-													CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(
-															procedure.resultOutputDomain(), procedure.inputDomain());
+												// if (procedure.isFinished()) {
+												boolean isProcedureCompleted = true;
+												for (Task task : procedure.tasks()) {
+													if (!task.isFinished()) {
+														isProcedureCompleted = false;
+													}
+												}
+												if (isProcedureCompleted) {
+
+													CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to,
+															procedure.inputDomain()); 
 													messageConsumer.queueFor(job).add(msg);
 													dhtCon.broadcastCompletion(msg);
 												}

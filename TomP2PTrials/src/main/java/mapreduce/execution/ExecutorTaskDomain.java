@@ -12,7 +12,7 @@ public class ExecutorTaskDomain implements IDomain {
 	private String taskExecutor;
 	private int taskStatusIndex;
 	private int taskSubmissionCount;
-	private long taskCreationTime;
+//	private long taskCreationTime;
 	private Number160 resultHash;
 	private JobProcedureDomain jobProcedureDomain;
 	private int procedureIndex;
@@ -31,7 +31,7 @@ public class ExecutorTaskDomain implements IDomain {
 		this.taskExecutor = taskExecutor;
 		this.taskStatusIndex = taskStatusIndex;
 		this.taskSubmissionCount = 0;
-		this.taskCreationTime = System.currentTimeMillis();
+//		this.taskCreationTime = System.currentTimeMillis();
 		this.resultHash = Number160.ZERO;
 		this.jobProcedureDomain = jobProcedureDomain;
 	}
@@ -46,10 +46,10 @@ public class ExecutorTaskDomain implements IDomain {
 		return this.taskSubmissionCount;
 	}
 
-	@Override
-	public long creationTime() {
-		return this.taskCreationTime;
-	}
+//	@Override
+//	public long creationTime() {
+//		return this.taskCreationTime;
+//	}
 
 	@Override
 	public int hashCode() {
@@ -57,7 +57,7 @@ public class ExecutorTaskDomain implements IDomain {
 		int result = 1;
 		result = prime * result + ((jobProcedureDomain == null) ? 0 : jobProcedureDomain.hashCode());
 		result = prime * result + ((resultHash == null) ? 0 : resultHash.hashCode());
-		result = prime * result + (int) (taskCreationTime ^ (taskCreationTime >>> 32));
+//		result = prime * result + (int) (taskCreationTime ^ (taskCreationTime >>> 32));
 		result = prime * result + ((taskExecutor == null) ? 0 : taskExecutor.hashCode());
 		result = prime * result + ((taskId == null) ? 0 : taskId.hashCode());
 		result = prime * result + taskStatusIndex;
@@ -84,8 +84,8 @@ public class ExecutorTaskDomain implements IDomain {
 				return false;
 		} else if (!resultHash.equals(other.resultHash))
 			return false;
-		if (taskCreationTime != other.taskCreationTime)
-			return false;
+//		if (taskCreationTime != other.taskCreationTime)
+//			return false;
 		if (taskExecutor == null) {
 			if (other.taskExecutor != null)
 				return false;

@@ -17,8 +17,7 @@ public enum DomainProvider {
 		// S = taskSubmissionCount
 		// C = taskCreationTime
 		return "ETD[T(" + executorTaskDomainParameter.taskId() + ")_P(" + executorTaskDomainParameter.executor() + ")_JSI("
-				+ executorTaskDomainParameter.taskStatusIndex() + ")_S(" + executorTaskDomainParameter.submissionCount() + ")_C("
-				+ executorTaskDomainParameter.creationTime() + ")]";
+				+ executorTaskDomainParameter.taskStatusIndex() + ")_S(" + executorTaskDomainParameter.submissionCount() + ")]";
 	}
 
 	// Job procedure domain key generation
@@ -29,11 +28,9 @@ public enum DomainProvider {
 		// P = procedureSimpleName
 		// PI = procedureIndex
 		// S = procedureSubmissionCount
-		// C = procedureCreationTime
 		return "JPD[J(" + jobProcedureDomainParameter.jobId() + ")_E(" + jobProcedureDomainParameter.executor() + ")_P("
-				+ jobProcedureDomainParameter.procedureSimpleName().toUpperCase() + 
-				")_PI(" + jobProcedureDomainParameter.procedureIndex() + ")_S("
-				+ jobProcedureDomainParameter.submissionCount() + ")_C(" + jobProcedureDomainParameter.creationTime() + ")]";
+				+ jobProcedureDomainParameter.procedureSimpleName().toUpperCase() + ")_PI(" + jobProcedureDomainParameter.procedureIndex() + ")_S("
+				+ jobProcedureDomainParameter.submissionCount() + ")]";
 	}
 
 	// End Job procedure domain key generation

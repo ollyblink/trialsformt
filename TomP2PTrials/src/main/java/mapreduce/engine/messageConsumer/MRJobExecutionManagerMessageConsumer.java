@@ -3,6 +3,7 @@ package mapreduce.engine.messageConsumer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -27,6 +28,7 @@ import mapreduce.execution.task.scheduling.ITaskScheduler;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
+import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
@@ -206,17 +208,19 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		logger.info("Try to execute job " + job);
 		if (!job.isFinished()) {
 			Procedure procedure = job.currentProcedure();
-
 			Task task = taskExecutionScheduler.schedule(procedure.tasks());
 			if (task == null) {
 				logger.info("Finished all current tasks... maybe more will come in with broadcast or from dht ");
-				if (procedure.tasks().size() < procedure.inputDomain().tasksSize()) {
-					logger.info("Retrieve tasks from dht/local storage");
+				logger.info("procedure.tasks().size() < procedure.inputDomain().tasksSize() " + procedure.tasks().size() + "<"
+						+ procedure.inputDomain().tasksSize());
+				if (procedure.tasks().size() == 0 || procedure.tasks().size() < procedure.inputDomain().tasksSize()) {
+					logger.info("Retrieve tasks from dht/local storage. Can execute? " + canExecute());
 					if (canExecute()) {
 						Runnable retrieveDataThread = new Runnable() {
 
 							@Override
 							public void run() {
+								logger.info("In runnable");
 								getTaskKeysFromNetwork(procedure);
 							}
 						};
@@ -249,6 +253,44 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			}
 		} else {
 			logger.info("No job to execute...");
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			Procedure procedure = job.procedure(2);
+			jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.inputDomain().toString())
+					.addListener(new BaseFutureAdapter<FutureGet>() {
+
+						@Override
+						public void operationComplete(FutureGet future) throws Exception {
+							if (future.isSuccess()) {
+								Set<Number640> keySet = future.dataMap().keySet();
+								for (Number640 k : keySet) {
+									String key = (String) future.dataMap().get(k).object();
+									jobExecutor.dhtConnectionProvider()
+											.getAll(key, procedure.resultOutputDomain().toString())
+											.addListener(new BaseFutureAdapter<FutureGet>() {
+
+										@Override
+										public void operationComplete(FutureGet future) throws Exception {
+											if (future.isSuccess()) {
+												Set<Number640> keySet2 = future.dataMap().keySet();
+												String values = "";
+												for (Number640 k2 : keySet2) {
+													values += ((Value)future.dataMap().get(k2).object()).value() + ", ";
+												}
+												logger.info(key + ":"+values);
+											}
+										}
+
+									});
+								}
+							}
+						}
+
+					});
 		}
 	}
 
