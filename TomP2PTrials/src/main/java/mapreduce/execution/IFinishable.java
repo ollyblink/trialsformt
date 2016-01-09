@@ -21,7 +21,4 @@ public interface IFinishable {
 
 	public IFinishable nrOfSameResultHash(int nrOfSameResultHash);
 
-	public boolean isActive();
-
-	public IFinishable isActive(boolean isActive);
 }

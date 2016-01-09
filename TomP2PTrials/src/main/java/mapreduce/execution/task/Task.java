@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import mapreduce.execution.IDomain;
+import mapreduce.execution.IFinishable;
 import mapreduce.utils.SyncedCollectionProvider;
 
 public class Task extends AbstractFinishable implements Serializable, Cloneable {
@@ -17,6 +18,8 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	private volatile boolean isInProcedureDomain;
 	/** Specifies local execution assignments */
 	private List<String> assignedExecutors;
+	/** Specifies if the task is currently executed */
+	private volatile boolean isActive;
 
 	private Task(String key) {
 		this.key = key;
@@ -84,5 +87,30 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 
 	public int nrOfAssignedWorkers() {
 		return this.assignedExecutors.size();
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Task other = (Task) obj;
+		if (key == null) {
+			if (other.key != null)
+				return false;
+		} else if (!key.equals(other.key))
+			return false;
+		return true;
 	}
 }

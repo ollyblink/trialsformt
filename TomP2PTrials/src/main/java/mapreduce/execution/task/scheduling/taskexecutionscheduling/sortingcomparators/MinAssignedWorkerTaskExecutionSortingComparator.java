@@ -25,13 +25,7 @@ public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparat
 				} else if (t2.nrOfAssignedWorkers() < t2.nrOfAssignedWorkers()) {
 					return -1;
 				} else {
-					if (!t1.isActive() && t2.isActive()) {
-						return -1;
-					} else if (t1.isActive() && !t2.isActive()) {
-						return 1;
-					} else {// if (!t1.isActive() && !t2.isActive() ||t1.isActive() && t2.isActive()) {
-						return 0;
-					}
+					return 0;
 				}
 			}
 		}

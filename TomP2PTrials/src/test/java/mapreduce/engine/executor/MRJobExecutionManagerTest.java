@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.broadcasting.IBCMessage;
-import mapreduce.engine.broadcasting.MRBroadcastHandler;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
@@ -24,10 +23,10 @@ import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.execution.task.Task;
-import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
+import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -37,36 +36,39 @@ public class MRJobExecutionManagerTest {
 	protected static Logger logger = LoggerFactory.getLogger(MRJobExecutionManagerTest.class);
 	private Random random = new Random();
 
-	@Ignore
+	@Test
 	public void testDataSwitch() throws InterruptedException {
-		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 5);
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1);
 
 		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(dhtConnectionProvider);
 		jobExecutor.start();
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE);
-		Task task = Task.create("file1");
+
 		String executor = "Executor_1";
-		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), executor, "NONE", 0);
+		Task task = Task.create("file1");
+		JobProcedureDomain inputJPD = JobProcedureDomain.create(job.id(), executor, "START", 0);
+		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), executor, "END", 0);
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.nextStatusIndexFor(executor), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
 		for (int i = 0; i < 1000; ++i) {
 			context.write((i % 5 == 0 ? "where" : (i % 4 == 0 ? "is" : (i % 3 == 0 ? "hello" : (i % 2 == 0 ? "world" : "test")))), new Integer(1));
 		}
+		task.addOutputDomain(outputETD);
 		Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 
 			@Override
 			public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
 				if (future.isSuccess()) {
-					
-					jobExecutor.transferData(jobExecutor.dhtConnectionProvider().broadcastHandler().jobQueues().get(job.id()), task, outputJPD);
+					List<Task> tasks = SyncedCollectionProvider.syncedArrayList();
+					tasks.add(task);
+					jobExecutor.transferData(new PriorityBlockingQueue<>(), tasks, outputJPD, inputJPD);
 				} else {
 					logger.info("No success");
 				}
 			}
 
-		});
-		Thread.sleep(5000);
+		}).awaitUninterruptibly();
 		assertEquals(true, task.isInProcedureDomain());
 
 	}
@@ -137,16 +139,17 @@ public class MRJobExecutionManagerTest {
 		logger.info("before executor start");
 		logger.info("before submitting job");
 		submitter.submit(job);
-		// new Thread(new Runnable() {
-		//
-		// @Override
-		// public void run() {
-		// IDHTConnectionProvider second = TestUtils.getTestConnectionProvider(port, 3, first.peerDHTs().get(0));
-		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(first).maxNrOfExecutions(1);
-		jobExecutor.start();
-		jobExecutor.dhtConnectionProvider().broadcastHandler().jobQueues().put(job, new PriorityBlockingQueue<>());
-		// }
-		// });
+//		new Thread(new Runnable() {
+//			//
+//			@Override
+//			public void run() {
+				// IDHTConnectionProvider second = TestUtils.getTestConnectionProvider(port, 3, first.peerDHTs().get(0));
+				MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(first);
+				jobExecutor.start();
+				jobExecutor.messageConsumer().jobs().put(job, new PriorityBlockingQueue<>());
+				
+//			}
+//		}).start(); 
 		Thread.sleep(Long.MAX_VALUE);
 	}
 

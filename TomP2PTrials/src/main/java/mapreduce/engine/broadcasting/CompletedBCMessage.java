@@ -1,11 +1,17 @@
 package mapreduce.engine.broadcasting;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import mapreduce.engine.messageConsumer.AbstractMessageConsumer;
 import mapreduce.engine.messageConsumer.IMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
+import mapreduce.execution.job.Job;
 
 public class CompletedBCMessage implements IBCMessage {
+	protected static Logger logger = LoggerFactory.getLogger(AbstractMessageConsumer.class);
 	/**
 	 * 
 	 */
@@ -49,11 +55,14 @@ public class CompletedBCMessage implements IBCMessage {
 	}
 
 	@Override
-	public void execute(IMessageConsumer messageConsumer) {
+	public void execute(Job job, IMessageConsumer messageConsumer) {
 		if (status == BCMessageStatus.COMPLETED_TASK) {
-			messageConsumer.handleCompletedTask((ExecutorTaskDomain) outputDomain, inputDomain);
+			logger.info("Execute next message: " + status() + " of task " + ((ExecutorTaskDomain) outputDomain).taskId() + " for procedure "
+					+ ((ExecutorTaskDomain) outputDomain).jobProcedureDomain().procedureSimpleName() + "");
+			messageConsumer.handleCompletedTask(job, (ExecutorTaskDomain) outputDomain, inputDomain);
 		} else { // status == BCMessageStatus.COMPLETED_PROCEDURE
-			messageConsumer.handleCompletedProcedure((JobProcedureDomain) outputDomain, inputDomain);
+			logger.info("Execute next message: " + status() + " for procedure " + ((JobProcedureDomain) outputDomain).procedureSimpleName() + "");
+			messageConsumer.handleCompletedProcedure(job, (JobProcedureDomain) outputDomain, inputDomain);
 		}
 	}
 

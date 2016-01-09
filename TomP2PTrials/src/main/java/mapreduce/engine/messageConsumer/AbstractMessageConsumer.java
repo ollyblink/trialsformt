@@ -1,5 +1,6 @@
 package mapreduce.engine.messageConsumer;
 
+import java.util.NoSuchElementException;
 import java.util.SortedMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -47,20 +48,19 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 				e.printStackTrace();
 			}
 		}
-		try {
-			while (canTake()) {
-				tryTake();
+		while (canTake()) {
+			try {
+				Job job = jobs.firstKey();
+				if (!job.isFinished()) {
+					logger.info("Before Take message");
+					IBCMessage nextMessage = jobs.get(job).take();  
+					nextMessage.execute(job, this);
+				}
+			} catch (InterruptedException | NoSuchElementException e) {
+				logger.info("Exception caught", e);
 			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
 		}
-	}
 
-	protected void tryTake() throws InterruptedException {
-		logger.info("Before Take message");
-		IBCMessage nextMessage = jobs.get(jobs.firstKey()).take();
-		logger.info("Execute next message: " + nextMessage);
-		nextMessage.execute(this);
 	}
 
 	@Override

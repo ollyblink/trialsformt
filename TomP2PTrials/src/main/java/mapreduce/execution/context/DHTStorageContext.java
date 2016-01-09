@@ -16,11 +16,10 @@ import net.tomp2p.peers.Number160;
 public class DHTStorageContext implements IContext {
 	private static Logger logger = LoggerFactory.getLogger(DHTStorageContext.class);
 	// private IExecutable combiner;
-	private Number160 resultHash = Number160.ZERO; 
+	private Number160 resultHash = Number160.ZERO;
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private List<FuturePut> futurePutData = SyncedCollectionProvider.syncedArrayList();
 	private ExecutorTaskDomain outputExecutorTaskDomain;
- 
 
 	/**
 	 * 
@@ -46,10 +45,12 @@ public class DHTStorageContext implements IContext {
 					@Override
 					public void operationComplete(FuturePut future) throws Exception {
 						if (future.isSuccess()) {
-							logger.info(
-									"Successfully performed add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain(" + oETDString + ")");
+							logger.info("Procedure: " + outputExecutorTaskDomain.jobProcedureDomain().procedureSimpleName()
+									+ ": Successfully performed add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain(" + oETDString
+									+ ")");
 						} else {
-							logger.info("Failed to perform add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain(" + oETDString + ")");
+							logger.info("Procedure: " + outputExecutorTaskDomain.jobProcedureDomain().procedureSimpleName()
+									+ ": Failed to perform add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain(" + oETDString + ")");
 						}
 					}
 				}));
@@ -59,10 +60,14 @@ public class DHTStorageContext implements IContext {
 					@Override
 					public void operationComplete(FuturePut future) throws Exception {
 						if (future.isSuccess()) {
-							logger.info("Successfully performed add(TASK_KEYS, " + keyOut.toString() + ").domain(" + oETDString + ")");
+							logger.info("Procedure: " + outputExecutorTaskDomain.jobProcedureDomain().procedureSimpleName()
+									+ ": Successfully performed add(" + DomainProvider.TASK_OUTPUT_RESULT_KEYS + ", " + keyOut.toString()
+									+ ").domain(" + oETDString + ")");
 						} else {
 
-							logger.warn("Failed to perform add(TASK_KEYS, " + keyOut.toString() + ").domain(" + oETDString + ")");
+							logger.warn(
+									"Procedure: " + outputExecutorTaskDomain.jobProcedureDomain().procedureSimpleName() + ": Failed to perform add("
+											+ DomainProvider.TASK_OUTPUT_RESULT_KEYS + ", " + keyOut.toString() + ").domain(" + oETDString + ")");
 						}
 					}
 				}));
@@ -84,7 +89,6 @@ public class DHTStorageContext implements IContext {
 	public List<FuturePut> futurePutData() {
 		return this.futurePutData;
 	}
- 
 
 	@Override
 	public DHTStorageContext outputExecutorTaskDomain(ExecutorTaskDomain outputExecutorTaskDomain) {

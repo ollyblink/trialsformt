@@ -25,13 +25,13 @@ public class MRJobSubmissionManagerMessageConsumer extends AbstractMessageConsum
 	}
 
 	@Override
-	public void handleCompletedTask(ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
+	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
 
 	}
 
 	@Override
-	public void handleCompletedProcedure(JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
-		Job job = getJob(inputDomain.jobId());
+	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
+//		Job job = getJob(inputDomain.jobId());
 		if (job.jobSubmitterID().equals(jobSubmissionManager.id())) {
 			if (outputDomain.procedureSimpleName().equals(EndProcedure.class.getSimpleName())) {
 				logger.info("Job is finished. Final data location domain: " + outputDomain);

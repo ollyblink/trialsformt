@@ -73,6 +73,8 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 	 */
 	private boolean useLocalStorageFirst;
 
+	private boolean isFinished;
+
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
 	// private int jobSubmissionCounter;
 
@@ -102,6 +104,7 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 	public static Job create(String jobSubmitterID) {
 		return new Job(jobSubmitterID, PriorityLevel.MODERATE).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(true);
 	}
+
 	public String id() {
 		// S == Submitter
 		// SNR == Submission counter
@@ -236,27 +239,21 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 
 	@Override
 	public int compareTo(Job job) {
-		if (priorityLevel == job.priorityLevel) {
-			return creationTime.compareTo(job.creationTime);
-		} else {
-			return priorityLevel.compareTo(job.priorityLevel);
-		}
+		if (!isFinished && job.isFinished) {
+			return -1;
+		} else if (isFinished && !job.isFinished) {
+			return 1;
+		} else {//if (!isFinished && !job.isFinished) {
+			if (priorityLevel == job.priorityLevel) {
+				return creationTime.compareTo(job.creationTime);
+			} else {
+				return priorityLevel.compareTo(job.priorityLevel);
+			}
+		} 
+//		else {
+//			return 0;
+//		}
 	}
-
-	// public static void main(String[] args) {
-	// List<Job> jobs = new ArrayList<>();
-	// jobs.add(Job.create("1", PriorityLevel.LOW));
-	// jobs.add(Job.create("2", PriorityLevel.MODERATE));
-	// jobs.add(Job.create("3", PriorityLevel.HIGH));
-	// jobs.add(Job.create("4", PriorityLevel.MODERATE));
-	// jobs.add(Job.create("5", PriorityLevel.LOW));
-	// jobs.add(Job.create("6", PriorityLevel.HIGH));
-	//
-	// Collections.sort(jobs);
-	// for (Job job : jobs) {
-	// System.err.println(job.jobSubmitterID() + ", " + job.priorityLevel);
-	// }
-	// }
 
 	public PriorityLevel priorityLevel() {
 		return priorityLevel;
@@ -303,15 +300,38 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 	}
 
 	public static void main(String[] args) {
-		Job job = Job.create("ME", PriorityLevel.HIGH).addSucceedingProcedure(WordCountReducer.create()).fileInputFolderPath("File input path")
-				.maxFileSize(FileSize.EIGHT_BYTES).nrOfSameResultHash(20);
-		Job job2 = job.clone();
-		System.out.println(job.currentProcedureIndex + ", " + job.fileInputFolderPath + ", " + job.id + ", " + job.jobSubmitterID + ", "
-				+ job.maxFileSize + ", " + job.nrOfSameResultHash + ", " + job.creationTime + ", " + job.serialVersionUID + ", "
-				+ job.useLocalStorageFirst + ", " + job.procedures);
-		System.out.println(job2.currentProcedureIndex + ", " + job2.fileInputFolderPath + ", " + job2.id + ", " + job2.jobSubmitterID + ", "
-				+ job2.maxFileSize + ", " + job2.nrOfSameResultHash + ", " + job2.creationTime + ", " + job2.serialVersionUID + ", "
-				+ job2.useLocalStorageFirst + ", " + job2.procedures);
+		List<Job> jobs = new ArrayList<>();
+		jobs.add(Job.create("1", PriorityLevel.LOW).isFinished(true));
+		jobs.add(Job.create("2", PriorityLevel.MODERATE).isFinished(true));
+		jobs.add(Job.create("3", PriorityLevel.HIGH).isFinished(true));
+		jobs.add(Job.create("4", PriorityLevel.MODERATE));
+		jobs.add(Job.create("5", PriorityLevel.LOW));
+		jobs.add(Job.create("6", PriorityLevel.HIGH));
+
+		Collections.sort(jobs);
+		for (Job job : jobs) {
+			System.err.println(job.jobSubmitterID() + ", " + job.priorityLevel);
+		}
+	}
+	// public static void main(String[] args) {
+	// Job job = Job.create("ME", PriorityLevel.HIGH).addSucceedingProcedure(WordCountReducer.create()).fileInputFolderPath("File input path")
+	// .maxFileSize(FileSize.EIGHT_BYTES).nrOfSameResultHash(20);
+	// Job job2 = job.clone();
+	// System.out.println(job.currentProcedureIndex + ", " + job.fileInputFolderPath + ", " + job.id + ", " + job.jobSubmitterID + ", "
+	// + job.maxFileSize + ", " + job.nrOfSameResultHash + ", " + job.creationTime + ", " + job.serialVersionUID + ", "
+	// + job.useLocalStorageFirst + ", " + job.procedures);
+	// System.out.println(job2.currentProcedureIndex + ", " + job2.fileInputFolderPath + ", " + job2.id + ", " + job2.jobSubmitterID + ", "
+	// + job2.maxFileSize + ", " + job2.nrOfSameResultHash + ", " + job2.creationTime + ", " + job2.serialVersionUID + ", "
+	// + job2.useLocalStorageFirst + ", " + job2.procedures);
+	// }
+
+	public Job isFinished(boolean isFinished) {
+		this.isFinished = isFinished;
+		return this;
+	}
+
+	public boolean isFinished() {
+		return isFinished;
 	}
 
 }

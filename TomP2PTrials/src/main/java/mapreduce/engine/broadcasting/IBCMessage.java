@@ -5,6 +5,7 @@ import java.io.Serializable;
 import mapreduce.engine.messageConsumer.IMessageConsumer;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
+import mapreduce.execution.job.Job;
 
 public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
 	public BCMessageStatus status();
@@ -33,7 +34,7 @@ public interface IBCMessage extends Serializable, Comparable<IBCMessage> {
 //
 //	public String sender();
 
-	public void execute(final IMessageConsumer messageConsumer);
+	public void execute(Job job, final IMessageConsumer messageConsumer);
 
 //	public String id();
 //

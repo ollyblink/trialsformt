@@ -19,7 +19,7 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 
 	private List<Task> tasks;
 	/** Location of keys for this procedure */
-	private JobProcedureDomain inputDomain; 
+	private JobProcedureDomain inputDomain;
 
 	private Procedure(IExecutable procedure, int procedureIndex) {
 		this.procedure = procedure;
@@ -44,8 +44,6 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	public IExecutable executable() {
 		return procedure;
 	}
-
-
 
 	// @Override
 	// public Procedure addOutputDomain(IDomain domain) {
@@ -95,7 +93,6 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		}
 	}
 
- 
 	@Override
 	public String toString() {
 		return "Procedure [procedure=" + procedure + ", procedureIndex=" + procedureIndex + ", tasks=" + tasks + ", inputDomain=" + inputDomain + "]";
@@ -131,6 +128,34 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((procedure == null) ? 0 : procedure.hashCode());
+		result = prime * result + procedureIndex;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Procedure other = (Procedure) obj;
+		if (procedure == null) {
+			if (other.procedure != null)
+				return false;
+		} else if (!procedure.equals(other.procedure))
+			return false;
+		if (procedureIndex != other.procedureIndex)
+			return false;
+		return true;
 	}
 
 	public static void main(String[] args) {

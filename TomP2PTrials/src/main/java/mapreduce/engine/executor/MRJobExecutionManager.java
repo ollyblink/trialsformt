@@ -5,7 +5,11 @@ import static mapreduce.utils.SyncedCollectionProvider.syncedArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +32,7 @@ import mapreduce.utils.IDCreator;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
@@ -42,40 +47,25 @@ public class MRJobExecutionManager {
 
 	private String id;
 
-	private volatile int executionCounter;
-
-	private ITaskScheduler taskExecutionScheduler;
-
-	private int maxNrOfExecutions = 1;
-
 	private MRJobExecutionManager() {
 
 	}
 
 	private MRJobExecutionManager(IDHTConnectionProvider dhtConnectionProvider) {
+
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.messageConsumer = MRJobExecutionManagerMessageConsumer.create(this);
 		this.dhtCon = dhtConnectionProvider.owner(this.id).jobQueues(messageConsumer.jobs());
 	}
 
 	public static MRJobExecutionManager create(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobExecutionManager(dhtConnectionProvider).taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.create())
-				.maxNrOfExecutions(Runtime.getRuntime().availableProcessors());
-	}
-
-	public MRJobExecutionManager taskExecutionScheduler(ITaskScheduler taskExecutionScheduler) {
-		this.taskExecutionScheduler = taskExecutionScheduler;
-		return this;
+		return new MRJobExecutionManager(dhtConnectionProvider);
 	}
 
 	public IDHTConnectionProvider dhtConnectionProvider() {
 		return this.dhtCon;
 	}
 
-	public MRJobExecutionManager maxNrOfExecutions(int maxNrOfExecutions) {
-		this.maxNrOfExecutions = maxNrOfExecutions;
-		return this;
-	}
 	// END GETTER/SETTER
 
 	// Maintenance
@@ -99,208 +89,126 @@ public class MRJobExecutionManager {
 	// End Maintenance
 	// Execution
 
-	public void executeJob(Job job) {
-		Procedure procedure = job.currentProcedure();
-		procedure.isActive(true);
-		PriorityBlockingQueue<IBCMessage> bcMessages = messageConsumer.queueFor(job);
+	public void executeTask(PriorityBlockingQueue<IBCMessage> bcMessages, Task task, Procedure procedure) {
 
+		logger.info("Task to execute: " + task);
+		// Now we actually wanna retrieve the data from the specified locations...
+		task.addAssignedExecutor(id);
+		String jobId = procedure.inputDomain().jobId();
 		String outputPExecutable = procedure.executable().getClass().getSimpleName();
 		int outputPIndex = procedure.procedureIndex();
-		String outputPExecutor = this.id();
-		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), outputPExecutor, outputPExecutable, outputPIndex);
-
-		// Tries to find task keys on the network
-		getTaskKeysFromNetwork(job, bcMessages, procedure, outputJPD);
-
-		logger.info("Scheduling tasks for execution in case task was received from broadcast.");
-		// In parallel to finding task keys on the network, execution starts in case a task was received from broadcast... Else just wait for the
-		// broadcast or the dht call
-		tryExecutingTask(job, bcMessages, procedure, outputJPD);
-
-	}
-
-	private void getTaskKeysFromNetwork(Job job, PriorityBlockingQueue<IBCMessage> bcMessages, Procedure procedure, JobProcedureDomain outputJPD) {
-		logger.info("Retrieve task keys for input procedure domain: " + procedure.inputDomain() + ".");
-		dhtCon.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.inputDomain().toString())
-				.addListener(new BaseFutureAdapter<FutureGet>() {
-
-					@Override
-					public void operationComplete(FutureGet future) throws Exception {
-						if (future.isSuccess()) {
-							procedure.inputDomain().tasksSize(future.dataMap().size());
-							for (Number640 keyHash : future.dataMap().keySet()) {
-								String key = (String) future.dataMap().get(keyHash).object();
-								logger.info("Found key: " + key);
-								Task task = Task.create(key);
-								if (!procedure.tasks().contains(task)) {// Don't need to add it more, got it e.g. from a BC
-									logger.info("Added key " + key + ", scheduling task for execution.");
-									procedure.tasks().add(task);
-									tryExecutingTask(job, bcMessages, procedure, outputJPD);
-								}
-							}
-						} else {
-							logger.info("Failed to retrieve task keys for input job procedure domain: " + procedure.inputDomain());
-						}
-					}
-
-				});
-	}
-
-	public void executeTask(PriorityBlockingQueue<IBCMessage> bcMessages, Task task, Procedure procedure, JobProcedureDomain outputJPD) {
-		logger.info("Can execute? "+executionCounter +"<"+maxNrOfExecutions +"?"+canExecute());
-		if (canExecute()) {
-			this.executionCounter++;
-			task.isActive(true);
-			logger.info("Task to execute: " + task);
-			// Now we actually wanna retrieve the data from the specified locations...
-			dhtCon.getAll(task.key(), procedure.inputDomain().toString()).addListener(new BaseFutureAdapter<FutureGet>() {
-
-				@Override
-				public void operationComplete(FutureGet future) throws Exception {
-					if (future.isSuccess()) {
-						List<Object> values = syncedArrayList();
-						Set<Number640> valueSet = future.dataMap().keySet();
-						for (Number640 valueHash : valueSet) {
-							Object taskValue = ((Value) future.dataMap().get(valueHash).object()).value();
-							values.add(taskValue);
-						}
-						// Start execution on successful retrieval
-						// Everything here with subsequent procedure!!!!
-						ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.nextStatusIndexFor(id), outputJPD);
-						IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
-
-						logger.info("Executing task: " + task.key() + " with values " + values);
-						procedure.executable().process(task.key(), values, context);
-
-						Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
-							@Override
-							public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-								if (future.isSuccess()) {
-									outputETD.resultHash(context.resultHash());
-									CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(
-											outputETD.procedureIndex(procedure.procedureIndex()),
-											procedure.inputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
-									bcMessages.add(msg); // Adds it to itself, does not receive broadcasts... Makes sure this result is ignored in
-															// case another was received already
-									dhtCon.broadcastCompletion(msg);
-									task.isActive(false);
-									--executionCounter;
-								} else {
-									logger.warn("No success on task execution. Reason: " + future.failedReason());
-								}
-							}
-
-						});
-					} else {
-						logger.info("Could not retrieve data for task " + task.key() + " in job procedure domain: "
-								+ procedure.inputDomain().toString() + ". Failed reason: " + future.failedReason());
-					}
-
-				}
-
-			});
-		} else {
-			logger.info("Cannot execute due to too many currently running executions: " + this.executionCounter
-					+ " executions running at a max number of " + maxNrOfExecutions + " executions.");
-		}
-
-	}
-
-	private void tryExecutingTask(Job job, PriorityBlockingQueue<IBCMessage> bcMessages, Procedure procedure, JobProcedureDomain toJPD) {
-		if (procedure.tasks().size() != 0) {
-			Task nextTask = taskExecutionScheduler.schedule(procedure.tasks());
-
-			if (nextTask == null) {
-				if (procedure.inputDomain().tasksSize() > procedure.tasks().size()) {
-					logger.info("Do nothing, as there may come more tasks from dht or broadcast");
-				} else if (procedure.inputDomain().tasksSize() == procedure.tasks().size()) {
-					procedure.inputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks());
-					transferData(bcMessages, procedure.tasks(), toJPD, procedure.inputDomain());
-				} else {// if (procedure.tasksSize() < procedure.tasks().size()) {
-					logger.warn("Can only happen when a task is received from a broadcast first --> Set in broadcast (should have happend)");
-				}
-			} else {
-				logger.info("Executing task: " + nextTask.key());
-				nextTask.addAssignedExecutor(id);
-				executeTask(bcMessages, nextTask, procedure, toJPD);
-			}
-		} else {
-			logger.info("No tasks yet... Keep waiting until we receive something.");
-		}
-	}
-
-	public void transferData(PriorityBlockingQueue<IBCMessage> bcMessages, List<Task> tasksToTransfer, JobProcedureDomain toJPD,
-			JobProcedureDomain inputDomain) {
-		logger.info("Finishing procedure");
-		// Check if all tasks are transferred from their task domain to the corresponding procedure domain.
-		List<Task> tasksToFinish = syncedArrayList();
-		List<FutureGet> futureGetKeys = syncedArrayList();
-		List<FutureGet> futureGetValues = syncedArrayList();
-		List<FuturePut> futurePuts = syncedArrayList();
-		for (Task task : tasksToTransfer) {
-			if (task.isFinished() && !task.isInProcedureDomain()) {
-				tasksToFinish.add(task);
-				ExecutorTaskDomain fromETD = (ExecutorTaskDomain) task.resultOutputDomain();
-				transferDataFromETDtoJPD(task, fromETD, toJPD, futureGetKeys, futureGetValues, futurePuts);
-			} else {
-				logger.info("Should not get here: tasks is not finished!");
-			}
-		}
-		Futures.whenAllSuccess(futureGetKeys).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+		String outputPExecutor = id;
+		JobProcedureDomain outputJPD = JobProcedureDomain.create(jobId, outputPExecutor, outputPExecutable, outputPIndex);
+		dhtCon.getAll(task.key(), procedure.inputDomain().toString()).addListener(new BaseFutureAdapter<FutureGet>() {
 
 			@Override
-			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
+			public void operationComplete(FutureGet future) throws Exception {
 				if (future.isSuccess()) {
-					Futures.whenAllSuccess(futureGetValues).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+					List<Object> values = syncedArrayList();
+					Set<Number640> valueSet = future.dataMap().keySet();
+					for (Number640 valueHash : valueSet) {
+						Object taskValue = ((Value) future.dataMap().get(valueHash).object()).value();
+						values.add(taskValue);
+					}
+					// Start execution on successful retrieval
+					// Everything here with subsequent procedure!!!!
+					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.nextStatusIndexFor(id), outputJPD);
+					IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
 
+					logger.info("Executing task: " + task.key() + " with values " + values);
+					procedure.executable().process(task.key(), values, context);
+
+					Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 						@Override
 						public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 							if (future.isSuccess()) {
-								Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
-
-									@Override
-									public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-										if (future.isSuccess()) {
-											for (Task task : tasksToFinish) {
-												task.isInProcedureDomain(true);
-											}
-											// Check again...
-											boolean allTasksFinished = true;
-											for (Task task : tasksToTransfer) {
-												if (!task.isFinished()) {
-													allTasksFinished = false;
-												}
-											}
-											if (allTasksFinished) {
-												CompletedBCMessage procedureCompleteBCMsg = CompletedBCMessage
-														.createCompletedProcedureBCMessage(toJPD, inputDomain);
-												bcMessages.add(procedureCompleteBCMsg);
-												dhtCon.broadcastCompletion(procedureCompleteBCMsg);
-											}
-											logger.info("Successfully transfered task output keys and values for tasks " + tasksToFinish
-													+ " from task executor domain to job procedure domain: " + toJPD.toString() + ". ");
-										} else {
-											logger.warn("Failed to transfered task output keys and values for task " + tasksToFinish
-													+ " from task executor domain to job procedure domain: " + toJPD.toString() + ". failed reason: "
-													+ future.failedReason());
-										}
-									}
-
-								});
+								outputETD.resultHash(context.resultHash());
+								CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(
+										outputETD.procedureIndex(procedure.procedureIndex()),
+										procedure.inputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
+								bcMessages.add(msg); // Adds it to itself, does not receive broadcasts... Makes sure this result is
+														// ignored in
+														// case another was received already
+								dhtCon.broadcastCompletion(msg);
 							} else {
-								logger.warn("Failed to get task values for task " + tasksToFinish + " from task executor domain. failed reason: "
-										+ future.failedReason());
+								logger.warn("No success on task execution. Reason: " + future.failedReason());
 							}
 						}
 
 					});
 				} else {
-					logger.warn("Failed to get task keys for task " + tasksToFinish + " from task executor domain. failed reason: "
-							+ future.failedReason());
+					logger.info("Could not retrieve data for task " + task.key() + " in job procedure domain: " + procedure.inputDomain().toString()
+							+ ". Failed reason: " + future.failedReason());
 				}
+
 			}
 
 		});
+
+	}
+
+	public void transferData(Job job, Procedure procedure, Task taskToTransfer) {
+		if (taskToTransfer.isFinished()) {
+			logger.info("Transferring tasks " + taskToTransfer + " to procedure domain");
+			// Check if all tasks are transferred from their task domain to the corresponding procedure domain.
+
+			List<FutureGet> futureGetKeys = syncedArrayList();
+			List<FutureGet> futureGetValues = syncedArrayList();
+			List<FuturePut> futurePuts = syncedArrayList();
+
+			ExecutorTaskDomain from = (ExecutorTaskDomain) taskToTransfer.resultOutputDomain();
+			JobProcedureDomain to = JobProcedureDomain.create(from.jobProcedureDomain().jobId(), id, from.jobProcedureDomain().procedureSimpleName(),
+					from.jobProcedureDomain().procedureIndex());
+			transferDataFromETDtoJPD(taskToTransfer, from, to, futureGetKeys, futureGetValues, futurePuts);
+			Futures.whenAllSuccess(futureGetKeys).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+
+				@Override
+				public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
+					if (future.isSuccess()) {
+						Futures.whenAllSuccess(futureGetValues).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+
+							@Override
+							public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
+								if (future.isSuccess()) {
+									Futures.whenAllSuccess(futurePuts).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+
+										@Override
+										public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
+											if (future.isSuccess()) {
+												taskToTransfer.isInProcedureDomain(true);
+												logger.info("Successfully transfered task output keys and values for task " + taskToTransfer
+														+ " from task executor domain to job procedure domain: " + to.toString() + ". ");
+
+												if (procedure.isFinished()) {
+													CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(
+															procedure.resultOutputDomain(), procedure.inputDomain());
+													messageConsumer.queueFor(job).add(msg);
+													dhtCon.broadcastCompletion(msg);
+												}
+
+											} else {
+												logger.warn("Failed to transfered task output keys and values for task " + taskToTransfer
+														+ " from task executor domain to job procedure domain: " + to.toString() + ". failed reason: "
+														+ future.failedReason());
+											}
+										}
+
+									});
+								} else {
+									logger.warn("Failed to get task values for task " + taskToTransfer + " from task executor domain. failed reason: "
+											+ future.failedReason());
+								}
+							}
+
+						});
+					} else {
+						logger.warn("Failed to get task keys for task " + taskToTransfer + " from task executor domain. failed reason: "
+								+ future.failedReason());
+					}
+				}
+
+			});
+		}
 	}
 
 	private void transferDataFromETDtoJPD(Task task, ExecutorTaskDomain fromETD, JobProcedureDomain toJPD, List<FutureGet> futureGetKeys,
@@ -379,13 +287,9 @@ public class MRJobExecutionManager {
 
 	}
 
-	public void abortExecution() {
+	public MRJobExecutionManagerMessageConsumer messageConsumer() {
 		// TODO Auto-generated method stub
-
-	}
-
-	public boolean canExecute() {
-		return this.executionCounter < this.maxNrOfExecutions;
+		return messageConsumer;
 	}
 
 	// End Execution
