@@ -99,11 +99,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 	private void handleReceivedMessage(Job job, IDomain outputDomain, JobProcedureDomain inputDomain, IUpdate iUpdate) {
 		Procedure procedure = job.currentProcedure();
-		if (procedure.procedureIndex() <= outputDomain.procedureIndex()) {
-			if (procedure.procedureIndex() < outputDomain.procedureIndex()) {
+		JobProcedureDomain thisOutputProcedureDomain = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
+				: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
+		if (procedure.procedureIndex() <= thisOutputProcedureDomain.procedureIndex()) {
+			if (procedure.procedureIndex() < thisOutputProcedureDomain.procedureIndex()) {
 				// Means this executor is behind in the execution than the one that sent this message
 				cancelProcedureExecution(procedure);
-				while (procedure.procedureIndex() < outputDomain.procedureIndex()) {
+				while (procedure.procedureIndex() < thisOutputProcedureDomain.procedureIndex()) {
 					job.incrementProcedureIndex();
 				}
 				procedure.inputDomain(inputDomain);
@@ -142,7 +144,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			@Override
 			public void executeUpdate(IDomain outputDomain, Procedure procedure) {
 				JobProcedureDomain outputJPD = (JobProcedureDomain) outputDomain;
-				procedure.addOutputDomain(outputDomain);
+				procedure.addOutputDomain(outputJPD);
 				if (procedure.isFinished()) {
 					cancelProcedureExecution(procedure);
 					job.incrementProcedureIndex();
@@ -168,10 +170,10 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				if (!tasks.contains(task)) {
 					procedure.addTask(task);
 				} else {
-					task = tasks.get(tasks.indexOf(task));
+					task = tasks.get(tasks.indexOf(task)).addAssignedExecutor(outputETDomain.executor());
 				}
 				if (!task.isFinished()) {// Is finished before adding new output procedure domain? then ignore update
-					task.addOutputDomain(outputDomain);
+					task.addOutputDomain(outputETDomain);
 					// Is finished after adding new output procedure domain? then abort any executions of this task and transfer the task's output
 					// <K,{V}> to the procedure domain
 					if (task.isFinished()) {

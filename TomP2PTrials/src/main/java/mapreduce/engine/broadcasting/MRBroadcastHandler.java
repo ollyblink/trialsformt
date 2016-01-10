@@ -81,7 +81,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 			logger.info("Before owner check");
 
 			if (owner != null && !bcMessage.outputDomain().executor().equals(owner)) { // Don't receive it if I sent it to myself
-				logger.info("Added message "+bcMessage+" for job "+ job + " to queue.");
+				logger.info("Added message " + bcMessage + " for job " + job + " to queue.");
 				jobQueues.get(job).add(bcMessage);
 			}
 		}

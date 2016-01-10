@@ -14,20 +14,14 @@ public class DesignIdeaJobSubmitter {
 		String bootstrapIP = "192.168.43.65";
 		int bootstrapPort = 4000;
 
-		MRJobSubmissionManager submitter = MRJobSubmissionManager
-				.create(DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort));
+		MRJobSubmissionManager submitter = MRJobSubmissionManager.create(DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort));
 
 		// String inputPath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/test/java/firstdesignidea/execution/datasplitting/testfile";
-		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";;
-
-		int maxNumberOfFinishedPeers = 3;
-		Job job = Job
-				.create(submitter.id(), null)
-				.fileInputFolderPath(fileInputFolderPath)
-				.maxFileSize(FileSize.THIRTY_TWO_KILO_BYTES)
-				.addSucceedingProcedure(WordCountMapper.create(), null)
-				.addSucceedingProcedure(WordCountReducer.create(), null)
-				.nrOfSameResultHash(maxNumberOfFinishedPeers);
+		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/manager/testFiles";
+		;
+ 
+		Job job = Job.create(submitter.id(), null).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.THIRTY_TWO_KILO_BYTES)
+				.addSucceedingProcedure(WordCountMapper.create(), null, 1, 1).addSucceedingProcedure(WordCountReducer.create(), null, 1, 1);
 
 		submitter.submit(job);
 		//

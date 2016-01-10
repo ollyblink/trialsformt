@@ -12,8 +12,6 @@ public class JobProcedureDomain implements IDomain {
 	private String procedureExecutor;
 	private String procedureSimpleName;
 	private int procedureIndex;
-//	private int procedureSubmissionCount;
-//	private long procedureCreationTime;
 	private Number160 resultHash;
 	/** Number of tasks for this procedure (may be different from tasks.size() because tasks are pulled after another and not all at the same time) */
 	private int tasksSize;
@@ -33,11 +31,9 @@ public class JobProcedureDomain implements IDomain {
 		this.procedureExecutor = procedureExecutor;
 		this.procedureSimpleName = procedureSimpleName;
 		this.procedureIndex = procedureIndex;
-//		this.procedureSubmissionCount = 0;
-//		this.procedureCreationTime = System.currentTimeMillis();
 		this.resultHash = Number160.ZERO;
 	}
- 
+
 	@Override
 	public Number160 resultHash() {
 		return resultHash;
@@ -54,8 +50,6 @@ public class JobProcedureDomain implements IDomain {
 		return procedureExecutor;
 	}
 
- 
-	 
 	@Override
 	public int hashCode() {
 		final int prime = 31;

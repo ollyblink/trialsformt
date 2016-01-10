@@ -1,26 +1,33 @@
 package mapreduce.engine.broadcasting;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.concurrent.PriorityBlockingQueue;
 
 import org.junit.Test;
 
 import mapreduce.execution.ExecutorTaskDomain;
+import mapreduce.execution.IDomain;
+import mapreduce.execution.JobProcedureDomain;
 
 public class CompletedTaskBCMessageTest {
 
 	@Test
 	public void test() throws InterruptedException {
 		PriorityBlockingQueue<IBCMessage> bcMessages = new PriorityBlockingQueue<>();
-		bcMessages.add(CompletedBCMessage.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null));
-		bcMessages.add(CompletedBCMessage.createCompletedProcedureBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null));
-		bcMessages.add(CompletedBCMessage.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null));
-		bcMessages.add(CompletedBCMessage.createCompletedProcedureBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null));
-		bcMessages.add(CompletedBCMessage.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null));
-		bcMessages.add(CompletedBCMessage.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null));
-		bcMessages.add(CompletedBCMessage.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(2), null));
-		bcMessages.add(CompletedBCMessage.createCompletedProcedureBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null));
+		bcMessages.add(CompletedBCMessage
+				.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, JobProcedureDomain.create(null, null, null, 0)), null));
+		bcMessages.add(CompletedBCMessage.createCompletedProcedureBCMessage(JobProcedureDomain.create(null, null, null, 0), null));
+		bcMessages.add(CompletedBCMessage
+				.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, JobProcedureDomain.create(null, null, null, 1)), null));
+		bcMessages.add(CompletedBCMessage.createCompletedProcedureBCMessage(JobProcedureDomain.create(null, null, null, 1), null));
+		bcMessages.add(CompletedBCMessage
+				.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, JobProcedureDomain.create(null, null, null, 2)), null));
+		bcMessages.add(CompletedBCMessage
+				.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, JobProcedureDomain.create(null, null, null, 0)), null));
+		bcMessages.add(CompletedBCMessage
+				.createCompletedTaskBCMessage(ExecutorTaskDomain.create(null, null, 0, JobProcedureDomain.create(null, null, null, 1)), null));
+		bcMessages.add(CompletedBCMessage.createCompletedProcedureBCMessage(JobProcedureDomain.create(null, null, null, 0), null));
 		int counter = 0;
 		while (!bcMessages.isEmpty()) {
 			IBCMessage take = bcMessages.take();
@@ -38,8 +45,10 @@ public class CompletedTaskBCMessageTest {
 			} else if (counter >= 4 && counter <= 7) {
 				procedureIndex = 0;
 			}
-//			System.err.println(take.outputDomain().procedureIndex() + "," + take.status());
-			assertEquals(procedureIndex, take.outputDomain().procedureIndex());
+			IDomain outputDomain = take.outputDomain();
+			JobProcedureDomain d = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
+					: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
+			assertEquals(procedureIndex, d.procedureIndex());
 			assertEquals(status, take.status());
 			counter++;
 		}

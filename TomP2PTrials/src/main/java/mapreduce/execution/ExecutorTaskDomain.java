@@ -13,7 +13,6 @@ public class ExecutorTaskDomain implements IDomain {
 	private int taskStatusIndex;
 	private Number160 resultHash;
 	private JobProcedureDomain jobProcedureDomain;
-	private int procedureIndex;
 
 	public static ExecutorTaskDomain create(String taskId, String taskExecutor, int taskStatusIndex, JobProcedureDomain jobProcedureDomain) {
 		return new ExecutorTaskDomain(taskId, taskExecutor, taskStatusIndex, jobProcedureDomain);
@@ -41,7 +40,6 @@ public class ExecutorTaskDomain implements IDomain {
 	public String executor() {
 		return taskExecutor;
 	}
-
 	public String taskId() {
 		return taskId;
 	}
@@ -79,21 +77,10 @@ public class ExecutorTaskDomain implements IDomain {
 	}
 
 	@Override
-	public Integer procedureIndex() {
-		return this.procedureIndex;
-	}
-
-	public ExecutorTaskDomain procedureIndex(int procedureIndex) {
-		this.procedureIndex = procedureIndex;
-		return this;
-	}
-
-	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((jobProcedureDomain == null) ? 0 : jobProcedureDomain.hashCode());
-		result = prime * result + procedureIndex;
 		result = prime * result + ((resultHash == null) ? 0 : resultHash.hashCode());
 		result = prime * result + ((taskExecutor == null) ? 0 : taskExecutor.hashCode());
 		result = prime * result + ((taskId == null) ? 0 : taskId.hashCode());
@@ -115,8 +102,6 @@ public class ExecutorTaskDomain implements IDomain {
 				return false;
 		} else if (!jobProcedureDomain.equals(other.jobProcedureDomain))
 			return false;
-		if (procedureIndex != other.procedureIndex)
-			return false;
 		if (resultHash == null) {
 			if (other.resultHash != null)
 				return false;
@@ -137,6 +122,6 @@ public class ExecutorTaskDomain implements IDomain {
 		return true;
 	}
 
-	 
+	
 
 }

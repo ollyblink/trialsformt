@@ -17,11 +17,10 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	/** Set true if this tasks's result keys and values were successfully transferred from executor task domain to executor job procedure domain */
 	private volatile boolean isInProcedureDomain;
 	/** Specifies local execution assignments */
-	private List<String> assignedExecutors;
+	private List<String> assignedExecutors = SyncedCollectionProvider.syncedArrayList();
 
 	private Task(String key) {
 		this.key = key;
-		this.assignedExecutors = SyncedCollectionProvider.syncedArrayList();
 	}
 
 	public static Task create(String key) {
@@ -42,23 +41,6 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	@Override
-	protected Task clone() {
-
-		try {
-			Task task = (Task) super.clone();
-			task.outputDomains = SyncedCollectionProvider.syncedArrayList();
-			for (IDomain e : outputDomains) {
-				task.outputDomains.add((IDomain) e.clone());
-			}
-			task.resultOutputDomain = (IDomain) resultOutputDomain.clone();
-			return task;
-		} catch (CloneNotSupportedException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	@Override
 	public Number160 calculateResultHash() {
 		if (resultOutputDomain == null) {
 			checkIfFinished();
@@ -74,11 +56,6 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 			}
 		}
 		return counter;
-	}
-
-	public Task addAssignedExecutor(String executor) {
-		this.assignedExecutors.add(executor);
-		return this;
 	}
 
 	public void reset() {
@@ -101,8 +78,23 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		return "Task [key=" + key + ", isInProcedureDomain=" + isInProcedureDomain + " " + super.toString() + "]";
 	}
 
-	public int nrOfAssignedWorkers() {
+	/**
+	 * Used in scheduling such that tasks with less assigned workers are executed before those with more. Does not guarantee that the assigned
+	 * Executors also finished execution!
+	 * 
+	 * @return the number of assigned workers for this task
+	 */
+	public int nrOfAssignedExecutors() {
 		return this.assignedExecutors.size();
+	}
+
+	public List<String> assignedExecutors() {
+		return assignedExecutors;
+	}
+
+	public Task addAssignedExecutor(String executor) {
+		this.assignedExecutors.add(executor);
+		return this;
 	}
 
 	@Override
@@ -129,4 +121,22 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 			return false;
 		return true;
 	}
+
+	@Override
+	protected Task clone() {
+
+		try {
+			Task task = (Task) super.clone();
+			task.outputDomains = SyncedCollectionProvider.syncedArrayList();
+			for (IDomain e : outputDomains) {
+				task.outputDomains.add((IDomain) e.clone());
+			}
+			task.resultOutputDomain = (IDomain) resultOutputDomain.clone();
+			return task;
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 }

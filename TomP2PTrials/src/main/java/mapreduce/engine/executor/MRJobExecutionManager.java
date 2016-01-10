@@ -120,8 +120,7 @@ public class MRJobExecutionManager {
 						public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 							if (future.isSuccess()) {
 								outputETD.resultHash(contextToUse.resultHash());
-								CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(
-										outputETD.procedureIndex(procedure.procedureIndex()),
+								CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
 										procedure.inputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
 								messageConsumer.queueFor(messageConsumer.getJob(outputETD.jobProcedureDomain().jobId())).add(msg); // Adds it to
 																																	// itself, does

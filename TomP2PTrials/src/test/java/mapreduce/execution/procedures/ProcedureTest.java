@@ -8,7 +8,7 @@ public class ProcedureTest {
 
 	@Test
 	public void test() {
-		fail("Not yet implemented");
+//		Procedure procedure = Procedure.create(procedure, procedureIndex);
 	}
 
 }

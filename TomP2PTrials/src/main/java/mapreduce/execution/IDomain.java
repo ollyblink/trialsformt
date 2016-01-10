@@ -10,8 +10,6 @@ public interface IDomain extends Serializable, Cloneable {
 
 	public IDomain resultHash(Number160 resultHash);
 
-	public String executor();
-
 	@Override
 	public int hashCode();
 
@@ -21,8 +19,8 @@ public interface IDomain extends Serializable, Cloneable {
 	@Override
 	public String toString();
 
-	Object clone() throws CloneNotSupportedException;
+	public Object clone() throws CloneNotSupportedException;
 
-	public Integer procedureIndex();
+	public String executor();
 
 }

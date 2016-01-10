@@ -2,9 +2,7 @@ package mapreduce.engine.broadcasting;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import org.junit.AfterClass;
@@ -35,7 +33,8 @@ public class MRBroadcastHandlerTest {
 
 		SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs = SyncedCollectionProvider.syncedTreeMap();
 		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(8484, 1).owner("TEST1").jobQueues(jobs);
-		Job job = Job.create("ME").addSucceedingProcedure(WordCountMapper.create(), null).addSucceedingProcedure(WordCountReducer.create(), null);
+		Job job = Job.create("ME").addSucceedingProcedure(WordCountMapper.create(), null, 1, 1).addSucceedingProcedure(WordCountReducer.create(),
+				null, 1, 1);
 
 		JobProcedureDomain outputDomain = JobProcedureDomain.create(job.id(), "ME", "WORDCOUNTMAPPER", 1);
 		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), "ME", "WORDCOUNTREDUCER", 2);

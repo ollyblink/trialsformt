@@ -1,7 +1,5 @@
 package mapreduce.engine.broadcasting;
 
-import java.util.concurrent.PriorityBlockingQueue;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,28 +51,36 @@ public class CompletedBCMessage implements IBCMessage {
 
 	@Override
 	public int compareTo(IBCMessage o) {
-		int result = outputDomain.procedureIndex().compareTo(o.outputDomain().procedureIndex()); 
+		JobProcedureDomain thisOutputProcedureDomain = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
+				: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
+		JobProcedureDomain receivedOutputProcedureDomain = (o.outputDomain() instanceof JobProcedureDomain ? (JobProcedureDomain) o.outputDomain()
+				: ((ExecutorTaskDomain) o.outputDomain()).jobProcedureDomain());
+
+		int result = thisOutputProcedureDomain.procedureIndex().compareTo(receivedOutputProcedureDomain.procedureIndex());
 		if (result == 0) { // Meaning, same procedure index
 			return status.compareTo(o.status());
 		} else {
 			return -result;
 		}
 	}
-//	public static void main(String[] args) throws InterruptedException {
-//		PriorityBlockingQueue<IBCMessage> bcMessages = new PriorityBlockingQueue<>(); 
-//		bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null, BCMessageStatus.COMPLETED_TASK));
-//		bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null, BCMessageStatus.COMPLETED_PROCEDURE));
-//		bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null, BCMessageStatus.COMPLETED_TASK));
-//		bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null, BCMessageStatus.COMPLETED_PROCEDURE));
-//		bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null, BCMessageStatus.COMPLETED_TASK));
-//		bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null, BCMessageStatus.COMPLETED_TASK));
-//		bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(2), null, BCMessageStatus.COMPLETED_TASK));
-//		bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null, BCMessageStatus.COMPLETED_PROCEDURE));
-//		while(!bcMessages.isEmpty()){
-//			IBCMessage take = bcMessages.take();
-//			System.err.println(take.outputDomain().procedureIndex() +", "+take.status());
-//		}
-//	}
+	// public static void main(String[] args) throws InterruptedException {
+	// PriorityBlockingQueue<IBCMessage> bcMessages = new PriorityBlockingQueue<>();
+	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null, BCMessageStatus.COMPLETED_TASK));
+	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null,
+	// BCMessageStatus.COMPLETED_PROCEDURE));
+	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null, BCMessageStatus.COMPLETED_TASK));
+	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null,
+	// BCMessageStatus.COMPLETED_PROCEDURE));
+	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null, BCMessageStatus.COMPLETED_TASK));
+	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null, BCMessageStatus.COMPLETED_TASK));
+	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(2), null, BCMessageStatus.COMPLETED_TASK));
+	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null,
+	// BCMessageStatus.COMPLETED_PROCEDURE));
+	// while(!bcMessages.isEmpty()){
+	// IBCMessage take = bcMessages.take();
+	// System.err.println(take.outputDomain().procedureIndex() +", "+take.status());
+	// }
+	// }
 
 	@Override
 	public void execute(Job job, IMessageConsumer messageConsumer) {

@@ -104,10 +104,12 @@ public class MRJobExecutionManagerTest {
 
 		PriorityBlockingQueue<IBCMessage> bcMessages = new PriorityBlockingQueue<>();
 		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(dhtConnectionProvider);
-		JobProcedureDomain dataDomain = JobProcedureDomain.create("Job0", jobExecutor.id(), StartProcedure.class.getSimpleName(), 0).tasksSize(1);
+		Job job = Job.create("SUBMITTER");
+		JobProcedureDomain dataDomain = JobProcedureDomain.create(job.id(), jobExecutor.id(), StartProcedure.class.getSimpleName(), 0).tasksSize(1);
 		addTaskDataToProcedureDomain(dhtConnectionProvider, "file1", testIsText, dataDomain.toString());
 		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).inputDomain(dataDomain).combiner(combiner);
 
+		jobExecutor.messageConsumer().jobs().put(job, bcMessages);
 		jobExecutor.executeTask(Task.create("file1"), procedure);
 
 		Thread.sleep(2000);
@@ -127,8 +129,7 @@ public class MRJobExecutionManagerTest {
 			resultHash = resultHash.xor(Number160.createHash("is")).xor(Number160.createHash(new Integer(isSum).toString()));
 		}
 		logger.info("Expected result hash: " + resultHash);
-		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create("file1", jobExecutor.id(), 0, outputJPD).resultHash(resultHash)
-				.procedureIndex(procedure.procedureIndex());
+		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create("file1", jobExecutor.id(), 0, outputJPD).resultHash(resultHash);
 
 		assertEquals(1, bcMessages.size());
 		CompletedBCMessage msg = (CompletedBCMessage) bcMessages.take();
@@ -217,8 +218,9 @@ public class MRJobExecutionManagerTest {
 		logger.info("before job creation");
 		MRJobSubmissionManager submitter = MRJobSubmissionManager.create(first);
 		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_MEGA_BYTES)
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1).addSucceedingProcedure(WordCountReducer.create(), null, 1, 1);
-		 
+				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1)
+				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1);
+
 		submitter.submit(job);
 		// new Thread(new Runnable() {
 		// //
@@ -232,7 +234,7 @@ public class MRJobExecutionManagerTest {
 
 		// }
 		// }).start();
-		Thread.sleep(Long.MAX_VALUE);
+		Thread.sleep(1000);
 		// first.getAll(keyString, domainString)
 	}
 

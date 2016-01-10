@@ -9,7 +9,6 @@ import org.mockito.Mockito;
 
 import mapreduce.engine.executor.MRJobExecutionManager;
 import mapreduce.engine.messageConsumer.MRJobExecutionManagerMessageConsumer;
-import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.WordCountMapper;

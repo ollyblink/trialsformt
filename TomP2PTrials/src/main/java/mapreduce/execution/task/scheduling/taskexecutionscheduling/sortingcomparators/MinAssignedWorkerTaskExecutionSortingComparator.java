@@ -20,9 +20,9 @@ public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparat
 			} else if (t1nrOfOutputDomains < t2nrOfOutputDomains) {
 				return -1;
 			} else {
-				if (t1.nrOfAssignedWorkers() > t2.nrOfAssignedWorkers()) {
+				if (t1.nrOfAssignedExecutors() > t2.nrOfAssignedExecutors()) {
 					return 1;
-				} else if (t1.nrOfAssignedWorkers() < t2.nrOfAssignedWorkers()) {
+				} else if (t1.nrOfAssignedExecutors() < t2.nrOfAssignedExecutors()) {
 					return -1;
 				} else {
 					return 0;

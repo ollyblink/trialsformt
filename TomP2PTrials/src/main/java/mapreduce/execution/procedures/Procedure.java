@@ -3,7 +3,6 @@ package mapreduce.execution.procedures;
 import java.io.Serializable;
 import java.util.List;
 
-import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.task.AbstractFinishable;
 import mapreduce.execution.task.Task;
@@ -16,25 +15,40 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	 * 
 	 */
 	private static final long serialVersionUID = 1717123684693430690L;
-	private final IExecutable procedure;
+	/** The actual procedure to execute */
+	private final IExecutable executable;
+	/** Which procedure in the job it is (counted from 0 == StartProcedure to N-1 == EndProcedure) */
 	private final int procedureIndex;
-
+	/** Tasks this procedure needs to execute */
 	private List<Task> tasks;
-	/** Location of keys for this procedure */
+	/** Location of keys to create the tasks for this procedure */
 	private JobProcedureDomain inputDomain;
-	/** Used to combine data before it is sent to the dht. Local aggregation */
+	/**
+	 * Used to combine data before it is sent to the dht. "Local" aggregation. Is often the same as the subsequent procedure (e.g. WordCount: Combiner
+	 * of WordCountMapper would be WordCountReducer as it locally reduces the words). It is not guaranteed that this always works!
+	 */
 	private IExecutable combiner;
+	/** How many times should each task be executed and reach the same resulthash until it is assumed to be a correct answer? */
 	private int nrOfSameResultHashForTasks;
 
-	private Procedure(IExecutable procedure, int procedureIndex) {
-		this.procedure = procedure;
+	private Procedure(IExecutable executable, int procedureIndex) {
+		this.executable = executable;
 		this.procedureIndex = procedureIndex;
 		this.tasks = SyncedCollectionProvider.syncedArrayList();
 		this.inputDomain = null;
 	}
 
-	public static Procedure create(IExecutable procedure, int procedureIndex) {
-		return new Procedure(procedure, procedureIndex);
+	public static Procedure create(IExecutable executable, int procedureIndex) {
+		return new Procedure(executable, procedureIndex);
+	}
+
+	public IExecutable combiner() {
+		return this.combiner;
+	}
+
+	public Procedure combiner(IExecutable combiner) {
+		this.combiner = combiner;
+		return this;
 	}
 
 	public Procedure inputDomain(JobProcedureDomain inputDomain) {
@@ -47,8 +61,8 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	}
 
 	public IExecutable executable() {
-		return procedure;
-	} 
+		return executable;
+	}
 
 	@Override
 	public Number160 calculateResultHash() {
@@ -107,7 +121,8 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 
 	@Override
 	public String toString() {
-		return "Procedure [procedure=" + procedure + ", procedureIndex=" + procedureIndex + ", tasks=" + tasks + ", inputDomain=" + inputDomain + "]";
+		return "Procedure [procedure=" + executable + ", procedureIndex=" + procedureIndex + ", tasks=" + tasks + ", inputDomain=" + inputDomain
+				+ "]";
 	}
 
 	public void reset() {
@@ -127,11 +142,6 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		return this;
 	}
 
-	// @Override
-	// public int nrOfOutputDomains() {
-	// return outputDomains.size();
-	// }
-
 	@Override
 	public Procedure clone() {
 		Procedure procedure = null;
@@ -148,7 +158,7 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((procedure == null) ? 0 : procedure.hashCode());
+		result = prime * result + ((executable == null) ? 0 : executable.hashCode());
 		result = prime * result + procedureIndex;
 		return result;
 	}
@@ -162,10 +172,10 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		if (getClass() != obj.getClass())
 			return false;
 		Procedure other = (Procedure) obj;
-		if (procedure == null) {
-			if (other.procedure != null)
+		if (executable == null) {
+			if (other.executable != null)
 				return false;
-		} else if (!procedure.equals(other.procedure))
+		} else if (!executable.equals(other.executable))
 			return false;
 		if (procedureIndex != other.procedureIndex)
 			return false;
@@ -179,12 +189,4 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		System.out.println(p2);
 	}
 
-	public IExecutable combiner() {
-		return this.combiner;
-	}
-
-	public Procedure combiner(IExecutable combiner) {
-		this.combiner = combiner;
-		return this;
-	}
 }
