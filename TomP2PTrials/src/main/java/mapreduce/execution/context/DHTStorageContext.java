@@ -5,7 +5,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ListMultimap;
+
 import mapreduce.execution.ExecutorTaskDomain;
+import mapreduce.execution.procedures.IExecutable;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -20,6 +23,9 @@ public class DHTStorageContext implements IContext {
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private List<FuturePut> futurePutData = SyncedCollectionProvider.syncedArrayList();
 	private ExecutorTaskDomain outputExecutorTaskDomain;
+	private IExecutable combiner;
+	private ListMultimap<Object, Object> valuesForCombiner;
+	private IContext combinerContext;
 
 	/**
 	 * 
@@ -36,8 +42,15 @@ public class DHTStorageContext implements IContext {
 
 	@Override
 	public void write(Object keyOut, Object valueOut) {
-		updateResultHash(keyOut, valueOut);
+		if (combiner == null) { // normal case
+			writeToDHT(keyOut, valueOut);
+		} else {
+			valuesForCombiner.put(keyOut, valueOut);
+		}
+	}
 
+	private void writeToDHT(Object keyOut, Object valueOut) {
+		updateResultHash(keyOut, valueOut);
 		String oETDString = outputExecutorTaskDomain.toString();
 		this.futurePutData
 				.add(this.dhtConnectionProvider.add(keyOut.toString(), valueOut, oETDString, true).addListener(new BaseFutureAdapter<FuturePut>() {
@@ -71,7 +84,6 @@ public class DHTStorageContext implements IContext {
 						}
 					}
 				}));
-
 	}
 
 	@Override
@@ -96,19 +108,25 @@ public class DHTStorageContext implements IContext {
 		return this;
 	}
 
-	// @Override
-	// public IContext combiner(IExecutable combiner) {
-	// this.combiner = combiner;
-	// return this;
-	// }
-	//
-	// @Override
-	// public IExecutable combiner() {
-	// return this.combiner;
-	// }
+	@Override
+	public IContext combiner(IExecutable combiner, IContext combinerContext) {
+		this.combiner = combiner;
+		this.combinerContext = combinerContext;
+		this.valuesForCombiner = SyncedCollectionProvider.syncedListMultimap();
+		return this;
+	}
 
 	private void updateResultHash(Object keyOut, Object valueOut) {
 		resultHash.xor(Number160.createHash(keyOut.toString())).xor(Number160.createHash(valueOut.toString()));
+	}
+
+	@Override
+	public void combine() {
+		if (combiner != null && combinerContext != null) {
+			for (Object key : valuesForCombiner.keySet()) {
+				combiner.process(key, valuesForCombiner.get(key), combinerContext);
+			}
+		}
 	}
 
 }

@@ -117,6 +117,7 @@ public class MRJobSubmissionManager {
 			}
 
 			if (taskDataComposer.currentValues() != null) {
+				logger.info("Adding last data set: "+ taskDataComposer.currentValues());
 				filePartCounter = addDataToDHT(job, keyfilePath, taskDataComposer.currentValues(), filePartCounter, futurePutValues, futurePutKeys);
 				taskDataComposer.reset();
 			}

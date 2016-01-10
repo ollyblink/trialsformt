@@ -30,11 +30,7 @@ public abstract class AbstractFinishable implements IFinishable {
 		return resultOutputDomain != null ;
 	}
 
-	@Override
-	public AbstractFinishable addOutputDomain(IDomain domain) {
-		this.outputDomains.add(domain);
-		return this;
-	}
+	
 
 	@Override
 	public Number160 calculateResultHash() {
@@ -81,6 +77,16 @@ public abstract class AbstractFinishable implements IFinishable {
 		}
 
 		return this;
+	}
+	@Override
+	public AbstractFinishable addOutputDomain(IDomain domain) {
+		this.outputDomains.add(domain);
+		return this;
+	}
+	@Override
+	public String toString() {
+		return "AbstractFinishable [resultOutputDomain=" + resultOutputDomain + ", outputDomains=" + outputDomains + ", nrOfSameResultHash="
+				+ nrOfSameResultHash + ", isFinished()=" + isFinished() + "]";
 	}
 
 }

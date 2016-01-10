@@ -12,7 +12,7 @@ public class JobProcedureDomain implements IDomain {
 	private String procedureExecutor;
 	private String procedureSimpleName;
 	private int procedureIndex;
-	private int procedureSubmissionCount;
+//	private int procedureSubmissionCount;
 //	private long procedureCreationTime;
 	private Number160 resultHash;
 	/** Number of tasks for this procedure (may be different from tasks.size() because tasks are pulled after another and not all at the same time) */
@@ -33,22 +33,39 @@ public class JobProcedureDomain implements IDomain {
 		this.procedureExecutor = procedureExecutor;
 		this.procedureSimpleName = procedureSimpleName;
 		this.procedureIndex = procedureIndex;
-		this.procedureSubmissionCount = 0;
+//		this.procedureSubmissionCount = 0;
 //		this.procedureCreationTime = System.currentTimeMillis();
 		this.resultHash = Number160.ZERO;
 	}
+ 
+	@Override
+	public Number160 resultHash() {
+		return resultHash;
+	}
 
+	@Override
+	public JobProcedureDomain resultHash(Number160 resultHash) {
+		this.resultHash = resultHash;
+		return this;
+	}
+
+	@Override
+	public String executor() {
+		return procedureExecutor;
+	}
+
+ 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((jobId == null) ? 0 : jobId.hashCode());
-//		result = prime * result + (int) (procedureCreationTime ^ (procedureCreationTime >>> 32));
+		result = prime * result + nrOfFinishedTasks;
 		result = prime * result + ((procedureExecutor == null) ? 0 : procedureExecutor.hashCode());
 		result = prime * result + procedureIndex;
 		result = prime * result + ((procedureSimpleName == null) ? 0 : procedureSimpleName.hashCode());
-		result = prime * result + procedureSubmissionCount;
 		result = prime * result + ((resultHash == null) ? 0 : resultHash.hashCode());
+		result = prime * result + tasksSize;
 		return result;
 	}
 
@@ -66,8 +83,8 @@ public class JobProcedureDomain implements IDomain {
 				return false;
 		} else if (!jobId.equals(other.jobId))
 			return false;
-//		if (procedureCreationTime != other.procedureCreationTime)
-//			return false;
+		if (nrOfFinishedTasks != other.nrOfFinishedTasks)
+			return false;
 		if (procedureExecutor == null) {
 			if (other.procedureExecutor != null)
 				return false;
@@ -80,45 +97,14 @@ public class JobProcedureDomain implements IDomain {
 				return false;
 		} else if (!procedureSimpleName.equals(other.procedureSimpleName))
 			return false;
-		if (procedureSubmissionCount != other.procedureSubmissionCount)
-			return false;
 		if (resultHash == null) {
 			if (other.resultHash != null)
 				return false;
 		} else if (!resultHash.equals(other.resultHash))
 			return false;
+		if (tasksSize != other.tasksSize)
+			return false;
 		return true;
-	}
-
-	@Override
-	public Number160 resultHash() {
-		return resultHash;
-	}
-
-	@Override
-	public JobProcedureDomain resultHash(Number160 resultHash) {
-		this.resultHash = resultHash;
-		return this;
-	}
-
-	@Override
-	public String executor() {
-		return procedureExecutor;
-	}
-
-//	@Override
-//	public long creationTime() {
-//		return this.procedureCreationTime;
-//	}
-
-	@Override
-	public int submissionCount() {
-		return this.procedureSubmissionCount;
-	}
-
-	@Override
-	public void incrementSubmissionCount() {
-		++this.procedureSubmissionCount;
 	}
 
 	public String jobId() {

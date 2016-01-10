@@ -9,6 +9,7 @@ import org.mockito.Mockito;
 
 import mapreduce.engine.executor.MRJobExecutionManager;
 import mapreduce.engine.messageConsumer.MRJobExecutionManagerMessageConsumer;
+import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.WordCountMapper;
@@ -38,7 +39,7 @@ public class MRJobExecutorMessageConsumerTest {
 	@Test
 	public void testHandleCompletedProcedure() {
 
-		Job originalJob = Job.create("TEST").addSucceedingProcedure(WordCountMapper.create());
+		Job originalJob = Job.create("TEST").addSucceedingProcedure(WordCountMapper.create(), null);
 		messageConsumer.jobs().put(originalJob, new PriorityBlockingQueue<>());
 
 		String procedureExecutor = "E1";
@@ -50,8 +51,8 @@ public class MRJobExecutorMessageConsumerTest {
 		originalJob.currentProcedure().addOutputDomain(JobProcedureDomain.create(originalJob.id(), procedureExecutor,
 				originalJob.currentProcedure().executable().getClass().getSimpleName(), originalJob.currentProcedure().procedureIndex()));
 		Job job = originalJob.clone();
-		JobProcedureDomain resultOutputDomain = job.currentProcedure().resultOutputDomain();
+		JobProcedureDomain resultOutputDomain = (JobProcedureDomain) job.currentProcedure().resultOutputDomain();
 		JobProcedureDomain inputDomain2 = job.currentProcedure().inputDomain();
-		messageConsumer.handleCompletedProcedure(resultOutputDomain, inputDomain2);
+		messageConsumer.handleCompletedProcedure(job, resultOutputDomain, inputDomain2);
 	}
 }

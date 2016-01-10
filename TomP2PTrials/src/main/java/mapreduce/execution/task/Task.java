@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.List;
 
 import mapreduce.execution.IDomain;
-import mapreduce.execution.IFinishable;
 import mapreduce.utils.SyncedCollectionProvider;
 
 public class Task extends AbstractFinishable implements Serializable, Cloneable {
@@ -18,8 +17,6 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	private volatile boolean isInProcedureDomain;
 	/** Specifies local execution assignments */
 	private List<String> assignedExecutors;
-	/** Specifies if the task is currently executed */
-	private volatile boolean isActive;
 
 	private Task(String key) {
 		this.key = key;
@@ -81,8 +78,18 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	@Override
+	public Task nrOfSameResultHash(int nrOfSameResultHash) {
+		return (Task) super.nrOfSameResultHash(nrOfSameResultHash);
+	}
+
+	@Override
+	public Task addOutputDomain(IDomain domain) {
+		return (Task) super.addOutputDomain(domain);
+	}
+
+	@Override
 	public String toString() {
-		return "Task [key=" + key + ", isInProcedureDomain=" + isInProcedureDomain + "]";
+		return "Task [key=" + key + ", isInProcedureDomain=" + isInProcedureDomain + " " + super.toString() + "]";
 	}
 
 	public int nrOfAssignedWorkers() {

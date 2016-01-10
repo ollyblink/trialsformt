@@ -150,10 +150,14 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 	 * processed, until the last added procedure that was added.
 	 * 
 	 * @param procedure
+	 * @param combiner
+	 *            combines data for this procedure before sending it to the dht. If combiner is null, no combination is done before sending the data
+	 *            to the dht
 	 * @return
 	 */
-	public Job addSucceedingProcedure(IExecutable procedure) {
-		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size()).nrOfSameResultHash(nrOfSameResultHash);
+	public Job addSucceedingProcedure(IExecutable procedure, IExecutable combiner) {
+		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size()).nrOfSameResultHash(nrOfSameResultHash)
+				.combiner(combiner);
 		this.procedures.add(procedureInformation);
 		return this;
 	}
@@ -243,16 +247,16 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 			return -1;
 		} else if (isFinished && !job.isFinished) {
 			return 1;
-		} else {//if (!isFinished && !job.isFinished) {
+		} else {// if (!isFinished && !job.isFinished) {
 			if (priorityLevel == job.priorityLevel) {
 				return creationTime.compareTo(job.creationTime);
 			} else {
 				return priorityLevel.compareTo(job.priorityLevel);
 			}
-		} 
-//		else {
-//			return 0;
-//		}
+		}
+		// else {
+		// return 0;
+		// }
 	}
 
 	public PriorityLevel priorityLevel() {

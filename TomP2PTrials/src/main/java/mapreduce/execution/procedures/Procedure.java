@@ -20,6 +20,8 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	private List<Task> tasks;
 	/** Location of keys for this procedure */
 	private JobProcedureDomain inputDomain;
+	/** Used to combine data before it is sent to the dht. Local aggregation */
+	private IExecutable combiner;
 
 	private Procedure(IExecutable procedure, int procedureIndex) {
 		this.procedure = procedure;
@@ -163,6 +165,15 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		Procedure p2 = p.clone();
 		System.out.println(p);
 		System.out.println(p2);
+	}
+
+	public IExecutable combiner() {
+		return this.combiner;
+	}
+
+	public Procedure combiner(IExecutable combiner) {
+		this.combiner = combiner;
+		return this;
 	}
 
 }

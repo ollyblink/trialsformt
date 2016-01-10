@@ -136,6 +136,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 			@Override
 			public void executeUpdate(IDomain outputDomain, Procedure procedure) {
+				logger.info("In handleCompletedTask");
 				ExecutorTaskDomain outputETDomain = (ExecutorTaskDomain) outputDomain;
 				Task receivedTask = Task.create(outputETDomain.taskId());
 				List<Task> tasksToUpdate = procedure.tasks();
@@ -143,10 +144,11 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					Task thisTask = tasksToUpdate.get(tasksToUpdate.indexOf(receivedTask));
 					if (!thisTask.isFinished()) {
 						thisTask.addOutputDomain(outputDomain);
+						logger.info("Task is finished:" + thisTask);
 						if (thisTask.isFinished()) { // May be finished now...
 							cancelTaskExecution(procedure, thisTask);
 							if (!thisTask.isInProcedureDomain()) { // Transfer data to procedure domain!
-								jobExecutor.transferData(job, procedure, thisTask);
+								jobExecutor.transferData(procedure, thisTask, jobs.get(job));
 							}
 						}
 					}
@@ -208,6 +210,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		logger.info("Try to execute job " + job);
 		if (!job.isFinished()) {
 			Procedure procedure = job.currentProcedure();
+			logger.info("Tasks: " + procedure.tasks());
 			Task task = taskExecutionScheduler.schedule(procedure.tasks());
 			if (task == null) {
 				logger.info("Finished all current tasks... maybe more will come in with broadcast or from dht ");
@@ -254,13 +257,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 		} else {
 			logger.info("No job to execute...");
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(2000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			Procedure procedure = job.procedure(2);
-			jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.inputDomain().toString())
+			jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
 					.addListener(new BaseFutureAdapter<FutureGet>() {
 
 						@Override
@@ -269,8 +272,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 								Set<Number640> keySet = future.dataMap().keySet();
 								for (Number640 k : keySet) {
 									String key = (String) future.dataMap().get(k).object();
-									jobExecutor.dhtConnectionProvider()
-											.getAll(key, procedure.resultOutputDomain().toString())
+									jobExecutor.dhtConnectionProvider().getAll(key, procedure.resultOutputDomain().toString())
 											.addListener(new BaseFutureAdapter<FutureGet>() {
 
 										@Override
@@ -279,9 +281,9 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 												Set<Number640> keySet2 = future.dataMap().keySet();
 												String values = "";
 												for (Number640 k2 : keySet2) {
-													values += ((Value)future.dataMap().get(k2).object()).value() + ", ";
+													values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
 												}
-												logger.info(key + ":"+values);
+												System.err.println(key + ":" + values);
 											}
 										}
 
@@ -295,6 +297,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	private void cancelProcedureExecution(Procedure procedure) {
+		logger.info("Cancelled procedure execution");
 		Multimap<Task, Future<?>> multimap = executingTaskThreads.get(procedure);
 		if (multimap != null) {
 			for (Future<?> future : multimap.values()) {
@@ -307,9 +310,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			future.cancel(true);
 		}
 		retrieveTasksThreads.get(procedure).clear();
+		// taskExecutionServer.shutdown();
+		// this.taskExecutionServer = new ThreadPoolExecutor(maxNrOfExecutions, maxNrOfExecutions, 0L, TimeUnit.MILLISECONDS,
+		// new LinkedBlockingQueue<Runnable>());
 	}
 
 	private void cancelTaskExecution(Procedure procedure, Task task) {
+		logger.info("Cancelled task execution");
 		Multimap<Task, Future<?>> multimap = executingTaskThreads.get(procedure);
 		if (multimap != null) {
 			Collection<Future<?>> allTaskExecutions = multimap.get(task);
@@ -317,6 +324,9 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				future.cancel(true);
 			}
 			multimap.get(task).clear();
+			// taskExecutionServer.shutdown();
+			// this.taskExecutionServer = new ThreadPoolExecutor(maxNrOfExecutions, maxNrOfExecutions, 0L, TimeUnit.MILLISECONDS,
+			// new LinkedBlockingQueue<Runnable>());
 		}
 	}
 }

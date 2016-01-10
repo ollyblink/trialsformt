@@ -12,12 +12,6 @@ public interface IDomain extends Serializable, Cloneable {
 
 	public String executor();
 
-//	public long creationTime();
-
-	public int submissionCount();
-
-	public void incrementSubmissionCount();
-
 	@Override
 	public int hashCode();
 
@@ -30,6 +24,5 @@ public interface IDomain extends Serializable, Cloneable {
 	Object clone() throws CloneNotSupportedException;
 
 	public int procedureIndex();
- 
 
 }

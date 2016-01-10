@@ -35,9 +35,9 @@ public class MRBroadcastHandlerTest {
 
 		SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs = SyncedCollectionProvider.syncedTreeMap();
 		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(8484, 1).owner("TEST1").jobQueues(jobs);
-		Job job = Job.create("ME").addSucceedingProcedure(WordCountMapper.create()).addSucceedingProcedure(WordCountReducer.create());
+		Job job = Job.create("ME").addSucceedingProcedure(WordCountMapper.create(), null).addSucceedingProcedure(WordCountReducer.create(), null);
 
- 		JobProcedureDomain outputDomain = JobProcedureDomain.create(job.id(), "ME", "WORDCOUNTMAPPER", 1);
+		JobProcedureDomain outputDomain = JobProcedureDomain.create(job.id(), "ME", "WORDCOUNTMAPPER", 1);
 		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), "ME", "WORDCOUNTREDUCER", 2);
 
 		// Before job was put into dht
