@@ -19,7 +19,6 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 public class MRBroadcastHandler extends StructuredBroadcastHandler {
-	protected static final int MAX_NR_OF_TRIALS = 3;
 
 	private static Logger logger = LoggerFactory.getLogger(MRBroadcastHandler.class);
 
@@ -28,7 +27,6 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	private IDHTConnectionProvider dhtConnectionProvider;
 
 	private MRBroadcastHandler() {
-		logger.info("Created broadcasthandler");
 	}
 
 	public static MRBroadcastHandler create() {
@@ -38,7 +36,6 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
 
-		logger.info(owner + " received message");
 		if (owner == null) {
 			logger.info("Owner not set! call owner(String owner)");
 		}
@@ -46,7 +43,6 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
-				logger.info("message is " + bcMessage);
 				addBCMessage(bcMessage);
 			}
 		} catch (ClassNotFoundException | IOException e) {
@@ -78,8 +74,6 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 				}
 			});
 		} else {
-			logger.info("Before owner check");
-
 			if (owner != null && !bcMessage.outputDomain().executor().equals(owner)) { // Don't receive it if I sent it to myself
 				logger.info("Added message " + bcMessage + " for job " + job + " to queue.");
 				jobQueues.get(job).add(bcMessage);

@@ -52,6 +52,7 @@ public class MRJobExecutorMessageConsumerTest {
 		Job job = originalJob.clone();
 		JobProcedureDomain resultOutputDomain = (JobProcedureDomain) job.currentProcedure().resultOutputDomain();
 		JobProcedureDomain inputDomain2 = job.currentProcedure().inputDomain();
+		
 		messageConsumer.handleCompletedProcedure(job, resultOutputDomain, inputDomain2);
 	}
 }

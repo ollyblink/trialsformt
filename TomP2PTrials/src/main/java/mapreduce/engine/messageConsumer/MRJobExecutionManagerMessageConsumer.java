@@ -3,10 +3,8 @@ package mapreduce.engine.messageConsumer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -15,7 +13,6 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import mapreduce.engine.broadcasting.IBCMessage;
 import mapreduce.engine.executor.MRJobExecutionManager;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
@@ -28,7 +25,6 @@ import mapreduce.execution.task.scheduling.ITaskScheduler;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
-import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
@@ -118,8 +114,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				iUpdate.executeUpdate(outputDomain, procedure);
 			} else { // May have to change input data location (inputDomain)
 				// executor of received message executes on different input data! Need to synchronize
-				if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {// Simply compare which one has finished more tasks so far and
-																						// take that one
+				if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {
 					// We have completed fewer tasks with our data set than the incoming... abort us and use the incoming data set location instead
 					cancelProcedureExecution(procedure);
 					procedure.inputDomain(inputDomain);
@@ -168,48 +163,25 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				List<Task> tasks = procedure.tasks();
 				Task task = receivedTask;
 				if (!tasks.contains(task)) {
-					procedure.addTask(task);
+					procedure.addTask(task.addAssignedExecutor(outputETDomain.executor()));
 				} else {
-					task = tasks.get(tasks.indexOf(task)).addAssignedExecutor(outputETDomain.executor());
+					task = tasks.get(tasks.indexOf(task));
+					if (!outputETDomain.executor().equals(jobExecutor.id())) {// If the message comes from here, this has already been added...
+						task.addAssignedExecutor(outputETDomain.executor());
+					}
 				}
 				if (!task.isFinished()) {// Is finished before adding new output procedure domain? then ignore update
-					task.addOutputDomain(outputETDomain);
 					// Is finished after adding new output procedure domain? then abort any executions of this task and transfer the task's output
 					// <K,{V}> to the procedure domain
-					if (task.isFinished()) {
+					if (task.addOutputDomain(outputETDomain).isFinished()) {
 						cancelTaskExecution(procedure, task); // If so, no execution needed anymore
 						// Transfer data to procedure domain! This may cause the procedure to become finished
 						jobExecutor.switchDataFromTaskToProcedureDomain(procedure, task);
 					}
 				}
 			}
-
 		});
 
-	}
-
-	private void getTaskKeysFromNetwork(Procedure procedure) {
-		logger.info("Retrieving tasks for: " + procedure.inputDomain().toString());
-		jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.inputDomain().toString())
-				.addListener(new BaseFutureAdapter<FutureGet>() {
-
-					@Override
-					public void operationComplete(FutureGet future) throws Exception {
-						if (future.isSuccess()) {
-							procedure.inputDomain().tasksSize(future.dataMap().size());
-							for (Number640 keyHash : future.dataMap().keySet()) {
-								String key = (String) future.dataMap().get(keyHash).object();
-								Task task = Task.create(key);
-								if (!procedure.tasks().contains(task)) {// Don't need to add it more, got it e.g. from a BC
-									procedure.tasks().add(task);
-									logger.info("added task " + task);
-									executeNext();
-								}
-							}
-						}
-					}
-
-				});
 	}
 
 	private void executeNext() {
@@ -228,7 +200,6 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 							@Override
 							public void run() {
-								logger.info("In runnable");
 								getTaskKeysFromNetwork(procedure);
 							}
 						};
@@ -258,44 +229,68 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			}
 		} else {
 			logger.info("No job to execute...");
-			try {
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			Procedure procedure = job.procedure(2);
-			jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
-					.addListener(new BaseFutureAdapter<FutureGet>() {
+			// try {
+			// Thread.sleep(2000);
+			// } catch (InterruptedException e) {
+			// e.printStackTrace();
+			// }
+			// Procedure procedure = job.procedure(2);
+			// jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
+			// .addListener(new BaseFutureAdapter<FutureGet>() {
+			//
+			// @Override
+			// public void operationComplete(FutureGet future) throws Exception {
+			// if (future.isSuccess()) {
+			// Set<Number640> keySet = future.dataMap().keySet();
+			// for (Number640 k : keySet) {
+			// String key = (String) future.dataMap().get(k).object();
+			// jobExecutor.dhtConnectionProvider().getAll(key, procedure.resultOutputDomain().toString())
+			// .addListener(new BaseFutureAdapter<FutureGet>() {
+			//
+			// @Override
+			// public void operationComplete(FutureGet future) throws Exception {
+			// if (future.isSuccess()) {
+			// Set<Number640> keySet2 = future.dataMap().keySet();
+			// String values = "";
+			// for (Number640 k2 : keySet2) {
+			// values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
+			// }
+			// System.err.println(key + ":" + values);
+			// }
+			// }
+			//
+			// });
+			// }
+			// }
+			// }
+			//
+			// });
+		}
 
-						@Override
-						public void operationComplete(FutureGet future) throws Exception {
-							if (future.isSuccess()) {
-								Set<Number640> keySet = future.dataMap().keySet();
-								for (Number640 k : keySet) {
-									String key = (String) future.dataMap().get(k).object();
-									jobExecutor.dhtConnectionProvider().getAll(key, procedure.resultOutputDomain().toString())
-											.addListener(new BaseFutureAdapter<FutureGet>() {
+	}
 
-										@Override
-										public void operationComplete(FutureGet future) throws Exception {
-											if (future.isSuccess()) {
-												Set<Number640> keySet2 = future.dataMap().keySet();
-												String values = "";
-												for (Number640 k2 : keySet2) {
-													values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
-												}
-												System.err.println(key + ":" + values);
-											}
-										}
+	private void getTaskKeysFromNetwork(Procedure procedure) {
+		logger.info("Retrieving tasks for: " + procedure.inputDomain().toString());
+		jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.inputDomain().toString())
+				.addListener(new BaseFutureAdapter<FutureGet>() {
 
-									});
+					@Override
+					public void operationComplete(FutureGet future) throws Exception {
+						if (future.isSuccess()) {
+							procedure.inputDomain().tasksSize(future.dataMap().size());
+							for (Number640 keyHash : future.dataMap().keySet()) {
+								String key = (String) future.dataMap().get(keyHash).object();
+								Task task = Task.create(key);
+								if (!procedure.tasks().contains(task)) {// Don't need to add it more, got it e.g. from a BC
+									procedure.tasks().add(task);
+									logger.info("added task " + task);
+									executeNext();
 								}
 							}
 						}
+					}
 
-					});
-		}
-
+				});
 	}
 
 	private void cancelProcedureExecution(Procedure procedure) {
