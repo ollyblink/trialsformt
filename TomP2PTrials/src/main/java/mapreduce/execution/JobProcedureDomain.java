@@ -55,6 +55,7 @@ public class JobProcedureDomain implements IDomain {
 	}
 
  
+	 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -115,7 +116,7 @@ public class JobProcedureDomain implements IDomain {
 		return this.procedureSimpleName;
 	}
 
-	public int procedureIndex() {
+	public Integer procedureIndex() {
 		return this.procedureIndex;
 	}
 

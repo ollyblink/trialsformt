@@ -81,7 +81,7 @@ public class MRJobExecutionManager {
 	// End Maintenance
 	// Execution
 
-	public void executeTask(PriorityBlockingQueue<IBCMessage> bcMessages, Task task, Procedure procedure) {
+	public void executeTask(Task task, Procedure procedure) {
 
 		logger.info("Task to execute: " + task);
 		// Now we actually wanna retrieve the data from the specified locations...
@@ -96,36 +96,41 @@ public class MRJobExecutionManager {
 						Object taskValue = ((Value) future.dataMap().get(valueHash).object()).value();
 						values.add(taskValue);
 					}
-					task.addAssignedExecutor(id);
 					logger.info("next task status index: " + task.nextStatusIndexFor(id) + " for task: " + task);
 
+					logger.info("Executing task: " + task.key() + " with values " + values);
 					JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.inputDomain().jobId(), id,
 							procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
 
-					logger.info("Executing task: " + task.key() + " with values " + values);
-
 					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.nextStatusIndexFor(id), outputJPD);
+					task.addAssignedExecutor(id);
+					logger.info("Output ExecutorTaskDomain: " + outputETD.toString());
 					IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
-					if(procedure.combiner() != null){ 
+					if (procedure.combiner() != null) {
 						IContext combinerContext = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
 						context.combiner(procedure.combiner(), combinerContext);
 					}
 					procedure.executable().process(task.key(), values, context);
-					if(procedure.combiner() != null){
+					if (procedure.combiner() != null) {
 						context.combine();
 					}
-
-					Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+					IContext contextToUse = (procedure.combiner() == null ? context : context.combinerContext());
+					Futures.whenAllSuccess(contextToUse.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 						@Override
 						public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 							if (future.isSuccess()) {
-								outputETD.resultHash(context.resultHash());
+								outputETD.resultHash(contextToUse.resultHash());
 								CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(
 										outputETD.procedureIndex(procedure.procedureIndex()),
 										procedure.inputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
-								bcMessages.add(msg); // Adds it to itself, does not receive broadcasts... Makes sure this result is
-														// ignored in
-														// case another was received already
+								messageConsumer.queueFor(messageConsumer.getJob(outputETD.jobProcedureDomain().jobId())).add(msg); // Adds it to
+																																	// itself, does
+																																	// not receive
+																																	// broadcasts...
+																																	// Makes sure this
+																																	// result is
+								// ignored in
+								// case another was received already
 								dhtCon.broadcastCompletion(msg);
 								logger.info("Successfully broadcasted TaskCompletedBCMessage for task " + task);
 							} else {
@@ -145,8 +150,8 @@ public class MRJobExecutionManager {
 
 	}
 
-	public void transferData(Procedure procedure, Task taskToTransfer, PriorityBlockingQueue<IBCMessage> bcMessages) {
-		if (taskToTransfer.isFinished()) {
+	public void switchDataFromTaskToProcedureDomain(Procedure procedure, Task taskToTransfer) {
+		if (taskToTransfer.isFinished() && !taskToTransfer.isInProcedureDomain()) {
 			logger.info("Transferring tasks " + taskToTransfer + " to procedure domain");
 
 			List<FutureGet> futureGetKeys = syncedArrayList();
@@ -185,9 +190,9 @@ public class MRJobExecutionManager {
 														}
 													}
 													if (isProcedureCompleted) {
-														CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to,
-																procedure.inputDomain());
-														bcMessages.add(msg);
+														CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(
+																to.resultHash(procedure.calculateResultHash()), procedure.inputDomain());
+														messageConsumer.queueFor(messageConsumer.getJob(to.jobId())).add(msg);
 														dhtCon.broadcastCompletion(msg);
 													}
 												}

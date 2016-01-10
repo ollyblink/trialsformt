@@ -23,7 +23,7 @@ public class TaskTest {
 		ExecutorTaskDomain etd = ExecutorTaskDomain
 				.create("hello", executor1, task.nextStatusIndexFor(executor1), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
-
+		task.addAssignedExecutor(executor1);
 		task.addOutputDomain(etd);
 
 		assertEquals(true, task.isFinished());
@@ -38,10 +38,11 @@ public class TaskTest {
 		ExecutorTaskDomain etd2 = ExecutorTaskDomain
 				.create("hello", executor1, task.nextStatusIndexFor(executor1), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
-
+		
+		task.addAssignedExecutor(executor1);
 		task.addOutputDomain(etd2);
 		assertEquals(true, task.isFinished());
-		assertEquals(etd2, task.resultOutputDomain());
+		assertEquals(etd, task.resultOutputDomain());
 
 		etd2.resultHash(Number160.createHash(falseResult));
 		assertEquals(false, task.isFinished());
@@ -49,7 +50,7 @@ public class TaskTest {
 
 		etd2.resultHash(Number160.createHash(trueResult));
 		assertEquals(true, task.isFinished());
-		assertEquals(etd2, task.resultOutputDomain());
+		assertEquals(etd, task.resultOutputDomain());
 
 		task.nrOfSameResultHash(3);
 
@@ -60,9 +61,10 @@ public class TaskTest {
 		ExecutorTaskDomain etd3 = ExecutorTaskDomain
 				.create("hello", executor2, task.nextStatusIndexFor(executor2), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
+		task.addAssignedExecutor(executor2);
 		task.addOutputDomain(etd3);
 		assertEquals(true, task.isFinished());
-		assertEquals(etd3, task.resultOutputDomain());
+		assertEquals(etd, task.resultOutputDomain()); //Always take the first one...
 	}
 
 }

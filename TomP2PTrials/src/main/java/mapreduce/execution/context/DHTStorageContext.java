@@ -117,7 +117,7 @@ public class DHTStorageContext implements IContext {
 	}
 
 	private void updateResultHash(Object keyOut, Object valueOut) {
-		resultHash.xor(Number160.createHash(keyOut.toString())).xor(Number160.createHash(valueOut.toString()));
+		resultHash = resultHash.xor(Number160.createHash(keyOut.toString())).xor(Number160.createHash(valueOut.toString()));
 	}
 
 	@Override
@@ -127,6 +127,11 @@ public class DHTStorageContext implements IContext {
 				combiner.process(key, valuesForCombiner.get(key), combinerContext);
 			}
 		}
+	}
+
+	@Override
+	public IContext combinerContext() {
+		return combinerContext;
 	}
 
 }

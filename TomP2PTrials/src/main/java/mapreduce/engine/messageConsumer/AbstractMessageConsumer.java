@@ -74,7 +74,7 @@ public abstract class AbstractMessageConsumer implements IMessageConsumer {
 		return this.canTake;
 	}
 
-	protected Job getJob(String jobId) {
+	public Job getJob(String jobId) {
 		for (Job job : jobs.keySet()) {
 			if (job.id().equals(jobId)) {
 				return job;

@@ -79,7 +79,7 @@ public class ExecutorTaskDomain implements IDomain {
 	}
 
 	@Override
-	public int procedureIndex() {
+	public Integer procedureIndex() {
 		return this.procedureIndex;
 	}
 
@@ -136,5 +136,7 @@ public class ExecutorTaskDomain implements IDomain {
 			return false;
 		return true;
 	}
+
+	 
 
 }

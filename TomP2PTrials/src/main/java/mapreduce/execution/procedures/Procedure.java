@@ -3,10 +3,12 @@ package mapreduce.execution.procedures;
 import java.io.Serializable;
 import java.util.List;
 
+import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.task.AbstractFinishable;
 import mapreduce.execution.task.Task;
 import mapreduce.utils.SyncedCollectionProvider;
+import net.tomp2p.peers.Number160;
 
 public final class Procedure extends AbstractFinishable implements Serializable, Cloneable {
 
@@ -22,6 +24,7 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	private JobProcedureDomain inputDomain;
 	/** Used to combine data before it is sent to the dht. Local aggregation */
 	private IExecutable combiner;
+	private int nrOfSameResultHashForTasks;
 
 	private Procedure(IExecutable procedure, int procedureIndex) {
 		this.procedure = procedure;
@@ -45,14 +48,21 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 
 	public IExecutable executable() {
 		return procedure;
-	}
+	} 
 
-	// @Override
-	// public Procedure addOutputDomain(IDomain domain) {
-	// this.outputDomains.add((JobProcedureDomain) domain);
-	// return this;
-	//
-	// }
+	@Override
+	public Number160 calculateResultHash() {
+		Number160 resultHash = Number160.ZERO;
+		for (Task task : tasks) {
+			Number160 taskResultHash = task.calculateResultHash();
+			if (taskResultHash == null) {
+				return null;
+			} else {
+				resultHash = resultHash.xor(taskResultHash);
+			}
+		}
+		return resultHash;
+	}
 
 	public int procedureIndex() {
 		return this.procedureIndex;
@@ -65,7 +75,7 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	public Procedure addTask(Task task) {
 		synchronized (this.tasks) {
 			if (!this.tasks.contains(task)) {
-				task.nrOfSameResultHash(nrOfSameResultHash);
+				task.nrOfSameResultHash(nrOfSameResultHashForTasks);
 				this.tasks.add(task);
 			}
 		}
@@ -91,7 +101,7 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 
 	private void updateNrOfSameResultHash() {
 		for (Task task : tasks) {
-			task.nrOfSameResultHash(nrOfSameResultHash);
+			task.nrOfSameResultHash(nrOfSameResultHashForTasks);
 		}
 	}
 
@@ -108,11 +118,15 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 
 	@Override
 	public Procedure nrOfSameResultHash(int nrOfSameResultHash) {
-		this.nrOfSameResultHash = nrOfSameResultHash;
+		return (Procedure) super.nrOfSameResultHash(nrOfSameResultHash);
+	}
+
+	public Procedure nrOfSameResultHashForTasks(int nrOfSameResultHashForTasks) {
+		this.nrOfSameResultHashForTasks = nrOfSameResultHashForTasks;
 		updateNrOfSameResultHash();
 		return this;
 	}
-	//
+
 	// @Override
 	// public int nrOfOutputDomains() {
 	// return outputDomains.size();
@@ -120,11 +134,9 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 
 	@Override
 	public Procedure clone() {
-
 		Procedure procedure = null;
 		try {
 			procedure = (Procedure) super.clone();
-
 			return procedure;
 		} catch (CloneNotSupportedException e) {
 			e.printStackTrace();
@@ -175,5 +187,4 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		this.combiner = combiner;
 		return this;
 	}
-
 }

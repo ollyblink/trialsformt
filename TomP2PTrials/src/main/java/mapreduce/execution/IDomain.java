@@ -23,6 +23,6 @@ public interface IDomain extends Serializable, Cloneable {
 
 	Object clone() throws CloneNotSupportedException;
 
-	public int procedureIndex();
+	public Integer procedureIndex();
 
 }

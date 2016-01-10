@@ -23,4 +23,7 @@ public interface IContext {
 	public IContext combiner(IExecutable combiner, IContext combinerContext);
 
 	public void combine();
+ 
+
+	public IContext combinerContext();
 }

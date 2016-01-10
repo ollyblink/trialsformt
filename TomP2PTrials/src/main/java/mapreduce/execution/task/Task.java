@@ -5,6 +5,7 @@ import java.util.List;
 
 import mapreduce.execution.IDomain;
 import mapreduce.utils.SyncedCollectionProvider;
+import net.tomp2p.peers.Number160;
 
 public class Task extends AbstractFinishable implements Serializable, Cloneable {
 	/**
@@ -55,6 +56,14 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	@Override
+	public Number160 calculateResultHash() {
+		if (resultOutputDomain == null) {
+			checkIfFinished();
+		}
+		return (resultOutputDomain == null ? null : resultOutputDomain.resultHash());
 	}
 
 	public int nextStatusIndexFor(String executor) {

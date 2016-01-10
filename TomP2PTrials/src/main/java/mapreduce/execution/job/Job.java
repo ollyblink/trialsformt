@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import ch.qos.logback.classic.Logger;
 import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.procedures.Procedure;
@@ -27,7 +28,7 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 	// private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
 	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
-	private static final int DEFAULT_MAX_NR_OF_FINISHED_WORKERS = 1;
+	// private static final int DEFAULT_MAX_NR_OF_FINISHED_WORKERS = 1;
 
 	/** specifies a unique id for this job */
 	private String id;
@@ -59,13 +60,13 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 	 */
 	private String fileInputFolderPath;
 
-	/**
-	 * Specifies the number of workers that maximally should execute a task of a job (a job's data is divided into a number of tasks). If 3 or more
-	 * workers should finish a task, a majority vote on the task result determines if the result is likely to be correct (if 2 out of 3 workers
-	 * achieved the same hash, the task is finished). The principle is the same as in tennis: best of 3 or best of 5. Always,
-	 * Math.Round(maxNrOfFinishedWorkersPerTask/2) workers need to achieve the same hash.
-	 */
-	private int nrOfSameResultHash = DEFAULT_MAX_NR_OF_FINISHED_WORKERS;
+	// /**
+	// * Specifies the number of workers that maximally should execute a task of a job (a job's data is divided into a number of tasks). If 3 or more
+	// * workers should finish a task, a majority vote on the task result determines if the result is likely to be correct (if 2 out of 3 workers
+	// * achieved the same hash, the task is finished). The principle is the same as in tennis: best of 3 or best of 5. Always,
+	// * Math.Round(maxNrOfFinishedWorkersPerTask/2) workers need to achieve the same hash.
+	// */
+	// private int nrOfSameResultHash = DEFAULT_MAX_NR_OF_FINISHED_WORKERS;
 
 	/**
 	 * if true, the peer tries to pull tasks from own storage before accessing the dht. If false, locality of data is ignored and instead the dht is
@@ -89,7 +90,7 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 		this.currentProcedureIndex = 0;
 		this.procedures = SyncedCollectionProvider.syncedArrayList();
 		// Add initial
-		Procedure startProcedure = Procedure.create(StartProcedure.create(), 0).nrOfSameResultHash(nrOfSameResultHash);
+		Procedure startProcedure = Procedure.create(StartProcedure.create(), 0).nrOfSameResultHash(1);
 		this.procedures.add(startProcedure);
 	}
 
@@ -128,7 +129,7 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 		if (index < 0) {
 			return procedures.get(0);
 		} else if (index >= procedures.size()) {
-			return Procedure.create(EndProcedure.create(), procedures.size()).nrOfSameResultHash(nrOfSameResultHash);
+			return Procedure.create(EndProcedure.create(), procedures.size()).nrOfSameResultHash(0);
 		} else {
 			return procedures.get(index);
 		}
@@ -150,14 +151,28 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 	 * processed, until the last added procedure that was added.
 	 * 
 	 * @param procedure
+	 *            the actual procedure to execute next
 	 * @param combiner
 	 *            combines data for this procedure before sending it to the dht. If combiner is null, no combination is done before sending the data
-	 *            to the dht
+	 *            to the dht. Often, this is the same as the subsequent procedure following this procedure, only applied locally
+	 * @param nrOfSameResultHashForProcedure
+	 *            specifies how many times this procedure should achieve the same result hash before one is confident enough to consider the procedure
+	 *            to be finished
+	 * @param numberOfSameResultHashForTasks
+	 *            specifies how many times the tasks of this procedure should achieve the same result hash before one is confident enough to consider
+	 *            a task to be finished
 	 * @return
 	 */
-	public Job addSucceedingProcedure(IExecutable procedure, IExecutable combiner) {
-		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size()).nrOfSameResultHash(nrOfSameResultHash)
-				.combiner(combiner);
+	public Job addSucceedingProcedure(IExecutable procedure, IExecutable combiner, int nrOfSameResultHashForProcedure,
+			int nrOfSameResultHashForTasks) {
+		if (procedure == null) {
+			return this;
+		}
+		nrOfSameResultHashForProcedure = (nrOfSameResultHashForProcedure == 0 ? 1 : nrOfSameResultHashForProcedure);
+		nrOfSameResultHashForTasks = (nrOfSameResultHashForTasks == 0 ? 1 : nrOfSameResultHashForTasks);
+
+		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size()).nrOfSameResultHash(nrOfSameResultHashForProcedure)
+				.nrOfSameResultHashForTasks(nrOfSameResultHashForTasks).combiner(combiner);
 		this.procedures.add(procedureInformation);
 		return this;
 	}
@@ -165,22 +180,6 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 	public void incrementProcedureIndex() {
 		if (this.currentProcedureIndex <= procedures.size()) {
 			++this.currentProcedureIndex;
-		}
-	}
-
-	public int nrOfSameResultHash() {
-		return nrOfSameResultHash;
-	}
-
-	public Job nrOfSameResultHash(int nrOfSameResultHash) {
-		this.nrOfSameResultHash = nrOfSameResultHash;
-		updateNrOfSameResultHash();
-		return this;
-	}
-
-	private void updateNrOfSameResultHash() {
-		for (Procedure p : this.procedures) {
-			p.nrOfSameResultHash(this.nrOfSameResultHash);
 		}
 	}
 

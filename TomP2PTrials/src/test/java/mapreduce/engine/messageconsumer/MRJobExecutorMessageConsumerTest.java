@@ -39,7 +39,7 @@ public class MRJobExecutorMessageConsumerTest {
 	@Test
 	public void testHandleCompletedProcedure() {
 
-		Job originalJob = Job.create("TEST").addSucceedingProcedure(WordCountMapper.create(), null);
+		Job originalJob = Job.create("TEST").addSucceedingProcedure(WordCountMapper.create(), null, 1, 1);
 		messageConsumer.jobs().put(originalJob, new PriorityBlockingQueue<>());
 
 		String procedureExecutor = "E1";

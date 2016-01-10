@@ -17,7 +17,7 @@ public interface IFinishable {
 
 	public IDomain resultOutputDomain();
 
-	public int nrOfOutputDomains();
+	public int nrOfOutputDomains(); 
 
 	public IFinishable nrOfSameResultHash(int nrOfSameResultHash);
 

@@ -99,67 +99,41 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 	private void handleReceivedMessage(Job job, IDomain outputDomain, JobProcedureDomain inputDomain, IUpdate iUpdate) {
 		Procedure procedure = job.currentProcedure();
-		if (procedure.procedureIndex() == outputDomain.procedureIndex()) { // Same procedure is executed
-
+		if (procedure.procedureIndex() <= outputDomain.procedureIndex()) {
+			if (procedure.procedureIndex() < outputDomain.procedureIndex()) {
+				// Means this executor is behind in the execution than the one that sent this message
+				cancelProcedureExecution(procedure);
+				while (procedure.procedureIndex() < outputDomain.procedureIndex()) {
+					job.incrementProcedureIndex();
+				}
+				procedure.inputDomain(inputDomain);
+			} // no else needed... if it's the same procedure index, we are up to date and can update
 			if (procedure.inputDomain().equals(inputDomain)) { // same procedure, same input data location: everything is fine!
 				logger.info("tasks sizes: here: " + procedure.inputDomain().tasksSize() + " < as there " + inputDomain.tasksSize());
-				if (procedure.inputDomain().tasksSize() < inputDomain.tasksSize()) {
+				if (procedure.inputDomain().tasksSize() < inputDomain.tasksSize()) {// looks like the received had more already
 					procedure.inputDomain().tasksSize(inputDomain.tasksSize());
 				}
 				iUpdate.executeUpdate(outputDomain, procedure);
 			} else { // May have to change input data location (inputDomain)
 				// executor of received message executes on different input data! Need to synchronize
-				// Simply compare which one was earlier
-				if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {
+				if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {// Simply compare which one has finished more tasks so far and
+																						// take that one
 					// We have completed fewer tasks with our data set than the incoming... abort us and use the incoming data set location instead
 					cancelProcedureExecution(procedure);
 					procedure.inputDomain(inputDomain);
-					procedure.addOutputDomain(outputDomain);
-				}
+				} else if (procedure.nrOfFinishedTasks() == inputDomain.nrOfFinishedTasks()) { // What if they executed the same number of tasks?
+					// TODO: What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most
+					// likely finish more tasks quicker
+					logger.info("TODO: finished the same number of tasks with different data sets...\n"
+							+ "What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most likely finish more tasks quicker\n"
+							+ "Or compare the tasks output values size");
+				} // else{ ignore, as we are the ones that finished more already...
 			}
-		} else if (procedure.procedureIndex() < outputDomain.procedureIndex()) {
-			// Means this executor is behind in the execution than the one that sent this message
-			cancelProcedureExecution(procedure);
-			while (procedure.procedureIndex() < outputDomain.procedureIndex()) {
-				job.incrementProcedureIndex();
-			}
-			procedure.inputDomain(inputDomain);
-			procedure.addOutputDomain(outputDomain);
 		}
+		// else{ ignore, as this is a message for an old procedure }
+
 		logger.info("Execute next");
 		executeNext();
-	}
-
-	@Override
-	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
-		handleReceivedMessage(job, outputDomain, inputDomain, new IUpdate() {
-
-			@Override
-			public void executeUpdate(IDomain outputDomain, Procedure procedure) {
-				logger.info("In handleCompletedTask");
-				ExecutorTaskDomain outputETDomain = (ExecutorTaskDomain) outputDomain;
-				Task receivedTask = Task.create(outputETDomain.taskId());
-				List<Task> tasksToUpdate = procedure.tasks();
-				if (tasksToUpdate.contains(receivedTask)) {
-					Task thisTask = tasksToUpdate.get(tasksToUpdate.indexOf(receivedTask));
-					if (!thisTask.isFinished()) {
-						thisTask.addOutputDomain(outputDomain);
-						logger.info("Task is finished:" + thisTask);
-						if (thisTask.isFinished()) { // May be finished now...
-							cancelTaskExecution(procedure, thisTask);
-							if (!thisTask.isInProcedureDomain()) { // Transfer data to procedure domain!
-								jobExecutor.transferData(procedure, thisTask, jobs.get(job));
-							}
-						}
-					}
-				} else {
-					receivedTask.addOutputDomain(outputDomain);
-					procedure.addTask(receivedTask);
-				}
-			}
-
-		});
-
 	}
 
 	@Override
@@ -179,6 +153,37 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				}
 			}
 		});
+	}
+
+	@Override
+	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
+		handleReceivedMessage(job, outputDomain, inputDomain, new IUpdate() {
+
+			@Override
+			public void executeUpdate(IDomain outputDomain, Procedure procedure) {
+				ExecutorTaskDomain outputETDomain = (ExecutorTaskDomain) outputDomain;
+				Task receivedTask = Task.create(outputETDomain.taskId());
+				List<Task> tasks = procedure.tasks();
+				Task task = receivedTask;
+				if (!tasks.contains(task)) {
+					procedure.addTask(task);
+				} else {
+					task = tasks.get(tasks.indexOf(task));
+				}
+				if (!task.isFinished()) {// Is finished before adding new output procedure domain? then ignore update
+					task.addOutputDomain(outputDomain);
+					// Is finished after adding new output procedure domain? then abort any executions of this task and transfer the task's output
+					// <K,{V}> to the procedure domain
+					if (task.isFinished()) {
+						cancelTaskExecution(procedure, task); // If so, no execution needed anymore
+						// Transfer data to procedure domain! This may cause the procedure to become finished
+						jobExecutor.switchDataFromTaskToProcedureDomain(procedure, task);
+					}
+				}
+			}
+
+		});
+
 	}
 
 	private void getTaskKeysFromNetwork(Procedure procedure) {
@@ -214,8 +219,6 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			Task task = taskExecutionScheduler.schedule(procedure.tasks());
 			if (task == null) {
 				logger.info("Finished all current tasks... maybe more will come in with broadcast or from dht ");
-				logger.info("procedure.tasks().size() < procedure.inputDomain().tasksSize() " + procedure.tasks().size() + "<"
-						+ procedure.inputDomain().tasksSize());
 				if (procedure.tasks().size() == 0 || procedure.tasks().size() < procedure.inputDomain().tasksSize()) {
 					logger.info("Retrieve tasks from dht/local storage. Can execute? " + canExecute());
 					if (canExecute()) {
@@ -234,8 +237,6 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			} else {
 				logger.info("Executing next task: " + task);
 				if (canExecute()) {
-					PriorityBlockingQueue<IBCMessage> bcMessages = queueFor(job);
-
 					Multimap<Task, Future<?>> multimap = executingTaskThreads.get(procedure);
 					if (multimap == null) {
 						multimap = Multimaps.synchronizedMultimap(ArrayListMultimap.create());
@@ -245,8 +246,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 						@Override
 						public void run() {
-							logger.info("calling jobExecutor.executeTask(" + bcMessages + ", " + task + ", " + procedure + ")");
-							jobExecutor.executeTask(bcMessages, task, procedure);
+							jobExecutor.executeTask(task, procedure);
 						}
 
 					};
@@ -259,7 +259,6 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			try {
 				Thread.sleep(2000);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			Procedure procedure = job.procedure(2);
@@ -294,6 +293,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 					});
 		}
+
 	}
 
 	private void cancelProcedureExecution(Procedure procedure) {

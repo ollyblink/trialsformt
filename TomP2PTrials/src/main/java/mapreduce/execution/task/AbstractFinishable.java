@@ -18,7 +18,6 @@ public abstract class AbstractFinishable implements IFinishable {
 	protected List<IDomain> outputDomains;
 	/** How many times this object needs to be executed before it is declared finished */
 	protected int nrOfSameResultHash = 1; // Needs at least one
-	
 
 	public AbstractFinishable() {
 		this.outputDomains = SyncedCollectionProvider.syncedArrayList();
@@ -27,24 +26,18 @@ public abstract class AbstractFinishable implements IFinishable {
 	@Override
 	public boolean isFinished() {
 		checkIfFinished();
-		return resultOutputDomain != null ;
+		return resultOutputDomain != null;
 	}
-
-	
+ 
 
 	@Override
-	public Number160 calculateResultHash() {
-		checkIfFinished();
-		return (resultOutputDomain == null ? null : resultOutputDomain.resultHash());
-	}
-
-	@Override
+	//Always takes the first one!
 	public IDomain resultOutputDomain() {
 		checkIfFinished();
 		return resultOutputDomain;
 	}
 
-	private void checkIfFinished() {
+	protected void checkIfFinished() {
 		ListMultimap<Number160, IDomain> results = ArrayListMultimap.create();
 		for (IDomain domain : outputDomains) {
 			results.put(domain.resultHash(), domain);
@@ -78,11 +71,13 @@ public abstract class AbstractFinishable implements IFinishable {
 
 		return this;
 	}
+
 	@Override
 	public AbstractFinishable addOutputDomain(IDomain domain) {
 		this.outputDomains.add(domain);
 		return this;
 	}
+
 	@Override
 	public String toString() {
 		return "AbstractFinishable [resultOutputDomain=" + resultOutputDomain + ", outputDomains=" + outputDomains + ", nrOfSameResultHash="
