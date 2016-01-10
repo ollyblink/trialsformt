@@ -105,9 +105,11 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 
 	public int nrOfFinishedTasks() {
 		int finishedTasksCounter = 0;
-		for (Task task : tasks) {
-			if (task.isFinished()) {
-				++finishedTasksCounter;
+		synchronized (tasks) {
+			for (Task task : tasks) {
+				if (task.isFinished()) {
+					++finishedTasksCounter;
+				}
 			}
 		}
 		return finishedTasksCounter;

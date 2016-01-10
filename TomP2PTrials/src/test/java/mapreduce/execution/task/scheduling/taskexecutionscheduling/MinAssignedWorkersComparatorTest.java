@@ -41,8 +41,7 @@ public class MinAssignedWorkersComparatorTest {
 						.addOutputDomain(
 								ExecutorTaskDomain.create("hello", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
 				.addOutputDomain(ExecutorTaskDomain.create("hello", "Executor1", 1, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addOutputDomain(ExecutorTaskDomain.create("hello", "Executor1", 1, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addAssignedExecutor("Executor1").addAssignedExecutor("Executor1").addAssignedExecutor("Executor1"));
+				.addOutputDomain(ExecutorTaskDomain.create("hello", "Executor1", 1, JobProcedureDomain.create("test", "Executor1", "Null", 0))));
 
 		// Finished, not active, 3 executors
 		tasks.add(
@@ -50,30 +49,25 @@ public class MinAssignedWorkersComparatorTest {
 						.addOutputDomain(
 								ExecutorTaskDomain.create("hallo", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
 				.addOutputDomain(ExecutorTaskDomain.create("hallo", "Executor1", 1, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addOutputDomain(ExecutorTaskDomain.create("hallo", "Executor1", 1, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addAssignedExecutor("Executor1").addAssignedExecutor("Executor1").addAssignedExecutor("Executor1"));
+				.addOutputDomain(ExecutorTaskDomain.create("hallo", "Executor1", 1, JobProcedureDomain.create("test", "Executor1", "Null", 0))));
 
 		// Not finished, active, 2 executors
-		tasks.add(Task.create("this").nrOfSameResultHash(3)
+		tasks.add(Task.create("this").nrOfSameResultHash(3).incrementActiveCount()
 				.addOutputDomain(ExecutorTaskDomain.create("this", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addOutputDomain(ExecutorTaskDomain.create("this", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addAssignedExecutor("Executor1").addAssignedExecutor("Executor1").addAssignedExecutor("Executor1"));
+				.addOutputDomain(ExecutorTaskDomain.create("this", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0))));
 
 		// Not finished, not active, 2 executors
 		tasks.add(Task.create("is").nrOfSameResultHash(3)
 				.addOutputDomain(ExecutorTaskDomain.create("is", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addOutputDomain(ExecutorTaskDomain.create("is", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addAssignedExecutor("Executor1").addAssignedExecutor("Executor1"));
+				.addOutputDomain(ExecutorTaskDomain.create("is", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0))));
 
 		// Not finished, active, 1 executors
-		tasks.add(Task.create("a").nrOfSameResultHash(3)
-				.addOutputDomain(ExecutorTaskDomain.create("a", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addAssignedExecutor("Executor1").addAssignedExecutor("Executor1"));
+		tasks.add(Task.create("a").nrOfSameResultHash(3).incrementActiveCount()
+				.addOutputDomain(ExecutorTaskDomain.create("a", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0))));
 
 		// Not finished, not active, 1 executors
-		tasks.add(Task.create("test").nrOfSameResultHash(3)
-				.addOutputDomain(ExecutorTaskDomain.create("test", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0)))
-				.addAssignedExecutor("Executor1"));
+		tasks.add(Task.create("test").nrOfSameResultHash(3) 
+				.addOutputDomain(ExecutorTaskDomain.create("test", "Executor1", 0, JobProcedureDomain.create("test", "Executor1", "Null", 0))));
 		return tasks;
 	}
 

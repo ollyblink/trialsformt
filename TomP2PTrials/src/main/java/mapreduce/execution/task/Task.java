@@ -1,7 +1,6 @@
 package mapreduce.execution.task;
 
 import java.io.Serializable;
-import java.util.List;
 
 import mapreduce.execution.IDomain;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -15,9 +14,31 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	/** Key of this task to get the values for */
 	private final String key;
 	/** Set true if this tasks's result keys and values were successfully transferred from executor task domain to executor job procedure domain */
-	private volatile boolean isInProcedureDomain;
-	/** Specifies local execution assignments */
-	private List<String> assignedExecutors = SyncedCollectionProvider.syncedArrayList();
+	private volatile boolean isInProcedureDomain = false;
+	/** Used in the scheduler to not schedule too many executions of the same task */
+	private volatile int activeCount = 0;
+	/** Just a counter to be used in the executor task domains */
+	private volatile int statusIndex = 0;
+
+	public Task decrementActiveCount() {
+		if (this.activeCount > 0) {
+			--this.activeCount;
+		}
+		return this;
+	}
+
+	public Task incrementActiveCount() {
+		++this.activeCount;
+		return this;
+	}
+
+	public int activeCount() {
+		return activeCount;
+	}
+
+	public int newStatusIndex() {
+		return this.statusIndex++;
+	}
 
 	private Task(String key) {
 		this.key = key;
@@ -48,16 +69,6 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		return (resultOutputDomain == null ? null : resultOutputDomain.resultHash());
 	}
 
-	public int nextStatusIndexFor(String executor) {
-		int counter = 0;
-		for (String e : assignedExecutors) {
-			if (e.equals(executor)) {
-				++counter;
-			}
-		}
-		return counter;
-	}
-
 	public void reset() {
 		outputDomains.clear();
 		resultOutputDomain = null;
@@ -76,25 +87,6 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	@Override
 	public String toString() {
 		return "Task [key=" + key + ", isInProcedureDomain=" + isInProcedureDomain + " " + super.toString() + "]";
-	}
-
-	/**
-	 * Used in scheduling such that tasks with less assigned workers are executed before those with more. Does not guarantee that the assigned
-	 * Executors also finished execution!
-	 * 
-	 * @return the number of assigned workers for this task
-	 */
-	public int nrOfAssignedExecutors() {
-		return this.assignedExecutors.size();
-	}
-
-	public List<String> assignedExecutors() {
-		return assignedExecutors;
-	}
-
-	public Task addAssignedExecutor(String executor) {
-		this.assignedExecutors.add(executor);
-		return this;
 	}
 
 	@Override

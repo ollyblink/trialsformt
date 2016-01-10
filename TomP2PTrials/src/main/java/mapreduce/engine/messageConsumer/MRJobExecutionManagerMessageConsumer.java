@@ -1,17 +1,10 @@
 package mapreduce.engine.messageConsumer;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 
 import mapreduce.engine.executor.MRJobExecutionManager;
 import mapreduce.execution.ExecutorTaskDomain;
@@ -24,7 +17,7 @@ import mapreduce.execution.task.Task;
 import mapreduce.execution.task.scheduling.ITaskScheduler;
 import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 import mapreduce.utils.DomainProvider;
-import mapreduce.utils.SyncedCollectionProvider;
+import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
@@ -39,31 +32,18 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	private MRJobExecutionManager jobExecutor;
 
 	private ITaskScheduler taskExecutionScheduler;
-	private int maxNrOfExecutions = 2;
-
-	private ThreadPoolExecutor taskExecutionServer;
-
-	/** Used to cancel all futures in case abort is used... All generated futures are stored here */
-	private Map<Procedure, Multimap<Task, Future<?>>> executingTaskThreads = SyncedCollectionProvider.syncedHashMap();
-	/** USed to cancel futures for retrieving data from dht */
-	private ListMultimap<Procedure, Future<?>> retrieveTasksThreads = SyncedCollectionProvider.syncedListMultimap();
+	// /** Used to cancel all futures in case abort is used... All generated futures are stored here */
+	// private Map<Procedure, Multimap<Task, Future<?>>> executingTaskThreads = SyncedCollectionProvider.syncedHashMap();
+	// /** USed to cancel futures for retrieving data from dht */
+	// private ListMultimap<Procedure, Future<?>> retrieveTasksThreads = SyncedCollectionProvider.syncedListMultimap();
 
 	private MRJobExecutionManagerMessageConsumer(MRJobExecutionManager jobExecutor) {
 		this.jobExecutor = jobExecutor;
-		this.taskExecutionServer = new ThreadPoolExecutor(maxNrOfExecutions, maxNrOfExecutions, 0L, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<Runnable>());
 
 	}
 
 	public MRJobExecutionManagerMessageConsumer taskExecutionScheduler(ITaskScheduler taskExecutionScheduler) {
 		this.taskExecutionScheduler = taskExecutionScheduler;
-		return this;
-	}
-
-	public MRJobExecutionManagerMessageConsumer maxNrOfExecutions(int maxNrOfExecutions) {
-		this.maxNrOfExecutions = maxNrOfExecutions;
-		this.taskExecutionServer = new ThreadPoolExecutor(maxNrOfExecutions, maxNrOfExecutions, 0L, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<Runnable>());
 		return this;
 	}
 
@@ -85,12 +65,6 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	@Override
 	public MRJobExecutionManagerMessageConsumer canTake(boolean canTake) {
 		return (MRJobExecutionManagerMessageConsumer) super.canTake(canTake);
-	}
-
-	public boolean canExecute() {
-		logger.info("this.taskExecutionServer.getActiveCount() < this.maxNrOfExecutions? " + this.taskExecutionServer.getActiveCount() + " < "
-				+ this.maxNrOfExecutions);
-		return this.taskExecutionServer.getActiveCount() < this.maxNrOfExecutions;
 	}
 
 	private void handleReceivedMessage(Job job, IDomain outputDomain, JobProcedureDomain inputDomain, IUpdate iUpdate) {
@@ -163,12 +137,9 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				List<Task> tasks = procedure.tasks();
 				Task task = receivedTask;
 				if (!tasks.contains(task)) {
-					procedure.addTask(task.addAssignedExecutor(outputETDomain.executor()));
+					procedure.addTask(task);
 				} else {
 					task = tasks.get(tasks.indexOf(task));
-					if (!outputETDomain.executor().equals(jobExecutor.id())) {// If the message comes from here, this has already been added...
-						task.addAssignedExecutor(outputETDomain.executor());
-					}
 				}
 				if (!task.isFinished()) {// Is finished before adding new output procedure domain? then ignore update
 					// Is finished after adding new output procedure domain? then abort any executions of this task and transfer the task's output
@@ -194,79 +165,55 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			if (task == null) {
 				logger.info("Finished all current tasks... maybe more will come in with broadcast or from dht ");
 				if (procedure.tasks().size() == 0 || procedure.tasks().size() < procedure.inputDomain().tasksSize()) {
-					logger.info("Retrieve tasks from dht/local storage. Can execute? " + canExecute());
-					if (canExecute()) {
-						Runnable retrieveDataThread = new Runnable() {
-
-							@Override
-							public void run() {
-								getTaskKeysFromNetwork(procedure);
-							}
-						};
-
-						this.retrieveTasksThreads.put(procedure, taskExecutionServer.submit(retrieveDataThread));
-					}
+					getTaskKeysFromNetwork(procedure);
 				}
 			} else {
-				logger.info("Executing next task: " + task);
-				if (canExecute()) {
-					Multimap<Task, Future<?>> multimap = executingTaskThreads.get(procedure);
-					if (multimap == null) {
-						multimap = Multimaps.synchronizedMultimap(ArrayListMultimap.create());
-						executingTaskThreads.put(procedure, multimap);
-					}
-					Runnable taskExecution = new Runnable() {
-
-						@Override
-						public void run() {
-							jobExecutor.executeTask(task, procedure);
-						}
-
-					};
-
-					multimap.put(task, taskExecutionServer.submit(taskExecution));
-				}
+				jobExecutor.executeTask(task, procedure);
 			}
 		} else {
 			logger.info("No job to execute...");
-			// try {
-			// Thread.sleep(2000);
-			// } catch (InterruptedException e) {
-			// e.printStackTrace();
-			// }
-			// Procedure procedure = job.procedure(2);
-			// jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
-			// .addListener(new BaseFutureAdapter<FutureGet>() {
-			//
-			// @Override
-			// public void operationComplete(FutureGet future) throws Exception {
-			// if (future.isSuccess()) {
-			// Set<Number640> keySet = future.dataMap().keySet();
-			// for (Number640 k : keySet) {
-			// String key = (String) future.dataMap().get(k).object();
-			// jobExecutor.dhtConnectionProvider().getAll(key, procedure.resultOutputDomain().toString())
-			// .addListener(new BaseFutureAdapter<FutureGet>() {
-			//
-			// @Override
-			// public void operationComplete(FutureGet future) throws Exception {
-			// if (future.isSuccess()) {
-			// Set<Number640> keySet2 = future.dataMap().keySet();
-			// String values = "";
-			// for (Number640 k2 : keySet2) {
-			// values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
-			// }
-			// System.err.println(key + ":" + values);
-			// }
-			// }
-			//
-			// });
-			// }
-			// }
-			// }
-			//
-			// });
+			printResults(job);
 		}
 
+	}
+
+	private void printResults(Job job) {
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		Procedure procedure = job.procedure(2);
+		jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
+				.addListener(new BaseFutureAdapter<FutureGet>() {
+
+					@Override
+					public void operationComplete(FutureGet future) throws Exception {
+						if (future.isSuccess()) {
+							Set<Number640> keySet = future.dataMap().keySet();
+							for (Number640 k : keySet) {
+								String key = (String) future.dataMap().get(k).object();
+								jobExecutor.dhtConnectionProvider().getAll(key, procedure.resultOutputDomain().toString())
+										.addListener(new BaseFutureAdapter<FutureGet>() {
+
+									@Override
+									public void operationComplete(FutureGet future) throws Exception {
+										if (future.isSuccess()) {
+											Set<Number640> keySet2 = future.dataMap().keySet();
+											String values = "";
+											for (Number640 k2 : keySet2) {
+												values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
+											}
+											System.err.println(key + ":" + values);
+										}
+									}
+
+								});
+							}
+						}
+					}
+
+				});
 	}
 
 	private void getTaskKeysFromNetwork(Procedure procedure) {
@@ -293,37 +240,5 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				});
 	}
 
-	private void cancelProcedureExecution(Procedure procedure) {
-		logger.info("Cancelled procedure execution");
-		Multimap<Task, Future<?>> multimap = executingTaskThreads.get(procedure);
-		if (multimap != null) {
-			for (Future<?> future : multimap.values()) {
-				future.cancel(true);
-			}
-			executingTaskThreads.get(procedure).clear();
-		}
-		List<Future<?>> dataRetrievalFutures = retrieveTasksThreads.get(procedure);
-		for (Future<?> future : dataRetrievalFutures) {
-			future.cancel(true);
-		}
-		retrieveTasksThreads.get(procedure).clear();
-		// taskExecutionServer.shutdown();
-		// this.taskExecutionServer = new ThreadPoolExecutor(maxNrOfExecutions, maxNrOfExecutions, 0L, TimeUnit.MILLISECONDS,
-		// new LinkedBlockingQueue<Runnable>());
-	}
 
-	private void cancelTaskExecution(Procedure procedure, Task task) {
-		logger.info("Cancelled task execution");
-		Multimap<Task, Future<?>> multimap = executingTaskThreads.get(procedure);
-		if (multimap != null) {
-			Collection<Future<?>> allTaskExecutions = multimap.get(task);
-			for (Future<?> future : allTaskExecutions) {
-				future.cancel(true);
-			}
-			multimap.get(task).clear();
-			// taskExecutionServer.shutdown();
-			// this.taskExecutionServer = new ThreadPoolExecutor(maxNrOfExecutions, maxNrOfExecutions, 0L, TimeUnit.MILLISECONDS,
-			// new LinkedBlockingQueue<Runnable>());
-		}
-	}
 }

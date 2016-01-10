@@ -13,17 +13,15 @@ public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparat
 		} else if (t1.isFinished() && !t2.isFinished()) {
 			return 1;
 		} else {// if (!(t1.isFinished() && !t2.isFinished() || (t1.isFinished() && t2.isFinished())) {
-			int t1nrOfOutputDomains = t1.nrOfOutputDomains();
-			int t2nrOfOutputDomains = t2.nrOfOutputDomains();
-			if (t1nrOfOutputDomains > t2nrOfOutputDomains) {
-				return 1;
-			} else if (t1nrOfOutputDomains < t2nrOfOutputDomains) {
+			if (t1.nrOfOutputDomains() > t2.nrOfOutputDomains()) {
 				return -1;
+			} else if (t1.nrOfOutputDomains() < t2.nrOfOutputDomains()) {
+				return 1;
 			} else {
-				if (t1.nrOfAssignedExecutors() > t2.nrOfAssignedExecutors()) {
-					return 1;
-				} else if (t1.nrOfAssignedExecutors() < t2.nrOfAssignedExecutors()) {
+				if (t1.activeCount() > t2.activeCount()) {
 					return -1;
+				} else if (t1.activeCount() < t2.activeCount()) {
+					return 1;
 				} else {
 					return 0;
 				}

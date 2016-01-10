@@ -60,7 +60,7 @@ public class MRJobExecutionManagerTest {
 		JobProcedureDomain inputJPD = JobProcedureDomain.create(job.id(), executor, "START", 0).tasksSize(1);
 		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), executor, WordCountMapper.class.getSimpleName(), 1);
 
-		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.nextStatusIndexFor(executor), outputJPD);
+		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.newStatusIndex(), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 		procedure.inputDomain(inputJPD).tasks().add(task);
 		for (int i = 0; i < 1000; ++i) {
@@ -234,7 +234,7 @@ public class MRJobExecutionManagerTest {
 
 		// }
 		// }).start();
-		Thread.sleep(1000);
+		Thread.sleep(Long.MAX_VALUE);
 		// first.getAll(keyString, domainString)
 	}
 

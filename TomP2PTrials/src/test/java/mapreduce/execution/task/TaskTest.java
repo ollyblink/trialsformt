@@ -18,13 +18,11 @@ public class TaskTest {
 		int trueResult = 100;
 		int falseResult = 99;
 
-		Task task = Task.create("hello");
-		assertEquals(0, task.nextStatusIndexFor(executor1));
+		Task task = Task.create("hello"); 
 		ExecutorTaskDomain etd = ExecutorTaskDomain
-				.create("hello", executor1, task.nextStatusIndexFor(executor1), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
+				.create("hello", executor1, task.newStatusIndex(), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
-		task.addAssignedExecutor(executor1);
-		task.addOutputDomain(etd);
+ 		task.addOutputDomain(etd);
 
 		assertEquals(true, task.isFinished());
 		assertEquals(etd, task.resultOutputDomain());
@@ -34,13 +32,11 @@ public class TaskTest {
 		assertEquals(false, task.isFinished());
 		assertEquals(null, task.resultOutputDomain());
 
-		assertEquals(1, task.nextStatusIndexFor(executor1));
-		ExecutorTaskDomain etd2 = ExecutorTaskDomain
-				.create("hello", executor1, task.nextStatusIndexFor(executor1), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
+ 		ExecutorTaskDomain etd2 = ExecutorTaskDomain
+				.create("hello", executor1, task.newStatusIndex(), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
 		
-		task.addAssignedExecutor(executor1);
-		task.addOutputDomain(etd2);
+ 		task.addOutputDomain(etd2);
 		assertEquals(true, task.isFinished());
 		assertEquals(etd, task.resultOutputDomain());
 
@@ -56,13 +52,11 @@ public class TaskTest {
 
 		assertEquals(false, task.isFinished());
 		assertEquals(null, task.resultOutputDomain());
-
-		assertEquals(0, task.nextStatusIndexFor(executor2));
+ 
 		ExecutorTaskDomain etd3 = ExecutorTaskDomain
-				.create("hello", executor2, task.nextStatusIndexFor(executor2), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
+				.create("hello", executor2, task.newStatusIndex(), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
-		task.addAssignedExecutor(executor2);
-		task.addOutputDomain(etd3);
+ 		task.addOutputDomain(etd3);
 		assertEquals(true, task.isFinished());
 		assertEquals(etd, task.resultOutputDomain()); //Always take the first one...
 	}
