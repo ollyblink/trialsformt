@@ -28,11 +28,17 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	public Task incrementActiveCount() {
-		++this.activeCount;
+		if (canBeExecuted()) {
+			++this.activeCount;
+		}
 		return this;
 	}
 
-	public int activeCount() {
+	public boolean canBeExecuted() {
+		return currentMaxNrOfSameResultHash() + activeCount <= nrOfSameResultHash;
+	}
+
+	public Integer activeCount() {
 		return activeCount;
 	}
 

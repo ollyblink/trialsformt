@@ -89,7 +89,7 @@ public interface IDHTConnectionProvider {
 	 */
 	public String owner();
 
-	public IDHTConnectionProvider owner(String owner);
+	public IDHTConnectionProvider executor(String owner);
 
 	public IDHTConnectionProvider port(int port);
 
@@ -107,7 +107,7 @@ public interface IDHTConnectionProvider {
 
 	public void broadcastCompletion(CompletedBCMessage completedMessage);
 
-	public IDHTConnectionProvider jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs);
+//	public IDHTConnectionProvider jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs);
 
 	public List<PeerDHT> peerDHTs();
 

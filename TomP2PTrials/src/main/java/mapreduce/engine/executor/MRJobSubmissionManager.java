@@ -21,7 +21,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 
 import mapreduce.engine.broadcasting.CompletedBCMessage;
-import mapreduce.engine.messageConsumer.MRJobSubmissionManagerMessageConsumer;
+import mapreduce.engine.messageconsumer.MRJobSubmissionManagerMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
@@ -55,7 +55,7 @@ public class MRJobSubmissionManager {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
 		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.create(this).canTake(true);
 		new Thread(messageConsumer).start();
-		this.dhtConnectionProvider = dhtConnectionProvider.owner(this.id).jobQueues(messageConsumer.jobs());
+		this.dhtConnectionProvider = dhtConnectionProvider.executor(this.id).jobQueues(messageConsumer.jobs());
 	}
 
 	public static MRJobSubmissionManager create(IDHTConnectionProvider dhtConnectionProvider) {

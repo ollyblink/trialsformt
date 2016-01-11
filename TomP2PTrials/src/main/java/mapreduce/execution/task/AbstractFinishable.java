@@ -1,6 +1,7 @@
 package mapreduce.execution.task;
 
 import java.util.List;
+import java.util.TreeSet;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -28,10 +29,9 @@ public abstract class AbstractFinishable implements IFinishable {
 		checkIfFinished();
 		return resultOutputDomain != null;
 	}
- 
 
 	@Override
-	//Always takes the first one!
+	// Always takes the first one!
 	public IDomain resultOutputDomain() {
 		checkIfFinished();
 		return resultOutputDomain;
@@ -62,6 +62,30 @@ public abstract class AbstractFinishable implements IFinishable {
 	public int nrOfOutputDomains() {
 		return outputDomains.size();
 	}
+
+	@Override
+	public Integer currentMaxNrOfSameResultHash() {
+		ListMultimap<Number160, IDomain> results = ArrayListMultimap.create();
+		for (IDomain domain : outputDomains) {
+			results.put(domain.resultHash(), domain);
+		}
+		TreeSet<Integer> max = new TreeSet<>();
+		for (Number160 resultHash : results.keySet()) {
+			max.add(results.get(resultHash).size());
+		}
+		return max.last();
+	}
+	//
+	// public static void main(String[] args) {
+	// TreeSet<Integer> max = new TreeSet<>();
+	// max.add(1);
+	// max.add(4);
+	// max.add(2);
+	// max.add(6);
+	// max.add(3);
+	// max.add(1);
+	// System.err.println(max.last());
+	// }
 
 	@Override
 	public AbstractFinishable nrOfSameResultHash(int nrOfSameResultHash) {

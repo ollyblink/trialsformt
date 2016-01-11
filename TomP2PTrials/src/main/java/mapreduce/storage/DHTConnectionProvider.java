@@ -94,14 +94,14 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		return this.isBootstrapper;
 	}
 
-	@Override
-	public DHTConnectionProvider jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
-		this.jobs = jobs;
-		if (this.broadcastHandler != null) {
-			this.broadcastHandler.jobQueues(jobs);
-		}
-		return this;
-	}
+//	@Override
+//	public DHTConnectionProvider jobQueues(SortedMap<Job, PriorityBlockingQueue<IBCMessage>> jobs) {
+//		this.jobs = jobs;
+//		if (this.broadcastHandler != null) {
+//			this.broadcastHandler.jobQueues(jobs);
+//		}
+//		return this;
+//	}
 
 	@Override
 	public DHTConnectionProvider isBootstrapper(boolean isBootstrapper) {
@@ -158,7 +158,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		int bootstrapper = 0; // I use this to only make one peer be the master that creates everything... all others simply connect to the
 								// bootstrapper
 		if (broadcastHandler == null) {
-			this.broadcastHandler = MRBroadcastHandler.create().dhtConnectionProvider(this).jobQueues(jobs);
+			this.broadcastHandler = MRBroadcastHandler.create().dhtConnectionProvider(this);
 		}
 
 		for (int i = 0; i < this.numberOfPeers; ++i) {
@@ -301,10 +301,10 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public DHTConnectionProvider owner(String owner) {
+	public DHTConnectionProvider executor(String owner) {
 		this.owner = owner;
 		if (this.broadcastHandler != null) {
-			this.broadcastHandler.owner(owner);
+			this.broadcastHandler.executor(owner);
 		}
 		return this;
 	}

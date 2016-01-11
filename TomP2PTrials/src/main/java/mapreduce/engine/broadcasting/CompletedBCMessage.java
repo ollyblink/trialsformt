@@ -3,8 +3,8 @@ package mapreduce.engine.broadcasting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.engine.messageConsumer.AbstractMessageConsumer;
-import mapreduce.engine.messageConsumer.IMessageConsumer;
+import mapreduce.engine.messageconsumer.AbstractMessageConsumer;
+import mapreduce.engine.messageconsumer.IMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
@@ -19,11 +19,13 @@ public class CompletedBCMessage implements IBCMessage {
 	private final IDomain outputDomain;
 	private final JobProcedureDomain inputDomain;
 	private final BCMessageStatus status;
+	private Long creationTime;
 
 	private CompletedBCMessage(IDomain outputDomain, JobProcedureDomain inputDomain, BCMessageStatus status) {
 		this.outputDomain = outputDomain;
 		this.inputDomain = inputDomain;
 		this.status = status;
+		this.creationTime = System.currentTimeMillis();
 	}
 
 	public static CompletedBCMessage createCompletedTaskBCMessage(IDomain outputDomain, JobProcedureDomain inputDomain) {
@@ -48,37 +50,19 @@ public class CompletedBCMessage implements IBCMessage {
 	public BCMessageStatus status() {
 		return status;
 	}
-
-	@Override
-	public int compareTo(IBCMessage o) {
-		JobProcedureDomain thisOutputProcedureDomain = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
-				: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
-		JobProcedureDomain receivedOutputProcedureDomain = (o.outputDomain() instanceof JobProcedureDomain ? (JobProcedureDomain) o.outputDomain()
-				: ((ExecutorTaskDomain) o.outputDomain()).jobProcedureDomain());
-
-		int result = thisOutputProcedureDomain.procedureIndex().compareTo(receivedOutputProcedureDomain.procedureIndex());
-		if (result == 0) { // Meaning, same procedure index
-			return status.compareTo(o.status());
-		} else {
-			return -result;
-		}
-	}
-	// public static void main(String[] args) throws InterruptedException {
-	// PriorityBlockingQueue<IBCMessage> bcMessages = new PriorityBlockingQueue<>();
-	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null, BCMessageStatus.COMPLETED_TASK));
-	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null,
-	// BCMessageStatus.COMPLETED_PROCEDURE));
-	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null, BCMessageStatus.COMPLETED_TASK));
-	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null,
-	// BCMessageStatus.COMPLETED_PROCEDURE));
-	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(1), null, BCMessageStatus.COMPLETED_TASK));
-	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null, BCMessageStatus.COMPLETED_TASK));
-	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(2), null, BCMessageStatus.COMPLETED_TASK));
-	// bcMessages.add(new CompletedBCMessage(ExecutorTaskDomain.create(null, null, 0, null).procedureIndex(0), null,
-	// BCMessageStatus.COMPLETED_PROCEDURE));
-	// while(!bcMessages.isEmpty()){
-	// IBCMessage take = bcMessages.take();
-	// System.err.println(take.outputDomain().procedureIndex() +", "+take.status());
+	//
+	// @Override
+	// public int compareTo(IBCMessage o) {
+	// JobProcedureDomain thisOutputProcedureDomain = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
+	// : ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
+	// JobProcedureDomain receivedOutputProcedureDomain = (o.outputDomain() instanceof JobProcedureDomain ? (JobProcedureDomain) o.outputDomain()
+	// : ((ExecutorTaskDomain) o.outputDomain()).jobProcedureDomain());
+	//
+	// int result = thisOutputProcedureDomain.procedureIndex().compareTo(receivedOutputProcedureDomain.procedureIndex());
+	// if (result == 0) { // Meaning, same procedure index
+	// return status.compareTo(o.status());
+	// } else {
+	// return -result;
 	// }
 	// }
 
@@ -131,6 +115,17 @@ public class CompletedBCMessage implements IBCMessage {
 		if (status != other.status)
 			return false;
 		return true;
+	}
+
+	@Override
+	public Long creationTime() {
+		return this.creationTime;
+	} 
+
+	@Override
+	public Integer procedureIndex() {
+		return (outputDomain instanceof JobProcedureDomain ? ((JobProcedureDomain) outputDomain).procedureIndex()
+				: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain().procedureIndex());
 	}
 
 }

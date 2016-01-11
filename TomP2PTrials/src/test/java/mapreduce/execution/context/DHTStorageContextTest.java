@@ -8,6 +8,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.engine.executor.MRJobExecutionManager;
+import mapreduce.engine.messageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
@@ -32,14 +34,16 @@ public class DHTStorageContextTest {
 
 	@Test
 	public void test() throws InterruptedException {
-		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(4000, 3);
-		dhtConnectionProvider.owner(executor);
+		MRJobExecutionManager jobExecutionManager = MRJobExecutionManager.create();
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(4000, 3,
+				MRJobExecutionManagerMessageConsumer.create(jobExecutionManager));
+		dhtConnectionProvider.executor(executor);
 		Thread.sleep(3000);
 
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE);
 		Task task = Task.create("hello");
-		JobProcedureDomain outputJPD =   JobProcedureDomain.create(job.id(), executor, "NONE", 0);
-		ExecutorTaskDomain outputETD =   ExecutorTaskDomain.create(task.key(), executor, task.newStatusIndex(), outputJPD);
+		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), executor, "NONE", 0);
+		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.newStatusIndex(), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
 		for (int i = 0; i < 10; ++i) {

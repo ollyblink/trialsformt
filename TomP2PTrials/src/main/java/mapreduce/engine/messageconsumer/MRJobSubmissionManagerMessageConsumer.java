@@ -1,4 +1,4 @@
-package mapreduce.engine.messageConsumer;
+package mapreduce.engine.messageconsumer;
 
 import mapreduce.engine.executor.MRJobSubmissionManager;
 import mapreduce.execution.ExecutorTaskDomain;

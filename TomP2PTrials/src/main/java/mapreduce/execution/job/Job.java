@@ -15,7 +15,7 @@ import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
 
-public class Job implements Serializable, Comparable<Job>, Cloneable {
+public class Job implements Serializable, Cloneable {
 
 	// private static Logger logger = LoggerFactory.getLogger(Job.class);
 
@@ -240,23 +240,7 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 		return true;
 	}
 
-	@Override
-	public int compareTo(Job job) {
-		if (!isFinished && job.isFinished) {
-			return -1;
-		} else if (isFinished && !job.isFinished) {
-			return 1;
-		} else {// if (!isFinished && !job.isFinished) {
-			if (priorityLevel == job.priorityLevel) {
-				return creationTime.compareTo(job.creationTime);
-			} else {
-				return priorityLevel.compareTo(job.priorityLevel);
-			}
-		}
-		// else {
-		// return 0;
-		// }
-	}
+ 
 
 	public PriorityLevel priorityLevel() {
 		return priorityLevel;
@@ -302,20 +286,7 @@ public class Job implements Serializable, Comparable<Job>, Cloneable {
 		return null;
 	}
 
-	public static void main(String[] args) {
-		List<Job> jobs = new ArrayList<>();
-		jobs.add(Job.create("1", PriorityLevel.LOW).isFinished(true));
-		jobs.add(Job.create("2", PriorityLevel.MODERATE).isFinished(true));
-		jobs.add(Job.create("3", PriorityLevel.HIGH).isFinished(true));
-		jobs.add(Job.create("4", PriorityLevel.MODERATE));
-		jobs.add(Job.create("5", PriorityLevel.LOW));
-		jobs.add(Job.create("6", PriorityLevel.HIGH));
-
-		Collections.sort(jobs);
-		for (Job job : jobs) {
-			System.err.println(job.jobSubmitterID() + ", " + job.priorityLevel);
-		}
-	}
+	 
 	// public static void main(String[] args) {
 	// Job job = Job.create("ME", PriorityLevel.HIGH).addSucceedingProcedure(WordCountReducer.create()).fileInputFolderPath("File input path")
 	// .maxFileSize(FileSize.EIGHT_BYTES).nrOfSameResultHash(20);
