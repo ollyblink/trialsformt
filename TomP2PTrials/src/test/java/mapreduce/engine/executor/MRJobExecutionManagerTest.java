@@ -44,15 +44,15 @@ public class MRJobExecutionManagerTest {
 
 	@Test
 	public void testDataSwitch() throws InterruptedException {
-		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create();
-		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create(jobExecutor);
+		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, msgConsumer);
-		jobExecutor.dhtConnectionProvider(dhtConnectionProvider);
+		msgConsumer.dhtConnectionProvider(dhtConnectionProvider);
+		MRJobExecutionManager jobExecutor = msgConsumer.getExecutor();
 
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountMapper.create(), null, 1, 1);
 		// jobExecutor.messageConsumer().jobs().put(job, new PriorityBlockingQueue<>());
 		dhtConnectionProvider.broadcastHandler().jobFutures().put(job, null);
-		dhtConnectionProvider.broadcastHandler().jobFutures().get(job).clear();
+		// dhtConnectionProvider.broadcastHandler().jobFutures().get(job).clear();
 		job.incrementProcedureIndex();
 		Procedure procedure = job.currentProcedure();
 		String executor = "Executor_1";
@@ -80,12 +80,12 @@ public class MRJobExecutionManagerTest {
 			}
 
 		}).awaitUninterruptibly();
-		Thread.sleep(Long.MAX_VALUE);
+		Thread.sleep(2000);
 		assertEquals(true, task.isFinished());
 		assertEquals(true, task.isInProcedureDomain());
 		assertEquals(true, procedure.isFinished());
 		assertEquals(1, procedure.nrOfOutputDomains());
-		Thread.sleep(5000);
+		// Thread.sleep(1000);
 	}
 
 	@Test
@@ -101,12 +101,14 @@ public class MRJobExecutionManagerTest {
 	private void testExecuteTask(String testIsText, IExecutable combiner, int testCount, int isCount, int testSum, int isSum)
 			throws InterruptedException {
 
-		// PriorityBlockingQueue<IBCMessage> bcMessages = new PriorityBlockingQueue<>();
-		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create();
-		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create(jobExecutor);
+		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, msgConsumer);
-		jobExecutor.dhtConnectionProvider(dhtConnectionProvider);
+		msgConsumer.dhtConnectionProvider(dhtConnectionProvider);
+		MRJobExecutionManager jobExecutor = msgConsumer.getExecutor();
+
 		Job job = Job.create("SUBMITTER");
+		dhtConnectionProvider.broadcastHandler().jobFutures().put(job, null);
+
 		JobProcedureDomain dataDomain = JobProcedureDomain.create(job.id(), jobExecutor.id(), StartProcedure.class.getSimpleName(), 0).tasksSize(1);
 		addTaskDataToProcedureDomain(dhtConnectionProvider, "file1", testIsText, dataDomain.toString());
 		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).inputDomain(dataDomain).combiner(combiner);
@@ -213,11 +215,11 @@ public class MRJobExecutionManagerTest {
 	public void testExecuteJob() throws InterruptedException {
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
 
-		int port = random.nextInt(10000) + 4000;
-		MRJobExecutionManager jobExecutor = MRJobExecutionManager.create();
-		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create(jobExecutor);
+		// int port = random.nextInt(10000) + 4000;
+		// MRJobExecutionManager jobExecutor = MRJobExecutionManager.create();
+		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, msgConsumer);
-		jobExecutor.dhtConnectionProvider(dhtConnectionProvider);
+		// msgConsumer.dhtConnectionProvider(dhtConnectionProvider);
 
 		logger.info("before job creation");
 		MRJobSubmissionManager submitter = MRJobSubmissionManager.create(dhtConnectionProvider);
@@ -235,7 +237,7 @@ public class MRJobExecutionManagerTest {
 		// MRJobExecutionManager jobExecutor = MRJobExecutionManager.create(dhtConnectionProvider);
 		// jobExecutor.start();
 
-		dhtConnectionProvider.broadcastHandler().jobs().add(job);
+		// dhtConnectionProvider.broadcastHandler().jobs().add(job);
 		// jobExecutor.messageConsumer().jobs().put(job, new PriorityBlockingQueue<>());
 
 		// }

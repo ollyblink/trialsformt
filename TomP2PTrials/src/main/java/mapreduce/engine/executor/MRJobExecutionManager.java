@@ -51,28 +51,17 @@ public class MRJobExecutionManager {
 	}
 
 	public MRJobExecutionManager dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
-		this.dhtCon = dhtConnectionProvider.executor(this.id);
+		this.dhtCon = dhtConnectionProvider;
+		this.dhtCon.executor(this.id);
 		return this;
 	}
 	// END GETTER/SETTER
 
-	// Maintenance
-
-	public void shutdown() {
-		dhtCon.shutdown();
-	}
+	// Execution
 
 	public String id() {
 		return this.id;
 	}
-
-	public void start() {
-		// this.dhtConnectionProvider.connect();
-	}
-
-	// End Maintenance
-	// Execution
-
 	public void executeTask(Task task, Procedure procedure) {
 		// if (task.canBeExecuted()) {
 		// task.incrementActiveCount();
@@ -115,7 +104,8 @@ public class MRJobExecutionManager {
 								outputETD.resultHash(contextToUse.resultHash());
 								CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
 										procedure.inputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
-								dhtCon.broadcastHandler().addBCMessage(msg);
+								// dhtCon.broadcastHandler().addBCMessage(msg);
+								dhtCon.broadcastHandler().submit(msg, dhtCon.broadcastHandler().getJob(outputJPD.jobId()));
 								// Adds it to itself, does not receive broadcasts... Makes sure this result is ignored in case another was
 								// received
 								// already
@@ -182,7 +172,7 @@ public class MRJobExecutionManager {
 													if (isProcedureCompleted) {
 														CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(
 																to.resultHash(procedure.calculateResultHash()), procedure.inputDomain());
-														dhtCon.broadcastHandler().addBCMessage(msg);
+														dhtCon.broadcastHandler().submit(msg, dhtCon.broadcastHandler().getJob(to.jobId()));
 														dhtCon.broadcastCompletion(msg);
 													}
 												}

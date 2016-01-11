@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.engine.messageconsumer.IMessageConsumer;
-import mapreduce.engine.messageconsumer.priorityexecutor.PriorityExecutor;
+import mapreduce.engine.priorityexecutor.PriorityExecutor;
 import mapreduce.execution.job.Job;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
@@ -45,12 +45,12 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	}
 
 	public MRBroadcastHandler messageConsumer(IMessageConsumer messageConsumer) {
-		this.messageConsumer = messageConsumer;
+		this.messageConsumer = messageConsumer; 
 		return this;
 	}
 
 	public MRBroadcastHandler dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
-		this.dhtConnectionProvider = dhtConnectionProvider;
+		this.dhtConnectionProvider = dhtConnectionProvider; 
 		return this;
 	}
 
@@ -101,7 +101,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 
 	}
 
-	private Job getJob(String jobId) {
+	public Job getJob(String jobId) {
 		for (Job job : jobFuturesFor.keySet()) {
 			if (job.id().equals(jobId)) {
 				return job;
@@ -110,7 +110,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		return null;
 	}
 
-	private void submit(IBCMessage bcMessage, Job job) {
+	public void submit(IBCMessage bcMessage, Job job) {
 		if (!job.isFinished()) {
 			jobFuturesFor.put(job, taskExecutionServer.submit(new Runnable() {
 

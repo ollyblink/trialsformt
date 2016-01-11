@@ -18,8 +18,8 @@ import com.google.common.collect.Multimap;
 
 import mapreduce.engine.broadcasting.BCMessageStatus;
 import mapreduce.engine.broadcasting.IBCMessage;
-import mapreduce.engine.messageconsumer.priorityexecutor.ComparableBCMessageTask;
-import mapreduce.engine.messageconsumer.priorityexecutor.PriorityExecutor;
+import mapreduce.engine.priorityexecutor.ComparableBCMessageTask;
+import mapreduce.engine.priorityexecutor.PriorityExecutor;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task;

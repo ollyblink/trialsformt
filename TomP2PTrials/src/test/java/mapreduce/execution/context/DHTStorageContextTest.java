@@ -34,9 +34,9 @@ public class DHTStorageContextTest {
 
 	@Test
 	public void test() throws InterruptedException {
-		MRJobExecutionManager jobExecutionManager = MRJobExecutionManager.create();
+//		MRJobExecutionManager jobExecutionManager = MRJobExecutionManager.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(4000, 3,
-				MRJobExecutionManagerMessageConsumer.create(jobExecutionManager));
+				MRJobExecutionManagerMessageConsumer.create());
 		dhtConnectionProvider.executor(executor);
 		Thread.sleep(3000);
 

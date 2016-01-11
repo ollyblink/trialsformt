@@ -8,7 +8,7 @@ import java.util.concurrent.Future;
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.engine.executor.MRJobExecutionManager;
-import mapreduce.engine.messageconsumer.priorityexecutor.PriorityExecutor;
+import mapreduce.engine.priorityexecutor.PriorityExecutor;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
@@ -16,6 +16,7 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task;
+import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;
@@ -32,18 +33,15 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 	private MRJobExecutionManager jobExecutor;
 
-	// private ITaskScheduler taskExecutionScheduler;
 	private PriorityExecutor threadPoolExecutor;
-	// /** Used to cancel all futures in case abort is used... All generated futures are stored here */
-	// private Map<Procedure, Multimap<Task, Future<?>>> executingTaskThreads = SyncedCollectionProvider.syncedHashMap();
-	// /** USed to cancel futures for retrieving data from dht */
-	// private ListMultimap<Procedure, Future<?>> retrieveTasksThreads = SyncedCollectionProvider.syncedListMultimap();
 
 	private int maxThreads = 4;
 
 	private Map<String, Boolean> currentlyRetrievingTaskKeysForProcedure = SyncedCollectionProvider.syncedHashMap();
 
 	private Map<String, ListMultimap<Task, Future<?>>> futures;
+
+	private IDHTConnectionProvider dhtConnectionProvider;
 
 	private MRJobExecutionManagerMessageConsumer(MRJobExecutionManager jobExecutor) {
 		this.jobExecutor = jobExecutor;
@@ -56,12 +54,30 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	// return this;
 	// }
 
-	public static MRJobExecutionManagerMessageConsumer create(MRJobExecutionManager jobExecutor) {
-		return new MRJobExecutionManagerMessageConsumer(jobExecutor)
-		// .taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.create())
-		;
+	public static MRJobExecutionManagerMessageConsumer create() {
+		return new MRJobExecutionManagerMessageConsumer(MRJobExecutionManager.create());
+		// .taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.create());
 	}
 
+	@Override
+	public MRJobExecutionManagerMessageConsumer dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		this.dhtConnectionProvider = dhtConnectionProvider;
+		this.jobExecutor.dhtConnectionProvider(dhtConnectionProvider);
+		return this;
+	}
+
+	// Maintenance
+
+
+	public void start() {
+		// this.dhtConnectionProvider.connect();
+	}
+	public void shutdown() {
+		this.dhtConnectionProvider.shutdown();
+	}
+
+
+	// End Maintenance
 	/**
 	 * Use this for interrupting execution (canExecute(false))
 	 * 
@@ -226,7 +242,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			logger.info("Retrieving tasks for: " + procedure.inputDomain().toString());
 			currentlyRetrievingTaskKeysForProcedure.put(procedure.inputDomain().toString(), true);
 
-			jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.inputDomain().toString())
+			dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.inputDomain().toString())
 					.addListener(new BaseFutureAdapter<FutureGet>() {
 
 						@Override
@@ -257,7 +273,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 			e.printStackTrace();
 		}
 		Procedure procedure = job.procedure(2);
-		jobExecutor.dhtConnectionProvider().getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
+		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
 				.addListener(new BaseFutureAdapter<FutureGet>() {
 
 					@Override
@@ -266,7 +282,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 							Set<Number640> keySet = future.dataMap().keySet();
 							for (Number640 k : keySet) {
 								String key = (String) future.dataMap().get(k).object();
-								jobExecutor.dhtConnectionProvider().getAll(key, procedure.resultOutputDomain().toString())
+								dhtConnectionProvider.getAll(key, procedure.resultOutputDomain().toString())
 										.addListener(new BaseFutureAdapter<FutureGet>() {
 
 									@Override
@@ -287,6 +303,10 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 					}
 
 				});
+	}
+
+	public MRJobExecutionManager getExecutor() { 
+		return this.jobExecutor;
 	}
 
 }
