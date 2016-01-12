@@ -10,15 +10,18 @@ import org.junit.Test;
 
 import com.google.common.collect.ListMultimap;
 
+import mapreduce.engine.executor.MRJobSubmissionManager;
 import mapreduce.engine.messageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
+import mapreduce.execution.job.PriorityLevel;
 import mapreduce.execution.procedures.StartProcedure;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
+import mapreduce.utils.FileSize;
 
 public class MRBroadcastHandlerTest {
 	private static Random random = new Random();
@@ -57,6 +60,19 @@ public class MRBroadcastHandlerTest {
 
 	@Test
 	public void execute() {
-
+		MRJobSubmissionManager submitter = MRJobSubmissionManager.create(dhtConnectionProvider);
+		dhtConnectionProvider.broadcastHandler().messageConsumer(messageConsumer);
+		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
+		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_MEGA_BYTES)
+				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1)
+				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1);
+ 
+		submitter.submit(job);
+		try {
+			Thread.sleep(Long.MAX_VALUE);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

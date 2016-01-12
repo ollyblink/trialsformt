@@ -39,7 +39,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 
 		try {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
-			for (Number640 nr : dataMap.keySet()) {
+			for (Number640 nr : dataMap.keySet()) { 
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
 				addExternallyReceivedMessage(bcMessage);
 			}
@@ -68,7 +68,9 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 				}
 			});
 		} else {
-			if (executor != null && !bcMessage.outputDomain().executor().equals(executor)) { // Don't receive it if I sent it to myself
+			if (executor != null
+			// && !bcMessage.outputDomain().executor().equals(executor)
+			) { // Don't receive it if I sent it to myself
 				submit(bcMessage, job);
 			}
 		}
@@ -85,6 +87,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	}
 
 	public void submit(IBCMessage bcMessage, Job job) {
+		logger.info("Submitted job: " + job);
 		if (!job.isFinished()) {
 			jobFuturesFor.put(job, taskExecutionServer.submit(new Runnable() {
 

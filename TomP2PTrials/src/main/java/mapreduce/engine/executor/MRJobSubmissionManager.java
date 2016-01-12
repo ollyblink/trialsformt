@@ -9,9 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.PriorityBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +43,6 @@ public class MRJobSubmissionManager {
 	private static final ITaskDataComposer DEFAULT_TASK_DATA_COMPOSER = MaxFileSizeTaskDataComposer.create();
 
 	private IDHTConnectionProvider dhtConnectionProvider;
-	private MRJobSubmissionManagerMessageConsumer messageConsumer;
 	private ITaskDataComposer taskDataComposer;
 	private String id;
 	private JobProcedureDomain resultDomain;
@@ -53,9 +50,8 @@ public class MRJobSubmissionManager {
 
 	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider) {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
-		this.messageConsumer = MRJobSubmissionManagerMessageConsumer.create(this).canTake(true);
-		new Thread(messageConsumer).start();
-		this.dhtConnectionProvider = dhtConnectionProvider.executor(this.id).jobQueues(messageConsumer.jobs());
+		this.dhtConnectionProvider = dhtConnectionProvider.executor(this.id);
+		this.dhtConnectionProvider.broadcastHandler().messageConsumer(MRJobSubmissionManagerMessageConsumer.create(this));
 	}
 
 	public static MRJobSubmissionManager create(IDHTConnectionProvider dhtConnectionProvider) {
@@ -72,7 +68,11 @@ public class MRJobSubmissionManager {
 	}
 
 	public void connect() {
-		dhtConnectionProvider.connect();
+		try {
+			dhtConnectionProvider.connect();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -84,7 +84,6 @@ public class MRJobSubmissionManager {
 	 * @return
 	 */
 	public void submit(final Job job) {
-		messageConsumer.jobs().put(job, new PriorityBlockingQueue<>());
 		taskDataComposer.splitValue("\n").maxFileSize(job.maxFileSize());
 
 		List<String> keysFilePaths = new ArrayList<String>();
@@ -98,6 +97,7 @@ public class MRJobSubmissionManager {
 
 		List<FuturePut> futurePutValues = SyncedCollectionProvider.syncedArrayList();
 		List<FuturePut> futurePutKeys = SyncedCollectionProvider.syncedArrayList();
+		 
 		for (String keyfilePath : keysFilePaths) {
 			Path path = Paths.get(keyfilePath);
 			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
@@ -137,11 +137,9 @@ public class MRJobSubmissionManager {
 									@Override
 									public void operationComplete(FuturePut future) throws Exception {
 										logger.info("Broadcast initial complete procedure");
-										JobProcedureDomain inputDomain = job.currentProcedure().dataInputDomain()
-												.nrOfFinishedTasks(job.currentProcedure().nrOfFinishedTasks());
+										JobProcedureDomain inputDomain = job.currentProcedure().dataInputDomain().nrOfFinishedTasks(futurePutValues.size());
 										CompletedBCMessage msg = CompletedBCMessage
 												.createCompletedProcedureBCMessage(job.currentProcedure().resultOutputDomain(), inputDomain);
-										messageConsumer.queueFor(job).add(msg);// Adds it to itself, does not receive broadcasts...
 										dhtConnectionProvider.broadcastCompletion(msg);
 									}
 

@@ -99,6 +99,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 	// }
 
 	private void handleReceivedMessage(Job job, IDomain outputDomain, JobProcedureDomain inputDomain, IUpdate iUpdate) {
+
 		if (job == null || outputDomain == null || inputDomain == null || iUpdate == null) {
 			return;
 		}
@@ -138,13 +139,13 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 		// else{ ignore, as this is a message for an old procedure }
 		//
 		if (!job.isFinished()) {
-			JobProcedureDomain outputJPD = (outputDomain instanceof JobProcedureDomain ? ((JobProcedureDomain) outputDomain)
-					: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
-			if (procedure.tasks().size() < outputJPD.tasksSize()) {
+//			JobProcedureDomain outputJPD = (outputDomain instanceof JobProcedureDomain ? ((JobProcedureDomain) outputDomain)
+//					: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
+			if (procedure.tasks().size() < inputDomain.tasksSize()) {
 				// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
 				// procedure
 				getTaskKeysFromNetwork(job.currentProcedure());
-			} else if (procedure.tasks().size() == outputJPD.tasksSize()) {
+			} else if (procedure.tasks().size() == inputDomain.tasksSize()) {
 				for (Task task : procedure.tasks()) {
 					submitTask(procedure, task);
 				}
@@ -229,8 +230,10 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 
 	protected void cancelProcedureExecution(Procedure procedure) {
 		ListMultimap<Task, Future<?>> procedureFutures = futures.get(procedure.dataInputDomain().toString());
-		for (Future<?> taskFuture : procedureFutures.values()) {
-			taskFuture.cancel(true);
+		if (procedureFutures != null) {
+			for (Future<?> taskFuture : procedureFutures.values()) {
+				taskFuture.cancel(true);
+			}
 		}
 	}
 
@@ -245,7 +248,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 	private void getTaskKeysFromNetwork(Procedure procedure) {
 
 		Boolean retrieving = currentlyRetrievingTaskKeysForProcedure.get(procedure.dataInputDomain().toString());
-		if ((retrieving != null && !retrieving)) {
+		if ((retrieving == null || !retrieving)) {
 			logger.info("Retrieving tasks for: " + procedure.dataInputDomain().toString());
 			currentlyRetrievingTaskKeysForProcedure.put(procedure.dataInputDomain().toString(), true);
 
