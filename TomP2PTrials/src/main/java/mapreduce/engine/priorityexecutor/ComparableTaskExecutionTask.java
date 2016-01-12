@@ -14,14 +14,22 @@ public class ComparableTaskExecutionTask<T> extends FutureTask<T> implements Com
 
 	@Override
 	public int compareTo(ComparableTaskExecutionTask<T> o) {
-		if (task.activeCount() == o.task.activeCount()) {
-			if (task.currentMaxNrOfSameResultHash() == o.task.currentMaxNrOfSameResultHash()) {
-				return 0;
+		if (!task.isFinished() && !o.task.isFinished()) {
+			if (task.activeCount() == o.task.activeCount()) {
+				if (task.currentMaxNrOfSameResultHash() == o.task.currentMaxNrOfSameResultHash()) {
+					return 0;
+				} else {
+					return task.currentMaxNrOfSameResultHash().compareTo(o.task.currentMaxNrOfSameResultHash());
+				}
 			} else {
-				return task.currentMaxNrOfSameResultHash().compareTo(o.task.currentMaxNrOfSameResultHash());
+				return task.activeCount().compareTo(o.task.activeCount());
 			}
-		} else {
-			return task.activeCount().compareTo(o.task.activeCount());
+		}else if(task.isFinished() && !o.task.isFinished()){
+			return -1;
+		}else if(!task.isFinished() && o.task.isFinished()){
+			return 1;
+		}else{
+			return 0;
 		}
 	}
 }

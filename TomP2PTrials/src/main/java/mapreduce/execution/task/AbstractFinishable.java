@@ -73,7 +73,11 @@ public abstract class AbstractFinishable implements IFinishable {
 		for (Number160 resultHash : results.keySet()) {
 			max.add(results.get(resultHash).size());
 		}
-		return max.last();
+		if (max.size() > 0) {
+			return max.last();
+		} else {
+			return 0;
+		}
 	}
 	//
 	// public static void main(String[] args) {

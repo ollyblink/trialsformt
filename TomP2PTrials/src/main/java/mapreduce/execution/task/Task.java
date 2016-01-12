@@ -35,7 +35,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	public boolean canBeExecuted() {
-		return currentMaxNrOfSameResultHash() + activeCount <= nrOfSameResultHash;
+		return currentMaxNrOfSameResultHash() + activeCount < nrOfSameResultHash;
 	}
 
 	public Integer activeCount() {
