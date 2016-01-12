@@ -91,7 +91,7 @@ public class MRJobSubmissionManager {
 		File file = new File(job.fileInputFolderPath());
 		FileUtils.INSTANCE.getFiles(file, keysFilePaths);
 
-		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, "INITIAL", 0).tasksSize(keysFilePaths.size());
+		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, "INITIAL", -1).tasksSize(keysFilePaths.size());
 		JobProcedureDomain outputDomain = JobProcedureDomain.create(job.id(), id, job.currentProcedure().executable().getClass().getSimpleName(),
 				job.currentProcedure().procedureIndex());
 		job.currentProcedure().nrOfSameResultHash(1).dataInputDomain(inputDomain).addOutputDomain(outputDomain);

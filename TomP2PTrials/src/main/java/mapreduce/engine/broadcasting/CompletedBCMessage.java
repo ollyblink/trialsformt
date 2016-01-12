@@ -49,30 +49,12 @@ public class CompletedBCMessage implements IBCMessage {
 	public BCMessageStatus status() {
 		return status;
 	}
-	//
-	// @Override
-	// public int compareTo(IBCMessage o) {
-	// JobProcedureDomain thisOutputProcedureDomain = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
-	// : ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
-	// JobProcedureDomain receivedOutputProcedureDomain = (o.outputDomain() instanceof JobProcedureDomain ? (JobProcedureDomain) o.outputDomain()
-	// : ((ExecutorTaskDomain) o.outputDomain()).jobProcedureDomain());
-	//
-	// int result = thisOutputProcedureDomain.procedureIndex().compareTo(receivedOutputProcedureDomain.procedureIndex());
-	// if (result == 0) { // Meaning, same procedure index
-	// return status.compareTo(o.status());
-	// } else {
-	// return -result;
-	// }
-	// }
 
 	@Override
 	public void execute(Job job, IMessageConsumer messageConsumer) {
 		if (status == BCMessageStatus.COMPLETED_TASK) {
-			logger.info("Execute next message: " + status() + " of task '" + ((ExecutorTaskDomain) outputDomain).taskId() + "' for procedure '"
-					+ ((ExecutorTaskDomain) outputDomain).jobProcedureDomain().procedureSimpleName() + "'");
 			messageConsumer.handleCompletedTask(job, (ExecutorTaskDomain) outputDomain, inputDomain);
 		} else { // status == BCMessageStatus.COMPLETED_PROCEDURE
-			logger.info("Execute next message: " + status() + " for procedure '" + ((JobProcedureDomain) outputDomain).procedureSimpleName() + "'");
 			messageConsumer.handleCompletedProcedure(job, (JobProcedureDomain) outputDomain, inputDomain);
 		}
 	}

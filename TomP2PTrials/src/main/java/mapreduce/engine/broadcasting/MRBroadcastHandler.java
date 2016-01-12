@@ -28,36 +28,11 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	private static Logger logger = LoggerFactory.getLogger(MRBroadcastHandler.class);
 
 	private String executor;
-	// private List<Job> jobs = SyncedCollectionProvider.syncedArrayList();
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private IMessageConsumer messageConsumer;
-
 	private PriorityExecutor taskExecutionServer;
 
 	private ListMultimap<Job, Future<?>> jobFuturesFor = SyncedCollectionProvider.syncedListMultimap();
-
-	private MRBroadcastHandler() {
-		this.taskExecutionServer = PriorityExecutor.newFixedThreadPool(1);
-	}
-
-	public static MRBroadcastHandler create() {
-		return new MRBroadcastHandler();
-	}
-
-	public MRBroadcastHandler messageConsumer(IMessageConsumer messageConsumer) {
-		this.messageConsumer = messageConsumer; 
-		return this;
-	}
-
-	public MRBroadcastHandler dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
-		this.dhtConnectionProvider = dhtConnectionProvider; 
-		return this;
-	}
-
-	public MRBroadcastHandler executor(String executor) {
-		this.executor = executor;
-		return this;
-	}
 
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
@@ -66,7 +41,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
-				addBCMessage(bcMessage);
+				addExternallyReceivedMessage(bcMessage);
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
@@ -74,8 +49,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		return super.receive(message);
 	}
 
-	public void addBCMessage(IBCMessage bcMessage) {
-
+	protected void addExternallyReceivedMessage(IBCMessage bcMessage) {
 		String jobId = bcMessage.inputDomain().jobId();
 		Job job = null;
 		if ((job = getJob(jobId)) == null) {
@@ -126,9 +100,42 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 					jobFuture.cancel(true);
 				}
 			}
+			jobFuturesFor.get(job).clear();
 		}
 	}
-	public ListMultimap<Job, Future<?>> jobFutures(){
+
+	// Setter, Getter, Creator, Constructor follow below..
+	private MRBroadcastHandler(int nrOfConcurrentlyExecutedBCMessages) {
+		this.taskExecutionServer = PriorityExecutor.newFixedThreadPool(nrOfConcurrentlyExecutedBCMessages);
+	}
+
+	/**
+	 *
+	 * 
+	 * @param nrOfConcurrentlyExecutedBCMessages
+	 *            number of threads for this thread pool: how many bc messages may be executed at the same time?
+	 * @return
+	 */
+	public static MRBroadcastHandler create(int nrOfConcurrentlyExecutedBCMessages) {
+		return new MRBroadcastHandler(nrOfConcurrentlyExecutedBCMessages);
+	}
+
+	public MRBroadcastHandler messageConsumer(IMessageConsumer messageConsumer) {
+		this.messageConsumer = messageConsumer;
+		return this;
+	}
+
+	public MRBroadcastHandler dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		this.dhtConnectionProvider = dhtConnectionProvider;
+		return this;
+	}
+
+	public MRBroadcastHandler executor(String executor) {
+		this.executor = executor;
+		return this;
+	}
+
+	public ListMultimap<Job, Future<?>> jobFutures() {
 		return this.jobFuturesFor;
 	}
 }

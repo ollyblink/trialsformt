@@ -30,13 +30,8 @@ public class MRJobExecutorMessageConsumerTest {
 	public static void tearDownAfterClass() throws Exception {
 	}
 
-	// @Test
-	// public void testHandleCompletedTask() {
-	// // messageConsumer.handleCompletedTask(outputDomain, inputDomain, tasksSize);
-	// }
-
 	@Test
 	public void testHandleCompletedProcedure() {
- 
+
 	}
 }

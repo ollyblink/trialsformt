@@ -99,6 +99,9 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 	// }
 
 	private void handleReceivedMessage(Job job, IDomain outputDomain, JobProcedureDomain inputDomain, IUpdate iUpdate) {
+		if (job == null || outputDomain == null || inputDomain == null || iUpdate == null) {
+			return;
+		}
 		Procedure procedure = job.currentProcedure();
 		JobProcedureDomain thisOutputProcedureDomain = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
 				: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());

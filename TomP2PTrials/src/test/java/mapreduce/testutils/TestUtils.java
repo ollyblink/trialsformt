@@ -29,7 +29,7 @@ public class TestUtils {
 		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
 		List<PeerDHT> peers = SyncedCollectionProvider.syncedArrayList();
 		PeerDHT[] peerArray = null;
-		MRBroadcastHandler bcHandler = MRBroadcastHandler.create();
+		MRBroadcastHandler bcHandler = MRBroadcastHandler.create(1);
 		if(messageConsumer != null){
 			bcHandler.messageConsumer(messageConsumer);
 		}
