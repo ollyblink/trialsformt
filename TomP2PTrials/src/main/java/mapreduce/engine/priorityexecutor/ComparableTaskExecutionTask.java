@@ -14,23 +14,39 @@ public class ComparableTaskExecutionTask<T> extends FutureTask<T> implements Com
 
 	@Override
 	public int compareTo(ComparableTaskExecutionTask<T> o) {
+		int result = 0;
+
 		if (!task.isFinished() && !o.task.isFinished()) {
-			if (task.activeCount() == o.task.activeCount()) {
+			if (task.canBeExecuted() && o.task.canBeExecuted()) {
 				if (task.currentMaxNrOfSameResultHash() == o.task.currentMaxNrOfSameResultHash()) {
-					return 0;
-				} else {
-					return task.currentMaxNrOfSameResultHash().compareTo(o.task.currentMaxNrOfSameResultHash());
+					if (task.activeCount() > o.task.activeCount()) {
+						return 1;
+					} else if (task.activeCount() < o.task.activeCount()) {
+						return -1;
+					} else {
+						return 0;
+					}
+				} else if (task.currentMaxNrOfSameResultHash() < o.task.currentMaxNrOfSameResultHash()) {
+					return -1;
+				} else {// if (task.currentMaxNrOfSameResultHash() > o.task.currentMaxNrOfSameResultHash()) {
+					return 1;
 				}
+
+			} else if (!task.canBeExecuted() && o.task.canBeExecuted()) {
+				return 1;
+			} else if (task.canBeExecuted() && !o.task.canBeExecuted()) {
+				return -1;
 			} else {
-				return task.activeCount().compareTo(o.task.activeCount());
+				return 0;
 			}
-		}else if(task.isFinished() && !o.task.isFinished()){
-			return -1;
-		}else if(!task.isFinished() && o.task.isFinished()){
-			return 1;
-		}else{
-			return 0;
+		} else if (task.isFinished() && !o.task.isFinished()) {
+			result = 1;
+		} else if (!task.isFinished() && o.task.isFinished()) {
+			result = -1;
+		} else {
+			result = 0;
 		}
+		return result;
 	}
 }
 

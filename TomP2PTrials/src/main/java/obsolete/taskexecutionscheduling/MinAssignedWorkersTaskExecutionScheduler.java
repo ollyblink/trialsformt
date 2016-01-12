@@ -1,4 +1,4 @@
-package mapreduce.execution.task.scheduling.taskexecutionscheduling;
+package obsolete.taskexecutionscheduling;
 
 import java.util.Collections;
 import java.util.List;
@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcomparators.MinAssignedWorkerTaskExecutionSortingComparator;
+import obsolete.taskexecutionscheduling.sortingcomparators.MinAssignedWorkerTaskExecutionSortingComparator;
 
 /**
  * Scheduler simply orders the tasks such that those tasks with least currently assigned peers to execute it are favoured. Tasks with less different

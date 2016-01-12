@@ -1,4 +1,4 @@
-package mapreduce.execution.task.scheduling;
+package obsolete;
 
 import java.util.List;
 

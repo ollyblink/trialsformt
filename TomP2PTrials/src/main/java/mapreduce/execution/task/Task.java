@@ -42,6 +42,11 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		return activeCount;
 	}
 
+	/**
+	 * Earlier, this had a meaning. Now it's only there to tell apart the execution, if the same executor executes the task multiple times
+	 * 
+	 * @return
+	 */
 	public int newStatusIndex() {
 		return this.statusIndex++;
 	}
@@ -135,6 +140,11 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	public int nrOfSameResultHash() {
+		// TODO Auto-generated method stub
+		return nrOfSameResultHash;
 	}
 
 }

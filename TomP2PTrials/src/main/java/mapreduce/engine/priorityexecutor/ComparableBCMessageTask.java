@@ -22,31 +22,79 @@ public class ComparableBCMessageTask<T> extends FutureTask<T> implements Compara
 		this.messageCreationTime = messageCreationTime;
 	}
 
-
 	@Override
 	public int compareTo(ComparableBCMessageTask<T> o) {
-		if (jobPriority == o.jobPriority) {
-			if (jobCreationTime == o.jobCreationTime) {
-				if (procedureIndex == o.procedureIndex) {
-					if (messageStatus == o.messageStatus) {
-						if (messageCreationTime == o.messageCreationTime) {
-							return 0;
+		int result = 0;
+		if (jobPriority.equals(o.jobPriority)) {
+			if (jobCreationTime.equals(o.jobCreationTime)) {
+				if (procedureIndex.equals(o.procedureIndex)) {
+					if (messageStatus.equals(o.messageStatus)) {
+						if (messageCreationTime.equals(o.messageCreationTime)) {
+							result = 0;
 						} else {
-							return -messageCreationTime.compareTo(o.messageCreationTime);
+							result = messageCreationTime.compareTo(o.messageCreationTime);
 						}
 					} else {
-						return messageStatus.compareTo(o.messageStatus);
+						result = messageStatus.compareTo(o.messageStatus);
 					}
 				} else {
-					return -procedureIndex.compareTo(o.procedureIndex);
+					result = -procedureIndex.compareTo(o.procedureIndex);
 				}
 			} else {
-				return -jobCreationTime.compareTo(o.jobCreationTime);
+				result = jobCreationTime.compareTo(o.jobCreationTime);
 			}
 		} else {
-			return jobPriority.compareTo(o.jobPriority);
+			result = jobPriority.compareTo(o.jobPriority);
 		}
+		// System.out.println(toString() +" vs. " + o.toString() +": "+result);
+		return result;
 	}
+
+	public PriorityLevel getJobPriority() {
+		return jobPriority;
+	}
+
+	public void setJobPriority(PriorityLevel jobPriority) {
+		this.jobPriority = jobPriority;
+	}
+
+	public Long getJobCreationTime() {
+		return jobCreationTime;
+	}
+
+	public void setJobCreationTime(Long jobCreationTime) {
+		this.jobCreationTime = jobCreationTime;
+	}
+
+	public BCMessageStatus getMessageStatus() {
+		return messageStatus;
+	}
+
+	public void setMessageStatus(BCMessageStatus messageStatus) {
+		this.messageStatus = messageStatus;
+	}
+
+	public Long getMessageCreationTime() {
+		return messageCreationTime;
+	}
+
+	public void setMessageCreationTime(Long messageCreationTime) {
+		this.messageCreationTime = messageCreationTime;
+	}
+
+	public Integer getProcedureIndex() {
+		return procedureIndex;
+	}
+
+	public void setProcedureIndex(Integer procedureIndex) {
+		this.procedureIndex = procedureIndex;
+	}
+
+	@Override
+	public String toString() {
+		return "[" + jobPriority + ", " + jobCreationTime + ", " + procedureIndex + ", " + messageStatus + ", " + messageCreationTime + "]";
+	}
+
 }
 
 // public ComparableFutureTask(Callable<T> callable, int priority) {

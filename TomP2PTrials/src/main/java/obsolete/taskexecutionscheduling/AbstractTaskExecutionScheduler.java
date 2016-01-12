@@ -1,9 +1,9 @@
-package mapreduce.execution.task.scheduling.taskexecutionscheduling;
+package obsolete.taskexecutionscheduling;
 
 import java.util.List;
 
 import mapreduce.execution.task.Task;
-import mapreduce.execution.task.scheduling.ITaskScheduler;
+import obsolete.ITaskScheduler;
 
 public abstract class AbstractTaskExecutionScheduler implements ITaskScheduler {
 

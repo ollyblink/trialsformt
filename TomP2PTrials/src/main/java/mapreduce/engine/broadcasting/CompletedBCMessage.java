@@ -3,7 +3,6 @@ package mapreduce.engine.broadcasting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.engine.messageconsumer.AbstractMessageConsumer;
 import mapreduce.engine.messageconsumer.IMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
@@ -11,7 +10,7 @@ import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
 
 public class CompletedBCMessage implements IBCMessage {
-	protected static Logger logger = LoggerFactory.getLogger(AbstractMessageConsumer.class);
+	protected static Logger logger = LoggerFactory.getLogger(CompletedBCMessage.class);
 	/**
 	 * 
 	 */
@@ -120,7 +119,7 @@ public class CompletedBCMessage implements IBCMessage {
 	@Override
 	public Long creationTime() {
 		return this.creationTime;
-	} 
+	}
 
 	@Override
 	public Integer procedureIndex() {

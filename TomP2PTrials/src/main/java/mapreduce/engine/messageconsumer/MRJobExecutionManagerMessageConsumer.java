@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.engine.executor.MRJobExecutionManager;
@@ -24,7 +27,8 @@ import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
 
-public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsumer {
+public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
+	private static Logger logger = LoggerFactory.getLogger(MRJobExecutionManagerMessageConsumer.class);
 
 	/** Only used to distinguish if its a completed procedure or task to update */
 	private interface IUpdate {
@@ -45,6 +49,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 	private MRJobExecutionManagerMessageConsumer(MRJobExecutionManager jobExecutor) {
 		this.jobExecutor = jobExecutor;
+		futures = SyncedCollectionProvider.syncedHashMap();
 		this.threadPoolExecutor = PriorityExecutor.newFixedThreadPool(maxThreads);
 
 	}
@@ -68,14 +73,13 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 	// Maintenance
 
-
 	public void start() {
 		// this.dhtConnectionProvider.connect();
 	}
+
 	public void shutdown() {
 		this.dhtConnectionProvider.shutdown();
 	}
-
 
 	// End Maintenance
 	/**
@@ -105,12 +109,12 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				while (procedure.procedureIndex() < thisOutputProcedureDomain.procedureIndex()) {
 					job.incrementProcedureIndex();
 				}
-				procedure.inputDomain(inputDomain);
+				procedure.dataInputDomain(inputDomain);
 			} // no else needed... if it's the same procedure index, we are up to date and can update
-			if (procedure.inputDomain().equals(inputDomain)) { // same procedure, same input data location: everything is fine!
-				logger.info("tasks sizes: here: " + procedure.inputDomain().tasksSize() + " < as there " + inputDomain.tasksSize());
-				if (procedure.inputDomain().tasksSize() < inputDomain.tasksSize()) {// looks like the received had more already
-					procedure.inputDomain().tasksSize(inputDomain.tasksSize());
+			if (procedure.dataInputDomain().equals(inputDomain)) { // same procedure, same input data location: everything is fine!
+				logger.info("tasks sizes: here: " + procedure.dataInputDomain().tasksSize() + " < as there " + inputDomain.tasksSize());
+				if (procedure.dataInputDomain().tasksSize() < inputDomain.tasksSize()) {// looks like the received had more already
+					procedure.dataInputDomain().tasksSize(inputDomain.tasksSize());
 				}
 				iUpdate.executeUpdate(outputDomain, procedure);
 			} else { // May have to change input data location (inputDomain)
@@ -118,7 +122,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {
 					// We have completed fewer tasks with our data set than the incoming... abort us and use the incoming data set location instead
 					cancelProcedureExecution(procedure);
-					procedure.inputDomain(inputDomain);
+					procedure.dataInputDomain(inputDomain);
 				} else if (procedure.nrOfFinishedTasks() == inputDomain.nrOfFinishedTasks()) { // What if they executed the same number of tasks?
 					// TODO: What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most
 					// likely finish more tasks quicker
@@ -160,10 +164,10 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	private void addTaskFuture(Procedure procedure, Task task, Future<?> taskFuture) {
-		ListMultimap<Task, Future<?>> taskFutures = futures.get(procedure.inputDomain().toString());
+		ListMultimap<Task, Future<?>> taskFutures = futures.get(procedure.dataInputDomain().toString());
 		if (taskFutures == null) {
 			taskFutures = SyncedCollectionProvider.syncedListMultimap();
-			futures.put(procedure.inputDomain().toString(), taskFutures);
+			futures.put(procedure.dataInputDomain().toString(), taskFutures);
 		}
 		taskFutures.put(task, taskFuture);
 	}
@@ -178,7 +182,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				if (procedure.isFinished()) {
 					cancelProcedureExecution(procedure);
 					job.incrementProcedureIndex();
-					job.currentProcedure().inputDomain(outputJPD);
+					job.currentProcedure().dataInputDomain(outputJPD);
 					if (job.currentProcedure().executable().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
 						job.isFinished(true);
 						printResults(job);
@@ -221,14 +225,14 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 	}
 
 	protected void cancelProcedureExecution(Procedure procedure) {
-		ListMultimap<Task, Future<?>> procedureFutures = futures.get(procedure.inputDomain().toString());
+		ListMultimap<Task, Future<?>> procedureFutures = futures.get(procedure.dataInputDomain().toString());
 		for (Future<?> taskFuture : procedureFutures.values()) {
 			taskFuture.cancel(true);
 		}
 	}
 
 	protected void cancelTaskExecution(Procedure procedure, Task task) {
-		ListMultimap<Task, Future<?>> procedureFutures = futures.get(procedure.inputDomain().toString());
+		ListMultimap<Task, Future<?>> procedureFutures = futures.get(procedure.dataInputDomain().toString());
 		List<Future<?>> taskFutures = procedureFutures.get(task);
 		for (Future<?> taskFuture : taskFutures) {
 			taskFuture.cancel(true);
@@ -237,18 +241,18 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 
 	private void getTaskKeysFromNetwork(Procedure procedure) {
 
-		Boolean retrieving = currentlyRetrievingTaskKeysForProcedure.get(procedure.inputDomain().toString());
+		Boolean retrieving = currentlyRetrievingTaskKeysForProcedure.get(procedure.dataInputDomain().toString());
 		if ((retrieving != null && !retrieving)) {
-			logger.info("Retrieving tasks for: " + procedure.inputDomain().toString());
-			currentlyRetrievingTaskKeysForProcedure.put(procedure.inputDomain().toString(), true);
+			logger.info("Retrieving tasks for: " + procedure.dataInputDomain().toString());
+			currentlyRetrievingTaskKeysForProcedure.put(procedure.dataInputDomain().toString(), true);
 
-			dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.inputDomain().toString())
+			dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.dataInputDomain().toString())
 					.addListener(new BaseFutureAdapter<FutureGet>() {
 
 						@Override
 						public void operationComplete(FutureGet future) throws Exception {
 							if (future.isSuccess()) {
-								procedure.inputDomain().tasksSize(future.dataMap().size());
+								procedure.dataInputDomain().tasksSize(future.dataMap().size());
 								for (Number640 keyHash : future.dataMap().keySet()) {
 									String key = (String) future.dataMap().get(keyHash).object();
 									Task task = Task.create(key);
@@ -257,7 +261,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 										logger.info("added task " + task);
 										submitTask(procedure, task);
 									}
-									currentlyRetrievingTaskKeysForProcedure.remove(procedure.inputDomain().toString());
+									currentlyRetrievingTaskKeysForProcedure.remove(procedure.dataInputDomain().toString());
 								}
 							}
 						}
@@ -305,7 +309,7 @@ public class MRJobExecutionManagerMessageConsumer extends AbstractMessageConsume
 				});
 	}
 
-	public MRJobExecutionManager getExecutor() { 
+	public MRJobExecutionManager jobExecutor() {
 		return this.jobExecutor;
 	}
 

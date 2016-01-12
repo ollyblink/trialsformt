@@ -79,21 +79,10 @@ public abstract class AbstractFinishable implements IFinishable {
 			return 0;
 		}
 	}
-	//
-	// public static void main(String[] args) {
-	// TreeSet<Integer> max = new TreeSet<>();
-	// max.add(1);
-	// max.add(4);
-	// max.add(2);
-	// max.add(6);
-	// max.add(3);
-	// max.add(1);
-	// System.err.println(max.last());
-	// }
 
 	@Override
 	public AbstractFinishable nrOfSameResultHash(int nrOfSameResultHash) {
-		if (nrOfSameResultHash > 1) {
+		if (nrOfSameResultHash > 0) {
 			this.nrOfSameResultHash = nrOfSameResultHash;
 		}
 
@@ -102,7 +91,9 @@ public abstract class AbstractFinishable implements IFinishable {
 
 	@Override
 	public AbstractFinishable addOutputDomain(IDomain domain) {
-		this.outputDomains.add(domain);
+		if (!isFinished()) {
+			this.outputDomains.add(domain);
+		}
 		return this;
 	}
 

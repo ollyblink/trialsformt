@@ -1,8 +1,10 @@
 package mapreduce.engine.priorityexecutor;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -39,19 +41,19 @@ public class PriorityExecutor extends ThreadPoolExecutor {
 	}
 	// execute with New comparable task
 
-	// public void execute(Runnable command, int priority) {
-	// super.execute(new ComparableFutureTask<>(command, null, priority));
-	// }
+//	 public void execute(Runnable command, int priority) {
+//	 super.execute(new Comparable<>(command, null, priority));
+//	 }
+	
+	 @Override
+	 protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+	 return (RunnableFuture<T>) callable;
+	 }
 	//
-	// @Override
-	// protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-	// return (RunnableFuture<T>) callable;
-	// }
-	//
-	// @Override
-	// protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-	// return (RunnableFuture<T>) runnable;
-	// }
+	 @Override
+	 protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
+	 return (RunnableFuture<T>) runnable;
+	 }
 
 	public static void main(String[] args) throws InterruptedException {
 		PriorityExecutor executorService = (PriorityExecutor) PriorityExecutor.newFixedThreadPool(1);

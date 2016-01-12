@@ -4,9 +4,9 @@ import java.io.IOException;
 
 import mapreduce.engine.executor.MRJobExecutionManager;
 import mapreduce.execution.context.DHTStorageContext;
-import mapreduce.execution.task.scheduling.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.GetOwnIpAddressTest;
+import obsolete.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 
 public class DesignIdeaJobExecutor {
 	public static void main(String[] args) throws InterruptedException {
@@ -19,7 +19,7 @@ public class DesignIdeaJobExecutor {
 		String bootstrapIP = "192.168.43.65";
 		int bootstrapPort = 4000;
 		// String storageFilePath = "/home/ozihler/git/trialsformt/TomP2PTrials/src/main/java/mapreduce/storage/";
-		DHTConnectionProvider newInstance = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort);
+		DHTConnectionProvider newInstance = DHTConnectionProvider.create(bootstrapIP, bootstrapPort);
 		// long waitingTime = 0;
 		if (id == 1) {
 			newInstance.isBootstrapper(true);

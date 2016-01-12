@@ -68,7 +68,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		this.peerDHTs = SyncedCollectionProvider.syncedArrayList();
 	}
 
-	public static DHTConnectionProvider newInstance(String bootstrapIP, int bootstrapPort) {
+	public static DHTConnectionProvider create(String bootstrapIP, int bootstrapPort) {
 		return new DHTConnectionProvider(bootstrapIP, bootstrapPort);
 	}
 

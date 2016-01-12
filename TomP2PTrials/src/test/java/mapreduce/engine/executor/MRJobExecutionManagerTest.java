@@ -47,7 +47,7 @@ public class MRJobExecutionManagerTest {
 		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, msgConsumer);
 		msgConsumer.dhtConnectionProvider(dhtConnectionProvider);
-		MRJobExecutionManager jobExecutor = msgConsumer.getExecutor();
+		MRJobExecutionManager jobExecutor = msgConsumer.jobExecutor();
 
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountMapper.create(), null, 1, 1);
 		// jobExecutor.messageConsumer().jobs().put(job, new PriorityBlockingQueue<>());
@@ -62,12 +62,12 @@ public class MRJobExecutionManagerTest {
 
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.newStatusIndex(), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
-		procedure.inputDomain(inputJPD).tasks().add(task);
+		procedure.dataInputDomain(inputJPD).tasks().add(task);
 		for (int i = 0; i < 1000; ++i) {
 			context.write((i % 5 == 0 ? "where" : (i % 4 == 0 ? "is" : (i % 3 == 0 ? "hello" : (i % 2 == 0 ? "world" : "test")))), new Integer(1));
 		}
 		task.addOutputDomain(outputETD);
-		procedure.inputDomain(inputJPD);
+		procedure.dataInputDomain(inputJPD);
 		Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 
 			@Override
@@ -104,20 +104,20 @@ public class MRJobExecutionManagerTest {
 		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, msgConsumer);
 		msgConsumer.dhtConnectionProvider(dhtConnectionProvider);
-		MRJobExecutionManager jobExecutor = msgConsumer.getExecutor();
+		MRJobExecutionManager jobExecutor = msgConsumer.jobExecutor();
 
 		Job job = Job.create("SUBMITTER");
 		dhtConnectionProvider.broadcastHandler().jobFutures().put(job, null);
 
 		JobProcedureDomain dataDomain = JobProcedureDomain.create(job.id(), jobExecutor.id(), StartProcedure.class.getSimpleName(), 0).tasksSize(1);
 		addTaskDataToProcedureDomain(dhtConnectionProvider, "file1", testIsText, dataDomain.toString());
-		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).inputDomain(dataDomain).combiner(combiner);
+		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).dataInputDomain(dataDomain).combiner(combiner);
 
 		jobExecutor.executeTask(Task.create("file1"), procedure);
 
 		Thread.sleep(2000);
 		JobProcedureDomain outputJPD = JobProcedureDomain
-				.create(procedure.inputDomain().jobId(), jobExecutor.id(), procedure.executable().getClass().getSimpleName(), 1)
+				.create(procedure.dataInputDomain().jobId(), jobExecutor.id(), procedure.executable().getClass().getSimpleName(), 1)
 				.nrOfFinishedTasks(procedure.nrOfFinishedTasks());
 		Number160 resultHash = Number160.ZERO;
 		if (combiner == null) {

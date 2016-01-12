@@ -1,36 +1,23 @@
 package mapreduce.engine.broadcasting;
 
-import static org.junit.Assert.assertEquals;
+import java.util.Random;
 
-import java.util.SortedMap;
-import java.util.concurrent.PriorityBlockingQueue;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.job.Job;
-import mapreduce.execution.procedures.WordCountMapper;
-import mapreduce.execution.procedures.WordCountReducer;
+import mapreduce.engine.messageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
-import mapreduce.utils.DomainProvider;
-import mapreduce.utils.SyncedCollectionProvider;
 
 public class MRBroadcastHandlerTest {
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-	}
+	private Random random = new Random();
 
 	@Test
 	public void test() throws Exception {
- 
+		MRJobExecutionManagerMessageConsumer messageConsumer = MRJobExecutionManagerMessageConsumer.create();
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, messageConsumer);
+		messageConsumer.dhtConnectionProvider(dhtConnectionProvider);
+		MRBroadcastHandler handler = dhtConnectionProvider.broadcastHandler();
+		handler.addBCMessage(bcMessage);
 	}
 
 }

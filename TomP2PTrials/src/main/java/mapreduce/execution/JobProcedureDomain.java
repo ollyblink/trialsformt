@@ -13,8 +13,16 @@ public class JobProcedureDomain implements IDomain {
 	private String procedureSimpleName;
 	private int procedureIndex;
 	private Number160 resultHash;
-	/** Number of tasks for this procedure (may be different from tasks.size() because tasks are pulled after another and not all at the same time) */
+	/**
+	 * Number of tasks for this procedure (may be different from tasks.size() because tasks are pulled after another and not all at the same time).
+	 * When the preceding procedure finishes, it will add the number of task's (==tasksSize) such that the next procedure knows how many tasks there
+	 * are to be processed.
+	 */
 	private int tasksSize;
+	/**
+	 * This data item is simply here for the MessageConsumer to decide which result to take if two executors execute a procedure on different input
+	 * domains
+	 */
 	private int nrOfFinishedTasks;
 
 	private JobProcedureDomain() {

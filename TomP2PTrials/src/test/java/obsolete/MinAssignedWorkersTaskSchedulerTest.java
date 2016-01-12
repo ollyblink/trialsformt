@@ -1,4 +1,4 @@
-package mapreduce.execution.task.scheduling.taskexecutionscheduling;
+package obsolete;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -17,6 +17,7 @@ import org.junit.Test;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.task.Task;
+import obsolete.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 
 public class MinAssignedWorkersTaskSchedulerTest {
 

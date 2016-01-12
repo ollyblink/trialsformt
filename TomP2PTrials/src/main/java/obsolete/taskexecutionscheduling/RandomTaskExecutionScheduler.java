@@ -1,4 +1,4 @@
-package mapreduce.execution.task.scheduling.taskexecutionscheduling;
+package obsolete.taskexecutionscheduling;
 
 import java.util.List;
 import java.util.Random;

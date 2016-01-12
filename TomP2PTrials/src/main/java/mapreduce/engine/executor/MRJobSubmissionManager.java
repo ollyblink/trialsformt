@@ -94,7 +94,7 @@ public class MRJobSubmissionManager {
 		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, "INITIAL", 0).tasksSize(keysFilePaths.size());
 		JobProcedureDomain outputDomain = JobProcedureDomain.create(job.id(), id, job.currentProcedure().executable().getClass().getSimpleName(),
 				job.currentProcedure().procedureIndex());
-		job.currentProcedure().nrOfSameResultHash(1).inputDomain(inputDomain).addOutputDomain(outputDomain);
+		job.currentProcedure().nrOfSameResultHash(1).dataInputDomain(inputDomain).addOutputDomain(outputDomain);
 
 		List<FuturePut> futurePutValues = SyncedCollectionProvider.syncedArrayList();
 		List<FuturePut> futurePutKeys = SyncedCollectionProvider.syncedArrayList();
@@ -117,7 +117,7 @@ public class MRJobSubmissionManager {
 			}
 
 			if (taskDataComposer.currentValues() != null) {
-				logger.info("Adding last data set: "+ taskDataComposer.currentValues());
+				logger.info("Adding last data set: " + taskDataComposer.currentValues());
 				filePartCounter = addDataToDHT(job, keyfilePath, taskDataComposer.currentValues(), filePartCounter, futurePutValues, futurePutKeys);
 				taskDataComposer.reset();
 			}
@@ -137,7 +137,7 @@ public class MRJobSubmissionManager {
 									@Override
 									public void operationComplete(FuturePut future) throws Exception {
 										logger.info("Broadcast initial complete procedure");
-										JobProcedureDomain inputDomain = job.currentProcedure().inputDomain()
+										JobProcedureDomain inputDomain = job.currentProcedure().dataInputDomain()
 												.nrOfFinishedTasks(job.currentProcedure().nrOfFinishedTasks());
 										CompletedBCMessage msg = CompletedBCMessage
 												.createCompletedProcedureBCMessage(job.currentProcedure().resultOutputDomain(), inputDomain);

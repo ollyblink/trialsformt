@@ -1,4 +1,4 @@
-package mapreduce.execution.task.scheduling.taskexecutionscheduling.sortingcomparators;
+package obsolete.taskexecutionscheduling.sortingcomparators;
 
 import java.util.Comparator;
 

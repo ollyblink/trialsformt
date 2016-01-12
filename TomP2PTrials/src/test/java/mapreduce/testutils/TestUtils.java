@@ -45,7 +45,7 @@ public class TestUtils {
 		Example.bootstrap(peerArray);
 		Collections.addAll(peers, peerArray);
 
-		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.newInstance(bootstrapIP, bootstrapPort).externalPeers(peers, bcHandler);
+		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.create(bootstrapIP, bootstrapPort).externalPeers(peers, bcHandler);
 		return dhtConnectionProvider;
 	}
 }

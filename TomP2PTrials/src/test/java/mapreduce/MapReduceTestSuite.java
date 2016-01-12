@@ -5,12 +5,12 @@ import org.junit.runners.Suite;
 
 import mapreduce.engine.EngineTestSuite;
 import mapreduce.execution.ExecutionTestSuite;
-import mapreduce.storage.StorageTestSuite;
+import mapreduce.storage.DHTConnectionProviderTest;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 	ExecutionTestSuite.class,
 	EngineTestSuite.class,
-	StorageTestSuite.class
+	DHTConnectionProviderTest.class
 })
 public class MapReduceTestSuite {
  

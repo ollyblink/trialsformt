@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.broadcasting.CompletedBCMessage;
-import mapreduce.engine.messageconsumer.MRJobExecutionManagerMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
@@ -32,8 +31,7 @@ import net.tomp2p.storage.Data;
 public class MRJobExecutionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobExecutionManager.class);
 
-	private IDHTConnectionProvider dhtCon;
-	// private MRJobExecutionManagerMessageConsumer messageConsumer;
+	private IDHTConnectionProvider dhtCon; 
 
 	private String id;
 
@@ -68,7 +66,7 @@ public class MRJobExecutionManager {
 
 		logger.info("Task to execute: " + task);
 		// Now we actually wanna retrieve the data from the specified locations...
-		dhtCon.getAll(task.key(), procedure.inputDomain().toString()).addListener(new BaseFutureAdapter<FutureGet>() {
+		dhtCon.getAll(task.key(), procedure.dataInputDomain().toString()).addListener(new BaseFutureAdapter<FutureGet>() {
 
 			@Override
 			public void operationComplete(FutureGet future) throws Exception {
@@ -81,7 +79,7 @@ public class MRJobExecutionManager {
 					}
 
 					logger.info("Executing task: " + task.key() + " with values " + values);
-					JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.inputDomain().jobId(), id,
+					JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.dataInputDomain().jobId(), id,
 							procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
 
 					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
@@ -103,7 +101,7 @@ public class MRJobExecutionManager {
 							if (future.isSuccess()) {
 								outputETD.resultHash(contextToUse.resultHash());
 								CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
-										procedure.inputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
+										procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
 								// dhtCon.broadcastHandler().addBCMessage(msg);
 								dhtCon.broadcastHandler().submit(msg, dhtCon.broadcastHandler().getJob(outputJPD.jobId()));
 								// Adds it to itself, does not receive broadcasts... Makes sure this result is ignored in case another was
@@ -119,7 +117,7 @@ public class MRJobExecutionManager {
 
 					});
 				} else {
-					logger.info("Could not retrieve data for task " + task.key() + " in job procedure domain: " + procedure.inputDomain().toString()
+					logger.info("Could not retrieve data for task " + task.key() + " in job procedure domain: " + procedure.dataInputDomain().toString()
 							+ ". Failed reason: " + future.failedReason());
 					// task.decrementActiveCount();
 				}
@@ -162,7 +160,7 @@ public class MRJobExecutionManager {
 														+ " from task executor domain to job procedure domain: " + to.toString() + ". ");
 
 												// if (procedure.isFinished()) {
-												if (procedure.inputDomain().tasksSize() == procedure.tasks().size()) {
+												if (procedure.dataInputDomain().tasksSize() == procedure.tasks().size()) {
 													boolean isProcedureCompleted = true;
 													for (Task task : procedure.tasks()) {
 														if (!task.isFinished()) {
@@ -171,7 +169,7 @@ public class MRJobExecutionManager {
 													}
 													if (isProcedureCompleted) {
 														CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(
-																to.resultHash(procedure.calculateResultHash()), procedure.inputDomain());
+																to.resultHash(procedure.calculateResultHash()), procedure.dataInputDomain());
 														dhtCon.broadcastHandler().submit(msg, dhtCon.broadcastHandler().getJob(to.jobId()));
 														dhtCon.broadcastCompletion(msg);
 													}
