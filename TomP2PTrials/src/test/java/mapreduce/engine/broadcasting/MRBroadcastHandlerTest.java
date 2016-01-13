@@ -36,8 +36,8 @@ public class MRBroadcastHandlerTest {
 		messageConsumer = MRJobExecutionManagerMessageConsumer.create();
 		dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, messageConsumer);
 		messageConsumer.dhtConnectionProvider(dhtConnectionProvider);
-		job = Job.create("Submitter").addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1);
+		job = Job.create("Submitter").addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 		dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).awaitUninterruptibly();
 		broadcastHandler = dhtConnectionProvider.broadcastHandler();
 	}
@@ -63,10 +63,12 @@ public class MRBroadcastHandlerTest {
 		MRJobSubmissionManager submitter = MRJobSubmissionManager.create(dhtConnectionProvider);
 		dhtConnectionProvider.broadcastHandler().messageConsumer(messageConsumer);
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
-		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_MEGA_BYTES)
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1);
- 
+		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).maxFileSize(FileSize.MEGA_BYTE).fileInputFolderPath(fileInputFolderPath)
+
+		 .addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+		// .addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false)
+		;
+
 		submitter.submit(job);
 		try {
 			Thread.sleep(Long.MAX_VALUE);

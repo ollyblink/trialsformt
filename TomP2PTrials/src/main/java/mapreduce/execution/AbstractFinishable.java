@@ -1,13 +1,13 @@
-package mapreduce.execution.task;
+package mapreduce.execution;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeSet;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.IDomain;
-import mapreduce.execution.IFinishable;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
@@ -19,6 +19,8 @@ public abstract class AbstractFinishable implements IFinishable {
 	protected List<IDomain> outputDomains;
 	/** How many times this object needs to be executed before it is declared finished */
 	protected int nrOfSameResultHash = 1; // Needs at least one
+	/** Assert that there are multiple output domains received before a task is finished */
+	private boolean needsMultipleDifferentDomains;
 
 	public AbstractFinishable() {
 		this.outputDomains = SyncedCollectionProvider.syncedArrayList();
@@ -46,6 +48,14 @@ public abstract class AbstractFinishable implements IFinishable {
 		Number160 r = null;
 		for (Number160 resultHash : results.keySet()) {
 			if (results.get(resultHash).size() >= nrOfSameResultHash) {
+				if (needsMultipleDifferentDomains) {
+					List<IDomain> list = results.get(resultHash);
+					Set<IDomain> asSet = new HashSet<>();
+					asSet.addAll(list);
+					if (asSet.size() < nrOfSameResultHash) {
+						continue;
+					}
+				}
 				r = resultHash;
 				isFinished = true;
 				break;
@@ -101,6 +111,12 @@ public abstract class AbstractFinishable implements IFinishable {
 	public String toString() {
 		return "AbstractFinishable [resultOutputDomain=" + resultOutputDomain + ", outputDomains=" + outputDomains + ", nrOfSameResultHash="
 				+ nrOfSameResultHash + ", isFinished()=" + isFinished() + "]";
+	}
+
+	@Override
+	public AbstractFinishable needsMultipleDifferentDomains(boolean needsMultipleDifferentDomains) {
+		this.needsMultipleDifferentDomains = needsMultipleDifferentDomains;
+		return this;
 	}
 
 }

@@ -49,7 +49,7 @@ public class MRJobExecutionManagerTest {
 		msgConsumer.dhtConnectionProvider(dhtConnectionProvider);
 		MRJobExecutionManager jobExecutor = msgConsumer.jobExecutor();
 
-		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountMapper.create(), null, 1, 1);
+		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false);
 		// jobExecutor.messageConsumer().jobs().put(job, new PriorityBlockingQueue<>());
 		dhtConnectionProvider.broadcastHandler().jobFutures().put(job, null);
 		// dhtConnectionProvider.broadcastHandler().jobFutures().get(job).clear();
@@ -224,8 +224,8 @@ public class MRJobExecutionManagerTest {
 		logger.info("before job creation");
 		MRJobSubmissionManager submitter = MRJobSubmissionManager.create(dhtConnectionProvider);
 		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_MEGA_BYTES)
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1);
+				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		submitter.submit(job);
 		// new Thread(new Runnable() {

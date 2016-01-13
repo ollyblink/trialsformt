@@ -1,5 +1,11 @@
 package mapreduce.utils;
 
+/**
+ * Determines some standard file sizes to be used without knowing the actual value... Simply for convenience and readability.
+ * 
+ * @author Oliver
+ *
+ */
 public enum FileSize {
 	BYTE(1), TWO_BYTES(2), FOUR_BYTES(4), EIGHT_BYTES(8), SIXTEEN_BYTES(16), THIRTY_TWO_BYTES(32), SIXTY_FOUR_BYTES(64), ONE_TWENTY_EIGHT_BYTES(
 			128), KILO_BYTE(1024), TWO_KILO_BYTES(2 * KILO_BYTE.value()), FOUR_KILO_BYTES(4 * KILO_BYTE.value()), EIGHT_KILO_BYTES(

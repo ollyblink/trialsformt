@@ -90,14 +90,25 @@ public class MRJobSubmissionManager {
 		File file = new File(job.fileInputFolderPath());
 		FileUtils.INSTANCE.getFiles(file, keysFilePaths);
 
-		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, "INITIAL", -1).tasksSize(keysFilePaths.size());
+		// Get the number of files to be expected
+		// long overallFileSizes = 0;
+		int nrOfFiles = 0;
+		for (String fileName : keysFilePaths) {
+			long fileSize = new File(fileName).length();
+			nrOfFiles += (int) (fileSize / job.maxFileSize().value());
+			if (fileSize % job.maxFileSize().value() > 0) {
+				++nrOfFiles;
+			}
+		} 
+
+		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, "BEFORE_START", -1).tasksSize(nrOfFiles);
 		JobProcedureDomain outputDomain = JobProcedureDomain.create(job.id(), id, job.currentProcedure().executable().getClass().getSimpleName(),
 				job.currentProcedure().procedureIndex());
 		job.currentProcedure().nrOfSameResultHash(1).dataInputDomain(inputDomain).addOutputDomain(outputDomain);
 
 		List<FuturePut> futurePutValues = SyncedCollectionProvider.syncedArrayList();
 		List<FuturePut> futurePutKeys = SyncedCollectionProvider.syncedArrayList();
-		 
+
 		for (String keyfilePath : keysFilePaths) {
 			Path path = Paths.get(keyfilePath);
 			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
@@ -109,7 +120,8 @@ public class MRJobSubmissionManager {
 				while ((line = reader.readLine()) != null) {
 					String taskValues = taskDataComposer.append(line);
 					if (taskValues != null) {
-						filePartCounter = addDataToDHT(job, keyfilePath, taskValues, filePartCounter, futurePutValues, futurePutKeys);
+						dhtConnectionProvider.broadcastHandler().s
+						// filePartCounter = addDataToDHT(job, keyfilePath, taskValues, filePartCounter, futurePutValues, futurePutKeys);
 					}
 				}
 			} catch (IOException x) {
@@ -118,42 +130,46 @@ public class MRJobSubmissionManager {
 
 			if (taskDataComposer.currentValues() != null) {
 				logger.info("Adding last data set: " + taskDataComposer.currentValues());
-				filePartCounter = addDataToDHT(job, keyfilePath, taskDataComposer.currentValues(), filePartCounter, futurePutValues, futurePutKeys);
+				// filePartCounter = addDataToDHT(job, keyfilePath, taskDataComposer.currentValues(), filePartCounter, futurePutValues,
+				// futurePutKeys);
 				taskDataComposer.reset();
 			}
 		}
-		Futures.whenAllSuccess(futurePutValues).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
-
-			@Override
-			public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-				if (future.isSuccess()) {
-					Futures.whenAllSuccess(futurePutKeys).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
-
-						@Override
-						public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-							if (future.isSuccess()) {
-								dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).addListener(new BaseFutureAdapter<FuturePut>() {
-
-									@Override
-									public void operationComplete(FuturePut future) throws Exception {
-										logger.info("Broadcast initial complete procedure");
-										JobProcedureDomain inputDomain = job.currentProcedure().dataInputDomain().nrOfFinishedTasks(futurePutValues.size());
-										CompletedBCMessage msg = CompletedBCMessage
-												.createCompletedProcedureBCMessage(job.currentProcedure().resultOutputDomain(), inputDomain);
-										dhtConnectionProvider.broadcastCompletion(msg);
-									}
-
-								});
-							} else {
-								logger.info("Could not add keys for " + job.fileInputFolderPath());
-							}
-						}
-					});
-				} else {
-					logger.info("Could not add values for " + job.fileInputFolderPath());
-				}
-			}
-		});
+		// Futures.whenAllSuccess(futurePutValues).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
+		//
+		// @Override
+		// public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
+		// if (future.isSuccess()) {
+		// Futures.whenAllSuccess(futurePutKeys).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
+		//
+		// @Override
+		// public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
+		// if (future.isSuccess()) {
+		// dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).addListener(new BaseFutureAdapter<FuturePut>() {
+		//
+		// @Override
+		// public void operationComplete(FuturePut future) throws Exception {
+		// logger.info("Broadcast initial complete procedure");
+		// logger.info("resOutputDomain:" + job.currentProcedure().resultOutputDomain());
+		// logger.info("dataInputDomain:" + inputDomain);
+		// JobProcedureDomain inputDomain = job.currentProcedure().dataInputDomain()
+		// .nrOfFinishedTasks(futurePutValues.size());
+		// CompletedBCMessage msg = CompletedBCMessage
+		// .createCompletedProcedureBCMessage(job.currentProcedure().resultOutputDomain(), inputDomain);
+		// dhtConnectionProvider.broadcastCompletion(msg);
+		// }
+		//
+		// });
+		// } else {
+		// logger.info("Could not add keys for " + job.fileInputFolderPath());
+		// }
+		// }
+		// });
+		// } else {
+		// logger.info("Could not add values for " + job.fileInputFolderPath());
+		// }
+		// }
+		// });
 
 	}
 

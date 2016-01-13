@@ -25,6 +25,7 @@ import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number640;
 
 public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
@@ -39,7 +40,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 
 	private PriorityExecutor threadPoolExecutor;
 
-	private int maxThreads = 4;
+	private int maxThreads = 8;
 
 	private Map<String, Boolean> currentlyRetrievingTaskKeysForProcedure = SyncedCollectionProvider.syncedHashMap();
 
@@ -127,6 +128,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 					// We have completed fewer tasks with our data set than the incoming... abort us and use the incoming data set location instead
 					cancelProcedureExecution(procedure);
 					procedure.dataInputDomain(inputDomain);
+					tryExecuting(procedure);
 				} else if (procedure.nrOfFinishedTasks() == inputDomain.nrOfFinishedTasks()) { // What if they executed the same number of tasks?
 					// TODO: What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most
 					// likely finish more tasks quicker
@@ -138,19 +140,22 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 		}
 		// else{ ignore, as this is a message for an old procedure }
 		//
-		if (!job.isFinished()) {
-//			JobProcedureDomain outputJPD = (outputDomain instanceof JobProcedureDomain ? ((JobProcedureDomain) outputDomain)
-//					: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
-			if (procedure.tasks().size() < inputDomain.tasksSize()) {
-				// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
-				// procedure
-				getTaskKeysFromNetwork(job.currentProcedure());
-			} else if (procedure.tasks().size() == inputDomain.tasksSize()) {
-				for (Task task : procedure.tasks()) {
-					submitTask(procedure, task);
-				}
+	}
+
+	private void tryExecuting(Procedure procedure) {
+		// if (!job.isFinished()) {
+		// JobProcedureDomain outputJPD = (outputDomain instanceof JobProcedureDomain ? ((JobProcedureDomain) outputDomain)
+		// : ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
+		if (procedure.tasks().size() < procedure.dataInputDomain().tasksSize() || procedure.tasks().size() == 0) {
+			// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
+			// procedure
+			getTaskKeysFromNetwork(procedure);
+		} else if (procedure.tasks().size() == procedure.dataInputDomain().tasksSize()) {
+			for (Task task : procedure.tasks()) {
+				submitTask(procedure, task);
 			}
 		}
+		// }
 	}
 
 	private void submitTask(Procedure procedure, Task task) {
@@ -170,7 +175,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 	private void addTaskFuture(Procedure procedure, Task task, Future<?> taskFuture) {
 		ListMultimap<Task, Future<?>> taskFutures = futures.get(procedure.dataInputDomain().toString());
 		if (taskFutures == null) {
-			taskFutures = SyncedCollectionProvider.syncedListMultimap();
+			taskFutures = SyncedCollectionProvider.syncedArrayListMultimap();
 			futures.put(procedure.dataInputDomain().toString(), taskFutures);
 		}
 		taskFutures.put(task, taskFuture);
@@ -191,7 +196,12 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 						job.isFinished(true);
 						printResults(job);
 						return; // Done
+					}else{
+						procedure = job.currentProcedure();
 					}
+				}
+				if (!job.isFinished()) {
+					tryExecuting(procedure);
 				}
 
 			}
@@ -214,11 +224,10 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 					task = tasks.get(tasks.indexOf(task));
 				}
 				if (!task.isFinished()) {// Is finished before adding new output procedure domain? then ignore update
-					// Is finished after adding new output procedure domain? then abort any executions of this task and transfer the task's output
-					// <K,{V}> to the procedure domain
 					task.addOutputDomain(outputETDomain);
-					task.decrementActiveCount();
-					if (task.isFinished()) {
+					task.decrementActiveCount(); // TODO this one looks like its at the wrong position... rethink
+					if (task.isFinished()) {// Is finished after adding new output procedure domain? then abort any executions of this task and
+											// transfer the task's output <K,{V}> to the procedure domain
 						cancelTaskExecution(procedure, task); // If so, no execution needed anymore
 						// Transfer data to procedure domain! This may cause the procedure to become finished
 						jobExecutor.switchDataFromTaskToProcedureDomain(procedure, task);
@@ -258,6 +267,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 						@Override
 						public void operationComplete(FutureGet future) throws Exception {
 							if (future.isSuccess()) {
+								logger.info("Success");
 								procedure.dataInputDomain().tasksSize(future.dataMap().size());
 								for (Number640 keyHash : future.dataMap().keySet()) {
 									String key = (String) future.dataMap().get(keyHash).object();
@@ -269,6 +279,8 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 									}
 									currentlyRetrievingTaskKeysForProcedure.remove(procedure.dataInputDomain().toString());
 								}
+							} else {
+								logger.info("Fail reason: " + future.failedReason());
 							}
 						}
 
@@ -277,12 +289,12 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 	}
 
 	private void printResults(Job job) {
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		Procedure procedure = job.procedure(2);
+//		try {
+//			Thread.sleep(2000);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
+		Procedure procedure = job.procedure(job.currentProcedure().procedureIndex()-1);
 		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
 				.addListener(new BaseFutureAdapter<FutureGet>() {
 
@@ -290,25 +302,26 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 					public void operationComplete(FutureGet future) throws Exception {
 						if (future.isSuccess()) {
 							Set<Number640> keySet = future.dataMap().keySet();
-							for (Number640 k : keySet) {
-								String key = (String) future.dataMap().get(k).object();
-								dhtConnectionProvider.getAll(key, procedure.resultOutputDomain().toString())
-										.addListener(new BaseFutureAdapter<FutureGet>() {
-
-									@Override
-									public void operationComplete(FutureGet future) throws Exception {
-										if (future.isSuccess()) {
-											Set<Number640> keySet2 = future.dataMap().keySet();
-											String values = "";
-											for (Number640 k2 : keySet2) {
-												values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
-											}
-											System.err.println(key + ":" + values);
-										}
-									}
-
-								});
-							}
+							System.out.println("Found: " +keySet.size() + " finished tasks.");
+//							for (Number640 k : keySet) {
+//								String key = (String) future.dataMap().get(k).object();
+//								dhtConnectionProvider.getAll(key, procedure.resultOutputDomain().toString())
+//										.addListener(new BaseFutureAdapter<FutureGet>() {
+//
+//									@Override
+//									public void operationComplete(FutureGet future) throws Exception {
+//										if (future.isSuccess()) {
+//											Set<Number640> keySet2 = future.dataMap().keySet();
+//											String values = "";
+//											for (Number640 k2 : keySet2) {
+//												values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
+//											}
+//											System.err.println(key + ":" + values);
+//										}
+//									}
+//
+//								});
+//							}
 						}
 					}
 

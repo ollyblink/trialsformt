@@ -3,8 +3,8 @@ package mapreduce.execution.procedures;
 import java.io.Serializable;
 import java.util.List;
 
+import mapreduce.execution.AbstractFinishable;
 import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.task.AbstractFinishable;
 import mapreduce.execution.task.Task;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
@@ -34,9 +34,10 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	 */
 	private IExecutable combiner;
 	/** How many times should each task be executed and reach the same result hash until it is assumed to be a correct answer? */
-	private int nrOfSameResultHashForTasks;
+	private int nrOfSameResultHashForTasks = 1;
 	/** Just to make sure this indeed is the same procedure of the same job (may be another job with the same procedure) */
 	private String jobId;
+	private boolean needsMultipleDifferentDomainsForTasks;
 
 	private Procedure(IExecutable executable, int procedureIndex) {
 		this.executable = executable;
@@ -133,6 +134,7 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	public Procedure addTask(Task task) {
 		if (!this.tasks.contains(task)) {
 			task.nrOfSameResultHash(nrOfSameResultHashForTasks);
+			task.needsMultipleDifferentDomains(needsMultipleDifferentDomainsForTasks);
 			this.tasks.add(task);
 		}
 		return this;
@@ -172,6 +174,21 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 
 	public IExecutable executable() {
 		return executable;
+	}
+
+	@Override
+	public Procedure needsMultipleDifferentDomains(boolean needsMultipleDifferentDomains) {
+		return (Procedure) super.needsMultipleDifferentDomains(needsMultipleDifferentDomains);
+	}
+
+	public Procedure needsMultipleDifferentDomainsForTasks(boolean needsMultipleDifferentDomainsForTasks) {
+		this.needsMultipleDifferentDomainsForTasks = needsMultipleDifferentDomainsForTasks;
+		synchronized (tasks) { // If it's set on the go, should update all tasks (hopefully never happens...)
+			for (Task task : tasks) {
+				task.needsMultipleDifferentDomains(needsMultipleDifferentDomainsForTasks);
+			}
+		}
+		return this;
 	}
 
 	// END Setter/Getter

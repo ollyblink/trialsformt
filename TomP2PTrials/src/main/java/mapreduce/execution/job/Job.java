@@ -158,13 +158,15 @@ public class Job implements Serializable, Cloneable {
 	 * @param nrOfSameResultHashForProcedure
 	 *            specifies how many times this procedure should achieve the same result hash before one is confident enough to consider the procedure
 	 *            to be finished
+	 * @param needsMultipledDifferentResulthashsForTasks 
+	 * @param needsMultipledDifferentResulthashs 
 	 * @param numberOfSameResultHashForTasks
 	 *            specifies how many times the tasks of this procedure should achieve the same result hash before one is confident enough to consider
 	 *            a task to be finished
 	 * @return
 	 */
 	public Job addSucceedingProcedure(IExecutable procedure, IExecutable combiner, int nrOfSameResultHashForProcedure,
-			int nrOfSameResultHashForTasks) {
+			int nrOfSameResultHashForTasks, boolean needMultipleDifferentDomains, boolean needMultipleDifferentDomainsForTasks) {
 		if (procedure == null) {
 			return this;
 		}
@@ -172,7 +174,7 @@ public class Job implements Serializable, Cloneable {
 		nrOfSameResultHashForTasks = (nrOfSameResultHashForTasks == 0 ? 1 : nrOfSameResultHashForTasks);
 
 		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size()).nrOfSameResultHash(nrOfSameResultHashForProcedure)
-				.nrOfSameResultHashForTasks(nrOfSameResultHashForTasks).combiner(combiner);
+				.nrOfSameResultHashForTasks(nrOfSameResultHashForTasks).needsMultipleDifferentDomains(needMultipleDifferentDomains).combiner(combiner);
 		this.procedures.add(procedureInformation);
 		return this;
 	}

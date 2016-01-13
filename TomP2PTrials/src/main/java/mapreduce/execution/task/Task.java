@@ -2,6 +2,7 @@ package mapreduce.execution.task;
 
 import java.io.Serializable;
 
+import mapreduce.execution.AbstractFinishable;
 import mapreduce.execution.IDomain;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;

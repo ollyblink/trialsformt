@@ -6,8 +6,7 @@ import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
-
-@SuppressWarnings("PMD")
+ 
 public class ListAvailableNetworkInterfaces {
 
     public static void main(String args[]) throws SocketException {

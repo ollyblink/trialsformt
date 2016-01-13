@@ -1,4 +1,4 @@
-package mapreduce.utils;
+package obsolete;
 
 public class FormatUtils {
 

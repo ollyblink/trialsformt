@@ -112,7 +112,7 @@ public class DHTStorageContext implements IContext {
 	public IContext combiner(IExecutable combiner, IContext combinerContext) {
 		this.combiner = combiner;
 		this.combinerContext = combinerContext;
-		this.valuesForCombiner = SyncedCollectionProvider.syncedListMultimap();
+		this.valuesForCombiner = SyncedCollectionProvider.syncedArrayListMultimap();
 		return this;
 	}
 

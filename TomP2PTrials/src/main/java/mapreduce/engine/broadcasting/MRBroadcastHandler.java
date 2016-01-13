@@ -32,7 +32,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	private IMessageConsumer messageConsumer;
 	private PriorityExecutor taskExecutionServer;
 
-	private ListMultimap<Job, Future<?>> jobFuturesFor = SyncedCollectionProvider.syncedListMultimap();
+	private ListMultimap<Job, Future<?>> jobFuturesFor = SyncedCollectionProvider.syncedArrayListMultimap();
 
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
@@ -78,6 +78,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	}
 
 	public Job getJob(String jobId) {
+
 		for (Job job : jobFuturesFor.keySet()) {
 			if (job.id().equals(jobId)) {
 				return job;
@@ -103,7 +104,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 					jobFuture.cancel(true);
 				}
 			}
-			jobFuturesFor.get(job).clear();
+//			jobFuturesFor.get(job).clear();
 		}
 	}
 

@@ -1,4 +1,4 @@
-package mapreduce.utils;
+package obsolete;
 
 import java.util.HashSet;
 import java.util.Random;

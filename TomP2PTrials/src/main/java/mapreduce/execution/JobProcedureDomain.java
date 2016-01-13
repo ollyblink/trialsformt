@@ -58,17 +58,16 @@ public class JobProcedureDomain implements IDomain {
 		return procedureExecutor;
 	}
 
+	 
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((jobId == null) ? 0 : jobId.hashCode());
-		result = prime * result + nrOfFinishedTasks;
 		result = prime * result + ((procedureExecutor == null) ? 0 : procedureExecutor.hashCode());
 		result = prime * result + procedureIndex;
 		result = prime * result + ((procedureSimpleName == null) ? 0 : procedureSimpleName.hashCode());
-		result = prime * result + ((resultHash == null) ? 0 : resultHash.hashCode());
-		result = prime * result + tasksSize;
 		return result;
 	}
 
@@ -86,8 +85,6 @@ public class JobProcedureDomain implements IDomain {
 				return false;
 		} else if (!jobId.equals(other.jobId))
 			return false;
-		if (nrOfFinishedTasks != other.nrOfFinishedTasks)
-			return false;
 		if (procedureExecutor == null) {
 			if (other.procedureExecutor != null)
 				return false;
@@ -99,13 +96,6 @@ public class JobProcedureDomain implements IDomain {
 			if (other.procedureSimpleName != null)
 				return false;
 		} else if (!procedureSimpleName.equals(other.procedureSimpleName))
-			return false;
-		if (resultHash == null) {
-			if (other.resultHash != null)
-				return false;
-		} else if (!resultHash.equals(other.resultHash))
-			return false;
-		if (tasksSize != other.tasksSize)
 			return false;
 		return true;
 	}

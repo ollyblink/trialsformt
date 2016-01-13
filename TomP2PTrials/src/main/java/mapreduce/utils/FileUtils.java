@@ -9,6 +9,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Some handy file methods
+ * 
+ * @author Oliver
+ *
+ */
 public enum FileUtils {
 
 	INSTANCE;
