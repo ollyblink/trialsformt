@@ -63,11 +63,11 @@ public class MRBroadcastHandlerTest {
 		MRJobSubmissionManager submitter = MRJobSubmissionManager.create(dhtConnectionProvider);
 		dhtConnectionProvider.broadcastHandler().messageConsumer(messageConsumer);
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
-		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).maxFileSize(FileSize.MEGA_BYTE).fileInputFolderPath(fileInputFolderPath)
+		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES).fileInputFolderPath(fileInputFolderPath)
 
-		 .addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
-		// .addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false)
-		;
+				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+				// .addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false)
+				;
 
 		submitter.submit(job);
 		try {

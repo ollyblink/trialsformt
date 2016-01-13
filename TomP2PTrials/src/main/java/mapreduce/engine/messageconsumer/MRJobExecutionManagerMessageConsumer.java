@@ -22,10 +22,8 @@ import mapreduce.execution.task.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
-import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number640;
 
 public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
@@ -146,7 +144,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 		// if (!job.isFinished()) {
 		// JobProcedureDomain outputJPD = (outputDomain instanceof JobProcedureDomain ? ((JobProcedureDomain) outputDomain)
 		// : ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
-		if (procedure.tasks().size() < procedure.dataInputDomain().tasksSize() || procedure.tasks().size() == 0) {
+		if (procedure.tasks().size() < procedure.dataInputDomain().tasksSize() || procedure.tasks().size() == 0 && procedure.procedureIndex() > 1) {
 			// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
 			// procedure
 			getTaskKeysFromNetwork(procedure);
@@ -196,7 +194,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 						job.isFinished(true);
 						printResults(job);
 						return; // Done
-					}else{
+					} else {
 						procedure = job.currentProcedure();
 					}
 				}
@@ -289,12 +287,12 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 	}
 
 	private void printResults(Job job) {
-//		try {
-//			Thread.sleep(2000);
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
-//		}
-		Procedure procedure = job.procedure(job.currentProcedure().procedureIndex()-1);
+		// try {
+		// Thread.sleep(2000);
+		// } catch (InterruptedException e) {
+		// e.printStackTrace();
+		// }
+		Procedure procedure = job.procedure(job.currentProcedure().procedureIndex() - 1);
 		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
 				.addListener(new BaseFutureAdapter<FutureGet>() {
 
@@ -302,26 +300,26 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 					public void operationComplete(FutureGet future) throws Exception {
 						if (future.isSuccess()) {
 							Set<Number640> keySet = future.dataMap().keySet();
-							System.out.println("Found: " +keySet.size() + " finished tasks.");
-//							for (Number640 k : keySet) {
-//								String key = (String) future.dataMap().get(k).object();
-//								dhtConnectionProvider.getAll(key, procedure.resultOutputDomain().toString())
-//										.addListener(new BaseFutureAdapter<FutureGet>() {
-//
-//									@Override
-//									public void operationComplete(FutureGet future) throws Exception {
-//										if (future.isSuccess()) {
-//											Set<Number640> keySet2 = future.dataMap().keySet();
-//											String values = "";
-//											for (Number640 k2 : keySet2) {
-//												values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
-//											}
-//											System.err.println(key + ":" + values);
-//										}
-//									}
-//
-//								});
-//							}
+							System.out.println("Found: " + keySet.size() + " finished tasks.");
+							// for (Number640 k : keySet) {
+							// String key = (String) future.dataMap().get(k).object();
+							// dhtConnectionProvider.getAll(key, procedure.resultOutputDomain().toString())
+							// .addListener(new BaseFutureAdapter<FutureGet>() {
+							//
+							// @Override
+							// public void operationComplete(FutureGet future) throws Exception {
+							// if (future.isSuccess()) {
+							// Set<Number640> keySet2 = future.dataMap().keySet();
+							// String values = "";
+							// for (Number640 k2 : keySet2) {
+							// values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
+							// }
+							// System.err.println(key + ":" + values);
+							// }
+							// }
+							//
+							// });
+							// }
 						}
 					}
 

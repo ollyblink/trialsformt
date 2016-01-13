@@ -90,8 +90,8 @@ public class Job implements Serializable, Cloneable {
 		this.currentProcedureIndex = 0;
 		this.procedures = SyncedCollectionProvider.syncedArrayList();
 		// Add initial
-		Procedure startProcedure = Procedure.create(StartProcedure.create(), 0).nrOfSameResultHash(1);
-		this.procedures.add(startProcedure);
+		addSucceedingProcedure(StartProcedure.create(), null, 1, 1, false, false);
+
 	}
 
 	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel, boolean useLocalStorageFirst) {
@@ -158,23 +158,28 @@ public class Job implements Serializable, Cloneable {
 	 * @param nrOfSameResultHashForProcedure
 	 *            specifies how many times this procedure should achieve the same result hash before one is confident enough to consider the procedure
 	 *            to be finished
-	 * @param needsMultipledDifferentResulthashsForTasks 
-	 * @param needsMultipledDifferentResulthashs 
+	 * @param needsMultipledDifferentResulthashsForTasks
+	 * @param needsMultipledDifferentResulthashs
 	 * @param numberOfSameResultHashForTasks
 	 *            specifies how many times the tasks of this procedure should achieve the same result hash before one is confident enough to consider
 	 *            a task to be finished
+	 * @param needMultipleDifferentDomains
+	 *            specifies if the procedure needs to be executed by different executors to become finished
+	 * @param needMultipleDifferentDomainsForTask
+	 *            specifies if tasks need to be executed by different executors to become finished
 	 * @return
 	 */
-	public Job addSucceedingProcedure(IExecutable procedure, IExecutable combiner, int nrOfSameResultHashForProcedure,
-			int nrOfSameResultHashForTasks, boolean needMultipleDifferentDomains, boolean needMultipleDifferentDomainsForTasks) {
+	public Job addSucceedingProcedure(IExecutable procedure, IExecutable combiner, int nrOfSameResultHashForProcedure, int nrOfSameResultHashForTasks,
+			boolean needMultipleDifferentDomains, boolean needMultipleDifferentDomainsForTasks) {
 		if (procedure == null) {
 			return this;
 		}
-		nrOfSameResultHashForProcedure = (nrOfSameResultHashForProcedure == 0 ? 1 : nrOfSameResultHashForProcedure);
-		nrOfSameResultHashForTasks = (nrOfSameResultHashForTasks == 0 ? 1 : nrOfSameResultHashForTasks);
+		nrOfSameResultHashForProcedure = (nrOfSameResultHashForProcedure <= 0 ? 1 : nrOfSameResultHashForProcedure);
+		nrOfSameResultHashForTasks = (nrOfSameResultHashForTasks <= 0 ? 1 : nrOfSameResultHashForTasks);
 
 		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size()).nrOfSameResultHash(nrOfSameResultHashForProcedure)
-				.nrOfSameResultHashForTasks(nrOfSameResultHashForTasks).needsMultipleDifferentDomains(needMultipleDifferentDomains).combiner(combiner);
+				.nrOfSameResultHashForTasks(nrOfSameResultHashForTasks).needsMultipleDifferentDomains(needMultipleDifferentDomains)
+				.combiner(combiner);
 		this.procedures.add(procedureInformation);
 		return this;
 	}
@@ -242,8 +247,6 @@ public class Job implements Serializable, Cloneable {
 		return true;
 	}
 
- 
-
 	public PriorityLevel priorityLevel() {
 		return priorityLevel;
 	}
@@ -288,7 +291,6 @@ public class Job implements Serializable, Cloneable {
 		return null;
 	}
 
-	 
 	// public static void main(String[] args) {
 	// Job job = Job.create("ME", PriorityLevel.HIGH).addSucceedingProcedure(WordCountReducer.create()).fileInputFolderPath("File input path")
 	// .maxFileSize(FileSize.EIGHT_BYTES).nrOfSameResultHash(20);

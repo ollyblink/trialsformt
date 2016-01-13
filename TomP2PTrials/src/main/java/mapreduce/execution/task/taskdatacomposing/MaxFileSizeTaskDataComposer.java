@@ -1,6 +1,8 @@
 package mapreduce.execution.task.taskdatacomposing;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
 import mapreduce.utils.FileSize;
 
@@ -16,14 +18,18 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 	}
 
 	@Override
-	public String append(String value) {
-		String newData = this.data + value + this.splitValue;
+	public String append(String line) {
+		String newData = this.data + line + this.splitValue;
 		long newFileSizeCounter = newData.getBytes(Charset.forName(this.fileEncoding)).length;
 		if (newFileSizeCounter >= maxFileSize.value()) {
 			String currentData = this.data;
-			reset();
-			this.data = value + this.splitValue;
-			return currentData;
+			this.data = "";
+			this.data = line + this.splitValue;
+			if (currentData.trim().length() == 0) {
+				return null;
+			} else {
+				return currentData;
+			}
 		} else {
 			this.data = newData;
 			return null;
@@ -58,6 +64,20 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 	@Override
 	public String currentValues() {
 		return this.data;
+	}
+
+	@Override
+	public List<String> splitToSize(String line) {
+		List<String> splits = new ArrayList<>();
+		String split = "";
+		for (int i = 0; i < line.length(); ++i) {
+			split += line.charAt(i);
+			if (split.length() >= maxFileSize.value()) {
+				splits.add(split);
+				split = "";
+			}
+		}
+		return splits;
 	}
 
 }

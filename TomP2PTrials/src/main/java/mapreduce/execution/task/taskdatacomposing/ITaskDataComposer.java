@@ -1,5 +1,7 @@
 package mapreduce.execution.task.taskdatacomposing;
 
+import java.util.List;
+
 import mapreduce.utils.FileSize;
 
 public interface ITaskDataComposer {
@@ -11,9 +13,10 @@ public interface ITaskDataComposer {
 	 * @return
 	 */
 	public String append(String value);
-	
+
 	/**
 	 * Returns, without clearing, all values currently appended
+	 * 
 	 * @return
 	 */
 	public String currentValues();
@@ -27,4 +30,6 @@ public interface ITaskDataComposer {
 	public ITaskDataComposer splitValue(String splitValue);
 
 	public void reset();
+
+	public List<String> splitToSize(String line);
 }

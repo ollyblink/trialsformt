@@ -13,7 +13,9 @@ public class StartProcedure implements IExecutable {
 
 	@Override
 	public void process(Object keyIn, Collection<Object> valuesIn, IContext context) {
-		return;
+		for (Object valueIn: valuesIn){
+			context.write(keyIn, valueIn);
+		}
 	}
 
 	public static StartProcedure create() {
