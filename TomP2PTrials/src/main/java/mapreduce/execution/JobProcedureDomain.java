@@ -18,7 +18,7 @@ public class JobProcedureDomain implements IDomain {
 	 * When the preceding procedure finishes, it will add the number of task's (==tasksSize) such that the next procedure knows how many tasks there
 	 * are to be processed.
 	 */
-	private int tasksSize;
+	private volatile int tasksSize;
 	/**
 	 * This data item is simply here for the MessageConsumer to decide which result to take if two executors execute a procedure on different input
 	 * domains

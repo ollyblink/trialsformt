@@ -1,6 +1,5 @@
 package mapreduce.engine.executor;
 
-import java.awt.ComponentOrientation;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -20,7 +19,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 
-import mapreduce.engine.broadcasting.BCMessageStatus;
 import mapreduce.engine.broadcasting.CompletedBCMessage;
 import mapreduce.engine.messageconsumer.MRJobSubmissionManagerMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
@@ -108,80 +106,68 @@ public class MRJobSubmissionManager {
 				++nrOfFiles;
 			}
 		}
-
+		logger.info("nr of files: " + nrOfFiles);
 		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, "BEFORE_START", -1).tasksSize(nrOfFiles);
 		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), id, job.currentProcedure().executable().getClass().getSimpleName(),
 				job.currentProcedure().procedureIndex());
-		job.currentProcedure().nrOfSameResultHash(1).dataInputDomain(inputDomain).addOutputDomain(outputJPD);
+		job.currentProcedure().dataInputDomain(inputDomain).addOutputDomain(outputJPD);
 
-		// List<FuturePut> futurePutValues = SyncedCollectionProvider.syncedArrayList();
-		// List<FuturePut> futurePutKeys = SyncedCollectionProvider.syncedArrayList();
 		Procedure procedure = job.currentProcedure();
 
-		CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(outputJPD, inputDomain);
-		dhtConnectionProvider.broadcastHandler().submit(msg, job);
-		dhtConnectionProvider.broadcastCompletion(msg);
-		for (String keyfilePath : keysFilePaths) {
+		dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).addListener(new BaseFutureAdapter<FuturePut>() {
 
-			Path path = Paths.get(keyfilePath);
-			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
+			@Override
+			public void operationComplete(FuturePut future) throws Exception {
+				if (future.isSuccess()) {
+					logger.info("Put job: " + job.id());
+					for (String keyfilePath : keysFilePaths) {
 
-			int filePartCounter = 0;
-			try (BufferedReader reader = Files.newBufferedReader(path, charset)) {
+						Path path = Paths.get(keyfilePath);
+						Charset charset = Charset.forName(taskDataComposer.fileEncoding());
 
-				String line = null;
-				while ((line = reader.readLine()) != null) {
-					System.err.println("Line: " + line);
-					List<String> splitToSize = taskDataComposer.splitToSize(line);
-					for (String split : splitToSize) {
-						String taskValues = taskDataComposer.append(split);
-						if (taskValues != null) {
-							filePartCounter = submit(outputJPD, procedure, keyfilePath, filePartCounter, taskValues, job);
-						}
-					}
-				}
-			} catch (IOException x) {
-				System.err.format("IOException: %s%n", x);
-			}
+						int filePartCounter = 0;
+						try (BufferedReader reader = Files.newBufferedReader(path, charset)) {
 
-			if (taskDataComposer.currentValues() != null) {
-				List<String> splitToSize = taskDataComposer.splitToSize(taskDataComposer.currentValues());
-				taskDataComposer.reset();
-				if (splitToSize.size() > 0) {
-					for (String split : splitToSize) {
-						String taskValues = taskDataComposer.append(split);
-						if (taskValues != null) {
-							filePartCounter = submit(outputJPD, procedure, keyfilePath, filePartCounter, taskValues, job);
+							String line = null;
+							while ((line = reader.readLine()) != null) {
+								line = taskDataComposer.remainingData() + "\n" + line;
+								List<String> splitToSize = taskDataComposer.splitToSize(line);
+
+								for (String split : splitToSize) {
+									filePartCounter = submit(outputJPD, procedure, keyfilePath, filePartCounter, split, job);
+								}
+							}
+							if (taskDataComposer.remainingData().length() > 0) {
+								filePartCounter = submit(outputJPD, procedure, keyfilePath, filePartCounter, taskDataComposer.remainingData(), job);
+							}
+						} catch (IOException x) {
+							System.err.format("IOException: %s%n", x);
 						}
 					}
 				} else {
-
+					logger.info("Could not put job: " + job.id());
 				}
-
 			}
-		}
+		});
 
 	}
 
 	private int submit(JobProcedureDomain outputJPD, Procedure procedure, String keyfilePath, int filePartCounter, String vals, Job job) {
 		Collection<Object> values = new ArrayList<>();
 		values.add(vals);
-		System.err.println("VALUES: " + vals);
 		Task task = Task.create(keyfilePath + "_" + filePartCounter++);
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
+		System.err.println("Put split: <" + task.key() + ", \"" + vals + "\">");
 		procedure.executable().process(task.key(), values, context);
 		Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 			@Override
 			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 				if (future.isSuccess()) {
 					outputETD.resultHash(context.resultHash());
-					CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
-							procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
-					// dhtCon.broadcastHandler().addBCMessage(msg);
-					dhtConnectionProvider.broadcastHandler().submit(msg, job);
-					dhtConnectionProvider.broadcastCompletion(msg);
+					dhtConnectionProvider.broadcastCompletion(CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
+							procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks())));
 					logger.info("Successfully broadcasted TaskCompletedBCMessage for task " + task);
 				} else {
 					logger.warn("No success on task execution. Reason: " + future.failedReason());
@@ -332,17 +318,17 @@ public class MRJobSubmissionManager {
 		if (isKey) {
 			toAppend = "\n" + toAppend;
 		}
-		String values = taskDataComposer.append(toAppend);
-		if (values != null) {
-			Path file = Paths.get(outputFolder);
-			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
-			try (BufferedWriter writer = Files.newBufferedWriter(file, charset)) {
-				writer.write(values);
-				writer.flush();
-			} catch (IOException x) {
-				System.err.format("IOException: %s%n", x);
-			}
+		// String values = taskDataComposer.append(toAppend);
+		// if (values != null) {
+		Path file = Paths.get(outputFolder);
+		Charset charset = Charset.forName(taskDataComposer.fileEncoding());
+		try (BufferedWriter writer = Files.newBufferedWriter(file, charset)) {
+			writer.write(toAppend);
+			writer.flush();
+		} catch (IOException x) {
+			System.err.format("IOException: %s%n", x);
 		}
+		// }
 
 	}
 

@@ -39,7 +39,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 
 		try {
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
-			for (Number640 nr : dataMap.keySet()) { 
+			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
 				addExternallyReceivedMessage(bcMessage);
 			}
@@ -68,23 +68,11 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 				}
 			});
 		} else {
-			if (executor != null
-			// && !bcMessage.outputDomain().executor().equals(executor)
-			) { // Don't receive it if I sent it to myself
-				submit(bcMessage, job);
-			}
+			// if (executor != null && !bcMessage.outputDomain().executor().equals(executor)) { // Don't receive it if I sent it to myself
+			submit(bcMessage, job);
+			// }
 		}
 
-	}
-
-	public Job getJob(String jobId) {
-
-		for (Job job : jobFuturesFor.keySet()) {
-			if (job.id().equals(jobId)) {
-				return job;
-			}
-		}
-		return null;
 	}
 
 	public void submit(IBCMessage bcMessage, Job job) {
@@ -104,7 +92,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 					jobFuture.cancel(true);
 				}
 			}
-//			jobFuturesFor.get(job).clear();
+			// jobFuturesFor.get(job).clear();
 		}
 	}
 
@@ -113,6 +101,16 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		this.taskExecutionServer = PriorityExecutor.newFixedThreadPool(nrOfConcurrentlyExecutedBCMessages);
 	}
 
+
+	public Job getJob(String jobId) {
+
+		for (Job job : jobFuturesFor.keySet()) {
+			if (job.id().equals(jobId)) {
+				return job;
+			}
+		}
+		return null;
+	}
 	/**
 	 *
 	 * 

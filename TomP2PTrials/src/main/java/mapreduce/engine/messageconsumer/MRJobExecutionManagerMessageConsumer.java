@@ -103,22 +103,22 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 			return;
 		}
 		Procedure procedure = job.currentProcedure();
-		JobProcedureDomain thisOutputProcedureDomain = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
+		JobProcedureDomain receivedOutputProcedureDomain = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
 				: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
-		if (procedure.procedureIndex() <= thisOutputProcedureDomain.procedureIndex()) {
-			if (procedure.procedureIndex() < thisOutputProcedureDomain.procedureIndex()) {
+		if (procedure.procedureIndex() <= receivedOutputProcedureDomain.procedureIndex()) {
+			if (procedure.procedureIndex() < receivedOutputProcedureDomain.procedureIndex()) {
 				// Means this executor is behind in the execution than the one that sent this message
 				cancelProcedureExecution(procedure);
-				while (procedure.procedureIndex() < thisOutputProcedureDomain.procedureIndex()) {
+				while (procedure.procedureIndex() < receivedOutputProcedureDomain.procedureIndex()) {
 					job.incrementProcedureIndex();
 				}
 				procedure.dataInputDomain(inputDomain);
 			} // no else needed... if it's the same procedure index, we are up to date and can update
 			if (procedure.dataInputDomain().equals(inputDomain)) { // same procedure, same input data location: everything is fine!
-				logger.info("tasks sizes: here: " + procedure.dataInputDomain().tasksSize() + " < as there " + inputDomain.tasksSize());
 				if (procedure.dataInputDomain().tasksSize() < inputDomain.tasksSize()) {// looks like the received had more already
 					procedure.dataInputDomain().tasksSize(inputDomain.tasksSize());
 				}
+				logger.info("data input domain: "+ inputDomain.procedureSimpleName() +", expected tasks size: " +inputDomain.tasksSize());
 				iUpdate.executeUpdate(outputDomain, procedure);
 			} else { // May have to change input data location (inputDomain)
 				// executor of received message executes on different input data! Need to synchronize
@@ -126,7 +126,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 					// We have completed fewer tasks with our data set than the incoming... abort us and use the incoming data set location instead
 					cancelProcedureExecution(procedure);
 					procedure.dataInputDomain(inputDomain);
-					tryExecuting(procedure);
+					// tryExecuting(procedure);
 				} else if (procedure.nrOfFinishedTasks() == inputDomain.nrOfFinishedTasks()) { // What if they executed the same number of tasks?
 					// TODO: What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most
 					// likely finish more tasks quicker
@@ -135,7 +135,14 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 							+ "Or compare the tasks output values size");
 				} // else{ ignore, as we are the ones that finished more already...
 			}
+			if (!job.isFinished()) {
+				tryExecuting(procedure);
+			}
+
 		}
+		// else if (receivedOutputProcedureDomain.procedureIndex() == 0) {// Start procedure... handle differently
+		//
+		// }
 		// else{ ignore, as this is a message for an old procedure }
 		//
 	}
@@ -144,7 +151,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 		// if (!job.isFinished()) {
 		// JobProcedureDomain outputJPD = (outputDomain instanceof JobProcedureDomain ? ((JobProcedureDomain) outputDomain)
 		// : ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
-		if (procedure.tasks().size() < procedure.dataInputDomain().tasksSize() || procedure.tasks().size() == 0 && procedure.procedureIndex() > 1) {
+		if (procedure.tasks().size() < procedure.dataInputDomain().tasksSize() || procedure.tasks().size() == 0 && procedure.procedureIndex() > 0) {
 			// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
 			// procedure
 			getTaskKeysFromNetwork(procedure);
@@ -154,29 +161,6 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 			}
 		}
 		// }
-	}
-
-	private void submitTask(Procedure procedure, Task task) {
-		if (task.canBeExecuted()) {
-			task.incrementActiveCount();
-			addTaskFuture(procedure, task, threadPoolExecutor.submit(new Runnable() {
-
-				@Override
-				public void run() {
-					jobExecutor.executeTask(task, procedure);
-				}
-
-			}, task));
-		}
-	}
-
-	private void addTaskFuture(Procedure procedure, Task task, Future<?> taskFuture) {
-		ListMultimap<Task, Future<?>> taskFutures = futures.get(procedure.dataInputDomain().toString());
-		if (taskFutures == null) {
-			taskFutures = SyncedCollectionProvider.syncedArrayListMultimap();
-			futures.put(procedure.dataInputDomain().toString(), taskFutures);
-		}
-		taskFutures.put(task, taskFuture);
 	}
 
 	@Override
@@ -198,10 +182,6 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 						procedure = job.currentProcedure();
 					}
 				}
-				if (!job.isFinished()) {
-					tryExecuting(procedure);
-				}
-
 			}
 		});
 	}
@@ -235,6 +215,30 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 		});
 	}
 
+	private void submitTask(Procedure procedure, Task task) {
+		if (task.canBeExecuted()) {
+ 
+			task.incrementActiveCount();
+			addTaskFuture(procedure, task, threadPoolExecutor.submit(new Runnable() {
+
+				@Override
+				public void run() {
+					jobExecutor.executeTask(task, procedure);
+				}
+
+			}, task));
+		}
+	}
+
+	private void addTaskFuture(Procedure procedure, Task task, Future<?> taskFuture) {
+		ListMultimap<Task, Future<?>> taskFutures = futures.get(procedure.dataInputDomain().toString());
+		if (taskFutures == null) {
+			taskFutures = SyncedCollectionProvider.syncedArrayListMultimap();
+			futures.put(procedure.dataInputDomain().toString(), taskFutures);
+		}
+		taskFutures.put(task, taskFuture);
+	}
+
 	protected void cancelProcedureExecution(Procedure procedure) {
 		ListMultimap<Task, Future<?>> procedureFutures = futures.get(procedure.dataInputDomain().toString());
 		if (procedureFutures != null) {
@@ -246,9 +250,11 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 
 	protected void cancelTaskExecution(Procedure procedure, Task task) {
 		ListMultimap<Task, Future<?>> procedureFutures = futures.get(procedure.dataInputDomain().toString());
-		List<Future<?>> taskFutures = procedureFutures.get(task);
-		for (Future<?> taskFuture : taskFutures) {
-			taskFuture.cancel(true);
+		if (procedureFutures != null) {
+			List<Future<?>> taskFutures = procedureFutures.get(task);
+			for (Future<?> taskFuture : taskFutures) {
+				taskFuture.cancel(true);
+			}
 		}
 	}
 

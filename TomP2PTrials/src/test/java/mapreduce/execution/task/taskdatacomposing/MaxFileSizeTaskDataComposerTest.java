@@ -3,6 +3,7 @@ package mapreduce.execution.task.taskdatacomposing;
 import static org.junit.Assert.assertEquals;
 
 import java.nio.charset.Charset;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -11,7 +12,7 @@ import mapreduce.utils.FileSize;
 public class MaxFileSizeTaskDataComposerTest {
 
 	@Test
-	public void test() {
+	public void testCompose() {
 		MaxFileSizeTaskDataComposer instance = MaxFileSizeTaskDataComposer.create();
 		instance.maxFileSize(FileSize.THIRTY_TWO_BYTES);
 		instance.fileEncoding("UTF-8");
@@ -40,6 +41,21 @@ public class MaxFileSizeTaskDataComposerTest {
 		assertEquals((toAdd + " ").getBytes(Charset.forName("UTF-8")).length, value.getBytes(Charset.forName("UTF-8")).length);
 		assertEquals(true, FileSize.THIRTY_TWO_BYTES.value() >= value.getBytes(Charset.forName("UTF-8")).length);
 
+	}
+
+	@Test
+	public void testSplit() {
+		MaxFileSizeTaskDataComposer instance = MaxFileSizeTaskDataComposer.create();
+		instance.maxFileSize(FileSize.EIGHT_BYTES);
+		instance.fileEncoding("UTF-8");
+		instance.splitValue(" ");
+		String[] results = { "this is ", "a test t", "his is a", " test" };
+
+		String toSplit = "this is a test this is a test";
+		List<String> splits = instance.splitToSize(toSplit);
+		for (int i = 0; i < splits.size(); ++i) {
+			assertEquals(results[i], splits.get(i));
+		}
 	}
 
 }

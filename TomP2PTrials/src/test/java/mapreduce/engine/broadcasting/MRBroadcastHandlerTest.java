@@ -2,6 +2,10 @@ package mapreduce.engine.broadcasting;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Future;
 
@@ -22,6 +26,7 @@ import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
+import mapreduce.utils.FileUtils;
 
 public class MRBroadcastHandlerTest {
 	private static Random random = new Random();
@@ -76,5 +81,36 @@ public class MRBroadcastHandlerTest {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	public static void main(String[] args) {
+		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
+		Job job = Job.create("S").maxFileSize(FileSize.THIRTY_TWO_BYTES).fileInputFolderPath(fileInputFolderPath);
+
+		List<String> keysFilePaths = new ArrayList<String>();
+		File file = new File(job.fileInputFolderPath());
+		FileUtils.INSTANCE.getFiles(file, keysFilePaths);
+
+		// Get the number of files to be expected
+		// long overallFileSizes = 0;
+		int nrOfFiles = 0;
+		for (String fileName : keysFilePaths) {
+			File file2 = new File(fileName);
+			long fileSize = file2.length();
+			System.out.println("File Size: "+fileSize);
+			
+			ArrayList<String> lines = FileUtils.readLinesFromFile(fileName);
+			long tot = 0;
+			for(String line: lines){
+				tot += line.getBytes(Charset.forName("UTF-8")).length; 
+			}
+			System.out.println("Total line sizes: " +tot);
+			nrOfFiles += (int) (fileSize / job.maxFileSize().value());
+			if (fileSize % job.maxFileSize().value() > 0) {
+				++nrOfFiles;
+			}
+		}
+		System.out.println("Max file size: "+job.maxFileSize().value());
+		System.out.println(nrOfFiles);
 	}
 }

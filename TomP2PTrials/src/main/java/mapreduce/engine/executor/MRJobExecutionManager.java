@@ -31,7 +31,7 @@ import net.tomp2p.storage.Data;
 public class MRJobExecutionManager {
 	private static Logger logger = LoggerFactory.getLogger(MRJobExecutionManager.class);
 
-	private IDHTConnectionProvider dhtCon; 
+	private IDHTConnectionProvider dhtCon;
 
 	private String id;
 
@@ -60,6 +60,7 @@ public class MRJobExecutionManager {
 	public String id() {
 		return this.id;
 	}
+
 	public void executeTask(Task task, Procedure procedure) {
 		// if (task.canBeExecuted()) {
 		// task.incrementActiveCount();
@@ -117,8 +118,8 @@ public class MRJobExecutionManager {
 
 					});
 				} else {
-					logger.info("Could not retrieve data for task " + task.key() + " in job procedure domain: " + procedure.dataInputDomain().toString()
-							+ ". Failed reason: " + future.failedReason());
+					logger.info("Could not retrieve data for task " + task.key() + " in job procedure domain: "
+							+ procedure.dataInputDomain().toString() + ". Failed reason: " + future.failedReason());
 					// task.decrementActiveCount();
 				}
 
@@ -160,16 +161,25 @@ public class MRJobExecutionManager {
 														+ " from task executor domain to job procedure domain: " + to.toString() + ". ");
 
 												// if (procedure.isFinished()) {
-												if (procedure.dataInputDomain().tasksSize() == procedure.tasks().size()) {
+												Procedure p = procedure;
+												JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
+												int expectedSize = dataInputDomain.tasksSize();
+												List<Task> tasks = procedure.tasks();
+												int currentSize = tasks.size();
+												logger.info("data input domain: " + dataInputDomain.procedureSimpleName());
+												logger.info("expectedSize == currentSize? " + expectedSize + "==" + currentSize);
+												if (expectedSize == currentSize) {
 													boolean isProcedureCompleted = true;
-													for (Task task : procedure.tasks()) {
-														if (!task.isFinished()) {
-															isProcedureCompleted = false;
+													synchronized (tasks) {
+														for (Task task : tasks) {
+															if (!task.isFinished() || !taskToTransfer.isInProcedureDomain()) {
+																isProcedureCompleted = false;
+															}
 														}
 													}
 													if (isProcedureCompleted) {
 														CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(
-																to.resultHash(procedure.calculateResultHash()), procedure.dataInputDomain());
+																to.resultHash(procedure.calculateResultHash()), dataInputDomain);
 														dhtCon.broadcastHandler().submit(msg, dhtCon.broadcastHandler().getJob(to.jobId()));
 														dhtCon.broadcastCompletion(msg);
 													}
