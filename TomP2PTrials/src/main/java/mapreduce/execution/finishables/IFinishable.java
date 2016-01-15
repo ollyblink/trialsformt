@@ -1,5 +1,6 @@
-package mapreduce.execution;
+package mapreduce.execution.finishables;
 
+import mapreduce.execution.domains.IDomain;
 import net.tomp2p.peers.Number160;
 
 /**

@@ -14,9 +14,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.tasks.Task;
 import obsolete.taskexecutionscheduling.MinAssignedWorkersTaskExecutionScheduler;
 
 public class MinAssignedWorkersTaskSchedulerTest {

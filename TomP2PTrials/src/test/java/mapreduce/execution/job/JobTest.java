@@ -8,8 +8,8 @@ import java.util.List;
 
 import org.junit.Test;
 
-import mapreduce.execution.job.Job;
-import mapreduce.execution.job.PriorityLevel;
+import mapreduce.execution.jobs.Job;
+import mapreduce.execution.jobs.PriorityLevel;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.procedures.WordCountReducer;
 

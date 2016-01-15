@@ -2,9 +2,9 @@ package mapreduce.engine.messageconsumers;
 
 import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobCalculationExecutor;
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.job.Job;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.jobs.Job;
 import mapreduce.storage.IDHTConnectionProvider;
 
 public class AbstractMessageConsumer implements IMessageConsumer {

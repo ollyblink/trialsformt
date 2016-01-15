@@ -3,9 +3,9 @@ package mapreduce.engine.broadcasting.messages;
 import java.io.Serializable;
 
 import mapreduce.engine.messageconsumers.IMessageConsumer;
-import mapreduce.execution.IDomain;
-import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.job.Job;
+import mapreduce.execution.domains.IDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.jobs.Job;
 
 public interface IBCMessage extends Serializable {
 	public BCMessageStatus status();

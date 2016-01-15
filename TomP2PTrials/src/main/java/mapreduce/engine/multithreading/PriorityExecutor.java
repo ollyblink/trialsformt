@@ -9,8 +9,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import mapreduce.engine.broadcasting.messages.BCMessageStatus;
-import mapreduce.execution.job.PriorityLevel;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.jobs.PriorityLevel;
+import mapreduce.execution.tasks.Task;
 
 /**
  * Taken from http://stackoverflow.com/questions/16833951/testing-priorityblockingqueue-in-threadpoolexecutor

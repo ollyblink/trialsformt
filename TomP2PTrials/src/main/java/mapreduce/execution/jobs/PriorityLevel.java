@@ -1,4 +1,4 @@
-package mapreduce.execution.job;
+package mapreduce.execution.jobs;
 
 public enum PriorityLevel {
 	HIGH, MODERATE, LOW

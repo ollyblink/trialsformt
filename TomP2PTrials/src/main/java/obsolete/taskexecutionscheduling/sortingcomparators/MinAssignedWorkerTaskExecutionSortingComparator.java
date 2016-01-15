@@ -2,7 +2,7 @@ package obsolete.taskexecutionscheduling.sortingcomparators;
 
 import java.util.Comparator;
 
-import mapreduce.execution.task.Task;
+import mapreduce.execution.tasks.Task;
 
 public class MinAssignedWorkerTaskExecutionSortingComparator implements Comparator<Task> {
 

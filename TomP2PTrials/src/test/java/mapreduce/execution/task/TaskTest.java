@@ -4,8 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.JobProcedureDomain;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.tasks.Task;
 import net.tomp2p.peers.Number160;
 
 public class TaskTest {

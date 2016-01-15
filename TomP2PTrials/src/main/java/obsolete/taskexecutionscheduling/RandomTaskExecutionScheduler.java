@@ -3,7 +3,7 @@ package obsolete.taskexecutionscheduling;
 import java.util.List;
 import java.util.Random;
 
-import mapreduce.execution.task.Task;
+import mapreduce.execution.tasks.Task;
 
 public class RandomTaskExecutionScheduler extends AbstractTaskExecutionScheduler {
 	private static final Random RND = new Random();

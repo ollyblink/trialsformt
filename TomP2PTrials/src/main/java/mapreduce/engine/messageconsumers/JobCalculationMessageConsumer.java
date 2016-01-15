@@ -12,13 +12,13 @@ import com.google.common.collect.ListMultimap;
 
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.multithreading.PriorityExecutor;
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.IDomain;
-import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.job.Job;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.IDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.jobs.Job;
 import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.Procedure;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.tasks.Task;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;

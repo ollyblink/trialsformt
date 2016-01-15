@@ -2,7 +2,7 @@ package mapreduce.engine.multithreading;
 
 import java.util.concurrent.FutureTask;
 
-import mapreduce.execution.task.Task;
+import mapreduce.execution.tasks.Task;
 
 public class ComparableTaskExecutionTask<T> extends FutureTask<T> implements Comparable<ComparableTaskExecutionTask<T>> {
 	private volatile Task task;

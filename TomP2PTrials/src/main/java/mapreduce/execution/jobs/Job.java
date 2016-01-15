@@ -1,4 +1,4 @@
-package mapreduce.execution.job;
+package mapreduce.execution.jobs;
 
 import java.io.Serializable;
 import java.util.List;

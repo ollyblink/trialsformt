@@ -1,7 +1,7 @@
 package mapreduce.utils;
 
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.JobProcedureDomain;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
 
 public enum DomainProvider {
 	INSTANCE;

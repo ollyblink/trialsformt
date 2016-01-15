@@ -3,9 +3,9 @@ package mapreduce.execution.procedures;
 import java.io.Serializable;
 import java.util.List;
 
-import mapreduce.execution.AbstractFinishable;
-import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.finishables.AbstractFinishable;
+import mapreduce.execution.tasks.Task;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 

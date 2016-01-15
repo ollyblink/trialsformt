@@ -4,10 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.messageconsumers.IMessageConsumer;
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.IDomain;
-import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.job.Job;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.IDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.jobs.Job;
 
 public class CompletedBCMessage implements IBCMessage {
 	protected static Logger logger = LoggerFactory.getLogger(CompletedBCMessage.class);

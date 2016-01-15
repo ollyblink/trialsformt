@@ -15,7 +15,7 @@ import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.engine.multithreading.PriorityExecutor;
-import mapreduce.execution.job.Job;
+import mapreduce.execution.jobs.Job;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;

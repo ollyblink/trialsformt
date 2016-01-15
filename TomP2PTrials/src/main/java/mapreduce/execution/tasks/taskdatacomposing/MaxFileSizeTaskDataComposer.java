@@ -1,4 +1,4 @@
-package mapreduce.execution.task.taskdatacomposing;
+package mapreduce.execution.tasks.taskdatacomposing;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;

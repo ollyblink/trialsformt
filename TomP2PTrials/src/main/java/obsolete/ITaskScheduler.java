@@ -2,7 +2,7 @@ package obsolete;
 
 import java.util.List;
 
-import mapreduce.execution.task.Task;
+import mapreduce.execution.tasks.Task;
 
 public interface ITaskScheduler {
 

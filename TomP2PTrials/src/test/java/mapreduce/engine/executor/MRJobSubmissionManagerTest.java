@@ -19,8 +19,8 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.engine.executors.JobSubmissionExecutor;
-import mapreduce.execution.job.Job;
-import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
+import mapreduce.execution.jobs.Job;
+import mapreduce.execution.tasks.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;

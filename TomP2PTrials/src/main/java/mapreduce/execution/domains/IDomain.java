@@ -1,4 +1,4 @@
-package mapreduce.execution;
+package mapreduce.execution.domains;
 
 import java.io.Serializable;
 

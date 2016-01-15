@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.execution.ExecutorTaskDomain;
+import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;

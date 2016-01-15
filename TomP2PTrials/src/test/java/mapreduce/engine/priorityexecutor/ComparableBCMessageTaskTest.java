@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import mapreduce.engine.broadcasting.messages.BCMessageStatus;
 import mapreduce.engine.multithreading.ComparableBCMessageTask;
-import mapreduce.execution.job.PriorityLevel;
+import mapreduce.execution.jobs.PriorityLevel;
 
 public class ComparableBCMessageTaskTest {
 

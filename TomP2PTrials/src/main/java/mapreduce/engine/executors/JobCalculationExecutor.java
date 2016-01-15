@@ -10,12 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
 import mapreduce.execution.context.IContext;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.procedures.Procedure;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.tasks.Task;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Value;

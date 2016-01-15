@@ -9,9 +9,9 @@ import org.junit.Test;
 import mapreduce.engine.broadcasting.messages.BCMessageStatus;
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
 import mapreduce.engine.broadcasting.messages.IBCMessage;
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.IDomain;
-import mapreduce.execution.JobProcedureDomain;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.IDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
 
 public class CompletedTaskBCMessageTest {
 

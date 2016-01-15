@@ -3,7 +3,7 @@ package mapreduce.engine.multithreading;
 import java.util.concurrent.FutureTask;
 
 import mapreduce.engine.broadcasting.messages.BCMessageStatus;
-import mapreduce.execution.job.PriorityLevel;
+import mapreduce.execution.jobs.PriorityLevel;
 
 public class ComparableBCMessageTask<T> extends FutureTask<T> implements Comparable<ComparableBCMessageTask<T>> {
 	private volatile PriorityLevel jobPriority;

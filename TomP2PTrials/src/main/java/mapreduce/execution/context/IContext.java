@@ -2,7 +2,7 @@ package mapreduce.execution.context;
 
 import java.util.List;
 
-import mapreduce.execution.ExecutorTaskDomain;
+import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.storage.IDHTConnectionProvider;
 import net.tomp2p.dht.FuturePut;

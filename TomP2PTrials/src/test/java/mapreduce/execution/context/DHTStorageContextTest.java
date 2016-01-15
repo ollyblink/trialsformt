@@ -10,13 +10,13 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
 import mapreduce.execution.context.IContext;
-import mapreduce.execution.job.Job;
-import mapreduce.execution.job.PriorityLevel;
-import mapreduce.execution.task.Task;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.jobs.Job;
+import mapreduce.execution.jobs.PriorityLevel;
+import mapreduce.execution.tasks.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.SyncedCollectionProvider;

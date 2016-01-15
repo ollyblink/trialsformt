@@ -5,7 +5,7 @@ import java.util.List;
 
 import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
-import mapreduce.execution.job.Job;
+import mapreduce.execution.jobs.Job;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;

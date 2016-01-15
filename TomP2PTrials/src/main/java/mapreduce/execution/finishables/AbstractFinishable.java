@@ -1,4 +1,4 @@
-package mapreduce.execution;
+package mapreduce.execution.finishables;
 
 import java.util.HashSet;
 import java.util.List;
@@ -8,6 +8,7 @@ import java.util.TreeSet;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import mapreduce.execution.domains.IDomain;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 

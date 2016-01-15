@@ -4,9 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.executors.JobSubmissionExecutor;
-import mapreduce.execution.ExecutorTaskDomain;
-import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.job.Job;
+import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.jobs.Job;
 import mapreduce.execution.procedures.EndProcedure;
 
 public class JobSubmissionMessageConsumer extends AbstractMessageConsumer {

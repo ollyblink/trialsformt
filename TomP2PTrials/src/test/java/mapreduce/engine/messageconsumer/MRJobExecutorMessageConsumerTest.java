@@ -9,8 +9,8 @@ import org.mockito.Mockito;
 
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
-import mapreduce.execution.JobProcedureDomain;
-import mapreduce.execution.job.Job;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.jobs.Job;
 import mapreduce.execution.procedures.WordCountMapper;
 
 public class MRJobExecutorMessageConsumerTest {
