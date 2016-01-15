@@ -48,7 +48,6 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 	private static final String DEFAULT_OUTPUT_FOLDER = System.getProperty("user.dir") + "/tmp/";
 
 	private ITaskDataComposer taskDataComposer;
-	private String id;
 	private String outputFolder;
 
 	private JobSubmissionExecutor() {
