@@ -50,7 +50,7 @@ public class MRJobExecutionManager {
 
 	public MRJobExecutionManager dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtCon = dhtConnectionProvider;
-		this.dhtCon.executor(this.id);
+		this.dhtCon.broadcastHandler().executor(id);
 		return this;
 	}
 	// END GETTER/SETTER

@@ -53,8 +53,6 @@ public interface IDHTConnectionProvider {
 
 	public int bootstrapPort();
 
-	public IDHTConnectionProvider executor(String executor);
-
 	public IDHTConnectionProvider port(int port);
 
 	public String storageFilePath();

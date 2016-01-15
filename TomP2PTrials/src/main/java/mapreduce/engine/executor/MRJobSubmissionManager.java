@@ -56,7 +56,8 @@ public class MRJobSubmissionManager {
 
 	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider) {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
-		this.dhtConnectionProvider = dhtConnectionProvider.executor(this.id);
+		this.dhtConnectionProvider = dhtConnectionProvider;
+		this.dhtConnectionProvider.broadcastHandler().executor(id);
 		this.dhtConnectionProvider.broadcastHandler().messageConsumer(MRJobSubmissionManagerMessageConsumer.create(this));
 	}
 

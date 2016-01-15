@@ -116,20 +116,14 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		private long timeToSleep = 5000;
 		private IBCMessage bcMessage;
 
-		private Timeout(MRBroadcastHandler broadcastHandler, Job job, long currentTimestamp, long timeToLive) {
-			this.broadcastHandler = broadcastHandler;
-			this.job = job;
-			this.currentTimestamp = currentTimestamp;
-			this.timeToLive = timeToLive;
-		}
-
 		private Timeout(MRBroadcastHandler broadcastHandler, Job job, long currentTimestamp) {
 			this.broadcastHandler = broadcastHandler;
 			this.job = job;
 			this.currentTimestamp = currentTimestamp;
-			this.timeToLive = 2 * 1000;
+			this.timeToLive = job.timeToLive();
 		}
 
+	 
 		private Timeout currentTimestamp(long currentTimestamp, IBCMessage bcMessage) {
 			this.currentTimestamp = currentTimestamp;
 			this.bcMessage = bcMessage;

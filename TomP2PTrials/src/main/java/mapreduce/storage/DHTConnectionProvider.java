@@ -42,7 +42,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
 	private List<PeerDHT> peerDHTs;
 	private MRBroadcastHandler broadcastHandler;
-	private String executor;
 	private String bootstrapIP;
 	private int bootstrapPort;
 	private boolean isBootstrapper;
@@ -205,15 +204,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 				}
 			});
 		}
-	}
-
-	@Override
-	public DHTConnectionProvider executor(String executor) {
-		this.executor = executor;
-		if (this.broadcastHandler != null) {
-			this.broadcastHandler.executor(executor);
-		}
-		return this;
 	}
 
 	@Override

@@ -1,16 +1,12 @@
 package mapreduce.execution.job;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import ch.qos.logback.classic.Logger;
 import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.StartProcedure;
-import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -26,21 +22,22 @@ public class Job implements Serializable, Cloneable {
 
 	// private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
 	// private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
-	private static final FileSize DEFAULT_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
 	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
-	// private static final int DEFAULT_MAX_NR_OF_FINISHED_WORKERS = 1;
+	private static final FileSize DEFAULT_MAX_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
+	private static final boolean DEFAULT_USE_LOCAL_STORAGE_FIRST = false;
+	private static final long DEFAULT_TIME_TO_LIVE = 5000;
 
 	/** specifies a unique id for this job */
-	private String id;
+	private final String id;
 
 	/** identifier for the submitting entity (@see{MRJobSubmissionManager}) */
-	private String jobSubmitterID;
+	private final String jobSubmitterID;
 
 	/** Used for order of jobs @see{<code>PriorityLevel</code> */
-	private PriorityLevel priorityLevel;
+	private final PriorityLevel priorityLevel;
 
 	/** Used for order of jobs. System.currentTimeInMillis(): long */
-	private Long creationTime;
+	private final Long creationTime;
 	/**
 	 * Contains all procedures for this job. Processing is done from 0 to procedures.size()-1, meaning that the first procedure added using
 	 * Job.nextProcedure(procedure) is also the first one to be processed.
@@ -53,20 +50,12 @@ public class Job implements Serializable, Cloneable {
 	private int currentProcedureIndex;
 
 	/** maximal file size to be put on the DHT at once */
-	private FileSize maxFileSize = DEFAULT_FILE_SIZE;
+	private FileSize maxFileSize;
 
 	/**
 	 * Where the data files for the first procedure is stored
 	 */
 	private String fileInputFolderPath;
-
-	// /**
-	// * Specifies the number of workers that maximally should execute a task of a job (a job's data is divided into a number of tasks). If 3 or more
-	// * workers should finish a task, a majority vote on the task result determines if the result is likely to be correct (if 2 out of 3 workers
-	// * achieved the same hash, the task is finished). The principle is the same as in tennis: best of 3 or best of 5. Always,
-	// * Math.Round(maxNrOfFinishedWorkersPerTask/2) workers need to achieve the same hash.
-	// */
-	// private int nrOfSameResultHash = DEFAULT_MAX_NR_OF_FINISHED_WORKERS;
 
 	/**
 	 * if true, the peer tries to pull tasks from own storage before accessing the dht. If false, locality of data is ignored and instead the dht is
@@ -76,34 +65,85 @@ public class Job implements Serializable, Cloneable {
 
 	private boolean isFinished;
 
+	private long timeToLive;
+
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
 	// private int jobSubmissionCounter;
 
 	// private boolean isActive;
 
-	private Job(String jobSubmitterID, PriorityLevel... priorityLevel) {
+	private Job(String jobSubmitterID, PriorityLevel priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
-		this.priorityLevel = (priorityLevel == null || priorityLevel.length == 0 || priorityLevel.length > 1 ? DEFAULT_PRIORITY_LEVEL
-				: priorityLevel[0]);
+		this.priorityLevel = (priorityLevel == null ? DEFAULT_PRIORITY_LEVEL : priorityLevel);
 		this.creationTime = System.currentTimeMillis();
 		this.currentProcedureIndex = 0;
 		this.procedures = SyncedCollectionProvider.syncedArrayList();
-		// Add initial
-		addSucceedingProcedure(StartProcedure.create(), null, 1, 1, false, false);
-
-	}
-
-	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel, boolean useLocalStorageFirst) {
-		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(useLocalStorageFirst);
-	}
-
-	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel) {
-		return new Job(jobSubmitterID, priorityLevel).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(true);
+		this.addSucceedingProcedure(StartProcedure.create(), null, 1, 1, false, false);// Add initial
 	}
 
 	public static Job create(String jobSubmitterID) {
-		return new Job(jobSubmitterID, PriorityLevel.MODERATE).maxFileSize(DEFAULT_FILE_SIZE).useLocalStorageFirst(true);
+		return create(jobSubmitterID, PriorityLevel.MODERATE);
+	}
+
+	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel) {
+		return new Job(jobSubmitterID, priorityLevel).isFinished(false).fileInputFolderPath(null).maxFileSize(DEFAULT_MAX_FILE_SIZE)
+				.useLocalStorageFirst(DEFAULT_USE_LOCAL_STORAGE_FIRST).timeToLive(DEFAULT_TIME_TO_LIVE);
+	}
+
+	// Setters
+	public Job isFinished(boolean isFinished) {
+		this.isFinished = isFinished;
+		return this;
+	}
+
+	public Job fileInputFolderPath(String fileInputFolderPath) {
+		this.fileInputFolderPath = fileInputFolderPath;
+		return this;
+	}
+
+	public Job maxFileSize(FileSize maxFileSize) {
+		this.maxFileSize = maxFileSize;
+		return this;
+	}
+
+	public Job useLocalStorageFirst(boolean useLocalStorageFirst) {
+		this.useLocalStorageFirst = useLocalStorageFirst;
+		return this;
+	}
+
+	public Job timeToLive(long timeToLive) {
+		this.timeToLive = timeToLive;
+		return this;
+	}
+
+	// Getters
+	public boolean isFinished() {
+		return isFinished;
+	}
+
+	public long timeToLive() {
+		return timeToLive;
+	}
+
+	public PriorityLevel priorityLevel() {
+		return priorityLevel;
+	}
+
+	public Long creationTime() {
+		return creationTime;
+	}
+
+	public String fileInputFolderPath() {
+		return fileInputFolderPath;
+	}
+
+	public FileSize maxFileSize() {
+		return this.maxFileSize;
+	}
+
+	public boolean useLocalStorageFirst() {
+		return this.useLocalStorageFirst;
 	}
 
 	public String id() {
@@ -116,6 +156,7 @@ public class Job implements Serializable, Cloneable {
 		return this.jobSubmitterID;
 	}
 
+	// FUNCTIONALITY
 	/**
 	 * Returns the procedure at the specified index. As procedures are added using Job.nextProcedure(procedure), the index in the list they are stored
 	 * in also specifies the order in which procedures are processed. As such, the index starts from 0 (first procedure) and ends with list.size()-1
@@ -190,33 +231,6 @@ public class Job implements Serializable, Cloneable {
 		}
 	}
 
-	public Job fileInputFolderPath(String fileInputFolderPath) {
-		this.fileInputFolderPath = fileInputFolderPath;
-		return this;
-	}
-
-	public String fileInputFolderPath() {
-		return fileInputFolderPath;
-	}
-
-	public Job maxFileSize(FileSize maxFileSize) {
-		this.maxFileSize = maxFileSize;
-		return this;
-	}
-
-	public FileSize maxFileSize() {
-		return this.maxFileSize;
-	}
-
-	public boolean useLocalStorageFirst() {
-		return this.useLocalStorageFirst;
-	}
-
-	public Job useLocalStorageFirst(boolean useLocalStorageFirst) {
-		this.useLocalStorageFirst = useLocalStorageFirst;
-		return this;
-	}
-
 	@Override
 	public String toString() {
 		return id();
@@ -247,13 +261,6 @@ public class Job implements Serializable, Cloneable {
 		return true;
 	}
 
-	public PriorityLevel priorityLevel() {
-		return priorityLevel;
-	}
-
-	public Long creationTime() {
-		return creationTime;
-	}
 	//
 	// public boolean isActive() {
 	// return isActive;
@@ -302,14 +309,5 @@ public class Job implements Serializable, Cloneable {
 	// + job2.maxFileSize + ", " + job2.nrOfSameResultHash + ", " + job2.creationTime + ", " + job2.serialVersionUID + ", "
 	// + job2.useLocalStorageFirst + ", " + job2.procedures);
 	// }
-
-	public Job isFinished(boolean isFinished) {
-		this.isFinished = isFinished;
-		return this;
-	}
-
-	public boolean isFinished() {
-		return isFinished;
-	}
 
 }
