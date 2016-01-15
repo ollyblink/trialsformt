@@ -3,6 +3,7 @@ package mapreduce.engine.messageconsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.engine.executor.MRJobExecutionManager;
 import mapreduce.engine.executor.MRJobSubmissionManager;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
@@ -45,6 +46,12 @@ public class MRJobSubmissionManagerMessageConsumer implements IMessageConsumer {
 	@Override
 	public IMessageConsumer dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
 		 
+		return null;
+	}
+
+	@Override
+	public MRJobExecutionManager executor() {
+		// TODO Auto-generated method stub
 		return null;
 	}
 }

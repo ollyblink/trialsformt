@@ -42,6 +42,7 @@ public class DHTStorageContext implements IContext {
 
 	@Override
 	public void write(Object keyOut, Object valueOut) {
+		logger.info("Try to store <" + keyOut + "," + valueOut + ">.domain(" + outputExecutorTaskDomain.toString() + ")");
 		if (combiner == null) { // normal case
 			writeToDHT(keyOut, valueOut);
 		} else {

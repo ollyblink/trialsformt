@@ -22,11 +22,14 @@ import mapreduce.execution.job.PriorityLevel;
 import mapreduce.execution.procedures.StartProcedure;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.procedures.WordCountReducer;
+import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.FileUtils;
+import mapreduce.utils.MaxFileSizeFileSplitter;
+import net.tomp2p.message.TomP2PCumulationTCP;
 
 public class MRBroadcastHandlerTest {
 	private static Random random = new Random();
@@ -71,8 +74,7 @@ public class MRBroadcastHandlerTest {
 		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES).fileInputFolderPath(fileInputFolderPath)
 
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
-				// .addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false)
-				;
+				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		submitter.submit(job);
 		try {
@@ -94,23 +96,37 @@ public class MRBroadcastHandlerTest {
 		// Get the number of files to be expected
 		// long overallFileSizes = 0;
 		int nrOfFiles = 0;
+		MaxFileSizeTaskDataComposer taskDataComposer = MaxFileSizeTaskDataComposer.create();
+		taskDataComposer.splitValue("\n").maxFileSize(job.maxFileSize());
+		long totCounted = 0;
 		for (String fileName : keysFilePaths) {
 			File file2 = new File(fileName);
 			long fileSize = file2.length();
-			System.out.println("File Size: "+fileSize);
-			
+			System.out.println("File Size: " + fileSize);
 			ArrayList<String> lines = FileUtils.readLinesFromFile(fileName);
-			long tot = 0;
-			for(String line: lines){
-				tot += line.getBytes(Charset.forName("UTF-8")).length; 
-			}
-			System.out.println("Total line sizes: " +tot);
+
+			String allData = "";
+			for (String line : lines) {
+				line = taskDataComposer.remainingData() + "\n" + line;
+				List<String> splitToSize = taskDataComposer.splitToSize(line);
+				for (String split : splitToSize) {
+					totCounted += split.getBytes(Charset.forName(taskDataComposer.fileEncoding())).length;
+					allData += split + " ";
+				}
+			} 
+			//531==371
+			allData += taskDataComposer.remainingData();
+			totCounted += taskDataComposer.remainingData().getBytes(Charset.forName(taskDataComposer.fileEncoding())).length;
+			System.out.println("All data: " + allData);
+			System.out.println("File Size from task data composer: " + totCounted);
 			nrOfFiles += (int) (fileSize / job.maxFileSize().value());
 			if (fileSize % job.maxFileSize().value() > 0) {
 				++nrOfFiles;
 			}
 		}
-		System.out.println("Max file size: "+job.maxFileSize().value());
-		System.out.println(nrOfFiles);
+		System.out.println("Max file size: " + job.maxFileSize().value());
+		System.out.println("Nr of files according to file size: " + nrOfFiles);
+		System.out.println("Nr of files according to task data composer: "
+				+ ((totCounted / job.maxFileSize().value()) + ((totCounted / job.maxFileSize().value()) > 0 ? 1 : 0)));
 	}
 }

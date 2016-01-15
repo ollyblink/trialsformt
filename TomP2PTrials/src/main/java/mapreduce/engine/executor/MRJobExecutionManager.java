@@ -65,7 +65,7 @@ public class MRJobExecutionManager {
 		// if (task.canBeExecuted()) {
 		// task.incrementActiveCount();
 
-		logger.info("Task to execute: " + task);
+		logger.info("executeTask: Task to execute: " + task);
 		// Now we actually wanna retrieve the data from the specified locations...
 		dhtCon.getAll(task.key(), procedure.dataInputDomain().toString()).addListener(new BaseFutureAdapter<FutureGet>() {
 
@@ -79,13 +79,13 @@ public class MRJobExecutionManager {
 						values.add(taskValue);
 					}
 
-					logger.info("Executing task: " + task.key() + " with values " + values);
 					JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.dataInputDomain().jobId(), id,
 							procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
 
 					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
 
-					logger.info("Output ExecutorTaskDomain: " + outputETD.toString());
+					// logger.info("executeTask: outputJPD: " + outputJPD.toString() + ", outputETD: " + outputETD.toString() + ", procedure: "
+					// + procedure);
 					IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
 					if (procedure.combiner() != null) {
 						IContext combinerContext = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
@@ -109,9 +109,9 @@ public class MRJobExecutionManager {
 								// received
 								// already
 								dhtCon.broadcastCompletion(msg);
-								logger.info("Successfully broadcasted TaskCompletedBCMessage for task " + task);
+								logger.info("executeTask: Successfully broadcasted TaskCompletedBCMessage for task " + task);
 							} else {
-								logger.warn("No success on task execution. Reason: " + future.failedReason());
+								logger.warn("executeTask: No success on task execution. Reason: " + future.failedReason());
 							}
 							// task.decrementActiveCount();
 						}
@@ -131,15 +131,16 @@ public class MRJobExecutionManager {
 
 	public void switchDataFromTaskToProcedureDomain(Procedure procedure, Task taskToTransfer) {
 		if (taskToTransfer.isFinished() && !taskToTransfer.isInProcedureDomain()) {
-			logger.info("Transferring tasks " + taskToTransfer + " to procedure domain");
+			logger.info("switchDataFromTaskToProcedureDomain: Transferring tasks " + taskToTransfer + " to procedure domain");
 
 			List<FutureGet> futureGetKeys = syncedArrayList();
 			List<FutureGet> futureGetValues = syncedArrayList();
 			List<FuturePut> futurePuts = syncedArrayList();
 
 			ExecutorTaskDomain from = (ExecutorTaskDomain) taskToTransfer.resultOutputDomain();
-			JobProcedureDomain to = JobProcedureDomain.create(from.jobProcedureDomain().jobId(), id, from.jobProcedureDomain().procedureSimpleName(),
-					from.jobProcedureDomain().procedureIndex());
+
+			JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), id, procedure.executable().getClass().getSimpleName(),
+					procedure.procedureIndex());
 			transferDataFromETDtoJPD(taskToTransfer, from, to, futureGetKeys, futureGetValues, futurePuts);
 			Futures.whenAllSuccess(futureGetKeys).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 
@@ -157,37 +158,17 @@ public class MRJobExecutionManager {
 										public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 											if (future.isSuccess()) {
 												taskToTransfer.isInProcedureDomain(true);
-												logger.info("Successfully transfered task output keys and values for task " + taskToTransfer
-														+ " from task executor domain to job procedure domain: " + to.toString() + ". ");
- 
-												JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
-												int expectedSize = dataInputDomain.tasksSize();
-												List<Task> tasks = procedure.tasks();
-												int currentSize = tasks.size();
-												logger.info("data input domain: " + dataInputDomain.procedureSimpleName());
-												logger.info("switchDataFromTaskToProcedureDomain: expectedSize == currentSize? " + expectedSize + "==" + currentSize);
-												if (expectedSize == currentSize) { 
-													boolean isProcedureCompleted = true;
-													synchronized (tasks) {
-														for (Task task : tasks) {
-															if (!task.isFinished() || !task.isInProcedureDomain()) {
-																isProcedureCompleted = false;
-															}
-														}
-													}
-													logger.info("switchDataFromTaskToProcedureDomain: isProcedureCompleted: "+ isProcedureCompleted);
-													if (isProcedureCompleted) {
-														CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(
-																to.resultHash(procedure.calculateResultHash()), dataInputDomain);
-														dhtCon.broadcastHandler().submit(msg, dhtCon.broadcastHandler().getJob(to.jobId()));
-														dhtCon.broadcastCompletion(msg);
-														logger.info("switchDataFromTaskToProcedureDomain: Broadcasted Completed Procedure MSG: " +msg);
-													}
-												}
+												logger.info(
+														"switchDataFromTaskToProcedureDomain: Successfully transfered task output keys and values for task "
+																+ taskToTransfer + " from task executor domain to job procedure domain: "
+																+ to.toString() + ". ");
+
+												tryFinishProcedure(procedure);
 											} else {
-												logger.warn("Failed to transfered task output keys and values for task " + taskToTransfer
-														+ " from task executor domain to job procedure domain: " + to.toString() + ". failed reason: "
-														+ future.failedReason());
+												logger.warn(
+														"switchDataFromTaskToProcedureDomain: Failed to transfered task output keys and values for task "
+																+ taskToTransfer + " from task executor domain to job procedure domain: "
+																+ to.toString() + ". failed reason: " + future.failedReason());
 											}
 										}
 
@@ -206,6 +187,35 @@ public class MRJobExecutionManager {
 				}
 
 			});
+		}
+	}
+
+	public void tryFinishProcedure(Procedure procedure) {
+		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
+		int expectedSize = dataInputDomain.tasksSize();
+		List<Task> tasks = procedure.tasks();
+		int currentSize = tasks.size();
+		logger.info("switchDataFromTaskToProcedureDomain: data input domain procedure: " + dataInputDomain.procedureSimpleName());
+		logger.info("switchDataFromTaskToProcedureDomain: expectedSize == currentSize? " + expectedSize + "==" + currentSize);
+		if (expectedSize == currentSize) {
+			boolean isProcedureCompleted = true;
+			synchronized (tasks) {
+				for (Task task : tasks) {
+					if (!task.isFinished() || !task.isInProcedureDomain()) {
+						isProcedureCompleted = false;
+					}
+				}
+			}
+			logger.info("switchDataFromTaskToProcedureDomain: isProcedureCompleted: " + isProcedureCompleted);
+			if (isProcedureCompleted) {
+				JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), id, procedure.executable().getClass().getSimpleName(),
+						procedure.procedureIndex());
+				CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to.resultHash(procedure.calculateResultHash()),
+						dataInputDomain);
+				dhtCon.broadcastHandler().submit(msg, dhtCon.broadcastHandler().getJob(procedure.jobId()));
+				dhtCon.broadcastCompletion(msg);
+				logger.info("switchDataFromTaskToProcedureDomain: Broadcasted Completed Procedure MSG: " + msg);
+			}
 		}
 	}
 

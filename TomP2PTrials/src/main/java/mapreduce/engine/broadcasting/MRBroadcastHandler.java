@@ -2,6 +2,7 @@ package mapreduce.engine.broadcasting;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.Future;
 
@@ -34,6 +35,8 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 
 	private ListMultimap<Job, Future<?>> jobFuturesFor = SyncedCollectionProvider.syncedArrayListMultimap();
 
+	private Map<Job, Timeout> timeouts = SyncedCollectionProvider.syncedHashMap();
+
 	@Override
 	public StructuredBroadcastHandler receive(Message message) {
 
@@ -60,6 +63,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 					if (future.isSuccess()) {
 						if (future.data() != null) {
 							Job job = (Job) future.data().object();
+
 							submit(bcMessage, job);
 						}
 					} else {
@@ -69,6 +73,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 			});
 		} else {
 			// if (executor != null && !bcMessage.outputDomain().executor().equals(executor)) { // Don't receive it if I sent it to myself
+
 			submit(bcMessage, job);
 			// }
 		}
@@ -78,6 +83,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 	public void submit(IBCMessage bcMessage, Job job) {
 		logger.info("Submitted job: " + job);
 		if (!job.isFinished()) {
+
 			jobFuturesFor.put(job, taskExecutionServer.submit(new Runnable() {
 
 				@Override
@@ -85,25 +91,97 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 					bcMessage.execute(job, messageConsumer);
 				}
 			}, job.priorityLevel(), job.creationTime(), bcMessage.procedureIndex(), bcMessage.status(), bcMessage.creationTime()));
+			updateTimestamp(job, bcMessage);
 		} else {
-			List<Future<?>> jobFutures = jobFuturesFor.get(job);
-			for (Future<?> jobFuture : jobFutures) {
-				if (!jobFuture.isCancelled()) {
-					jobFuture.cancel(true);
+			synchronized (this) {
+				abortJobExecution(job);
+			}
+		}
+	}
+
+	private void abortJobExecution(Job job) {
+		List<Future<?>> jobFutures = jobFuturesFor.get(job);
+		for (Future<?> jobFuture : jobFutures) {
+			if (!jobFuture.isCancelled()) {
+				jobFuture.cancel(true);
+			}
+		}
+	}
+
+	private class Timeout implements Runnable {
+		private MRBroadcastHandler broadcastHandler;
+		private Job job;
+		private volatile long currentTimestamp;
+		private long timeToLive;
+		private long timeToSleep = 5000;
+		private IBCMessage bcMessage;
+
+		private Timeout(MRBroadcastHandler broadcastHandler, Job job, long currentTimestamp, long timeToLive) {
+			this.broadcastHandler = broadcastHandler;
+			this.job = job;
+			this.currentTimestamp = currentTimestamp;
+			this.timeToLive = timeToLive;
+		}
+
+		private Timeout(MRBroadcastHandler broadcastHandler, Job job, long currentTimestamp) {
+			this.broadcastHandler = broadcastHandler;
+			this.job = job;
+			this.currentTimestamp = currentTimestamp;
+			this.timeToLive = 2 * 1000;
+		}
+
+		private Timeout currentTimestamp(long currentTimestamp, IBCMessage bcMessage) {
+			this.currentTimestamp = currentTimestamp;
+			this.bcMessage = bcMessage;
+			return this;
+		}
+
+		@Override
+		public void run() {
+			while ((System.currentTimeMillis() - currentTimestamp) < timeToLive) {
+				try {
+					logger.info("Timeout: sleeping for " + timeToSleep);
+					Thread.sleep(timeToSleep);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			}
-			// jobFuturesFor.get(job).clear();
+			synchronized (this.broadcastHandler) {
+				logger.info("Timeout: aborted job " + job);
+				if (bcMessage.inputDomain().procedureIndex() == -1) {
+					// handle start differently first, because it may be due to expected file size that is not the same...
+					int actualTasksSize = job.currentProcedure().tasks().size();
+					int expectedTasksSize = bcMessage.inputDomain().tasksSize();
+					if (actualTasksSize < expectedTasksSize) {
+						job.currentProcedure().dataInputDomain().tasksSize(actualTasksSize);
+						broadcastHandler.messageConsumer.executor().tryFinishProcedure(job.currentProcedure());
+					}
+				} else {
+					this.broadcastHandler.abortJobExecution(job);
+				}
+			}
+		}
+
+	};
+
+	private void updateTimestamp(Job job, IBCMessage bcMessage) {
+		if (timeouts.containsKey(job)) {
+			timeouts.get(job).currentTimestamp(System.currentTimeMillis(), bcMessage);
+		} else {
+			Timeout timeout = new Timeout(this, job, System.currentTimeMillis());
+			timeouts.put(job, timeout);
+			Thread thread = new Thread(timeout);// timeoutcounter for job
+			thread.start();
 		}
 	}
 
 	// Setter, Getter, Creator, Constructor follow below..
 	private MRBroadcastHandler(int nrOfConcurrentlyExecutedBCMessages) {
 		this.taskExecutionServer = PriorityExecutor.newFixedThreadPool(nrOfConcurrentlyExecutedBCMessages);
+
 	}
 
-
 	public Job getJob(String jobId) {
-
 		for (Job job : jobFuturesFor.keySet()) {
 			if (job.id().equals(jobId)) {
 				return job;
@@ -111,6 +189,7 @@ public class MRBroadcastHandler extends StructuredBroadcastHandler {
 		}
 		return null;
 	}
+
 	/**
 	 *
 	 * 

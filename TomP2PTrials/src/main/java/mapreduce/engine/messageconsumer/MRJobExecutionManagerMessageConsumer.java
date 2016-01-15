@@ -22,6 +22,7 @@ import mapreduce.execution.task.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
+import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
@@ -31,7 +32,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 
 	/** Only used to distinguish if its a completed procedure or task to update */
 	private interface IUpdate {
-		public void executeUpdate(IDomain outputDomain, Procedure currentProcedure);
+		public Procedure executeUpdate(IDomain outputDomain, Procedure currentProcedure);
 	}
 
 	private MRJobExecutionManager jobExecutor;
@@ -118,8 +119,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 				if (procedure.dataInputDomain().tasksSize() < inputDomain.tasksSize()) {// looks like the received had more already
 					procedure.dataInputDomain().tasksSize(inputDomain.tasksSize());
 				}
-				logger.info("data input domain: " + inputDomain.procedureSimpleName() + ", expected tasks size: " + inputDomain.tasksSize());
-				iUpdate.executeUpdate(outputDomain, procedure);
+				procedure = iUpdate.executeUpdate(outputDomain, procedure);
 			} else { // May have to change input data location (inputDomain)
 				// executor of received message executes on different input data! Need to synchronize
 				if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {
@@ -167,7 +167,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
 		handleReceivedMessage(job, outputDomain, inputDomain, new IUpdate() {
 			@Override
-			public void executeUpdate(IDomain outputDomain, Procedure procedure) {
+			public Procedure executeUpdate(IDomain outputDomain, Procedure procedure) {
 				JobProcedureDomain outputJPD = (JobProcedureDomain) outputDomain;
 				procedure.addOutputDomain(outputJPD);
 				if (procedure.isFinished()) {
@@ -177,11 +177,11 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 					if (job.currentProcedure().executable().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
 						job.isFinished(true);
 						printResults(job);
-						return; // Done
 					} else {
 						procedure = job.currentProcedure();
 					}
 				}
+				return procedure;
 			}
 		});
 	}
@@ -191,7 +191,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 		handleReceivedMessage(job, outputDomain, inputDomain, new IUpdate() {
 
 			@Override
-			public void executeUpdate(IDomain outputDomain, Procedure procedure) {
+			public Procedure executeUpdate(IDomain outputDomain, Procedure procedure) {
 				ExecutorTaskDomain outputETDomain = (ExecutorTaskDomain) outputDomain;
 				Task receivedTask = Task.create(outputETDomain.taskId());
 				List<Task> tasks = procedure.tasks();
@@ -211,6 +211,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 						jobExecutor.switchDataFromTaskToProcedureDomain(procedure, task);
 					}
 				}
+				return procedure;
 			}
 		});
 	}
@@ -307,25 +308,25 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 						if (future.isSuccess()) {
 							Set<Number640> keySet = future.dataMap().keySet();
 							System.out.println("Found: " + keySet.size() + " finished tasks.");
-							// for (Number640 k : keySet) {
-							// String key = (String) future.dataMap().get(k).object();
-							// dhtConnectionProvider.getAll(key, procedure.resultOutputDomain().toString())
-							// .addListener(new BaseFutureAdapter<FutureGet>() {
-							//
-							// @Override
-							// public void operationComplete(FutureGet future) throws Exception {
-							// if (future.isSuccess()) {
-							// Set<Number640> keySet2 = future.dataMap().keySet();
-							// String values = "";
-							// for (Number640 k2 : keySet2) {
-							// values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
-							// }
-							// System.err.println(key + ":" + values);
-							// }
-							// }
-							//
-							// });
-							// }
+							for (Number640 k : keySet) {
+								String key = (String) future.dataMap().get(k).object();
+								dhtConnectionProvider.getAll(key, procedure.resultOutputDomain().toString())
+										.addListener(new BaseFutureAdapter<FutureGet>() {
+
+									@Override
+									public void operationComplete(FutureGet future) throws Exception {
+										if (future.isSuccess()) {
+											Set<Number640> keySet2 = future.dataMap().keySet();
+											String values = "";
+											for (Number640 k2 : keySet2) {
+												values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
+											}
+											System.err.println(key + ":" + values);
+										}
+									}
+
+								});
+							}
 						}
 					}
 
@@ -333,6 +334,11 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 	}
 
 	public MRJobExecutionManager jobExecutor() {
+		return this.jobExecutor;
+	}
+
+	@Override
+	public MRJobExecutionManager executor() { 
 		return this.jobExecutor;
 	}
 

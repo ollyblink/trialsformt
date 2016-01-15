@@ -28,6 +28,7 @@ public class PriorityExecutor extends ThreadPoolExecutor {
 	public static PriorityExecutor newFixedThreadPool(int nThreads) {
 		return new PriorityExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<Runnable>());
 	}
+ 
 	// Submit with New comparable task
 
 	public Future<?> submit(Runnable runnable, PriorityLevel jobPriority, Long jobCreationTime, Integer procedureIndex, BCMessageStatus messageStatus,
@@ -41,19 +42,20 @@ public class PriorityExecutor extends ThreadPoolExecutor {
 	}
 	// execute with New comparable task
 
-//	 public void execute(Runnable command, int priority) {
-//	 super.execute(new Comparable<>(command, null, priority));
-//	 }
-	
-	 @Override
-	 protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-	 return (RunnableFuture<T>) callable;
-	 }
+	// public void execute(Runnable command, int priority) {
+	// super.execute(new Comparable<>(command, null, priority));
+	// }
+
+	@Override
+	protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+		return (RunnableFuture<T>) callable;
+	}
+
 	//
-	 @Override
-	 protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-	 return (RunnableFuture<T>) runnable;
-	 }
+	@Override
+	protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
+		return (RunnableFuture<T>) runnable;
+	}
 
 	public static void main(String[] args) throws InterruptedException {
 		PriorityExecutor executorService = (PriorityExecutor) PriorityExecutor.newFixedThreadPool(1);

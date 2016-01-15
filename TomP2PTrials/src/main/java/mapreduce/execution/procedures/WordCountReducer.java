@@ -21,9 +21,9 @@ public class WordCountReducer implements IExecutable {
 		for (Object o : valuesIn) {
 			sum += (Integer) o;
 		}
-		if (sum > 2) {
+//		if (sum > 2) {
 			context.write(keyIn, sum);
-		}
+//		}
 	}
 
 }

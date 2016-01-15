@@ -155,7 +155,7 @@ public class MRJobSubmissionManager {
 	private int submit(JobProcedureDomain outputJPD, Procedure procedure, String keyfilePath, int filePartCounter, String vals, Job job) {
 		Collection<Object> values = new ArrayList<>();
 		values.add(vals);
-		Task task = Task.create(keyfilePath + "_" + filePartCounter++);
+		Task task = Task.create(new File(keyfilePath).getName() + "_" + filePartCounter++);
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 

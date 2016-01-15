@@ -204,10 +204,13 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		return null;
 	}
 
+	  
+
 	@Override
 	public String toString() {
-		return "Procedure [procedure=" + executable + ", procedureIndex=" + procedureIndex + ", tasks=" + tasks + ", inputDomain=" + dataInputDomain
-				+ "]";
+		return "Procedure [executable=" + executable + ", procedureIndex=" + procedureIndex + ", tasks=" + tasks + ", dataInputDomain="
+				+ dataInputDomain + ", combiner=" + combiner + ", nrOfSameResultHashForTasks=" + nrOfSameResultHashForTasks + ", jobId=" + jobId
+				+ ", needsMultipleDifferentDomainsForTasks=" + needsMultipleDifferentDomainsForTasks + "]";
 	}
 
 	@Override
