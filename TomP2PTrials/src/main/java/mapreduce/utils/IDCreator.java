@@ -17,7 +17,9 @@ public enum IDCreator {
 		// TS == Timestamp
 		// RND == Random long
 		// LC == local counter... just such that at least locally, the id's are counted
-		return name.toUpperCase() + "[TS(" + System.currentTimeMillis() + ")_RND(" + random.nextLong() + ")_LC(" + yetAnotherLocalCounter++ + ")]";
+		return name.toUpperCase() + 
+				"[TS(" + System.currentTimeMillis() + ")_RND(" + random.nextLong() + ")"
+						+ "_LC(" + yetAnotherLocalCounter++ + ")]";
 	}
 
 }
