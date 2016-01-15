@@ -13,14 +13,10 @@ public class AbstractMessageConsumer implements IMessageConsumer {
 
 	@Override
 	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override

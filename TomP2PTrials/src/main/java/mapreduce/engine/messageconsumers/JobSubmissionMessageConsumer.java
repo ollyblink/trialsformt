@@ -23,13 +23,7 @@ public class JobSubmissionMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	@Override
-	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
-
-	}
-
-	@Override
 	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
-		// Job job = getJob(inputDomain.jobId());
 		if (job.jobSubmitterID().equals(executor.id())) {
 			if (outputDomain.procedureSimpleName().equals(EndProcedure.class.getSimpleName())) {
 				logger.info("Job is finished. Final data location domain: " + outputDomain);

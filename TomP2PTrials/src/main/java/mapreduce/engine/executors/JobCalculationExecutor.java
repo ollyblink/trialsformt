@@ -14,8 +14,10 @@ import mapreduce.execution.context.DHTStorageContext;
 import mapreduce.execution.context.IContext;
 import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.tasks.Task;
+import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.Value;
@@ -33,7 +35,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 	// private Map<String, ListMultimap<Task, BaseFuture>> futures;
 
 	private JobCalculationExecutor() {
-		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
+		super(IDCreator.INSTANCE.createTimeRandomID(JobCalculationExecutor.class.getSimpleName()));
 	}
 
 	public static JobCalculationExecutor create() {
@@ -69,9 +71,9 @@ public class JobCalculationExecutor extends AbstractExecutor {
 					if (procedure.combiner() != null) {
 						IContext combinerContext = DHTStorageContext.create().outputExecutorTaskDomain(outputETD)
 								.dhtConnectionProvider(dhtConnectionProvider);
-						context.combiner(procedure.combiner(), combinerContext);
+						context.combiner((IExecutable) procedure.combiner(), combinerContext);
 					}
-					procedure.executable().process(task.key(), values, context);
+					((IExecutable) procedure.executable()).process(task.key(), values, context);
 					if (procedure.combiner() != null) {
 						context.combine();
 					}
@@ -292,10 +294,9 @@ public class JobCalculationExecutor extends AbstractExecutor {
 
 	}
 
-	// public MRJobExecutionManagerMessageConsumer messageConsumer() {
-	// return messageConsumer;
-	// }
-
-	// End Execution
+	@Override
+	public JobCalculationExecutor dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		return (JobCalculationExecutor) super.dhtConnectionProvider(dhtConnectionProvider);
+	}
 
 }

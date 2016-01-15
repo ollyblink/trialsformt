@@ -21,7 +21,7 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	 */
 	private static final long serialVersionUID = 1717123684693430690L;
 	/** The actual procedure to execute */
-	private final IExecutable executable;
+	private Object executable;
 	/** Which procedure in the job's procedure list (@link{Job} it is (counted from 0 == StartProcedure to N-1 == EndProcedure) */
 	private final int procedureIndex;
 	/** Tasks this procedure needs to execute */
@@ -32,22 +32,27 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	 * Used to combine data before it is sent to the dht. "Local" aggregation. Is often the same as the subsequent procedure (e.g. WordCount: Combiner
 	 * of WordCountMapper would be WordCountReducer as it locally reduces the words). It is not guaranteed that this always works!
 	 */
-	private IExecutable combiner;
+	private Object combiner;
 	/** How many times should each task be executed and reach the same result hash until it is assumed to be a correct answer? */
 	private int nrOfSameResultHashForTasks = 1;
 	/** Just to make sure this indeed is the same procedure of the same job (may be another job with the same procedure) */
 	private String jobId;
 	private boolean needsMultipleDifferentDomainsForTasks;
 
-	private Procedure(IExecutable executable, int procedureIndex) {
+	private Procedure(Object executable, int procedureIndex) {
 		this.executable = executable;
 		this.procedureIndex = procedureIndex;
 		this.tasks = SyncedCollectionProvider.syncedArrayList();
 		this.dataInputDomain = null;
 	}
 
-	public static Procedure create(IExecutable executable, int procedureIndex) {
+	public static Procedure create(Object executable, int procedureIndex) {
 		return new Procedure(executable, procedureIndex);
+	}
+
+	public Procedure executable(IExecutable executable) {
+		this.executable = executable;
+		return this;
 	}
 
 	@Override
@@ -144,11 +149,11 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		return this.tasks;
 	}
 
-	public IExecutable combiner() {
+	public Object combiner() {
 		return this.combiner;
 	}
 
-	public Procedure combiner(IExecutable combiner) {
+	public Procedure combiner(Object combiner) {
 		this.combiner = combiner;
 		return this;
 	}
@@ -172,7 +177,7 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		return jobId;
 	}
 
-	public IExecutable executable() {
+	public Object executable() {
 		return executable;
 	}
 
@@ -203,8 +208,6 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 		}
 		return null;
 	}
-
-	  
 
 	@Override
 	public String toString() {

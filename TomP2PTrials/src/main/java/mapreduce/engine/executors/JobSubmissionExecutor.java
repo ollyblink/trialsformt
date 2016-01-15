@@ -25,10 +25,12 @@ import mapreduce.execution.context.IContext;
 import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
+import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.tasks.Task;
 import mapreduce.execution.tasks.taskdatacomposing.ITaskDataComposer;
 import mapreduce.execution.tasks.taskdatacomposing.MaxFileSizeTaskDataComposer;
+import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
@@ -50,7 +52,7 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 	private String outputFolder;
 
 	private JobSubmissionExecutor() {
-		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
+		super(IDCreator.INSTANCE.createTimeRandomID(JobSubmissionExecutor.class.getSimpleName()));
 	}
 
 	public static JobSubmissionExecutor create() {
@@ -150,7 +152,7 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
 		System.err.println("Put split: <" + task.key() + ", \"" + vals + "\">");
-		procedure.executable().process(task.key(), values, context);
+		((IExecutable) procedure.executable()).process(task.key(), values, context);
 		Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 			@Override
 			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
@@ -297,4 +299,8 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 
 	}
 
+	@Override
+	public JobSubmissionExecutor dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		return (JobSubmissionExecutor) super.dhtConnectionProvider(dhtConnectionProvider);
+	}
 }

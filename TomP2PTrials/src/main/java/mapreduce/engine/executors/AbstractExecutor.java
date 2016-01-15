@@ -6,6 +6,10 @@ public abstract class AbstractExecutor implements IExecutor {
 
 	protected IDHTConnectionProvider dhtConnectionProvider;
 	protected String id;
+	
+	protected AbstractExecutor(String id){
+		this.id = id;
+	}
 
 	@Override
 	public String id() {

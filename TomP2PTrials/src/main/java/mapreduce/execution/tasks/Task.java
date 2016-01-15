@@ -143,8 +143,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		return null;
 	}
 
-	public int nrOfSameResultHash() {
-		// TODO Auto-generated method stub
+	public int nrOfSameResultHash() { 
 		return nrOfSameResultHash;
 	}
 

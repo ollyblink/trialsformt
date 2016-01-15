@@ -1,43 +1,28 @@
 package mapreduce.engine.broadcasting;
 
-import static org.junit.Assert.*;
-
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Future;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.ListMultimap;
-
 import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
-import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
-import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.executors.JobSubmissionExecutor;
 import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
 import mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer;
-import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
 import mapreduce.execution.jobs.PriorityLevel;
-import mapreduce.execution.procedures.StartProcedure;
-import mapreduce.execution.procedures.WordCountMapper;
-import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.execution.tasks.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
-import mapreduce.testutils.TestUtils;
-import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
 import mapreduce.utils.FileUtils;
-import mapreduce.utils.MaxFileSizeFileSplitter;
-import net.tomp2p.message.TomP2PCumulationTCP;
 
 public class MRBroadcastHandlerTest {
 	private static Random random = new Random();
@@ -75,13 +60,14 @@ public class MRBroadcastHandlerTest {
 	}
 
 	@Test
-	public void execute() {
-		String mapper = "function process(keyIn, valuesIn, context){" + " for each (var value in valuesIn) { "
+	public void execute() throws Exception {
+		String jsMapper = "function process(keyIn, valuesIn, context){" + " for each (var value in valuesIn) { "
 				+ "    var splits = value.split(\" \");	" + "    for each (var split in splits){ " + "      context.write(split, 1);	" + "    } "
 				+ "  }" + "}";
-		String reducer = "function process(keyIn, valuesIn, context){" + "  var count = 0; " + "  for each (var value in valuesIn) { "
+		String jsReducer = "function process(keyIn, valuesIn, context){" + "  var count = 0; " + "  for each (var value in valuesIn) { "
 				+ "    count += value;	" + "  } " + "  context.write(keyIn, count); " + "} ";
 
+		
 		int bootstrapPort = random.nextInt(40000) + 4000;
 		
 		MapReduceBroadcastHandler submitterBCHandler = MapReduceBroadcastHandler.create(1);
@@ -125,7 +111,7 @@ public class MRBroadcastHandlerTest {
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
 		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE)
 				.maxFileSize(FileSize.THIRTY_TWO_BYTES).fileInputFolderPath(fileInputFolderPath) 
-				.addSucceedingProcedure(mapper, reducer, 1, 1, false, false).addSucceedingProcedure(reducer, null, 1, 1, false, false);
+				.addSucceedingProcedure(jsMapper, jsReducer, 1, 1, false, false).addSucceedingProcedure(jsReducer, null, 1, 1, false, false);
 
 		 submissionExecutor.submit(job);
 		try {

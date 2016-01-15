@@ -16,6 +16,8 @@ import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.engine.multithreading.PriorityExecutor;
 import mapreduce.execution.jobs.Job;
+import mapreduce.execution.procedures.Procedure;
+import mapreduce.execution.procedures.Procedures;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -63,8 +65,12 @@ public class MapReduceBroadcastHandler extends StructuredBroadcastHandler {
 				public void operationComplete(FutureGet future) throws Exception {
 					if (future.isSuccess()) {
 						if (future.data() != null) {
-							Job job = (Job) future.data().object();
-
+							Job job = (Job) future.data().object(); 
+							for(Procedure procedure: job.procedures()){
+								if(procedure.executable() instanceof String){//Means a java script function --> convert
+									procedure.executable(Procedures.convertJavascriptToJava((String) procedure.executable()));
+								}
+							}
 							submit(bcMessage, job);
 						}
 					} else {
