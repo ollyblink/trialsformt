@@ -53,6 +53,9 @@ public class CompletedBCMessage implements IBCMessage {
 	@Override
 	public void execute(Job job, IMessageConsumer messageConsumer) {
 		if (status == BCMessageStatus.COMPLETED_TASK) {
+			logger.info("Executing completed procedure for  job: " + job);
+			logger.info(" input: " + inputDomain);
+			logger.info("output: " + outputDomain);
 			messageConsumer.handleCompletedTask(job, (ExecutorTaskDomain) outputDomain, inputDomain);
 		} else { // status == BCMessageStatus.COMPLETED_PROCEDURE
 			logger.info("Executing completed procedure for  job: " + job);

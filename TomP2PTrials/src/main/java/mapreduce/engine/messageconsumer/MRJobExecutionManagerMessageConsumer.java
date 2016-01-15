@@ -118,7 +118,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 				if (procedure.dataInputDomain().tasksSize() < inputDomain.tasksSize()) {// looks like the received had more already
 					procedure.dataInputDomain().tasksSize(inputDomain.tasksSize());
 				}
-				logger.info("data input domain: "+ inputDomain.procedureSimpleName() +", expected tasks size: " +inputDomain.tasksSize());
+				logger.info("data input domain: " + inputDomain.procedureSimpleName() + ", expected tasks size: " + inputDomain.tasksSize());
 				iUpdate.executeUpdate(outputDomain, procedure);
 			} else { // May have to change input data location (inputDomain)
 				// executor of received message executes on different input data! Need to synchronize
@@ -151,7 +151,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 		// if (!job.isFinished()) {
 		// JobProcedureDomain outputJPD = (outputDomain instanceof JobProcedureDomain ? ((JobProcedureDomain) outputDomain)
 		// : ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
-		if (procedure.tasks().size() < procedure.dataInputDomain().tasksSize() || procedure.tasks().size() == 0 && procedure.procedureIndex() > 0) {
+		if ((procedure.tasks().size() < procedure.dataInputDomain().tasksSize() || procedure.tasks().size() == 0) && procedure.procedureIndex() > 0) {
 			// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
 			// procedure
 			getTaskKeysFromNetwork(procedure);
@@ -217,7 +217,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 
 	private void submitTask(Procedure procedure, Task task) {
 		if (task.canBeExecuted()) {
- 
+
 			task.incrementActiveCount();
 			addTaskFuture(procedure, task, threadPoolExecutor.submit(new Runnable() {
 

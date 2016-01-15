@@ -159,29 +159,29 @@ public class MRJobExecutionManager {
 												taskToTransfer.isInProcedureDomain(true);
 												logger.info("Successfully transfered task output keys and values for task " + taskToTransfer
 														+ " from task executor domain to job procedure domain: " + to.toString() + ". ");
-
-												// if (procedure.isFinished()) {
-												Procedure p = procedure;
+ 
 												JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
 												int expectedSize = dataInputDomain.tasksSize();
 												List<Task> tasks = procedure.tasks();
 												int currentSize = tasks.size();
 												logger.info("data input domain: " + dataInputDomain.procedureSimpleName());
-												logger.info("expectedSize == currentSize? " + expectedSize + "==" + currentSize);
-												if (expectedSize == currentSize) {
+												logger.info("switchDataFromTaskToProcedureDomain: expectedSize == currentSize? " + expectedSize + "==" + currentSize);
+												if (expectedSize == currentSize) { 
 													boolean isProcedureCompleted = true;
 													synchronized (tasks) {
 														for (Task task : tasks) {
-															if (!task.isFinished() || !taskToTransfer.isInProcedureDomain()) {
+															if (!task.isFinished() || !task.isInProcedureDomain()) {
 																isProcedureCompleted = false;
 															}
 														}
 													}
+													logger.info("switchDataFromTaskToProcedureDomain: isProcedureCompleted: "+ isProcedureCompleted);
 													if (isProcedureCompleted) {
 														CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(
 																to.resultHash(procedure.calculateResultHash()), dataInputDomain);
 														dhtCon.broadcastHandler().submit(msg, dhtCon.broadcastHandler().getJob(to.jobId()));
 														dhtCon.broadcastCompletion(msg);
+														logger.info("switchDataFromTaskToProcedureDomain: Broadcasted Completed Procedure MSG: " +msg);
 													}
 												}
 											} else {
