@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
-import mapreduce.engine.broadcasting.MRBroadcastHandler;
 import mapreduce.engine.broadcasting.MRBroadcastHandlerTest;
+import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -145,11 +145,11 @@ public class Example {
 		return peers;
 	}
 
-	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, MRBroadcastHandler bcHandler) throws IOException {
+	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, MapReduceBroadcastHandler bcHandler) throws IOException {
 		return createAndAttachPeersDHT(nr, port, bcHandler, null);
 	}
 
-	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, MRBroadcastHandler bcHandler, PeerDHT master) throws IOException {
+	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, MapReduceBroadcastHandler bcHandler, PeerDHT master) throws IOException {
 		StructuredBroadcastHandler bcH = null;
 		if (bcHandler == null) {
 			bcH = new MyBroadcastHandler();

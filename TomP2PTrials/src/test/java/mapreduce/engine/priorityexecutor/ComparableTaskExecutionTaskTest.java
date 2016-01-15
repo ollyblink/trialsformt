@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import mapreduce.engine.multithreading.PriorityExecutor;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.task.Task;
 import net.tomp2p.peers.Number160;

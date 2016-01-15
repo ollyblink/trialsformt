@@ -1,9 +1,9 @@
-package mapreduce.engine.broadcasting;
+package mapreduce.engine.broadcasting.messages;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.engine.messageconsumer.IMessageConsumer;
+import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;

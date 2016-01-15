@@ -8,7 +8,8 @@ import java.util.List;
 
 import org.junit.Test;
 
-import mapreduce.engine.broadcasting.BCMessageStatus;
+import mapreduce.engine.broadcasting.messages.BCMessageStatus;
+import mapreduce.engine.multithreading.ComparableBCMessageTask;
 import mapreduce.execution.job.PriorityLevel;
 
 public class ComparableBCMessageTaskTest {

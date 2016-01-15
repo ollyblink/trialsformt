@@ -7,22 +7,22 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import mapreduce.engine.executor.MRJobExecutionManager;
-import mapreduce.engine.messageconsumer.MRJobExecutionManagerMessageConsumer;
+import mapreduce.engine.executors.JobCalculationExecutor;
+import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.WordCountMapper;
 
 public class MRJobExecutorMessageConsumerTest {
 
-	private static MRJobExecutionManagerMessageConsumer messageConsumer;
+	private static JobCalculationMessageConsumer messageConsumer;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 
-		MRJobExecutionManager jobExecutor = Mockito.mock(MRJobExecutionManager.class);
+		JobCalculationExecutor jobExecutor = Mockito.mock(JobCalculationExecutor.class);
 
-		messageConsumer = MRJobExecutionManagerMessageConsumer.create(jobExecutor);
+		messageConsumer = JobCalculationMessageConsumer.create(jobExecutor);
 
 	}
 

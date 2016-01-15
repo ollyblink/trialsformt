@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.List;
 
 import generictests.Example;
-import mapreduce.engine.broadcasting.MRBroadcastHandler;
-import mapreduce.engine.messageconsumer.IMessageConsumer;
+import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
+import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -29,7 +29,7 @@ public class TestUtils {
 		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
 		List<PeerDHT> peers = SyncedCollectionProvider.syncedArrayList();
 		PeerDHT[] peerArray = null;
-		MRBroadcastHandler bcHandler = MRBroadcastHandler.create(1);
+		MapReduceBroadcastHandler bcHandler = MapReduceBroadcastHandler.create(1);
 		if(messageConsumer != null){
 			bcHandler.messageConsumer(messageConsumer);
 		}

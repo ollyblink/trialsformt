@@ -8,8 +8,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.engine.executor.MRJobExecutionManager;
-import mapreduce.engine.messageconsumer.MRJobExecutionManagerMessageConsumer;
+import mapreduce.engine.executors.JobCalculationExecutor;
+import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
@@ -36,7 +36,7 @@ public class DHTStorageContextTest {
 	public void test() throws InterruptedException {
 //		MRJobExecutionManager jobExecutionManager = MRJobExecutionManager.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(4000, 3,
-				MRJobExecutionManagerMessageConsumer.create());
+				JobCalculationMessageConsumer.create());
 		dhtConnectionProvider.executor(executor);
 		Thread.sleep(3000);
 

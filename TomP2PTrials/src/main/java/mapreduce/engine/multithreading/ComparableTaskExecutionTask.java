@@ -1,4 +1,4 @@
-package mapreduce.engine.priorityexecutor;
+package mapreduce.engine.multithreading;
 
 import java.util.concurrent.FutureTask;
 

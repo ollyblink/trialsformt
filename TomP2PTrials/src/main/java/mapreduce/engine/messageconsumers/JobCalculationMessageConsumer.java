@@ -1,4 +1,4 @@
-package mapreduce.engine.messageconsumer;
+package mapreduce.engine.messageconsumers;
 
 import java.util.List;
 import java.util.Map;
@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.engine.executor.MRJobExecutionManager;
-import mapreduce.engine.priorityexecutor.PriorityExecutor;
+import mapreduce.engine.executors.JobCalculationExecutor;
+import mapreduce.engine.multithreading.PriorityExecutor;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
@@ -19,7 +19,6 @@ import mapreduce.execution.job.Job;
 import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task;
-import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;
@@ -27,15 +26,13 @@ import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
 
-public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
-	private static Logger logger = LoggerFactory.getLogger(MRJobExecutionManagerMessageConsumer.class);
+public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
+	private static Logger logger = LoggerFactory.getLogger(JobCalculationMessageConsumer.class);
 
 	/** Only used to distinguish if its a completed procedure or task to update */
 	private interface IUpdate {
 		public Procedure executeUpdate(IDomain outputDomain, Procedure currentProcedure);
 	}
-
-	private MRJobExecutionManager jobExecutor;
 
 	private PriorityExecutor threadPoolExecutor;
 
@@ -45,52 +42,14 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 
 	private Map<String, ListMultimap<Task, Future<?>>> futures;
 
-	private IDHTConnectionProvider dhtConnectionProvider;
-
-	private MRJobExecutionManagerMessageConsumer(MRJobExecutionManager jobExecutor) {
-		this.jobExecutor = jobExecutor;
+	private JobCalculationMessageConsumer() {
 		futures = SyncedCollectionProvider.syncedHashMap();
 		this.threadPoolExecutor = PriorityExecutor.newFixedThreadPool(maxThreads);
 
 	}
 
-	// public MRJobExecutionManagerMessageConsumer taskExecutionScheduler(ITaskScheduler taskExecutionScheduler) {
-	// this.taskExecutionScheduler = taskExecutionScheduler;
-	// return this;
-	// }
-
-	public static MRJobExecutionManagerMessageConsumer create() {
-		return new MRJobExecutionManagerMessageConsumer(MRJobExecutionManager.create());
-		// .taskExecutionScheduler(MinAssignedWorkersTaskExecutionScheduler.create());
-	}
-
-	@Override
-	public MRJobExecutionManagerMessageConsumer dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
-		this.dhtConnectionProvider = dhtConnectionProvider;
-		this.jobExecutor.dhtConnectionProvider(dhtConnectionProvider);
-		return this;
-	}
-
-	// Maintenance
-
-	public void start() {
-		// this.dhtConnectionProvider.connect();
-	}
-
-	public void shutdown() {
-		this.dhtConnectionProvider.shutdown();
-	}
-
-	// End Maintenance
-	/**
-	 * Use this for interrupting execution (canExecute(false))
-	 * 
-	 * @param mrJobExecutor
-	 * @return
-	 */
-	public MRJobExecutionManagerMessageConsumer jobExecutor(MRJobExecutionManager mrJobExecutor) {
-		this.jobExecutor = mrJobExecutor;
-		return this;
+	public static JobCalculationMessageConsumer create() {
+		return new JobCalculationMessageConsumer();
 	}
 
 	// @Override
@@ -208,7 +167,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 											// transfer the task's output <K,{V}> to the procedure domain
 						cancelTaskExecution(procedure, task); // If so, no execution needed anymore
 						// Transfer data to procedure domain! This may cause the procedure to become finished
-						jobExecutor.switchDataFromTaskToProcedureDomain(procedure, task);
+						executor().switchDataFromTaskToProcedureDomain(procedure, task);
 					}
 				}
 				return procedure;
@@ -224,7 +183,7 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 
 				@Override
 				public void run() {
-					jobExecutor.executeTask(task, procedure);
+					executor().executeTask(task, procedure);
 				}
 
 			}, task));
@@ -333,13 +292,9 @@ public class MRJobExecutionManagerMessageConsumer implements IMessageConsumer {
 				});
 	}
 
-	public MRJobExecutionManager jobExecutor() {
-		return this.jobExecutor;
-	}
-
 	@Override
-	public MRJobExecutionManager executor() { 
-		return this.jobExecutor;
+	public JobCalculationExecutor executor() {
+		return (JobCalculationExecutor) super.executor();
 	}
 
 }

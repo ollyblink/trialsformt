@@ -6,6 +6,9 @@ import java.util.concurrent.PriorityBlockingQueue;
 
 import org.junit.Test;
 
+import mapreduce.engine.broadcasting.messages.BCMessageStatus;
+import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
+import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;

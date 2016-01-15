@@ -1,4 +1,4 @@
-package mapreduce.engine.priorityexecutor;
+package mapreduce.engine.multithreading;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -8,7 +8,7 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import mapreduce.engine.broadcasting.BCMessageStatus;
+import mapreduce.engine.broadcasting.messages.BCMessageStatus;
 import mapreduce.execution.job.PriorityLevel;
 import mapreduce.execution.task.Task;
 

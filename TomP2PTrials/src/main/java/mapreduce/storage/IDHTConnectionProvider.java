@@ -3,8 +3,8 @@ package mapreduce.storage;
 import java.util.Collection;
 import java.util.List;
 
-import mapreduce.engine.broadcasting.CompletedBCMessage;
-import mapreduce.engine.broadcasting.MRBroadcastHandler;
+import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
+import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
 import mapreduce.execution.job.Job;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -59,9 +59,9 @@ public interface IDHTConnectionProvider {
 
 	public IDHTConnectionProvider storageFilePath(String storageFilePath);
 
-	public MRBroadcastHandler broadcastHandler();
+	public MapReduceBroadcastHandler broadcastHandler();
 
-	public IDHTConnectionProvider broadcastHandler(MRBroadcastHandler broadcastHandler);
+	public IDHTConnectionProvider broadcastHandler(MapReduceBroadcastHandler broadcastHandler);
 
 	public List<PeerDHT> peerDHTs();
 

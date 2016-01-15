@@ -14,8 +14,11 @@ import org.junit.Test;
 
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.engine.executor.MRJobSubmissionManager;
-import mapreduce.engine.messageconsumer.MRJobExecutionManagerMessageConsumer;
+import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
+import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
+import mapreduce.engine.broadcasting.messages.IBCMessage;
+import mapreduce.engine.executors.JobSubmissionExecutor;
+import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.job.PriorityLevel;
@@ -33,15 +36,15 @@ import net.tomp2p.message.TomP2PCumulationTCP;
 
 public class MRBroadcastHandlerTest {
 	private static Random random = new Random();
-	private static MRBroadcastHandler broadcastHandler;
+	private static MapReduceBroadcastHandler broadcastHandler;
 	private static IDHTConnectionProvider dhtConnectionProvider;
 	private static Job job;
-	private static MRJobExecutionManagerMessageConsumer messageConsumer;
+	private static JobCalculationMessageConsumer messageConsumer;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 
-		messageConsumer = MRJobExecutionManagerMessageConsumer.create();
+		messageConsumer = JobCalculationMessageConsumer.create();
 		dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, messageConsumer);
 		messageConsumer.dhtConnectionProvider(dhtConnectionProvider);
 		job = Job.create("Submitter").addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
@@ -68,7 +71,7 @@ public class MRBroadcastHandlerTest {
 
 	@Test
 	public void execute() {
-		MRJobSubmissionManager submitter = MRJobSubmissionManager.create(dhtConnectionProvider);
+		JobSubmissionExecutor submitter = JobSubmissionExecutor.create(dhtConnectionProvider);
 		dhtConnectionProvider.broadcastHandler().messageConsumer(messageConsumer);
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
 		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES).fileInputFolderPath(fileInputFolderPath)

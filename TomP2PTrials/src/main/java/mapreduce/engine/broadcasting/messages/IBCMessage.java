@@ -1,8 +1,8 @@
-package mapreduce.engine.broadcasting;
+package mapreduce.engine.broadcasting.messages;
 
 import java.io.Serializable;
 
-import mapreduce.engine.messageconsumer.IMessageConsumer;
+import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.execution.IDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.engine.executor.MRJobSubmissionManager;
+import mapreduce.engine.executors.JobSubmissionExecutor;
 import mapreduce.execution.job.Job;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.storage.IDHTConnectionProvider;
@@ -36,14 +36,14 @@ import net.tomp2p.peers.Number640;
 public class MRJobSubmissionManagerTest {
 	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManagerTest.class);
 
-	private static MRJobSubmissionManager jobSubmissionManager;
+	private static JobSubmissionExecutor jobSubmissionManager;
 
 	@Test
 	public void test() throws IOException {
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
 
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(5001, 1);
-		jobSubmissionManager = MRJobSubmissionManager.create(dhtConnectionProvider);
+		jobSubmissionManager = JobSubmissionExecutor.create(dhtConnectionProvider);
 
 		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_KILO_BYTES);
 		jobSubmissionManager.submit(job);

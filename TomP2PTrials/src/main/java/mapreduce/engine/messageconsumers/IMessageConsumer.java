@@ -1,13 +1,13 @@
-package mapreduce.engine.messageconsumer;
+package mapreduce.engine.messageconsumers;
 
-import mapreduce.engine.executor.MRJobExecutionManager;
+import mapreduce.engine.executors.IExecutor;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.job.Job;
 import mapreduce.storage.IDHTConnectionProvider;
 
 public interface IMessageConsumer
-//extends Runnable 
+// extends Runnable
 {
 
 	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain);
@@ -15,14 +15,16 @@ public interface IMessageConsumer
 	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain);
 
 	public IMessageConsumer dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider);
-	
-	public MRJobExecutionManager executor();
 
-//	public void executeNext();
-//	public IMessageConsumer canTake(boolean canTake);
-//
-//	public boolean canTake();
+	public IExecutor executor();
 
-//	void executeMessage();
+	public IMessageConsumer executor(IExecutor executor);
+
+	// public void executeNext();
+	// public IMessageConsumer canTake(boolean canTake);
+	//
+	// public boolean canTake();
+
+	// void executeMessage();
 
 }

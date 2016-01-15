@@ -12,8 +12,8 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.engine.broadcasting.CompletedBCMessage;
-import mapreduce.engine.broadcasting.MRBroadcastHandler;
+import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
+import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;
@@ -41,7 +41,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private static final int DEFAULT_NUMBER_OF_PEERS = 10;
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
 	private List<PeerDHT> peerDHTs;
-	private MRBroadcastHandler broadcastHandler;
+	private MapReduceBroadcastHandler broadcastHandler;
 	private String bootstrapIP;
 	private int bootstrapPort;
 	private boolean isBootstrapper;
@@ -78,7 +78,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	/** Method for Testing purposes only... */
-	public DHTConnectionProvider externalPeers(List<PeerDHT> peerDHTs, MRBroadcastHandler bcHandler) {
+	public DHTConnectionProvider externalPeers(List<PeerDHT> peerDHTs, MapReduceBroadcastHandler bcHandler) {
 		this.peerDHTs = peerDHTs;
 		this.broadcastHandler = bcHandler.dhtConnectionProvider(this);
 		return this;
@@ -262,7 +262,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public MRBroadcastHandler broadcastHandler() {
+	public MapReduceBroadcastHandler broadcastHandler() {
 		return broadcastHandler;
 	}
 
@@ -272,7 +272,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public IDHTConnectionProvider broadcastHandler(MRBroadcastHandler broadcastHandler) {
+	public IDHTConnectionProvider broadcastHandler(MapReduceBroadcastHandler broadcastHandler) {
 		this.broadcastHandler = broadcastHandler;
 		return this;
 	}

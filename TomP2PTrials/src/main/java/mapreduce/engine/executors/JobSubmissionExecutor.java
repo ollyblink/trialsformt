@@ -1,4 +1,4 @@
-package mapreduce.engine.executor;
+package mapreduce.engine.executors;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -19,8 +19,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 
-import mapreduce.engine.broadcasting.CompletedBCMessage;
-import mapreduce.engine.messageconsumer.MRJobSubmissionManagerMessageConsumer;
+import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
@@ -30,7 +29,6 @@ import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.task.Task;
 import mapreduce.execution.task.taskdatacomposing.ITaskDataComposer;
 import mapreduce.execution.task.taskdatacomposing.MaxFileSizeTaskDataComposer;
-import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
@@ -43,43 +41,34 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number640;
 
-public class MRJobSubmissionManager {
-	private static Logger logger = LoggerFactory.getLogger(MRJobSubmissionManager.class);
-	private static final ITaskDataComposer DEFAULT_TASK_DATA_COMPOSER = MaxFileSizeTaskDataComposer.create();
+public class JobSubmissionExecutor extends AbstractExecutor {
+	private static Logger logger = LoggerFactory.getLogger(JobSubmissionExecutor.class);
+	private static final String DEFAULT_OUTPUT_FOLDER = System.getProperty("user.dir") + "/tmp/";
 
-	private IDHTConnectionProvider dhtConnectionProvider;
 	private ITaskDataComposer taskDataComposer;
 	private String id;
-	private JobProcedureDomain resultDomain;
 	private String outputFolder;
-	private MRJobExecutionManager jobExecutor;
 
-	private MRJobSubmissionManager(IDHTConnectionProvider dhtConnectionProvider) {
+	private JobSubmissionExecutor() {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(getClass().getSimpleName());
-		this.dhtConnectionProvider = dhtConnectionProvider;
-		this.dhtConnectionProvider.broadcastHandler().executor(id);
-		this.dhtConnectionProvider.broadcastHandler().messageConsumer(MRJobSubmissionManagerMessageConsumer.create(this));
 	}
 
-	public static MRJobSubmissionManager create(IDHTConnectionProvider dhtConnectionProvider) {
-		return new MRJobSubmissionManager(dhtConnectionProvider).taskComposer(DEFAULT_TASK_DATA_COMPOSER)
-				.outputFolder(System.getProperty("user.dir") + "/tmp/");
+	public static JobSubmissionExecutor create() {
+		return new JobSubmissionExecutor().taskComposer(MaxFileSizeTaskDataComposer.create()).outputFolder(DEFAULT_OUTPUT_FOLDER);
 	}
 
-	public MRJobSubmissionManager outputFolder(String outputFolder) {
+	// Getter/Setter
+	public JobSubmissionExecutor taskComposer(ITaskDataComposer taskDataComposer) {
+		this.taskDataComposer = taskDataComposer;
+		return this;
+	}
+
+	public JobSubmissionExecutor outputFolder(String outputFolder) {
 		if (!new File(outputFolder).exists()) {
 			new File(outputFolder).mkdir();
 		}
 		this.outputFolder = outputFolder;
 		return this;
-	}
-
-	public void connect() {
-		try {
-			dhtConnectionProvider.connect();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
 	/**
@@ -180,32 +169,7 @@ public class MRJobSubmissionManager {
 		return filePartCounter;
 	}
 
-	//
-	public MRJobSubmissionManager taskComposer(ITaskDataComposer taskDataComposer) {
-		this.taskDataComposer = taskDataComposer;
-		return this;
-	}
-
-	public MRJobSubmissionManager dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
-		this.dhtConnectionProvider = dhtConnectionProvider;
-		return this;
-	}
-
-	public IDHTConnectionProvider dhtConnectionProvider() {
-		return this.dhtConnectionProvider;
-	}
-
-	public void shutdown() {
-		logger.info("shutdown()::1::disconnecting jobSubmissionManager from DHT. Bye...");
-		this.dhtConnectionProvider.shutdown();
-	}
-
-	public String id() {
-		return this.id;
-	}
-
 	public void finishedJob(JobProcedureDomain resultDomain) {
-		this.resultDomain = resultDomain;
 		taskDataComposer.splitValue(",");
 		List<FutureGet> getKeys = SyncedCollectionProvider.syncedArrayList();
 		List<FutureGet> getDomains = SyncedCollectionProvider.syncedArrayList();
@@ -334,76 +298,3 @@ public class MRJobSubmissionManager {
 	}
 
 }
-
-// Futures.whenAllSuccess(futurePutValues).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
-//
-// @Override
-// public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-// if (future.isSuccess()) {
-// Futures.whenAllSuccess(futurePutKeys).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
-//
-// @Override
-// public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-// if (future.isSuccess()) {
-// dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).addListener(new BaseFutureAdapter<FuturePut>() {
-//
-// @Override
-// public void operationComplete(FuturePut future) throws Exception {
-// logger.info("Broadcast initial complete procedure");
-// logger.info("resOutputDomain:" + job.currentProcedure().resultOutputDomain());
-// logger.info("dataInputDomain:" + inputDomain);
-// JobProcedureDomain inputDomain = job.currentProcedure().dataInputDomain()
-// .nrOfFinishedTasks(futurePutValues.size());
-// CompletedBCMessage msg = CompletedBCMessage
-// .createCompletedProcedureBCMessage(job.currentProcedure().resultOutputDomain(), inputDomain);
-// dhtConnectionProvider.broadcastCompletion(msg);
-// }
-//
-// });
-// } else {
-// logger.info("Could not add keys for " + job.fileInputFolderPath());
-// }
-// }
-// });
-// } else {
-// logger.info("Could not add values for " + job.fileInputFolderPath());
-// }
-// }
-// });
-// private int addDataToDHT(final Job job, String keyfilePath, String taskValue, int filePartCounter, List<FuturePut> futurePutValues,
-// List<FuturePut> futurePutKeys) {
-// String fileName = keyfilePath.replace("/", "\\");
-// String taskKey = fileName + "_" + filePartCounter++;
-//
-// futurePutValues.add(dhtConnectionProvider.add(taskKey, taskValue, job.currentProcedure().resultOutputDomain().toString(), true)
-// .addListener(new BaseFutureAdapter<FuturePut>() {
-//
-// @Override
-// public void operationComplete(FuturePut future) throws Exception {
-// if (future.isSuccess()) {
-// // Add <PROCEDURE_KEYS, key, jobProcedureDomain> to collect all domains for all keys
-// futurePutKeys
-// .add(dhtConnectionProvider
-// .add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, taskKey,
-// job.currentProcedure().resultOutputDomain().toString(), false)
-// .addListener(new BaseFutureAdapter<FuturePut>() {
-//
-// @Override
-// public void operationComplete(FuturePut future) throws Exception {
-// if (future.isSuccess()) {
-// logger.info("Successfully added data.");
-// } else {
-// logger.warn(future.failedReason());
-// }
-// }
-//
-// }));
-// } else {
-// logger.warn(future.failedReason());
-// }
-// }
-// }));
-//
-// return filePartCounter;
-//
-// }

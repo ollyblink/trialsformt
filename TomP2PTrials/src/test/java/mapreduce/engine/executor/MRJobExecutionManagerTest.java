@@ -11,7 +11,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.engine.messageconsumer.MRJobExecutionManagerMessageConsumer;
+import mapreduce.engine.executors.JobCalculationExecutor;
+import mapreduce.engine.executors.JobSubmissionExecutor;
+import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
 import mapreduce.execution.ExecutorTaskDomain;
 import mapreduce.execution.JobProcedureDomain;
 import mapreduce.execution.context.DHTStorageContext;
@@ -44,10 +46,10 @@ public class MRJobExecutionManagerTest {
 
 	@Test
 	public void testDataSwitch() throws InterruptedException {
-		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create();
+		JobCalculationMessageConsumer msgConsumer = JobCalculationMessageConsumer.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, msgConsumer);
 		msgConsumer.dhtConnectionProvider(dhtConnectionProvider);
-		MRJobExecutionManager jobExecutor = msgConsumer.jobExecutor();
+		JobCalculationExecutor jobExecutor = msgConsumer.jobExecutor();
 
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE).addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false);
 		// jobExecutor.messageConsumer().jobs().put(job, new PriorityBlockingQueue<>());
@@ -101,10 +103,10 @@ public class MRJobExecutionManagerTest {
 	private void testExecuteTask(String testIsText, IExecutable combiner, int testCount, int isCount, int testSum, int isSum)
 			throws InterruptedException {
 
-		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create();
+		JobCalculationMessageConsumer msgConsumer = JobCalculationMessageConsumer.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, msgConsumer);
 		msgConsumer.dhtConnectionProvider(dhtConnectionProvider);
-		MRJobExecutionManager jobExecutor = msgConsumer.jobExecutor();
+		JobCalculationExecutor jobExecutor = msgConsumer.jobExecutor();
 
 		Job job = Job.create("SUBMITTER");
 		dhtConnectionProvider.broadcastHandler().jobFutures().put(job, null);
@@ -217,12 +219,12 @@ public class MRJobExecutionManagerTest {
 
 		// int port = random.nextInt(10000) + 4000;
 		// MRJobExecutionManager jobExecutor = MRJobExecutionManager.create();
-		MRJobExecutionManagerMessageConsumer msgConsumer = MRJobExecutionManagerMessageConsumer.create();
+		JobCalculationMessageConsumer msgConsumer = JobCalculationMessageConsumer.create();
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, msgConsumer);
 		// msgConsumer.dhtConnectionProvider(dhtConnectionProvider);
 
 		logger.info("before job creation");
-		MRJobSubmissionManager submitter = MRJobSubmissionManager.create(dhtConnectionProvider);
+		JobSubmissionExecutor submitter = JobSubmissionExecutor.create(dhtConnectionProvider);
 		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_MEGA_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
 				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
