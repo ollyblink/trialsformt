@@ -3,11 +3,13 @@ package mapreduce.engine.messageconsumers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobSubmissionExecutor;
 import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
 import mapreduce.execution.procedures.EndProcedure;
+import mapreduce.storage.IDHTConnectionProvider;
 
 public class JobSubmissionMessageConsumer extends AbstractMessageConsumer {
 	private static Logger logger = LoggerFactory.getLogger(JobCalculationMessageConsumer.class);
@@ -39,5 +41,15 @@ public class JobSubmissionMessageConsumer extends AbstractMessageConsumer {
 	@Override
 	public JobSubmissionExecutor executor() {
 		return (JobSubmissionExecutor) super.executor();
+	}
+
+	@Override
+	public JobSubmissionMessageConsumer dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		return (JobSubmissionMessageConsumer) super.dhtConnectionProvider(dhtConnectionProvider);
+	}
+
+	@Override
+	public JobSubmissionMessageConsumer executor(IExecutor executor) {
+		return (JobSubmissionMessageConsumer) super.executor(executor);
 	}
 }

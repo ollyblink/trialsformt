@@ -1,7 +1,6 @@
 package mapreduce.engine.messageconsumers;
 
 import mapreduce.engine.executors.IExecutor;
-import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;

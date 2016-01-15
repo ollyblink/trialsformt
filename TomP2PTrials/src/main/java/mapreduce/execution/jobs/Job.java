@@ -3,6 +3,14 @@ package mapreduce.execution.jobs;
 import java.io.Serializable;
 import java.util.List;
 
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.procedures.Procedure;
@@ -13,13 +21,12 @@ import mapreduce.utils.SyncedCollectionProvider;
 
 public class Job implements Serializable, Cloneable {
 
-	// private static Logger logger = LoggerFactory.getLogger(Job.class);
+	private static Logger logger = LoggerFactory.getLogger(Job.class);
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1152022246679324578L;
-
 	// private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
 	// private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
@@ -66,6 +73,10 @@ public class Job implements Serializable, Cloneable {
 	private boolean isFinished;
 
 	private long timeToLive;
+
+	private ScriptEngineManager engineManager;
+
+	private ScriptEngine engine;
 
 	/** Number of times this job was already submitted. used together with maxNrOfDHTActions can determine if job submission should be cancelled */
 	// private int jobSubmissionCounter;
@@ -223,6 +234,50 @@ public class Job implements Serializable, Cloneable {
 				.combiner(combiner);
 		this.procedures.add(procedureInformation);
 		return this;
+	}
+
+	/**
+	 * In case you prefer writing the function in javascript instead...
+	 * 
+	 * @param javaScriptProcedure
+	 * @param javaScriptCombiner
+	 * @param nrOfSameResultHashForProcedure
+	 * @param nrOfSameResultHashForTasks
+	 * @param needMultipleDifferentDomains
+	 * @param needMultipleDifferentDomainsForTasks
+	 * @return
+	 */
+	public Job addSucceedingProcedure(String javaScriptProcedure, String javaScriptCombiner, int nrOfSameResultHashForProcedure, int nrOfSameResultHashForTasks,
+			boolean needMultipleDifferentDomains, boolean needMultipleDifferentDomainsForTasks) {
+		if (javaScriptProcedure != null && javaScriptProcedure.length() == 0) {
+			return this;
+		}
+		IExecutable procedure = null;
+		try {
+			procedure = convertFromJSToJava(javaScriptProcedure);
+		} catch (ScriptException e) {
+			logger.info("Exception caught", e);
+		}
+		IExecutable combiner = null;
+		if (javaScriptCombiner != null && javaScriptCombiner.length() > 0) {
+			try {
+				combiner = convertFromJSToJava(javaScriptCombiner);
+			} catch (ScriptException e) {
+				logger.info("Exception caught", e);
+			}
+		}
+
+		return addSucceedingProcedure(procedure, combiner, nrOfSameResultHashForProcedure, nrOfSameResultHashForTasks, needMultipleDifferentDomains,
+				needMultipleDifferentDomainsForTasks);
+	}
+
+	private IExecutable convertFromJSToJava(String javaScriptProcedure) throws ScriptException {
+		this.engineManager = new ScriptEngineManager();
+		this.engine = engineManager.getEngineByName("nashorn");
+		engine.eval(javaScriptProcedure);
+		Invocable invocable = (Invocable) engine;
+		IExecutable procedure = invocable.getInterface(IExecutable.class);
+		return procedure;
 	}
 
 	public void incrementProcedureIndex() {

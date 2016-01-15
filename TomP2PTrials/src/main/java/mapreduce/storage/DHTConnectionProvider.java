@@ -3,10 +3,10 @@ package mapreduce.storage;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Random;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
+import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;
@@ -22,8 +23,10 @@ import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.Futures;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -38,42 +41,50 @@ import net.tomp2p.storage.StorageDisk;
  *
  */
 public class DHTConnectionProvider implements IDHTConnectionProvider {
-	private static final int DEFAULT_NUMBER_OF_PEERS = 10;
+	private static final int DEFAULT_NUMBER_OF_PEERS = 1;
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
 	private List<PeerDHT> peerDHTs;
 	private MapReduceBroadcastHandler broadcastHandler;
 	private String bootstrapIP;
-	private int bootstrapPort;
-	private boolean isBootstrapper;
 	private int port;
 	private String id;
 	private String storageFilePath;
-	private int numberOfPeers = DEFAULT_NUMBER_OF_PEERS;
+	private int nrOfPeers = DEFAULT_NUMBER_OF_PEERS;
 	private int currentExecutingPeerCounter = 0;
+	private boolean isBootstrapper;
+	private int bootstrapPort;
 
 	private DHTConnectionProvider() {
 
 	}
 
-	private DHTConnectionProvider(String bootstrapIP, int bootstrapPort) {
+	private DHTConnectionProvider(String bootstrapIP, int bootstrapPort, int port) {
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
 		this.bootstrapIP = bootstrapIP;
 		this.bootstrapPort = bootstrapPort;
+		this.port = port;
+		if (bootstrapPort == port) {
+			this.isBootstrapper = true;
+		}
 		this.peerDHTs = SyncedCollectionProvider.syncedArrayList();
 	}
 
-	public static DHTConnectionProvider create(String bootstrapIP, int bootstrapPort) {
-		return new DHTConnectionProvider(bootstrapIP, bootstrapPort);
+	public static DHTConnectionProvider create(String bootstrapIP, int bootstrapPort, int port) {
+		return new DHTConnectionProvider(bootstrapIP, bootstrapPort, port).storageFilePath(null);
 	}
 
 	// GETTER/SETTER START
 	// ======================
-	public int numberOfPeers() {
-		return numberOfPeers;
+
+	@Override
+	public IDHTConnectionProvider nrOfPeers(int nrOfPeers) {
+		this.nrOfPeers = nrOfPeers;
+		return this;
 	}
 
-	public DHTConnectionProvider numberOfPeers(int numberOfPeers) {
-		this.numberOfPeers = numberOfPeers;
+	@Override
+	public DHTConnectionProvider storageFilePath(String storageFilePath) {
+		this.storageFilePath = storageFilePath;
 		return this;
 	}
 
@@ -84,90 +95,53 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		return this;
 	}
 
-	@Override
-	public String bootstrapIP() {
-		return this.bootstrapIP;
-	}
-
-	@Override
-	public int bootstrapPort() {
-		return this.bootstrapPort;
-	}
-
-	@Override
-	public DHTConnectionProvider port(int port) {
-		if (this.port == 0 && port > 0) {// make sure it cannot be externally changed...
-			this.port = port;
-		}
-		return this;
-	}
-
-	@Override
-	public String storageFilePath() {
-		return storageFilePath;
-	}
-
-	@Override
-	public DHTConnectionProvider storageFilePath(String storageFilePath) {
-		this.storageFilePath = storageFilePath;
-		return this;
-	}
 	// GETTER/SETTER FINISHED
 	// ======================
 
 	@Override
 	public void connect() throws Exception {
-		int bootstrapper = 0; // I use this to only make one peer be the master that creates everything... all others simply connect to the
-								// bootstrapper
 		if (broadcastHandler == null) {
 			throw new Exception("Broadcasthandler not set!");
+		}else{
+			this.broadcastHandler.dhtConnectionProvider(this);
 		}
 
-		for (int i = 0; i < this.numberOfPeers; ++i) {
+		// for (int i = 0; i < this.nrOfPeers; ++i) {
+		try {
 
-			try {
-				if (this.isBootstrapper && bootstrapper == 0) {
-					this.port = this.bootstrapPort;
-				} else {
-					this.port = this.bootstrapPort++;
-				}
-				Peer peer = new PeerBuilder(Number160.createHash(this.id)).ports(this.port).broadcastHandler(broadcastHandler).start();
+			Peer peer = new PeerBuilder(Number160.createHash(this.id)).ports(port).broadcastHandler(broadcastHandler).start();
 
-				if (!this.isBootstrapper && bootstrapper == 0) {
-					this.doBootstrapping(peer);
-					++bootstrapper;
-				}
-				PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer);
+			if (!this.isBootstrapper) {
+				peer.bootstrap().inetAddress(InetAddress.getByName(bootstrapIP)).ports(bootstrapPort).start().awaitUninterruptibly()
+						.addListener(new BaseFutureAdapter<FutureBootstrap>() {
 
-				if (this.storageFilePath != null) {
-					peerDHTBuilder.storage(new StorageDisk(peer.peerID(), new File(this.storageFilePath), null));
-				}
-				this.peerDHTs.add(peerDHTBuilder.start());
-			} catch (IOException e) {
-				logger.debug("Exception on bootstrapping", e);
+							@Override
+							public void operationComplete(FutureBootstrap future) throws Exception {
+								if (future.isSuccess()) {
+									logger.warn("successfully bootstrapped to " + bootstrapIP + "/" + bootstrapPort);
+								} else {
+									logger.warn("No success on bootstrapping: fail reason: " + future.failedReason());
+								}
+							}
+
+						});
 			}
+			connectDHT(peer);
+
+		} catch (IOException e) {
+			logger.debug("Exception on bootstrapping", e);
 		}
+		// }
 	}
 
-	public void doBootstrapping(Peer peer) throws UnknownHostException {
+	private void connectDHT(Peer peer) {
+		PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer);
 
-		peer.bootstrap().inetAddress(InetAddress.getByName(bootstrapIP())).ports(bootstrapPort()).start()
-				.addListener(new BaseFutureListener<FutureBootstrap>() {
-
-					@Override
-					public void operationComplete(FutureBootstrap future) throws Exception {
-						if (future.isSuccess()) {
-							logger.warn("successfully bootstrapped to " + bootstrapIP + "/" + bootstrapPort);
-						} else {
-							logger.warn("No success on bootstrapping: fail reason: " + future.failedReason());
-						}
-					}
-
-					@Override
-					public void exceptionCaught(Throwable t) throws Exception {
-						logger.warn("Exception on bootstrapping", t);
-					}
-				});
+		if (storageFilePath != null) {
+			File folder = FileUtils.INSTANCE.createTmpFolder(storageFilePath, peer.peerID().toString());
+			peerDHTBuilder.storage(new StorageDisk(peer.peerID(), folder, null));
+		}
+		peerDHTs.add(peerDHTBuilder.start());
 	}
 
 	@Override

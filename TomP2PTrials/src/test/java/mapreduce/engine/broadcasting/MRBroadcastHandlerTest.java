@@ -17,8 +17,12 @@ import com.google.common.collect.ListMultimap;
 import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
 import mapreduce.engine.broadcasting.messages.IBCMessage;
+import mapreduce.engine.executors.IExecutor;
+import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.executors.JobSubmissionExecutor;
+import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
+import mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
 import mapreduce.execution.jobs.PriorityLevel;
@@ -26,6 +30,7 @@ import mapreduce.execution.procedures.StartProcedure;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.execution.tasks.taskdatacomposing.MaxFileSizeTaskDataComposer;
+import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
@@ -36,50 +41,93 @@ import net.tomp2p.message.TomP2PCumulationTCP;
 
 public class MRBroadcastHandlerTest {
 	private static Random random = new Random();
-	private static MapReduceBroadcastHandler broadcastHandler;
-	private static IDHTConnectionProvider dhtConnectionProvider;
-	private static Job job;
-	private static JobCalculationMessageConsumer messageConsumer;
+	// private static MapReduceBroadcastHandler broadcastHandler;
+	// private static IDHTConnectionProvider dhtConnectionProvider;
+	// private static Job job;
+	// private static JobCalculationMessageConsumer messageConsumer;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 
-		messageConsumer = JobCalculationMessageConsumer.create();
-		dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, messageConsumer);
-		messageConsumer.dhtConnectionProvider(dhtConnectionProvider);
-		job = Job.create("Submitter").addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
-		dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).awaitUninterruptibly();
-		broadcastHandler = dhtConnectionProvider.broadcastHandler();
+		// messageConsumer = JobCalculationMessageConsumer.create();
+		// dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, messageConsumer);
+		// messageConsumer.dhtConnectionProvider(dhtConnectionProvider);
+		// job = Job.create("Submitter").addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+		// .addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
+		// dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).awaitUninterruptibly();
+		// broadcastHandler = dhtConnectionProvider.broadcastHandler();
 	}
 
 	@Test
 	public void test() throws Exception {
-		IBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(JobProcedureDomain.create(job.id(), "Submitter", "INITIAL", -1),
-				JobProcedureDomain.create(job.id(), "Submitter", StartProcedure.class.getSimpleName(), 0));
-
-		assertEquals(true, broadcastHandler.jobFutures().isEmpty());
-		broadcastHandler.addExternallyReceivedMessage(msg);
-		assertEquals(false, broadcastHandler.jobFutures().isEmpty());
-		assertEquals(true, broadcastHandler.jobFutures().keySet().contains(job));
-		ListMultimap<Job, Future<?>> jobFutures = broadcastHandler.jobFutures();
-		for (Future<?> f : jobFutures.values()) {
-			assertTrue(f.isDone());
-			System.err.println(f.get());
-		}
+		// IBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(JobProcedureDomain.create(job.id(), "Submitter", "INITIAL", -1),
+		// JobProcedureDomain.create(job.id(), "Submitter", StartProcedure.class.getSimpleName(), 0));
+		//
+		// assertEquals(true, broadcastHandler.jobFutures().isEmpty());
+		// broadcastHandler.addExternallyReceivedMessage(msg);
+		// assertEquals(false, broadcastHandler.jobFutures().isEmpty());
+		// assertEquals(true, broadcastHandler.jobFutures().keySet().contains(job));
+		// ListMultimap<Job, Future<?>> jobFutures = broadcastHandler.jobFutures();
+		// for (Future<?> f : jobFutures.values()) {
+		// assertTrue(f.isDone());
+		// System.err.println(f.get());
+		// }
 	}
 
 	@Test
 	public void execute() {
-		JobSubmissionExecutor submitter = JobSubmissionExecutor.create(dhtConnectionProvider);
-		dhtConnectionProvider.broadcastHandler().messageConsumer(messageConsumer);
+		String mapper = "function process(keyIn, valuesIn, context){" + " for each (var value in valuesIn) { "
+				+ "    var splits = value.split(\" \");	" + "    for each (var split in splits){ " + "      context.write(split, 1);	" + "    } "
+				+ "  }" + "}";
+		String reducer = "function process(keyIn, valuesIn, context){" + "  var count = 0; " + "  for each (var value in valuesIn) { "
+				+ "    count += value;	" + "  } " + "  context.write(keyIn, count); " + "} ";
+
+		int bootstrapPort = random.nextInt(40000) + 4000;
+		
+		MapReduceBroadcastHandler submitterBCHandler = MapReduceBroadcastHandler.create(1);
+		
+		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, bootstrapPort)
+										.nrOfPeers(1)
+										.broadcastHandler(submitterBCHandler)
+										.storageFilePath("C:\\Users\\Oliver\\Desktop\\storage");
+		
+		JobSubmissionExecutor submissionExecutor =  JobSubmissionExecutor.create()
+											.dhtConnectionProvider(dhtCon);
+			
+		JobSubmissionMessageConsumer submissionMessageConsumer = JobSubmissionMessageConsumer.create()
+														.dhtConnectionProvider(dhtCon)
+														.executor(submissionExecutor);
+		
+		submitterBCHandler.messageConsumer(submissionMessageConsumer);
+ 
+		dhtCon.connect(); 
+		int other = random.nextInt(40000) + 4000;
+		
+		MapReduceBroadcastHandler executorBCHandler = MapReduceBroadcastHandler.create(1);
+		
+		IDHTConnectionProvider dhtCon2 = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other)
+											.nrOfPeers(1)
+											.broadcastHandler(submitterBCHandler)
+											.storageFilePath("C:\\Users\\Oliver\\Desktop\\storage");
+	
+	 
+		dhtCon2.connect(); 
+		IExecutor calculationExecutor = JobCalculationExecutor.create()
+														.dhtConnectionProvider(dhtCon2);
+		
+		IMessageConsumer calculationMessageConsumer = JobCalculationMessageConsumer.create()
+														.dhtConnectionProvider(dhtCon2)
+														.executor(calculationExecutor);
+		
+		executorBCHandler.messageConsumer(calculationMessageConsumer);
+
+		
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
-		Job job = Job.create(submitter.id(), PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES).fileInputFolderPath(fileInputFolderPath)
+		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE)
+				.maxFileSize(FileSize.THIRTY_TWO_BYTES).fileInputFolderPath(fileInputFolderPath) 
+				.addSucceedingProcedure(mapper, reducer, 1, 1, false, false).addSucceedingProcedure(reducer, null, 1, 1, false, false);
 
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
-
-		submitter.submit(job);
+		 submissionExecutor.submit(job);
 		try {
 			Thread.sleep(Long.MAX_VALUE);
 		} catch (InterruptedException e) {
@@ -116,8 +164,8 @@ public class MRBroadcastHandlerTest {
 					totCounted += split.getBytes(Charset.forName(taskDataComposer.fileEncoding())).length;
 					allData += split + " ";
 				}
-			} 
-			//531==371
+			}
+			// 531==371
 			allData += taskDataComposer.remainingData();
 			totCounted += taskDataComposer.remainingData().getBytes(Charset.forName(taskDataComposer.fileEncoding())).length;
 			System.out.println("All data: " + allData);

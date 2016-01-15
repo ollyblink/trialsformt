@@ -28,6 +28,15 @@ public enum FileUtils {
 		return folder;
 	}
 
+	public File createTmpFolder(String inputFilePath, String tmpFolderName) {
+		File folder = new File(inputFilePath + "/" + tmpFolderName + "/");
+		if (folder.exists()) {
+			FileUtils.INSTANCE.deleteTmpFolder(folder);
+		}
+		folder.mkdirs();
+		return folder;
+	}
+
 	public void deleteTmpFolder(File folder) {
 		String[] entries = folder.list();
 		for (String s : entries) {

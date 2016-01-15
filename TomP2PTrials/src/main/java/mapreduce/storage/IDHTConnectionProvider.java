@@ -5,7 +5,6 @@ import java.util.List;
 
 import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
-import mapreduce.execution.jobs.Job;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
@@ -32,7 +31,7 @@ public interface IDHTConnectionProvider {
 
 	public FutureGet getAll(String keyString, String domainString);
 
-	public FutureGet get(String job, String receivedJobId);
+	public FutureGet get(String keyString, String domainString);
 
 	public void broadcastCompletion(CompletedBCMessage completedMessage);
 	// Maintenance
@@ -49,14 +48,6 @@ public interface IDHTConnectionProvider {
 
 	public void shutdown();
 
-	public String bootstrapIP();
-
-	public int bootstrapPort();
-
-	public IDHTConnectionProvider port(int port);
-
-	public String storageFilePath();
-
 	public IDHTConnectionProvider storageFilePath(String storageFilePath);
 
 	public MapReduceBroadcastHandler broadcastHandler();
@@ -64,5 +55,9 @@ public interface IDHTConnectionProvider {
 	public IDHTConnectionProvider broadcastHandler(MapReduceBroadcastHandler broadcastHandler);
 
 	public List<PeerDHT> peerDHTs();
+
+	public IDHTConnectionProvider nrOfPeers(int nrOfPeers);
+
+//	public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
 
 }

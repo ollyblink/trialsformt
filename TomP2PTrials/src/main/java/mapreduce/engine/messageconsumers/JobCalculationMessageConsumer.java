@@ -1,5 +1,6 @@
 package mapreduce.engine.messageconsumers;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ListMultimap;
 
+import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.multithreading.PriorityExecutor;
 import mapreduce.execution.domains.ExecutorTaskDomain;
@@ -19,6 +21,7 @@ import mapreduce.execution.jobs.Job;
 import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.tasks.Task;
+import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;
@@ -107,9 +110,6 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	private void tryExecuting(Procedure procedure) {
-		// if (!job.isFinished()) {
-		// JobProcedureDomain outputJPD = (outputDomain instanceof JobProcedureDomain ? ((JobProcedureDomain) outputDomain)
-		// : ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
 		if ((procedure.tasks().size() < procedure.dataInputDomain().tasksSize() || procedure.tasks().size() == 0) && procedure.procedureIndex() > 0) {
 			// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
 			// procedure
@@ -119,7 +119,6 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 				submitTask(procedure, task);
 			}
 		}
-		// }
 	}
 
 	@Override
@@ -238,11 +237,17 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 									Task task = Task.create(key);
 									if (!procedure.tasks().contains(task)) {// Don't need to add it more, got it e.g. from a BC
 										procedure.tasks().add(task);
-										logger.info("added task " + task);
-										submitTask(procedure, task);
 									}
-									currentlyRetrievingTaskKeysForProcedure.remove(procedure.dataInputDomain().toString());
 								}
+								synchronized (procedure.tasks()) {
+									Collections.shuffle(procedure.tasks());
+								}
+
+								for (Task task : procedure.tasks()) {
+									submitTask(procedure, task);
+								}
+
+								currentlyRetrievingTaskKeysForProcedure.remove(procedure.dataInputDomain().toString());
 							} else {
 								logger.info("Fail reason: " + future.failedReason());
 							}
@@ -295,6 +300,16 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	@Override
 	public JobCalculationExecutor executor() {
 		return (JobCalculationExecutor) super.executor();
+	}
+
+	@Override
+	public JobCalculationMessageConsumer dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		return (JobCalculationMessageConsumer) super.dhtConnectionProvider(dhtConnectionProvider);
+	}
+
+	@Override
+	public JobCalculationMessageConsumer executor(IExecutor executor) {
+		return (JobCalculationMessageConsumer) super.executor(executor);
 	}
 
 }
