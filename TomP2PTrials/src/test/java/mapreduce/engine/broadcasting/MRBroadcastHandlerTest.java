@@ -61,11 +61,10 @@ public class MRBroadcastHandlerTest {
 
 	@Test
 	public void execute() throws Exception {
-		String jsMapper = "function process(keyIn, valuesIn, context){" + " for each (var value in valuesIn) { "
-				+ "    var splits = value.split(\" \");	" + "    for each (var split in splits){ " + "      context.write(split, 1);	" + "    } "
-				+ "  }" + "}";
-		String jsReducer = "function process(keyIn, valuesIn, context){" + "  var count = 0; " + "  for each (var value in valuesIn) { "
-				+ "    count += value;	" + "  } " + "  context.write(keyIn, count); " + "} ";
+		String jsMapper = FileUtils.INSTANCE.readLines(System.getProperty("user.dir")+"/src/main/java/mapreduce/execution/procedures/wordcountmapper.js");
+		System.out.println(jsMapper);
+		String jsReducer = FileUtils.INSTANCE.readLines(System.getProperty("user.dir")+"/src/main/java/mapreduce/execution/procedures/wordcountreducer.js");
+		System.out.println(jsReducer);
 
 		
 		int bootstrapPort = random.nextInt(40000) + 4000;
