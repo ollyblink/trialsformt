@@ -19,7 +19,9 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 
+import mapreduce.engine.broadcasting.messages.BCMessageStatus;
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
+import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.execution.context.DHTStorageContext;
 import mapreduce.execution.context.IContext;
 import mapreduce.execution.domains.ExecutorTaskDomain;
@@ -45,17 +47,21 @@ import net.tomp2p.peers.Number640;
 
 public class JobSubmissionExecutor extends AbstractExecutor {
 	private static Logger logger = LoggerFactory.getLogger(JobSubmissionExecutor.class);
+	private static final MaxFileSizeTaskDataComposer DEFAULT_TASK_DATA_COMPOSER = MaxFileSizeTaskDataComposer.create();
 	private static final String DEFAULT_OUTPUT_FOLDER = System.getProperty("user.dir") + "/tmp/";
+	private static final int DEFAULT_NR_OF_SUBMISSIONS = 1;
 
-	private ITaskDataComposer taskDataComposer;
-	private String outputFolder;
+	private ITaskDataComposer taskDataComposer = DEFAULT_TASK_DATA_COMPOSER;
+	private String outputFolder = DEFAULT_OUTPUT_FOLDER;
+	/** How many times should a job be tried to be submitted before it is aborted? */
+	private int maxNrOfSubmissions = DEFAULT_NR_OF_SUBMISSIONS;
 
 	private JobSubmissionExecutor() {
 		super(IDCreator.INSTANCE.createTimeRandomID(JobSubmissionExecutor.class.getSimpleName()));
 	}
 
 	public static JobSubmissionExecutor create() {
-		return new JobSubmissionExecutor().taskComposer(MaxFileSizeTaskDataComposer.create()).outputFolder(DEFAULT_OUTPUT_FOLDER);
+		return new JobSubmissionExecutor();
 	}
 
 	// Getter/Setter
@@ -70,6 +76,19 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 		}
 		this.outputFolder = outputFolder;
 		return this;
+	}
+
+	public JobSubmissionExecutor maxNrOfSubmissions(int maxNrOfSubmissions) {
+		this.maxNrOfSubmissions = maxNrOfSubmissions;
+		return this;
+	}
+
+	public void resubmitJobIfPossible(Job job) {
+		if (job.incrementSubmissionCounter() < maxNrOfSubmissions) {
+			submit(job);
+		} else {
+			System.err.println("Job submission aborted. Job: " + job);
+		}
 	}
 
 	/**
@@ -88,7 +107,6 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 		FileUtils.INSTANCE.getFiles(file, keysFilePaths);
 
 		// Get the number of files to be expected
-		// long overallFileSizes = 0;
 		int nrOfFiles = 0;
 		for (String fileName : keysFilePaths) {
 			long fileSize = new File(fileName).length();
@@ -157,13 +175,14 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
 				if (future.isSuccess()) {
 					outputETD.resultHash(context.resultHash());
-					dhtConnectionProvider.broadcastCompletion(CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
-							procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks())));
+					IBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
+							procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
+					dhtConnectionProvider.broadcastHandler().processMessage(msg, job);
+					dhtConnectionProvider.broadcastCompletion(msg);
 					logger.info("Successfully broadcasted TaskCompletedBCMessage for task " + task);
 				} else {
 					logger.warn("No success on task execution. Reason: " + future.failedReason());
 				}
-				// task.decrementActiveCount();
 			}
 
 		});

@@ -86,7 +86,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 								CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
 										procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
 								// dhtCon.broadcastHandler().addBCMessage(msg);
-								dhtConnectionProvider.broadcastHandler().submit(msg,
+								dhtConnectionProvider.broadcastHandler().processMessage(msg,
 										dhtConnectionProvider.broadcastHandler().getJob(outputJPD.jobId()));
 								// Adds it to itself, does not receive broadcasts... Makes sure this result is ignored in case another was
 								// received
@@ -206,7 +206,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 						procedure.procedureIndex());
 				CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to.resultHash(procedure.calculateResultHash()),
 						dataInputDomain);
-				dhtConnectionProvider.broadcastHandler().submit(msg, dhtConnectionProvider.broadcastHandler().getJob(procedure.jobId()));
+				dhtConnectionProvider.broadcastHandler().processMessage(msg, dhtConnectionProvider.broadcastHandler().getJob(procedure.jobId()));
 				dhtConnectionProvider.broadcastCompletion(msg);
 				logger.info("switchDataFromTaskToProcedureDomain: Broadcasted Completed Procedure MSG: " + msg);
 			}

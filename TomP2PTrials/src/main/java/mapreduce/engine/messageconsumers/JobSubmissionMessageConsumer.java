@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobSubmissionExecutor;
-import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
 import mapreduce.execution.procedures.EndProcedure;

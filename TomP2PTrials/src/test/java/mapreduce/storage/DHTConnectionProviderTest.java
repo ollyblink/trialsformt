@@ -6,7 +6,7 @@ import java.util.Random;
 
 import org.junit.Test;
 
-import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
+import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -18,7 +18,7 @@ public class DHTConnectionProviderTest {
 	public void simplePutGetOverNetwork() throws InterruptedException {
 		int bootstrapPort = random.nextInt(40000) + 4000;
 		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, bootstrapPort).nrOfPeers(1)
-				.broadcastHandler(MapReduceBroadcastHandler.create(1)).storageFilePath("C:\\Users\\Oliver\\Desktop\\storage");
+				.broadcastHandler(JobCalculationBroadcastHandler.create(1)).storageFilePath("C:\\Users\\Oliver\\Desktop\\storage");
 
 		try {
 			dhtCon.connect();
@@ -27,7 +27,7 @@ public class DHTConnectionProviderTest {
 		}
 		int other = random.nextInt(40000) + 4000;
 		IDHTConnectionProvider dhtCon2 = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other).nrOfPeers(1)
-				.broadcastHandler(MapReduceBroadcastHandler.create(1)).storageFilePath("C:\\Users\\Oliver\\Desktop\\storage");
+				.broadcastHandler(JobCalculationBroadcastHandler.create(1)).storageFilePath("C:\\Users\\Oliver\\Desktop\\storage");
 
 		try {
 			dhtCon2.connect();

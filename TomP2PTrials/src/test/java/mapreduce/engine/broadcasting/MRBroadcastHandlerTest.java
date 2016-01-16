@@ -9,7 +9,8 @@ import java.util.Random;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
+import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler;
+import mapreduce.engine.broadcasting.broadcasthandlers.JobSubmissionBroadcastHandler;
 import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.executors.JobSubmissionExecutor;
@@ -69,12 +70,14 @@ public class MRBroadcastHandlerTest {
 		
 		int bootstrapPort = random.nextInt(40000) + 4000;
 		
-		MapReduceBroadcastHandler submitterBCHandler = MapReduceBroadcastHandler.create(1);
+		JobSubmissionBroadcastHandler submitterBCHandler = JobSubmissionBroadcastHandler.create(1);
 		
-		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, bootstrapPort)
+		IDHTConnectionProvider dhtCon = 
+				DHTConnectionProvider.create("192.168.43.65", bootstrapPort, bootstrapPort)
 										.nrOfPeers(1)
 										.broadcastHandler(submitterBCHandler)
-										.storageFilePath("C:\\Users\\Oliver\\Desktop\\storage");
+//										.storageFilePath("C:\\Users\\Oliver\\Desktop\\storage")
+										;
 		
 		JobSubmissionExecutor submissionExecutor =  JobSubmissionExecutor.create()
 											.dhtConnectionProvider(dhtCon);
@@ -88,12 +91,13 @@ public class MRBroadcastHandlerTest {
 		dhtCon.connect(); 
 		int other = random.nextInt(40000) + 4000;
 		
-		MapReduceBroadcastHandler executorBCHandler = MapReduceBroadcastHandler.create(1);
+		JobCalculationBroadcastHandler executorBCHandler = JobCalculationBroadcastHandler.create(1);
 		
 		IDHTConnectionProvider dhtCon2 = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other)
 											.nrOfPeers(1)
-											.broadcastHandler(submitterBCHandler)
-											.storageFilePath("C:\\Users\\Oliver\\Desktop\\storage");
+											.broadcastHandler(executorBCHandler)
+//											.storageFilePath("C:\\Users\\Oliver\\Desktop\\storage")
+											;
 	
 	 
 		dhtCon2.connect(); 
@@ -113,12 +117,11 @@ public class MRBroadcastHandlerTest {
 				.addSucceedingProcedure(jsMapper, jsReducer, 1, 1, false, false).addSucceedingProcedure(jsReducer, null, 1, 1, false, false);
 
 		 submissionExecutor.submit(job);
-		try {
-			Thread.sleep(Long.MAX_VALUE);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		try {
+//			Thread.sleep(Long.MAX_VALUE);
+//		} catch (InterruptedException e) { 
+//			e.printStackTrace();
+//		}
 	}
 
 	public static void main(String[] args) {

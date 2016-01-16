@@ -3,9 +3,6 @@ package mapreduce.execution.jobs;
 import java.io.Serializable;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.StartProcedure;
@@ -15,7 +12,7 @@ import mapreduce.utils.SyncedCollectionProvider;
 
 public class Job implements Serializable, Cloneable {
 
-	private static Logger logger = LoggerFactory.getLogger(Job.class);
+//	private static Logger logger = LoggerFactory.getLogger(Job.class);
 
 	/**
 	 * 
@@ -68,6 +65,8 @@ public class Job implements Serializable, Cloneable {
 
 	private long timeToLive;
 
+	private int submissionCounter = 0;
+
 	private Job(String jobSubmitterID, PriorityLevel priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
 		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
@@ -79,7 +78,7 @@ public class Job implements Serializable, Cloneable {
 	}
 
 	public static Job create(String jobSubmitterID) {
-		return create(jobSubmitterID, PriorityLevel.MODERATE);
+		return create(jobSubmitterID, DEFAULT_PRIORITY_LEVEL);
 	}
 
 	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel) {
@@ -143,9 +142,8 @@ public class Job implements Serializable, Cloneable {
 	}
 
 	public String id() {
-		// S == Submitter
-		// SNR == Submission counter
-		return this.id + "_S(" + jobSubmitterID + ")";// _SNR(" + jobSubmissionCounter + ")";
+		// S == Submitter 
+		return this.id + "_S(" + jobSubmitterID + ")";
 	}
 
 	public String jobSubmitterID() {
@@ -236,10 +234,10 @@ public class Job implements Serializable, Cloneable {
 			int nrOfSameResultHashForTasks, boolean needMultipleDifferentDomains, boolean needMultipleDifferentDomainsForTasks) {
 		if (javaScriptProcedure != null && javaScriptProcedure.length() == 0) {
 			return this;
-		}  
+		}
 
-		return addSucceedingProcedure((Object)javaScriptProcedure, (Object)javaScriptCombiner, nrOfSameResultHashForProcedure, nrOfSameResultHashForTasks, needMultipleDifferentDomains,
-				needMultipleDifferentDomainsForTasks);
+		return addSucceedingProcedure((Object) javaScriptProcedure, (Object) javaScriptCombiner, nrOfSameResultHashForProcedure,
+				nrOfSameResultHashForTasks, needMultipleDifferentDomains, needMultipleDifferentDomainsForTasks);
 	}
 
 	public void incrementProcedureIndex() {
@@ -294,22 +292,21 @@ public class Job implements Serializable, Cloneable {
 		try {
 			Job job = (Job) super.clone();
 
-			// job.creationTime = creationTime;
-			// job.currentProcedureIndex = currentProcedureIndex;
-			// job.fileInputFolderPath = fileInputFolderPath;
-			// job.id = id;
-			// job.jobSubmitterID = jobSubmitterID;
-			// job.maxFileSize = maxFileSize;
-			// job.nrOfSameResultHash = nrOfSameResultHash;
-			// job.priorityLevel = priorityLevel;
-			// job.useLocalStorageFirst = useLocalStorageFirst;
+//			 job.creationTime = creationTime;
+//			 job.currentProcedureIndex = currentProcedureIndex;
+//			 job.fileInputFolderPath = fileInputFolderPath;
+//			 job.id = id;
+//			 job.jobSubmitterID = jobSubmitterID;
+//			 job.maxFileSize = maxFileSize;
+//			 job.nrOfSameResultHash = nrOfSameResultHash;
+//			 job.priorityLevel = priorityLevel;
+//			 job.useLocalStorageFirst = useLocalStorageFirst;
 			job.procedures = SyncedCollectionProvider.syncedArrayList();
 			for (Procedure p : procedures) {
 				job.procedures.add(p.clone());
 			}
 			return job;
 		} catch (CloneNotSupportedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
@@ -319,16 +316,12 @@ public class Job implements Serializable, Cloneable {
 		return procedures;
 	}
 
-	// public static void main(String[] args) {
-	// Job job = Job.create("ME", PriorityLevel.HIGH).addSucceedingProcedure(WordCountReducer.create()).fileInputFolderPath("File input path")
-	// .maxFileSize(FileSize.EIGHT_BYTES).nrOfSameResultHash(20);
-	// Job job2 = job.clone();
-	// System.out.println(job.currentProcedureIndex + ", " + job.fileInputFolderPath + ", " + job.id + ", " + job.jobSubmitterID + ", "
-	// + job.maxFileSize + ", " + job.nrOfSameResultHash + ", " + job.creationTime + ", " + job.serialVersionUID + ", "
-	// + job.useLocalStorageFirst + ", " + job.procedures);
-	// System.out.println(job2.currentProcedureIndex + ", " + job2.fileInputFolderPath + ", " + job2.id + ", " + job2.jobSubmitterID + ", "
-	// + job2.maxFileSize + ", " + job2.nrOfSameResultHash + ", " + job2.creationTime + ", " + job2.serialVersionUID + ", "
-	// + job2.useLocalStorageFirst + ", " + job2.procedures);
-	// }
+	public int incrementSubmissionCounter() {
+		return ++this.submissionCounter;
+	}
+
+	public int submissionCounter() {
+		return this.submissionCounter;
+	}
 
 }

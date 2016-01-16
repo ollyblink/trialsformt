@@ -6,14 +6,14 @@ import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.Random;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import mapreduce.engine.broadcasting.broadcasthandlers.MapReduceBroadcastHandler;
-import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
+import mapreduce.engine.broadcasting.broadcasthandlers.AbstractMapReduceBroadcastHandler;
+import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler;
+import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -26,7 +26,6 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.Futures;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -44,7 +43,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private static final int DEFAULT_NUMBER_OF_PEERS = 1;
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
 	private List<PeerDHT> peerDHTs;
-	private MapReduceBroadcastHandler broadcastHandler;
+	private AbstractMapReduceBroadcastHandler broadcastHandler;
 	private String bootstrapIP;
 	private int port;
 	private String id;
@@ -89,7 +88,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	/** Method for Testing purposes only... */
-	public DHTConnectionProvider externalPeers(List<PeerDHT> peerDHTs, MapReduceBroadcastHandler bcHandler) {
+	public DHTConnectionProvider externalPeers(List<PeerDHT> peerDHTs, AbstractMapReduceBroadcastHandler bcHandler) {
 		this.peerDHTs = peerDHTs;
 		this.broadcastHandler = bcHandler.dhtConnectionProvider(this);
 		return this;
@@ -102,7 +101,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public void connect() throws Exception {
 		if (broadcastHandler == null) {
 			throw new Exception("Broadcasthandler not set!");
-		}else{
+		} else {
 			this.broadcastHandler.dhtConnectionProvider(this);
 		}
 
@@ -145,7 +144,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public void broadcastCompletion(CompletedBCMessage completedMessage) {
+	public void broadcastCompletion(IBCMessage completedMessage) {
 		Number160 bcHash = Number160.createHash(completedMessage.toString());
 		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		try {
@@ -236,7 +235,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public MapReduceBroadcastHandler broadcastHandler() {
+	public AbstractMapReduceBroadcastHandler broadcastHandler() {
 		return broadcastHandler;
 	}
 
@@ -246,7 +245,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	}
 
 	@Override
-	public IDHTConnectionProvider broadcastHandler(MapReduceBroadcastHandler broadcastHandler) {
+	public IDHTConnectionProvider broadcastHandler(AbstractMapReduceBroadcastHandler broadcastHandler) {
 		this.broadcastHandler = broadcastHandler;
 		return this;
 	}
