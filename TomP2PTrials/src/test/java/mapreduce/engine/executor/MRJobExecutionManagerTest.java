@@ -59,7 +59,7 @@ public class MRJobExecutionManagerTest {
 		Procedure procedure = job.currentProcedure();
 		String executor = "Executor_1";
 		Task task = Task.create("file1");
-		JobProcedureDomain inputJPD = JobProcedureDomain.create(job.id(), executor, "START", 0).tasksSize(1);
+		JobProcedureDomain inputJPD = JobProcedureDomain.create(job.id(), executor, "START", 0).expectedNrOfFiles(1);
 		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), executor, WordCountMapper.class.getSimpleName(), 1);
 
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.newStatusIndex(), outputJPD);
@@ -111,7 +111,7 @@ public class MRJobExecutionManagerTest {
 		Job job = Job.create("SUBMITTER");
 		dhtConnectionProvider.broadcastHandler().jobFutures().put(job, null);
 
-		JobProcedureDomain dataDomain = JobProcedureDomain.create(job.id(), jobExecutor.id(), StartProcedure.class.getSimpleName(), 0).tasksSize(1);
+		JobProcedureDomain dataDomain = JobProcedureDomain.create(job.id(), jobExecutor.id(), StartProcedure.class.getSimpleName(), 0).expectedNrOfFiles(1);
 		addTaskDataToProcedureDomain(dhtConnectionProvider, "file1", testIsText, dataDomain.toString());
 		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).dataInputDomain(dataDomain).combiner(combiner);
 

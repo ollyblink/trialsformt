@@ -55,7 +55,7 @@ public class ProcedureTest {
 
 		// Only with the real input domain's tasksSize it is possible to determine how many tasks there have to be
 		JobProcedureDomain dataInputDomain = Mockito.mock(JobProcedureDomain.class);
-		Mockito.when(dataInputDomain.tasksSize()).thenReturn(4);
+		Mockito.when(dataInputDomain.expectedNrOfFiles()).thenReturn(4);
 		procedure.dataInputDomain(dataInputDomain);
 
 		assertEquals(null, procedure.calculateResultHash());
@@ -78,7 +78,7 @@ public class ProcedureTest {
 		assertEquals(4, procedure.nrOfFinishedTasks());
 
 		// Check with unfinished task
-		Mockito.when(dataInputDomain.tasksSize()).thenReturn(5);
+		Mockito.when(dataInputDomain.expectedNrOfFiles()).thenReturn(5);
 		Task task5 = Mockito.mock(Task.class);
 		Mockito.when(task5.calculateResultHash()).thenReturn(Number160.ONE);
 		Mockito.when(task5.isFinished()).thenReturn(false);

@@ -117,11 +117,11 @@ public class MRBroadcastHandlerTest {
 				.addSucceedingProcedure(jsMapper, jsReducer, 1, 1, false, false).addSucceedingProcedure(jsReducer, null, 1, 1, false, false);
 
 		 submissionExecutor.submit(job);
-//		try {
-//			Thread.sleep(Long.MAX_VALUE);
-//		} catch (InterruptedException e) { 
-//			e.printStackTrace();
-//		}
+		try {
+			Thread.sleep(Long.MAX_VALUE);
+		} catch (InterruptedException e) { 
+			e.printStackTrace();
+		}
 	}
 
 	public static void main(String[] args) {

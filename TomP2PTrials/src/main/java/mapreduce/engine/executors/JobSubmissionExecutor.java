@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.omg.PortableInterceptor.SUCCESSFUL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 
-import mapreduce.engine.broadcasting.messages.BCMessageStatus;
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
 import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.execution.context.DHTStorageContext;
@@ -40,6 +40,7 @@ import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
@@ -102,35 +103,38 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 	public void submit(final Job job) {
 		taskDataComposer.splitValue("\n").maxFileSize(job.maxFileSize());
 
+		Procedure procedure = job.currentProcedure();
+		String pSimpleName = procedure.executable().getClass().getSimpleName();
 		List<String> keysFilePaths = new ArrayList<String>();
 		File file = new File(job.fileInputFolderPath());
 		FileUtils.INSTANCE.getFiles(file, keysFilePaths);
 
 		// Get the number of files to be expected
-		int nrOfFiles = 0;
-		for (String fileName : keysFilePaths) {
-			long fileSize = new File(fileName).length();
-			nrOfFiles += (int) (fileSize / job.maxFileSize().value());
-			if (fileSize % job.maxFileSize().value() > 0) {
-				++nrOfFiles;
-			}
-		}
-		logger.info("nr of files: " + nrOfFiles);
-		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), id, "BEFORE_START", -1).tasksSize(nrOfFiles);
-		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), id, job.currentProcedure().executable().getClass().getSimpleName(),
-				job.currentProcedure().procedureIndex());
-		job.currentProcedure().dataInputDomain(inputDomain).addOutputDomain(outputJPD);
+		int nrOfFiles = estimatedNrOfFiles(job, keysFilePaths);
+		logger.info("external submit(): Estimated # of files: " + nrOfFiles);
+		JobProcedureDomain inputDomain = JobProcedureDomain.create(job.id(), job.submissionCount(), id, "BEFORE_START", -1);
+		inputDomain.expectedNrOfFiles(nrOfFiles);
+		procedure.dataInputDomain(inputDomain);
+		logger.info("external submit(): First input domain: " + inputDomain.toString());
+		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), job.submissionCount(), id, pSimpleName, procedure.procedureIndex());
+		logger.info("external submit(): First output domain: " + outputJPD.toString());
+		procedure.addOutputDomain(outputJPD);
 
-		Procedure procedure = job.currentProcedure();
+		// .addListener(new BaseFutureAdapter<FuturePut>() {
+		//
+		// @Override
+		// public void operationComplete(FuturePut future) throws Exception {
+		// if (future.isSuccess()) {
+		logger.info("external submit(): Put job: " + job.id());
+		List<FutureDone<List<FuturePut>>> allDoneListeners = SyncedCollectionProvider.syncedArrayList();
 
-		dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).addListener(new BaseFutureAdapter<FuturePut>() {
+		dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).awaitUninterruptibly().addListener(new BaseFutureAdapter<BaseFuture>() {
 
 			@Override
-			public void operationComplete(FuturePut future) throws Exception {
+			public void operationComplete(BaseFuture future) throws Exception {
 				if (future.isSuccess()) {
-					logger.info("Put job: " + job.id());
+					logger.info("Successfully submitted job " + job);
 					for (String keyfilePath : keysFilePaths) {
-
 						Path path = Paths.get(keyfilePath);
 						Charset charset = Charset.forName(taskDataComposer.fileEncoding());
 
@@ -143,36 +147,50 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 								List<String> splitToSize = taskDataComposer.splitToSize(line);
 
 								for (String split : splitToSize) {
-									filePartCounter = submit(outputJPD, procedure, keyfilePath, filePartCounter, split, job);
+									submitInternally(job, procedure, outputJPD, allDoneListeners, keyfilePath, filePartCounter++, split);
 								}
 							}
 							if (taskDataComposer.remainingData().length() > 0) {
-								filePartCounter = submit(outputJPD, procedure, keyfilePath, filePartCounter, taskDataComposer.remainingData(), job);
+								submitInternally(job, procedure, outputJPD, allDoneListeners, keyfilePath, filePartCounter,
+										taskDataComposer.remainingData());
 							}
+
 						} catch (IOException x) {
-							System.err.format("IOException: %s%n", x);
+							logger.info("external submit(): IOException: %s%n", x);
 						}
 					}
+					Futures.whenAllSuccess(allDoneListeners).awaitUninterruptibly().addListener(new BaseFutureAdapter<BaseFuture>() {
+
+						@Override
+						public void operationComplete(BaseFuture future) throws Exception {
+							if (future.isSuccess()) {
+
+							} else {
+								logger.info("No success on submitting job: " + job);
+							}
+						}
+					});
 				} else {
-					logger.info("Could not put job: " + job.id());
+					logger.info("No success on submitting job: " + job);
 				}
 			}
 		});
 
 	}
 
-	private int submit(JobProcedureDomain outputJPD, Procedure procedure, String keyfilePath, int filePartCounter, String vals, Job job) {
+	private void submitInternally(final Job job, Procedure procedure, JobProcedureDomain outputJPD,
+			List<FutureDone<List<FuturePut>>> allDoneListeners, String keyfilePath, int filePartCounter, String vals) {
 		Collection<Object> values = new ArrayList<>();
 		values.add(vals);
-		Task task = Task.create(new File(keyfilePath).getName() + "_" + filePartCounter++);
+		Task task = Task.create(new File(keyfilePath).getName() + "_" + filePartCounter);
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
-		System.err.println("Put split: <" + task.key() + ", \"" + vals + "\">");
+		logger.info("internal submit(): Put split: <" + task.key() + ", \"" + vals + "\">");
 		((IExecutable) procedure.executable()).process(task.key(), values, context);
-		Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+		allDoneListeners.add(Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 			@Override
-			public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
+			public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
 				if (future.isSuccess()) {
 					outputETD.resultHash(context.resultHash());
 					IBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
@@ -185,8 +203,27 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 				}
 			}
 
-		});
-		return filePartCounter;
+		}));
+	}
+
+	/**
+	 * Tries to give an initial guess of how many files there are going to be (this calculation is solely based on the overall file size. It may be
+	 * that splitting the file reduces the file sizes and thus, fewer files are actually transferred in the process than were expected
+	 * 
+	 * @param job
+	 * @param keysFilePaths
+	 * @return
+	 */
+	private int estimatedNrOfFiles(final Job job, List<String> keysFilePaths) {
+		int nrOfFiles = 0;
+		for (String fileName : keysFilePaths) {
+			long fileSize = new File(fileName).length();
+			nrOfFiles += (int) (fileSize / job.maxFileSize().value());
+			if (fileSize % job.maxFileSize().value() > 0) {
+				++nrOfFiles;
+			}
+		}
+		return nrOfFiles;
 	}
 
 	public void finishedJob(JobProcedureDomain resultDomain) {

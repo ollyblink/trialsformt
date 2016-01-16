@@ -320,7 +320,7 @@ public class Job implements Serializable, Cloneable {
 		return ++this.submissionCounter;
 	}
 
-	public int submissionCounter() {
+	public int submissionCount() {
 		return this.submissionCounter;
 	}
 

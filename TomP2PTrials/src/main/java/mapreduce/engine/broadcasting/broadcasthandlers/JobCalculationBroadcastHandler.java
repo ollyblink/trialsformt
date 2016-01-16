@@ -44,6 +44,12 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 				}
 			});
 		} else {// Don't receive it if I sent it to myself
+			if (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
+				abortJobExecution(job);
+				while (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
+					job.incrementSubmissionCounter();
+				}
+			}
 			if (messageConsumer.executor().id() != null && !bcMessage.outputDomain().executor().equals(messageConsumer.executor().id())) {
 				processMessage(bcMessage, job);
 			}
@@ -52,8 +58,8 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 	}
 
 	@Override
-	public void processMessage(IBCMessage bcMessage, Job job) { 
-		if (!job.isFinished()) { 
+	public void processMessage(IBCMessage bcMessage, Job job) {
+		if (!job.isFinished()) {
 			jobFuturesFor.put(job, taskExecutionServer.submit(new Runnable() {
 
 				@Override
@@ -63,9 +69,7 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 			}, job.priorityLevel(), job.creationTime(), bcMessage.procedureIndex(), bcMessage.status(), bcMessage.creationTime()));
 			updateTimestamp(job, bcMessage);
 		} else {
-			synchronized (this) {
-				abortJobExecution(job);
-			}
+			abortJobExecution(job);
 		}
 	}
 

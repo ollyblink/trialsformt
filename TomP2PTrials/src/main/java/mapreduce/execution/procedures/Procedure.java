@@ -60,7 +60,7 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	// finished yet
 	public Number160 calculateResultHash() {
 		Number160 resultHash = Number160.ZERO;
-		if (tasks.size() < dataInputDomain.tasksSize()) {
+		if (tasks.size() < dataInputDomain.expectedNrOfFiles()) {
 			return null; // not all possible tasks have been assigned yet...
 		} else {
 			synchronized (tasks) {

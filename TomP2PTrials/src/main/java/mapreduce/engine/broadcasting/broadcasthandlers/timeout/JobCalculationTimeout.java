@@ -22,9 +22,9 @@ public class JobCalculationTimeout extends AbstractTimeout {
 			if (bcMessage.inputDomain() != null && bcMessage.inputDomain().procedureIndex() == -1) {
 				// handle start differently first, because it may be due to expected file size that is not the same... 
 				int actualTasksSize = job.currentProcedure().tasks().size();
-				int expectedTasksSize = bcMessage.inputDomain().tasksSize();
+				int expectedTasksSize = bcMessage.inputDomain().expectedNrOfFiles();
 				if (actualTasksSize < expectedTasksSize) {
-					job.currentProcedure().dataInputDomain().tasksSize(actualTasksSize);
+					job.currentProcedure().dataInputDomain().expectedNrOfFiles(actualTasksSize);
 					((JobCalculationExecutor) broadcastHandler.messageConsumer().executor()).tryFinishProcedure(job.currentProcedure());
 				}
 			} else {

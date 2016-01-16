@@ -59,7 +59,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 						values.add(taskValue);
 					}
 
-					JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.dataInputDomain().jobId(), id,
+					JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.jobId(), procedure.dataInputDomain().jobSubmissionCount(), id,
 							procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
 
 					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
@@ -133,8 +133,8 @@ public class JobCalculationExecutor extends AbstractExecutor {
 
 			ExecutorTaskDomain from = (ExecutorTaskDomain) taskToTransfer.resultOutputDomain();
 
-			JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), id, procedure.executable().getClass().getSimpleName(),
-					procedure.procedureIndex());
+			JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), procedure.dataInputDomain().jobSubmissionCount(), id,
+					procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
 			transferDataFromETDtoJPD(taskToTransfer, from, to, futureGetKeys, futureGetValues, futurePuts);
 			Futures.whenAllSuccess(futureGetKeys).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
 
@@ -186,7 +186,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 
 	public JobCalculationExecutor tryFinishProcedure(Procedure procedure) {
 		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
-		int expectedSize = dataInputDomain.tasksSize();
+		int expectedSize = dataInputDomain.expectedNrOfFiles();
 		List<Task> tasks = procedure.tasks();
 		int currentSize = tasks.size();
 		logger.info("switchDataFromTaskToProcedureDomain: data input domain procedure: " + dataInputDomain.procedureSimpleName());
@@ -202,8 +202,8 @@ public class JobCalculationExecutor extends AbstractExecutor {
 			}
 			logger.info("switchDataFromTaskToProcedureDomain: isProcedureCompleted: " + isProcedureCompleted);
 			if (isProcedureCompleted) {
-				JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), id, procedure.executable().getClass().getSimpleName(),
-						procedure.procedureIndex());
+				JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), dataInputDomain.jobSubmissionCount(), id,
+						procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
 				CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to.resultHash(procedure.calculateResultHash()),
 						dataInputDomain);
 				dhtConnectionProvider.broadcastHandler().processMessage(msg, dhtConnectionProvider.broadcastHandler().getJob(procedure.jobId()));

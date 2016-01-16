@@ -78,8 +78,8 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 				procedure.dataInputDomain(inputDomain);
 			} // no else needed... if it's the same procedure index, we are up to date and can update
 			if (procedure.dataInputDomain().equals(inputDomain)) { // same procedure, same input data location: everything is fine!
-				if (procedure.dataInputDomain().tasksSize() < inputDomain.tasksSize()) {// looks like the received had more already
-					procedure.dataInputDomain().tasksSize(inputDomain.tasksSize());
+				if (procedure.dataInputDomain().expectedNrOfFiles() < inputDomain.expectedNrOfFiles()) {// looks like the received had more already
+					procedure.dataInputDomain().expectedNrOfFiles(inputDomain.expectedNrOfFiles());
 				}
 				procedure = iUpdate.executeUpdate(outputDomain, procedure);
 			} else { // May have to change input data location (inputDomain)
@@ -110,11 +110,11 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	private void tryExecuting(Procedure procedure) {
-		if ((procedure.tasks().size() < procedure.dataInputDomain().tasksSize() || procedure.tasks().size() == 0) && procedure.procedureIndex() > 0) {
+		if ((procedure.tasks().size() < procedure.dataInputDomain().expectedNrOfFiles() || procedure.tasks().size() == 0) && procedure.procedureIndex() > 0) {
 			// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
 			// procedure
 			getTaskKeysFromNetwork(procedure);
-		} else if (procedure.tasks().size() == procedure.dataInputDomain().tasksSize()) {
+		} else if (procedure.tasks().size() == procedure.dataInputDomain().expectedNrOfFiles()) {
 			for (Task task : procedure.tasks()) {
 				submitTask(procedure, task);
 			}
@@ -231,7 +231,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 						public void operationComplete(FutureGet future) throws Exception {
 							if (future.isSuccess()) {
 								logger.info("Success");
-								procedure.dataInputDomain().tasksSize(future.dataMap().size());
+								procedure.dataInputDomain().expectedNrOfFiles(future.dataMap().size());
 								for (Number640 keyHash : future.dataMap().keySet()) {
 									String key = (String) future.dataMap().get(keyHash).object();
 									Task task = Task.create(key);

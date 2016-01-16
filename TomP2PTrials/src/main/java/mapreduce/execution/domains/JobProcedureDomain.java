@@ -18,24 +18,27 @@ public class JobProcedureDomain implements IDomain {
 	 * When the preceding procedure finishes, it will add the number of task's (==tasksSize) such that the next procedure knows how many tasks there
 	 * are to be processed.
 	 */
-	private volatile int tasksSize;
+	private volatile int expectedNrOfFiles;
 	/**
 	 * This data item is simply here for the MessageConsumer to decide which result to take if two executors execute a procedure on different input
 	 * domains
 	 */
 	private int nrOfFinishedTasks;
+	private int jobSubmissionCount;
 
 	private JobProcedureDomain() {
 
 	}
 
-	public static JobProcedureDomain create(String jobId, String procedureExecutor, String procedureSimpleName, int procedureIndex) {
-		return new JobProcedureDomain(jobId, procedureExecutor, procedureSimpleName, procedureIndex);
+	public static JobProcedureDomain create(String jobId, int jobSubmissionCount, String procedureExecutor, String procedureSimpleName,
+			int procedureIndex) {
+		return new JobProcedureDomain(jobId, jobSubmissionCount, procedureExecutor, procedureSimpleName, procedureIndex);
 	}
 
-	private JobProcedureDomain(String jobId, String procedureExecutor, String procedureSimpleName, int procedureIndex) {
+	private JobProcedureDomain(String jobId, int jobSubmissionCount, String procedureExecutor, String procedureSimpleName, int procedureIndex) {
 
 		this.jobId = jobId;
+		this.jobSubmissionCount = jobSubmissionCount;
 		this.procedureExecutor = procedureExecutor;
 		this.procedureSimpleName = procedureSimpleName;
 		this.procedureIndex = procedureIndex;
@@ -57,8 +60,6 @@ public class JobProcedureDomain implements IDomain {
 	public String executor() {
 		return procedureExecutor;
 	}
-
-	 
 
 	@Override
 	public int hashCode() {
@@ -128,12 +129,12 @@ public class JobProcedureDomain implements IDomain {
 		return jpd;
 	}
 
-	public int tasksSize() {
-		return tasksSize;
+	public int expectedNrOfFiles() {
+		return expectedNrOfFiles;
 	}
 
-	public JobProcedureDomain tasksSize(int tasksSize) {
-		this.tasksSize = tasksSize;
+	public JobProcedureDomain expectedNrOfFiles(int expectedNrOfFiles) {
+		this.expectedNrOfFiles = expectedNrOfFiles;
 		return this;
 	}
 
@@ -144,6 +145,10 @@ public class JobProcedureDomain implements IDomain {
 	public JobProcedureDomain nrOfFinishedTasks(int nrOfFinishedTasks) {
 		this.nrOfFinishedTasks = nrOfFinishedTasks;
 		return this;
+	}
+
+	public int jobSubmissionCount() {
+		return this.jobSubmissionCount;
 	}
 
 }

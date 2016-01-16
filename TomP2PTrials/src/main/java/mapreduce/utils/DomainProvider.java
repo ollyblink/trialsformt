@@ -24,12 +24,13 @@ public enum DomainProvider {
 	public String jobProcedureDomain(JobProcedureDomain jobProcedureDomainParameter) {
 		// JPD = JOB_PROCEDURE_DOMAIN
 		// J = jobId
-		// E = procedureExecutor
+		// JS = jobSubmissionCount
+		// PE = procedureExecutor
 		// P = procedureSimpleName
 		// PI = procedureIndex
-		// S = procedureSubmissionCount
-		return "JPD[J(" + jobProcedureDomainParameter.jobId() + ")_E(" + jobProcedureDomainParameter.executor() + ")_P("
-				+ jobProcedureDomainParameter.procedureSimpleName().toUpperCase() + ")_PI(" + jobProcedureDomainParameter.procedureIndex() + ")]";
+		return "JPD[J(" + jobProcedureDomainParameter.jobId() + ")_JS(" + jobProcedureDomainParameter.jobSubmissionCount() + ")_PE("
+				+ jobProcedureDomainParameter.executor() + ")_P(" + jobProcedureDomainParameter.procedureSimpleName().toUpperCase() + ")_PI("
+				+ jobProcedureDomainParameter.procedureIndex() + ")]";
 	}
 
 	// End Job procedure domain key generation
