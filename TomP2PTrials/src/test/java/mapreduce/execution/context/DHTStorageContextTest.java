@@ -34,15 +34,11 @@ public class DHTStorageContextTest {
 
 	@Test
 	public void test() throws InterruptedException {
-//		MRJobExecutionManager jobExecutionManager = MRJobExecutionManager.create();
-		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(4000, 3,
-				JobCalculationMessageConsumer.create());
-		dhtConnectionProvider.executor(executor);
-		Thread.sleep(3000);
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(4000, 1);
 
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE);
 		Task task = Task.create("hello");
-		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), executor, "NONE", 0);
+		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), 0, executor, "NONE", 0);
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.newStatusIndex(), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
@@ -50,12 +46,13 @@ public class DHTStorageContextTest {
 			context.write(task.key(), new Integer(1));
 		}
 		List<Object> values = SyncedCollectionProvider.syncedArrayList();
-		Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
+		Futures.whenAllSuccess(context.futurePutData()).awaitUninterruptibly().addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 
 			@Override
 			public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
 				if (future.isSuccess()) {
-					dhtConnectionProvider.getAll("hello", outputETD.toString()).addListener(new BaseFutureAdapter<FutureGet>() {
+					dhtConnectionProvider.getAll("hello", outputETD.toString()).awaitUninterruptibly()
+							.addListener(new BaseFutureAdapter<FutureGet>() {
 
 						@Override
 						public void operationComplete(FutureGet future) throws Exception {
@@ -78,9 +75,6 @@ public class DHTStorageContextTest {
 				}
 			}
 		});
-		while (values.size() != 10) {
-			Thread.sleep(1000);
-		}
 		assertEquals(10, values.size());
 		for (int i = 0; i < 10; ++i) {
 			assertEquals(true, values.get(i) instanceof Integer);

@@ -75,11 +75,12 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 		
 		StringTokenizer tokens = new StringTokenizer(toSplit);
 		while (tokens.hasMoreTokens()) { 
-			if (split.getBytes(Charset.forName(this.fileEncoding)).length >= maxFileSize.value()) {
+			String nextToken = tokens.nextToken();
+			if ((split + nextToken +" ").getBytes(Charset.forName(this.fileEncoding)).length >= maxFileSize.value()) {
 				splits.add(split.trim());
 				split = "";
 			}
-			split += tokens.nextToken() + " "; 
+			split += nextToken + " "; 
 		}
 		 
 		this.remainingData = "";

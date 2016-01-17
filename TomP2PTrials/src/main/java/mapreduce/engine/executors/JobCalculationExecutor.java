@@ -114,15 +114,6 @@ public class JobCalculationExecutor extends AbstractExecutor {
 		// }
 	}
 
-	// private ListMultimap<Task, BaseFuture> getMultimap(Procedure procedure) {
-	// ListMultimap<Task, BaseFuture> listMultimap = futures.get(procedure.dataInputDomain().toString());
-	// if (listMultimap == null) {
-	// listMultimap = ArrayListMultimap.create();
-	// futures.put(procedure.dataInputDomain().toString(), listMultimap);
-	// }
-	// return listMultimap;
-	// }
-
 	public void switchDataFromTaskToProcedureDomain(Procedure procedure, Task taskToTransfer) {
 		if (taskToTransfer.isFinished() && !taskToTransfer.isInProcedureDomain()) {
 			logger.info("switchDataFromTaskToProcedureDomain: Transferring tasks " + taskToTransfer + " to procedure domain");
@@ -157,7 +148,13 @@ public class JobCalculationExecutor extends AbstractExecutor {
 																+ taskToTransfer + " from task executor domain to job procedure domain: "
 																+ to.toString() + ". ");
 
-												tryFinishProcedure(procedure);
+												CompletedBCMessage msg = tryFinishProcedure(procedure);
+												if (msg != null) { 
+													dhtConnectionProvider.broadcastHandler().processMessage(msg,
+															dhtConnectionProvider.broadcastHandler().getJob(procedure.jobId()));
+													dhtConnectionProvider.broadcastCompletion(msg);
+													logger.info("tryFinishProcedure: Broadcasted Completed Procedure MSG: " + msg);
+												}
 											} else {
 												logger.warn(
 														"switchDataFromTaskToProcedureDomain: Failed to transfered task output keys and values for task "
@@ -184,13 +181,14 @@ public class JobCalculationExecutor extends AbstractExecutor {
 		}
 	}
 
-	public JobCalculationExecutor tryFinishProcedure(Procedure procedure) {
+	public CompletedBCMessage tryFinishProcedure(Procedure procedure) {
 		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
 		int expectedSize = dataInputDomain.expectedNrOfFiles();
 		List<Task> tasks = procedure.tasks();
 		int currentSize = tasks.size();
-		logger.info("switchDataFromTaskToProcedureDomain: data input domain procedure: " + dataInputDomain.procedureSimpleName());
-		logger.info("switchDataFromTaskToProcedureDomain: expectedSize == currentSize? " + expectedSize + "==" + currentSize);
+		logger.info("Tasks: " + tasks);
+		logger.info("tryFinishProcedure: data input domain procedure: " + dataInputDomain.procedureSimpleName());
+		logger.info("tryFinishProcedure: expectedSize == currentSize? " + expectedSize + "==" + currentSize);
 		if (expectedSize == currentSize) {
 			boolean isProcedureCompleted = true;
 			synchronized (tasks) {
@@ -200,18 +198,16 @@ public class JobCalculationExecutor extends AbstractExecutor {
 					}
 				}
 			}
-			logger.info("switchDataFromTaskToProcedureDomain: isProcedureCompleted: " + isProcedureCompleted);
+			logger.info("tryFinishProcedure: isProcedureCompleted: " + isProcedureCompleted);
 			if (isProcedureCompleted) {
 				JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), dataInputDomain.jobSubmissionCount(), id,
 						procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
 				CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to.resultHash(procedure.calculateResultHash()),
 						dataInputDomain);
-				dhtConnectionProvider.broadcastHandler().processMessage(msg, dhtConnectionProvider.broadcastHandler().getJob(procedure.jobId()));
-				dhtConnectionProvider.broadcastCompletion(msg);
-				logger.info("switchDataFromTaskToProcedureDomain: Broadcasted Completed Procedure MSG: " + msg);
+				return msg;
 			}
 		}
-		return this;
+		return null;
 	}
 
 	private void transferDataFromETDtoJPD(Task task, ExecutorTaskDomain fromETD, JobProcedureDomain toJPD, List<FutureGet> futureGetKeys,

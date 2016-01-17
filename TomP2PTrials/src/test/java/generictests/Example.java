@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
-import mapreduce.engine.broadcasting.MRBroadcastHandlerTest;
 import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler;
+import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandlerTest;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;

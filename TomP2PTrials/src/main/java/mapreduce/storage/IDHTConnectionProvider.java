@@ -44,7 +44,7 @@ public interface IDHTConnectionProvider {
 	 * @return
 	 * @throws Exception
 	 */
-	public void connect() throws Exception;
+	public PeerDHT connect() throws Exception;
 
 	public void shutdown();
 
@@ -58,6 +58,6 @@ public interface IDHTConnectionProvider {
 
 	public IDHTConnectionProvider nrOfPeers(int nrOfPeers);
 
-//	public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
+	// public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
 
 }

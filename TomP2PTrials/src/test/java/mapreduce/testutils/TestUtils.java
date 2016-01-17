@@ -13,6 +13,12 @@ import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.PeerDHT;
 
 public class TestUtils {
+
+	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers) {
+		return getTestConnectionProvider(port, nrOfPeers, false, null, null);
+
+	}
+
 	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers, IMessageConsumer messageConsumer) {
 		return getTestConnectionProvider(port, nrOfPeers, true, null, messageConsumer);
 
@@ -23,14 +29,15 @@ public class TestUtils {
 
 	}
 
-	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers, boolean hasBCHandler, PeerDHT master, IMessageConsumer messageConsumer) {
+	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers, boolean hasBCHandler, PeerDHT master,
+			IMessageConsumer messageConsumer) {
 		String bootstrapIP = "";
 		int bootstrapPort = port;
 		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
 		List<PeerDHT> peers = SyncedCollectionProvider.syncedArrayList();
 		PeerDHT[] peerArray = null;
 		JobCalculationBroadcastHandler bcHandler = JobCalculationBroadcastHandler.create(1);
-		if(messageConsumer != null){
+		if (messageConsumer != null) {
 			bcHandler.messageConsumer(messageConsumer);
 		}
 		if (!hasBCHandler) {
@@ -45,7 +52,8 @@ public class TestUtils {
 		Example.bootstrap(peerArray);
 		Collections.addAll(peers, peerArray);
 
-		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.create(bootstrapIP, bootstrapPort).externalPeers(peers, bcHandler);
+		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.create(bootstrapIP, bootstrapPort, bootstrapPort).externalPeers(peers,
+				bcHandler);
 		return dhtConnectionProvider;
 	}
 }

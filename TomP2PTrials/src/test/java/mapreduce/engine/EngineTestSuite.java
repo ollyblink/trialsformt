@@ -3,11 +3,16 @@ package mapreduce.engine;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-import mapreduce.engine.executor.MRJobExecutionManagerTest;
-import mapreduce.engine.executor.MRJobSubmissionManagerTest;
+import mapreduce.engine.broadcasting.JobBroadcastHandlersTestSuite;
+import mapreduce.engine.executors.JobExecutorsTestSuite;
+import mapreduce.engine.messageconsumers.JobMessageConsumersTestSuite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ MRJobExecutionManagerTest.class, MRJobSubmissionManagerTest.class })
+@Suite.SuiteClasses({ 
+	JobBroadcastHandlersTestSuite.class, 
+	JobExecutorsTestSuite.class,
+	JobMessageConsumersTestSuite.class
+})
 public class EngineTestSuite {
 
 }

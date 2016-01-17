@@ -16,20 +16,20 @@ public class ProcedureTest {
 	public void testNrOfSameResultHash() {
 		Procedure procedure = Procedure.create(WordCountMapper.create(), 1);
 		procedure.nrOfSameResultHash(2);
-		procedure.addOutputDomain(JobProcedureDomain.create(null, null, null, -1).resultHash(Number160.ZERO));
+		procedure.addOutputDomain(JobProcedureDomain.create(null, 0, null, null, -1).resultHash(Number160.ZERO));
 		assertEquals(false, procedure.isFinished());
 		assertEquals(1, procedure.nrOfOutputDomains());
 
-		procedure.addOutputDomain(JobProcedureDomain.create(null, null, null, -1).resultHash(Number160.ONE));
+		procedure.addOutputDomain(JobProcedureDomain.create(null, 0, null, null, -1).resultHash(Number160.ONE));
 		assertEquals(false, procedure.isFinished());
 		assertEquals(2, procedure.nrOfOutputDomains());
 
-		procedure.addOutputDomain(JobProcedureDomain.create(null, null, null, -1).resultHash(Number160.ONE));
+		procedure.addOutputDomain(JobProcedureDomain.create(null, 0, null, null, -1).resultHash(Number160.ONE));
 		assertEquals(true, procedure.isFinished());
 		assertEquals(3, procedure.nrOfOutputDomains());
 
 		// Cannot add more output procedure domains once it finished
-		procedure.addOutputDomain(JobProcedureDomain.create(null, null, null, -1).resultHash(Number160.ONE));
+		procedure.addOutputDomain(JobProcedureDomain.create(null, 0, null, null, -1).resultHash(Number160.ONE));
 		assertEquals(true, procedure.isFinished());
 		assertEquals(3, procedure.nrOfOutputDomains());
 	}
@@ -95,7 +95,7 @@ public class ProcedureTest {
 	@Test
 	public void testReset() {
 		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).nrOfSameResultHash(1).nrOfSameResultHashForTasks(10);
-		ExecutorTaskDomain etd = ExecutorTaskDomain.create("", "3", 0, JobProcedureDomain.create("", "3", "", 0)).resultHash(Number160.ONE); 
+		ExecutorTaskDomain etd = ExecutorTaskDomain.create("", "3", 0, JobProcedureDomain.create("", 0, "3", "", 0)).resultHash(Number160.ONE);
 
 		procedure.addTask(Task.create("1").addOutputDomain(etd));
 		procedure.addTask(Task.create("2").addOutputDomain(etd));
@@ -118,6 +118,5 @@ public class ProcedureTest {
 			assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
 		}
 	}
-	
 
 }

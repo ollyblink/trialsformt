@@ -98,7 +98,9 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 
 	@Override
 	public String toString() {
-		return "Task [key=" + key + ", isInProcedureDomain=" + isInProcedureDomain + " " + super.toString() + "]";
+		return "Task [key=" + key
+//				+ ", isInProcedureDomain=" + isInProcedureDomain + " " + super.toString() 
+				+ "]";
 	}
 
 	@Override

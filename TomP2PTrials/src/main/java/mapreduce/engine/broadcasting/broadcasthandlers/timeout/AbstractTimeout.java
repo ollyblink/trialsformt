@@ -23,6 +23,7 @@ public abstract class AbstractTimeout implements Runnable {
 		this.job = job;
 		this.currentTimestamp = currentTimestamp;
 		this.timeToLive = job.timeToLive();
+		 
 	}
 
 	public AbstractTimeout currentTimestamp(long currentTimestamp, IBCMessage bcMessage) {

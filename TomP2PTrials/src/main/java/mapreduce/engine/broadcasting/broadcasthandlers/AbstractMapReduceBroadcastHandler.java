@@ -33,6 +33,7 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 
 	protected AbstractMapReduceBroadcastHandler(int nrOfConcurrentlyExecutedBCMessages) {
 		this.taskExecutionServer = PriorityExecutor.newFixedThreadPool(nrOfConcurrentlyExecutedBCMessages);
+
 	}
 
 	@Override
@@ -115,5 +116,9 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 	 * @param job
 	 */
 	public abstract void processMessage(IBCMessage bcMessage, Job job);
+
+	public IDHTConnectionProvider dhtConnectionProvider() {
+		return dhtConnectionProvider;
+	}
 
 }

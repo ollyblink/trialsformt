@@ -21,7 +21,7 @@ public class TaskTest {
 
 		Task task = Task.create("hello");
 		ExecutorTaskDomain etd = ExecutorTaskDomain
-				.create("hello", executor1, task.newStatusIndex(), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
+				.create("hello", executor1, task.newStatusIndex(), JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
 		task.addOutputDomain(etd);
 
@@ -34,7 +34,7 @@ public class TaskTest {
 		assertEquals(null, task.resultOutputDomain());
 
 		ExecutorTaskDomain etd2 = ExecutorTaskDomain
-				.create("hello", executor1, task.newStatusIndex(), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
+				.create("hello", executor1, task.newStatusIndex(), JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
 
 		task.addOutputDomain(etd2);
@@ -55,7 +55,7 @@ public class TaskTest {
 		assertEquals(null, task.resultOutputDomain());
 
 		ExecutorTaskDomain etd3 = ExecutorTaskDomain
-				.create("hello", executor2, task.newStatusIndex(), JobProcedureDomain.create("job1", submitter, "WordCount", 0))
+				.create("hello", executor2, task.newStatusIndex(), JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
 		task.addOutputDomain(etd3);
 		assertEquals(true, task.isFinished());
@@ -129,7 +129,7 @@ public class TaskTest {
 		assertEquals(new Integer(1), task.activeCount());
 		assertEquals(false, task.isFinished());
 
-		//Cannot be incremented more as there is already a result output hash
+		// Cannot be incremented more as there is already a result output hash
 		task.incrementActiveCount();
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
@@ -150,7 +150,7 @@ public class TaskTest {
 		assertEquals(new Integer(0), task.activeCount());
 		assertEquals(true, task.isFinished());
 
-		//Decrement not below 0
+		// Decrement not below 0
 		task.decrementActiveCount();
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());

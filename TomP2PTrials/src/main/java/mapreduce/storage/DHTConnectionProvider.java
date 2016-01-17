@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.broadcasting.broadcasthandlers.AbstractMapReduceBroadcastHandler;
-import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler;
 import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
@@ -90,7 +89,9 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	/** Method for Testing purposes only... */
 	public DHTConnectionProvider externalPeers(List<PeerDHT> peerDHTs, AbstractMapReduceBroadcastHandler bcHandler) {
 		this.peerDHTs = peerDHTs;
-		this.broadcastHandler = bcHandler.dhtConnectionProvider(this);
+		if (bcHandler != null) {
+			this.broadcastHandler = bcHandler.dhtConnectionProvider(this);
+		}
 		return this;
 	}
 
@@ -98,7 +99,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	// ======================
 
 	@Override
-	public void connect() throws Exception {
+	public PeerDHT connect() throws Exception {
 		if (broadcastHandler == null) {
 			throw new Exception("Broadcasthandler not set!");
 		} else {
@@ -125,15 +126,16 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 						});
 			}
-			connectDHT(peer);
+			return connectDHT(peer);
 
 		} catch (IOException e) {
 			logger.debug("Exception on bootstrapping", e);
 		}
+		return null;
 		// }
 	}
 
-	private void connectDHT(Peer peer) {
+	private PeerDHT connectDHT(Peer peer) {
 		PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer);
 
 		if (storageFilePath != null) {
@@ -141,6 +143,7 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 			peerDHTBuilder.storage(new StorageDisk(peer.peerID(), folder, null));
 		}
 		peerDHTs.add(peerDHTBuilder.start());
+		return peerDHTs.get(peerDHTs.size() - 1);
 	}
 
 	@Override

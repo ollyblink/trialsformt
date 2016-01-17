@@ -3,9 +3,13 @@ package mapreduce.execution.procedures;
 import java.io.Serializable;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.finishables.AbstractFinishable;
 import mapreduce.execution.tasks.Task;
+import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
@@ -15,6 +19,7 @@ import net.tomp2p.peers.Number160;
  *
  */
 public final class Procedure extends AbstractFinishable implements Serializable, Cloneable {
+	private static Logger logger = LoggerFactory.getLogger(Procedure.class);
 
 	/**
 	 * 
@@ -137,10 +142,13 @@ public final class Procedure extends AbstractFinishable implements Serializable,
 	}
 
 	public Procedure addTask(Task task) {
-		if (!this.tasks.contains(task)) {
-			task.nrOfSameResultHash(nrOfSameResultHashForTasks);
-			task.needsMultipleDifferentDomains(needsMultipleDifferentDomainsForTasks);
-			this.tasks.add(task);
+		logger.info("add task "+task);
+		synchronized (tasks) {
+			if (!this.tasks.contains(task)) {
+				task.nrOfSameResultHash(nrOfSameResultHashForTasks);
+				task.needsMultipleDifferentDomains(needsMultipleDifferentDomainsForTasks);
+				this.tasks.add(task);
+			}
 		}
 		return this;
 	}

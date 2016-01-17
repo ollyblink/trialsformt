@@ -47,7 +47,10 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 			if (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
 				abortJobExecution(job);
 				while (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
+					logger.info("incrementing job submission count from " + job.submissionCount() + " to "
+							+ bcMessage.inputDomain().jobSubmissionCount());
 					job.incrementSubmissionCounter();
+					logger.info("incremented job submission count. It's now " + job.submissionCount());
 				}
 			}
 			if (messageConsumer.executor().id() != null && !bcMessage.outputDomain().executor().equals(messageConsumer.executor().id())) {
