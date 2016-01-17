@@ -1,0 +1,182 @@
+package mapreduce.engine.broadcasting.broadcasthandlers.timeouts;
+
+import static org.junit.Assert.*;
+
+import java.lang.reflect.Field;
+import java.util.List;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler;
+import mapreduce.engine.broadcasting.broadcasthandlers.JobSubmissionBroadcastHandler;
+import mapreduce.engine.broadcasting.broadcasthandlers.timeout.AbstractTimeout;
+import mapreduce.engine.broadcasting.broadcasthandlers.timeout.JobCalculationTimeout;
+import mapreduce.engine.broadcasting.broadcasthandlers.timeout.JobSubmissionTimeout;
+import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
+import mapreduce.engine.executors.JobCalculationExecutor;
+import mapreduce.engine.executors.JobSubmissionExecutor;
+import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
+import mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.jobs.Job;
+import mapreduce.execution.procedures.Procedure;
+import mapreduce.storage.IDHTConnectionProvider;
+
+public class TimeoutTests {
+
+	private List tasks;
+	private JobProcedureDomain oldID;
+	private Procedure procedure;
+	private Job job;
+	private JobCalculationExecutor calculationExecutor;
+	private JobCalculationMessageConsumer calculationMsgConsumer;
+	private JobCalculationBroadcastHandler calculationBroadcastHandler;
+	private IDHTConnectionProvider mockDHT;
+	private JobProcedureDomain inputDomain;
+	private CompletedBCMessage bcMessage;
+	private long currentTimestamp;
+	private long timeToLive;
+	private CompletedBCMessage mockMsg;
+	private JobSubmissionExecutor submissionExecutor;
+	private JobSubmissionMessageConsumer submissionMsgConsumer;
+	private JobSubmissionBroadcastHandler submissionBroadcastHandler;
+
+	@Before
+	public void before() {
+		currentTimestamp = System.currentTimeMillis();
+
+		timeToLive = 2000l;
+
+		// Tasks
+		tasks = Mockito.mock(List.class);
+		Mockito.when(tasks.size()).thenReturn(1);
+		// Procedure
+		oldID = Mockito.mock(JobProcedureDomain.class);
+		Mockito.when(oldID.procedureIndex()).thenReturn(-1);
+		Mockito.when(oldID.expectedNrOfFiles()).thenReturn(1);
+
+		procedure = Mockito.mock(Procedure.class);
+		Mockito.when(procedure.tasks()).thenReturn(tasks);
+		Mockito.when(procedure.dataInputDomain()).thenReturn(oldID);
+		// Job
+		job = Mockito.mock(Job.class);
+		Mockito.when(job.id()).thenReturn("J1");
+		Mockito.when(job.currentProcedure()).thenReturn(procedure);
+		// Next message
+		mockMsg = Mockito.mock(CompletedBCMessage.class);
+		// DHTConnectionProvider
+		mockDHT = Mockito.mock(IDHTConnectionProvider.class);
+		// Calculation Executor
+		calculationExecutor = Mockito.mock(JobCalculationExecutor.class);
+		Mockito.when(calculationExecutor.id()).thenReturn("E1");
+		Mockito.when(calculationExecutor.tryFinishProcedure(procedure)).thenReturn(mockMsg);
+		// Calculation MessageConsumer
+		calculationMsgConsumer = Mockito.mock(JobCalculationMessageConsumer.class);
+		Mockito.when(calculationMsgConsumer.executor()).thenReturn(calculationExecutor);
+		// Calculation BCHandler
+		calculationBroadcastHandler = Mockito.mock(JobCalculationBroadcastHandler.class);
+		Mockito.when(calculationBroadcastHandler.executorId()).thenReturn("E1");
+		Mockito.when(calculationBroadcastHandler.messageConsumer()).thenReturn(calculationMsgConsumer);
+		Mockito.when(calculationBroadcastHandler.getJob(job.id())).thenReturn(job);
+		Mockito.when(calculationBroadcastHandler.dhtConnectionProvider()).thenReturn(mockDHT);
+
+		// Submission Executor
+		submissionExecutor = Mockito.mock(JobSubmissionExecutor.class);
+		Mockito.when(submissionExecutor.id()).thenReturn("E1");
+		// Submission MessageConsumer
+		submissionMsgConsumer = Mockito.mock(JobSubmissionMessageConsumer.class);
+		Mockito.when(submissionMsgConsumer.executor()).thenReturn(submissionExecutor);
+		// Submission BCHandler
+		submissionBroadcastHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
+		Mockito.when(submissionBroadcastHandler.executorId()).thenReturn("E1");
+		Mockito.when(submissionBroadcastHandler.messageConsumer()).thenReturn(submissionMsgConsumer);
+		Mockito.when(submissionBroadcastHandler.getJob(job.id())).thenReturn(job);
+		Mockito.when(submissionBroadcastHandler.dhtConnectionProvider()).thenReturn(mockDHT);
+
+		// Input domain
+		inputDomain = Mockito.mock(JobProcedureDomain.class);
+		Mockito.when(inputDomain.expectedNrOfFiles()).thenReturn(2);
+		// BCMessage
+		bcMessage = Mockito.mock(CompletedBCMessage.class);
+	}
+
+	@Test
+	public void testJobCalculationTimeoutUpdatingExpectedNrOfTasks() throws InterruptedException {
+		Mockito.when(inputDomain.procedureIndex()).thenReturn(-1);
+		Mockito.when(bcMessage.inputDomain()).thenReturn(inputDomain);
+
+		// Actual timeout
+		JobCalculationTimeout timeout = new JobCalculationTimeout(calculationBroadcastHandler, job, currentTimestamp, bcMessage, timeToLive);
+		Thread t = new Thread(timeout);
+		t.start();
+		Thread.sleep(1000);
+		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
+		Thread.sleep(3000);
+		Mockito.verify(job, Mockito.times(1)).currentProcedure();
+		Mockito.verify(procedure, Mockito.times(1)).tasks();
+		Mockito.verify(procedure, Mockito.times(1)).dataInputDomain();
+		Mockito.verify(tasks, Mockito.times(1)).size();
+		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).messageConsumer();
+		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).dhtConnectionProvider();
+		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).processMessage(mockMsg, job);
+		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).executor();
+		Mockito.verify(calculationExecutor, Mockito.times(1)).tryFinishProcedure(procedure);
+		Mockito.verify(inputDomain, Mockito.times(1)).expectedNrOfFiles();
+		Mockito.verify(bcMessage, Mockito.times(1)).inputDomain();
+	}
+
+	@Test
+	public void testJobCalculationTimeoutInputdomainNullTimeout() throws InterruptedException {
+		Mockito.when(inputDomain.procedureIndex()).thenReturn(-1);
+		Mockito.when(bcMessage.inputDomain()).thenReturn(null);
+		// Actual timeout
+		JobCalculationTimeout timeout = new JobCalculationTimeout(calculationBroadcastHandler, job, currentTimestamp, bcMessage, timeToLive);
+		Thread t = new Thread(timeout);
+		t.start();
+		Thread.sleep(1000);
+		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
+		Thread.sleep(3000);
+		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).abortJobExecution(job);
+	}
+
+	@Test
+	public void testJobCalculationTimeoutInputdomainNotStartProcedureTimeout() throws InterruptedException {
+		Mockito.when(inputDomain.procedureIndex()).thenReturn(0);
+		Mockito.when(bcMessage.inputDomain()).thenReturn(inputDomain);
+		// Actual timeout
+		JobCalculationTimeout timeout = new JobCalculationTimeout(calculationBroadcastHandler, job, currentTimestamp, bcMessage, timeToLive);
+		Thread t = new Thread(timeout);
+		t.start();
+		Thread.sleep(1000);
+		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
+		Thread.sleep(3000);
+		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).abortJobExecution(job);
+	}
+
+	@Test
+	public void testJobSubmissionTimeoutResubmittingJob() throws Exception {
+		// Actual timeout
+		JobSubmissionTimeout timeout = new JobSubmissionTimeout(submissionBroadcastHandler, job, currentTimestamp, bcMessage, timeToLive);
+
+		Field sleepingTimeField = timeout.getClass().getSuperclass().getDeclaredField("sleepingTime");
+		sleepingTimeField.setAccessible(true);
+		Thread t = new Thread(timeout);
+		t.start();
+		Thread.sleep(1000);
+
+		long sleepingTime = (long) sleepingTimeField.get(timeout);
+		assertEquals(true, sleepingTime <= (timeToLive));
+		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
+		sleepingTime = (long) sleepingTimeField.get(timeout);
+		assertEquals(true, sleepingTime <= (timeToLive));
+		Thread.sleep(3000);
+		sleepingTime = (long) sleepingTimeField.get(timeout);
+		assertEquals(true, sleepingTime <= 0);
+		Mockito.verify(submissionBroadcastHandler, Mockito.times(1)).messageConsumer();
+		Mockito.verify(submissionBroadcastHandler, Mockito.times(1)).abortJobExecution(job);
+		Mockito.verify(submissionExecutor, Mockito.times(1)).resubmitJobIfPossible(job);
+	}
+
+}

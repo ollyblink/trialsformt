@@ -20,10 +20,9 @@ public class JobSubmissionTimeout extends AbstractTimeout {
 	public void run() {
 		sleep();
 		synchronized (this.broadcastHandler) {
-			logger.info("for " + broadcastHandler.executorId() + " Timeout: try resubmitting job " + job);
+			logger.info(" Timeout: try resubmitting job " + job);
 			this.broadcastHandler.abortJobExecution(job);
 			((JobSubmissionExecutor) broadcastHandler.messageConsumer().executor()).resubmitJobIfPossible(job);
-
 		}
 	}
 

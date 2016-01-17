@@ -53,9 +53,7 @@ public interface IDHTConnectionProvider {
 	public AbstractMapReduceBroadcastHandler broadcastHandler();
 
 	public IDHTConnectionProvider broadcastHandler(AbstractMapReduceBroadcastHandler broadcastHandler);
-
-	public List<PeerDHT> peerDHTs();
-
+ 
 	public IDHTConnectionProvider nrOfPeers(int nrOfPeers);
 
 	// public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);

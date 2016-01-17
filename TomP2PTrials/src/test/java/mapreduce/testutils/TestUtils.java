@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import generictests.Example;
+import generictests.MyBroadcastHandler;
 import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler;
 import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.storage.DHTConnectionProvider;
@@ -41,7 +42,7 @@ public class TestUtils {
 			bcHandler.messageConsumer(messageConsumer);
 		}
 		if (!hasBCHandler) {
-			bcHandler = null;
+			bcHandler = new MyBroadcastHandler(1);
 		}
 		try {
 			peerArray = Example.createAndAttachPeersDHT(nrOfPeers, bootstrapPort, bcHandler, master);

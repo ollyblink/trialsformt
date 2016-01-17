@@ -162,22 +162,17 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public void shutdown() {
 		for (PeerDHT peerDHT : peerDHTs) {
-			BaseFuture shutdown = peerDHT.shutdown();
-			shutdown.addListener(new BaseFutureListener<BaseFuture>() {
+			peerDHT.shutdown().awaitUninterruptibly().addListener(new BaseFutureAdapter<BaseFuture>() {
 
 				@Override
 				public void operationComplete(BaseFuture future) throws Exception {
 					if (future.isSuccess()) {
-						logger.trace("Successfully shut down peer " + peerDHT.peerID() + ".");
+						logger.info("Successfully shut down peer " + peerDHT.peerID() + ".");
 					} else {
-						logger.trace("Could not shut down peer " + peerDHT.peerID() + ".");
+						logger.info("Could not shut down peer " + peerDHT.peerID() + ".");
 					}
 				}
 
-				@Override
-				public void exceptionCaught(Throwable t) throws Exception {
-					logger.warn("Exception thrown in DHTConnectionProvider::shutdown()", t);
-				}
 			});
 		}
 	}
@@ -240,11 +235,6 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	@Override
 	public AbstractMapReduceBroadcastHandler broadcastHandler() {
 		return broadcastHandler;
-	}
-
-	@Override
-	public List<PeerDHT> peerDHTs() {
-		return peerDHTs;
 	}
 
 	@Override

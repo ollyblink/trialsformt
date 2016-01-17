@@ -18,6 +18,8 @@ public abstract class AbstractTimeout implements Runnable {
 	protected long timeToLive;
 	protected IBCMessage bcMessage;
 
+	private long sleepingTime;
+
 	public AbstractTimeout(AbstractMapReduceBroadcastHandler broadcastHandler, Job job, long currentTimestamp, IBCMessage bcMessage,
 			long timeToLive) {
 		this.broadcastHandler = broadcastHandler;
@@ -38,13 +40,14 @@ public abstract class AbstractTimeout implements Runnable {
 		long diff = 0;
 		while ((diff = (System.currentTimeMillis() - retrievalTimestamp)) < timeToLive) {
 			try {
-				long sleepingTime = (timeToLive - diff);
+				this.sleepingTime = (timeToLive - diff);
 				logger.info("Timeout: sleeping for " + sleepingTime + " ms");
 				Thread.sleep(sleepingTime);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
+		this.sleepingTime = (timeToLive - diff);
 	}
 
 	public static AbstractTimeout create(AbstractMapReduceBroadcastHandler broadcastHandler, Job job, long retrievalTimestamp, IBCMessage bcMessage,

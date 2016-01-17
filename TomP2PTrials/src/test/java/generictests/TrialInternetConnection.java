@@ -45,7 +45,7 @@ public class TrialInternetConnection {
 
 		Random RND = new Random();
 		if (peerID == 1) {
-			master = new PeerBuilder(Number160.createHash("super peer")).ports(port).broadcastHandler(new MyBroadcastHandler()).start();
+			master = new PeerBuilder(Number160.createHash("super peer")).ports(port).broadcastHandler(new MyBroadcastHandler(1)).start();
 			PeerDHT masterDHT = new PeerBuilderDHT(master).start();
 
 		} else {
@@ -53,7 +53,7 @@ public class TrialInternetConnection {
 			System.out.println("Port 2: " + port2);
 			// PeerMapConfiguration p = new PeerMapConfiguration(Number160.createHash("PeerMap"));
 			// p.peerVerification(false);
-			final Peer myPeer = new PeerBuilder(Number160.createHash("client peer"+RND.nextLong())).ports(port2).broadcastHandler(new MyBroadcastHandler()).start();
+			final Peer myPeer = new PeerBuilder(Number160.createHash("client peer"+RND.nextLong())).ports(port2).broadcastHandler(new MyBroadcastHandler(1)).start();
 
 			PeerDHT myPeerDHT = new PeerBuilderDHT(myPeer).start();
 			// PeerAddress bootstrapServerPeerAddress = new PeerAddress(Number160.ZERO, new InetSocketAddress(InetAddress.getByName(ipSuperPeer),

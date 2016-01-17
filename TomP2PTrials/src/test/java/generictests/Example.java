@@ -152,7 +152,7 @@ public class Example {
 	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, JobCalculationBroadcastHandler bcHandler, PeerDHT master) throws IOException {
 		StructuredBroadcastHandler bcH = null;
 		if (bcHandler == null) {
-			bcH = new MyBroadcastHandler();
+			bcH = new MyBroadcastHandler(1);
 		} else {
 			bcH = bcHandler;
 		}
