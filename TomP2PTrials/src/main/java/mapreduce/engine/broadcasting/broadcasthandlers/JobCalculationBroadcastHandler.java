@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.broadcasting.messages.IBCMessage;
+import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.execution.jobs.Job;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.Procedures;

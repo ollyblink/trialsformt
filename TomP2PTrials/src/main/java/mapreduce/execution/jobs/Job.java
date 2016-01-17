@@ -12,7 +12,7 @@ import mapreduce.utils.SyncedCollectionProvider;
 
 public class Job implements Serializable, Cloneable {
 
-//	private static Logger logger = LoggerFactory.getLogger(Job.class);
+	// private static Logger logger = LoggerFactory.getLogger(Job.class);
 
 	/**
 	 * 
@@ -142,7 +142,7 @@ public class Job implements Serializable, Cloneable {
 	}
 
 	public String id() {
-		// S == Submitter 
+		// S == Submitter
 		return this.id + "_S(" + jobSubmitterID + ")";
 	}
 
@@ -292,15 +292,15 @@ public class Job implements Serializable, Cloneable {
 		try {
 			Job job = (Job) super.clone();
 
-//			 job.creationTime = creationTime;
-//			 job.currentProcedureIndex = currentProcedureIndex;
-//			 job.fileInputFolderPath = fileInputFolderPath;
-//			 job.id = id;
-//			 job.jobSubmitterID = jobSubmitterID;
-//			 job.maxFileSize = maxFileSize;
-//			 job.nrOfSameResultHash = nrOfSameResultHash;
-//			 job.priorityLevel = priorityLevel;
-//			 job.useLocalStorageFirst = useLocalStorageFirst;
+			// job.creationTime = creationTime;
+			// job.currentProcedureIndex = currentProcedureIndex;
+			// job.fileInputFolderPath = fileInputFolderPath;
+			// job.id = id;
+			// job.jobSubmitterID = jobSubmitterID;
+			// job.maxFileSize = maxFileSize;
+			// job.nrOfSameResultHash = nrOfSameResultHash;
+			// job.priorityLevel = priorityLevel;
+			// job.useLocalStorageFirst = useLocalStorageFirst;
 			job.procedures = SyncedCollectionProvider.syncedArrayList();
 			for (Procedure p : procedures) {
 				job.procedures.add(p.clone());

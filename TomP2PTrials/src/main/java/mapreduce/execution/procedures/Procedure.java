@@ -18,7 +18,7 @@ import net.tomp2p.peers.Number160;
  * @author Oliver
  *
  */
-public final class Procedure extends AbstractFinishable implements Serializable, Cloneable {
+public   class Procedure extends AbstractFinishable implements Serializable, Cloneable {
 	private static Logger logger = LoggerFactory.getLogger(Procedure.class);
 
 	/**
