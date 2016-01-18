@@ -164,7 +164,7 @@ public class Job implements Serializable, Cloneable {
 		if (index < 0) {
 			return procedures.get(0);
 		} else if (index >= procedures.size()) {
-			return Procedure.create(EndProcedure.create(), procedures.size()).nrOfSameResultHash(0);
+			return createProcedure(EndProcedure.create(), null, 0, 0, false, false);
 		} else {
 			return procedures.get(index);
 		}
@@ -209,17 +209,21 @@ public class Job implements Serializable, Cloneable {
 		if (procedure == null) {
 			return this;
 		}
-		nrOfSameResultHashForProcedure = (nrOfSameResultHashForProcedure <= 0 ? 1 : nrOfSameResultHashForProcedure);
-		nrOfSameResultHashForTasks = (nrOfSameResultHashForTasks <= 0 ? 1 : nrOfSameResultHashForTasks);
-
-		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size())
-											.nrOfSameResultHash(nrOfSameResultHashForProcedure)
-											.needsMultipleDifferentExecutors(needsMultipleDifferentExecutors)
-											.nrOfSameResultHashForTasks(nrOfSameResultHashForTasks)
-											.needsMultipleDifferentExecutorsForTasks(needsMultipleDifferentExecutorsForTasks)
-											.combiner(combiner);
+		Procedure procedureInformation = createProcedure(procedure, combiner, nrOfSameResultHashForProcedure, nrOfSameResultHashForTasks,
+				needsMultipleDifferentExecutors, needsMultipleDifferentExecutorsForTasks);
 		this.procedures.add(procedureInformation);
 		return this;
+	}
+
+	private Procedure createProcedure(Object procedure, Object combiner, int nrOfSameResultHashForProcedure, int nrOfSameResultHashForTasks,
+			boolean needsMultipleDifferentExecutors, boolean needsMultipleDifferentExecutorsForTasks) {
+		nrOfSameResultHashForProcedure = (nrOfSameResultHashForProcedure < 0 ? 0 : nrOfSameResultHashForProcedure);
+		nrOfSameResultHashForTasks = (nrOfSameResultHashForTasks < 0 ? 0 : nrOfSameResultHashForTasks);
+
+		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size()).nrOfSameResultHash(nrOfSameResultHashForProcedure)
+				.needsMultipleDifferentExecutors(needsMultipleDifferentExecutors).nrOfSameResultHashForTasks(nrOfSameResultHashForTasks)
+				.needsMultipleDifferentExecutorsForTasks(needsMultipleDifferentExecutorsForTasks).combiner(combiner);
+		return procedureInformation;
 	}
 
 	/**

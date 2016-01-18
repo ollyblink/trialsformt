@@ -29,8 +29,12 @@ public abstract class AbstractFinishable implements IFinishable {
 
 	@Override
 	public boolean isFinished() {
-		checkIfFinished();
-		return resultOutputDomain != null;
+		if (nrOfSameResultHash > 0) {
+			checkIfFinished();
+			return resultOutputDomain != null;
+		} else { // Doesn't need to be executed (e.g. EndProcedure...)
+			return true;
+		}
 	}
 
 	@Override
@@ -52,7 +56,7 @@ public abstract class AbstractFinishable implements IFinishable {
 				if (needsMultipleDifferentExecutors) {
 					List<IDomain> list = results.get(resultHash);
 					Set<String> asSet = new HashSet<>();
-					for(IDomain d: list){
+					for (IDomain d : list) {
 						asSet.add(d.executor());
 					}
 					if (asSet.size() < nrOfSameResultHash) {
@@ -95,10 +99,7 @@ public abstract class AbstractFinishable implements IFinishable {
 
 	@Override
 	public AbstractFinishable nrOfSameResultHash(int nrOfSameResultHash) {
-		if (nrOfSameResultHash > 0) {
-			this.nrOfSameResultHash = nrOfSameResultHash;
-		}
-
+		this.nrOfSameResultHash = nrOfSameResultHash;
 		return this;
 	}
 

@@ -23,24 +23,18 @@ public class ProcedureUpdate extends AbstractUpdate {
 
 	@Override
 	protected Procedure internalUpdate(IDomain outputDomain, Procedure procedure) {
-		try {
-			JobProcedureDomain outputJPD = (JobProcedureDomain) outputDomain;
-			procedure.addOutputDomain(outputJPD);
-			if (procedure.isFinished()) {
-				msgConsumer.cancelProcedureExecution(procedure);
-				job.incrementProcedureIndex();
-				job.currentProcedure().dataInputDomain(outputJPD);
-				if (job.currentProcedure().executable().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
-					job.isFinished(true);
-					msgConsumer.printResults(job);
-				} else {
-					procedure = job.currentProcedure();
-				}
+		JobProcedureDomain outputJPD = (JobProcedureDomain) outputDomain;
+		procedure.addOutputDomain(outputJPD);
+		if (procedure.isFinished()) {
+			msgConsumer.cancelProcedureExecution(procedure);
+			JobProcedureDomain resultOutputDomain = procedure.resultOutputDomain();
+			job.incrementProcedureIndex();
+			job.currentProcedure().dataInputDomain(resultOutputDomain);
+			if (job.currentProcedure().executable().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
+				job.isFinished(true); 
 			}
-			return procedure;
-		} catch (Exception e) {
-			logger.warn("Exception caught", e);
-			return procedure;
+			procedure = job.currentProcedure();
 		}
+		return procedure;
 	}
 }

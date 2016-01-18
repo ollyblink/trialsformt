@@ -128,7 +128,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 			List<FutureGet> futureGetValues = syncedArrayList();
 			List<FuturePut> futurePuts = syncedArrayList();
 
-			ExecutorTaskDomain from = (ExecutorTaskDomain) taskToTransfer.resultOutputDomain();
+			ExecutorTaskDomain from = taskToTransfer.resultOutputDomain();
 
 			JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), procedure.dataInputDomain().jobSubmissionCount(), id,
 					procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());

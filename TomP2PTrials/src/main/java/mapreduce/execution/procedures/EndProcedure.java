@@ -21,6 +21,5 @@ public class EndProcedure implements IExecutable {
 	}
 
 	private EndProcedure() {
-
 	}
 }

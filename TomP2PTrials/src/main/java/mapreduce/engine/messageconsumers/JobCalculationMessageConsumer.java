@@ -3,7 +3,6 @@ package mapreduce.engine.messageconsumers;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -14,8 +13,8 @@ import com.google.common.collect.ListMultimap;
 import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.messageconsumers.updates.IUpdate;
-import mapreduce.engine.messageconsumers.updates.TaskUpdate;
 import mapreduce.engine.messageconsumers.updates.ProcedureUpdate;
+import mapreduce.engine.messageconsumers.updates.TaskUpdate;
 import mapreduce.engine.multithreading.PriorityExecutor;
 import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.IDomain;
@@ -25,8 +24,8 @@ import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.tasks.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
+import mapreduce.utils.ResultPrinter;
 import mapreduce.utils.SyncedCollectionProvider;
-import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
@@ -96,6 +95,8 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			}
 			if (!job.isFinished()) {
 				tryExecuting(procedure);
+			} else {
+				ResultPrinter.printResults(dhtConnectionProvider, procedure.resultOutputDomain().toString());
 			}
 
 		}
@@ -210,46 +211,6 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 
 					});
 		}
-	}
-
-	public void printResults(Job job) {
-		// try {
-		// Thread.sleep(2000);
-		// } catch (InterruptedException e) {
-		// e.printStackTrace();
-		// }
-		Procedure procedure = job.procedure(job.currentProcedure().procedureIndex() - 1);
-		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.resultOutputDomain().toString())
-				.addListener(new BaseFutureAdapter<FutureGet>() {
-
-					@Override
-					public void operationComplete(FutureGet future) throws Exception {
-						if (future.isSuccess()) {
-							Set<Number640> keySet = future.dataMap().keySet();
-							System.out.println("Found: " + keySet.size() + " finished tasks.");
-							for (Number640 k : keySet) {
-								String key = (String) future.dataMap().get(k).object();
-								dhtConnectionProvider.getAll(key, procedure.resultOutputDomain().toString())
-										.addListener(new BaseFutureAdapter<FutureGet>() {
-
-									@Override
-									public void operationComplete(FutureGet future) throws Exception {
-										if (future.isSuccess()) {
-											Set<Number640> keySet2 = future.dataMap().keySet();
-											String values = "";
-											for (Number640 k2 : keySet2) {
-												values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
-											}
-											System.err.println(key + ":" + values);
-										}
-									}
-
-								});
-							}
-						}
-					}
-
-				});
 	}
 
 	@Override

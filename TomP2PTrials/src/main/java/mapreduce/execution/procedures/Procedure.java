@@ -167,14 +167,19 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 
 	public Procedure dataInputDomain(JobProcedureDomain dataInputDomain) {
 		this.dataInputDomain = dataInputDomain;
-		this.jobId = dataInputDomain.jobId();
+		if(this.jobId == null){
+			this.jobId = dataInputDomain.jobId();
+		}
 		return this;
 	}
 
 	public JobProcedureDomain dataInputDomain() {
 		return this.dataInputDomain;
 	}
-
+	@Override 
+	public JobProcedureDomain resultOutputDomain() {
+		return (JobProcedureDomain) super.resultOutputDomain();
+	}
 	/**
 	 * Set via dataInputDomain
 	 * 

@@ -26,6 +26,11 @@ public class JobCalculationMessageConsumerTest {
 		// Calculation MessageConsumer
 		calculationMsgConsumer = JobCalculationMessageConsumer.create();
 		calculationMsgConsumer.dhtConnectionProvider(mockDHT).executor(calculationExecutor);
+//		calculationMsgConsumer.cancelProcedureExecution(procedure);
+//		calculationMsgConsumer.cancelTaskExecution(procedure, task);
+//		calculationMsgConsumer.handleCompletedProcedure(job, outputDomain, inputDomain);
+//		calculationMsgConsumer.handleCompletedTask(job, outputDomain, inputDomain);
+//		calculationMsgConsumer.printResults(job);
 
 	}
 
@@ -35,36 +40,17 @@ public class JobCalculationMessageConsumerTest {
 
 	@Test
 	public void testHandleCompletedTask() {
-		testHandleReceivedTaskMessage(); //Checks handleReceivedMessage() for a COMPLETED_TASK message
-//		testHandleCompletedTaskMessage(); //Checks the actual method invoked
-	}
-	
-	private void testHandleReceivedTaskMessage() {
-		testInputNullTask(); //If any input is null, nothing should happen
-		
 	}
 
-	
-	
-	private void testInputNullTask() {
-		// TODO Auto-generated method stub
-		
+	@Test
+	public void testCancelTaskExecution() {
 	}
 
-	//Procedure
 	@Test
 	public void testHandleCompletedProcedure() {
-		testHandleReceivedProcedureMessage(); //Checks handleReceivedMessage() for a COMPLETED_TASK message
-	 
 	}
 
-	private void testHandleReceivedProcedureMessage() {
-		testInputNullProcedure(); //If any input is null, nothing should happen
-		
-	}
-
-	private void testInputNullProcedure() {
-		// TODO Auto-generated method stub
-		
+	@Test
+	public void testcancelProcedureExecution() {
 	}
 }

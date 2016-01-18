@@ -2,6 +2,7 @@ package mapreduce.execution.tasks;
 
 import java.io.Serializable;
 
+import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.IDomain;
 import mapreduce.execution.finishables.AbstractFinishable;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -95,7 +96,10 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	public Task addOutputDomain(IDomain domain) {
 		return (Task) super.addOutputDomain(domain);
 	}
-
+	@Override 
+	public ExecutorTaskDomain resultOutputDomain() {
+		return (ExecutorTaskDomain) super.resultOutputDomain();
+	}
 	@Override
 	public String toString() {
 		return "Task [key=" + key
