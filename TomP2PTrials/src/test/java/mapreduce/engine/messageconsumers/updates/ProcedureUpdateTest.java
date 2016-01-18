@@ -45,7 +45,7 @@ public class ProcedureUpdateTest {
 		// Both null
 		outputDomain = null;
 		procedure = null;
-		procedure = procedureUpdate.executeUpdate(outputDomain, procedure);
+		procedureUpdate.executeUpdate(outputDomain, procedure);
 		assertEquals(null, procedure);
 
 	}
@@ -55,17 +55,17 @@ public class ProcedureUpdateTest {
 		// Procedure null
 		procedure = null;
 		outputDomain = Mockito.mock(IDomain.class);
-		procedure = procedureUpdate.executeUpdate(outputDomain, procedure);
+		procedureUpdate.executeUpdate(outputDomain, procedure);
 		assertEquals(null, procedure);
 	}
 
 	@Test
 	public void testDomainNull() {
 		// Output domain null
-		procedure = Mockito.mock(Procedure.class);
+		Mockito.mock(Procedure.class);
 		Procedure tmp = procedure;
 		outputDomain = null;
-		procedure = procedureUpdate.executeUpdate(outputDomain, procedure);
+		procedureUpdate.executeUpdate(outputDomain, procedure);
 		assertEquals(tmp, procedure);
 
 	}
@@ -73,10 +73,10 @@ public class ProcedureUpdateTest {
 	@Test
 	public void testNonNull() {
 		// Both not null
-		procedure = Mockito.mock(Procedure.class);
+		Mockito.mock(Procedure.class);
 		Procedure tmp = procedure;
 		outputDomain = Mockito.mock(IDomain.class);
-		procedure = procedureUpdate.executeUpdate(outputDomain, procedure);
+		procedureUpdate.executeUpdate(outputDomain, procedure);
 		assertEquals(tmp, procedure);
 	}
 
@@ -86,7 +86,7 @@ public class ProcedureUpdateTest {
 		Procedure procedure = Mockito.mock(Procedure.class);
 		Procedure pTmp = procedure;
 		// Wrong domain type --> returns old procedure and logs exception
-		procedure = procedureUpdate.internalUpdate(outputDomain, procedure);
+		procedureUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(pTmp, procedure);
 	}
 
@@ -98,7 +98,7 @@ public class ProcedureUpdateTest {
 		Mockito.when(procedure.isFinished()).thenReturn(true);
 		Procedure pTmp = procedure;
 		// Wrong domain type --> returns old procedure and logs exception
-		procedure = procedureUpdate.internalUpdate(outputDomain, procedure);
+		procedureUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(pTmp, procedure);
 	}
 
@@ -110,7 +110,7 @@ public class ProcedureUpdateTest {
 		Mockito.when(procedure.isFinished()).thenReturn(true);
 		Procedure pTmp = procedure;
 		// Wrong domain type --> returns old procedure and logs exception
-		procedure = procedureUpdate.internalUpdate(outputDomain, procedure);
+		procedureUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(pTmp, procedure);
 	}
 
@@ -122,7 +122,7 @@ public class ProcedureUpdateTest {
 		Mockito.when(procedure.isFinished()).thenReturn(true);
 		Procedure pTmp = procedure;
 		// Wrong domain type --> returns old procedure and logs exception
-		procedure = procedureUpdate.internalUpdate(outputDomain, procedure);
+		procedureUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(pTmp, procedure);
 	}
 
@@ -141,24 +141,25 @@ public class ProcedureUpdateTest {
 		assertEquals(StartProcedure.class.getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(false, job.isFinished());
 		assertEquals(null, job.currentProcedure().dataInputDomain());
-		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelProcedureExecution(start); 
+		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelProcedureExecution(start);
 
 		IDomain o = JobProcedureDomain.create(job.id(), 0, "E1", start.getClass().getSimpleName(), start.procedureIndex());
-		Procedure p = procedureUpdate.internalUpdate(o, job.currentProcedure());
-
-		assertEquals(p, job.currentProcedure());
+	 
+		procedureUpdate.internalUpdate(o, job.currentProcedure());
+		Procedure p = job.currentProcedure();
 		assertEquals(true, start.isFinished());
 		assertEquals(false, p.isFinished());
 		assertEquals(1, job.currentProcedure().procedureIndex());
 		assertEquals(WordCountMapper.class.getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(false, job.isFinished());
 		assertEquals(o, job.currentProcedure().dataInputDomain());
-		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(start); 
+		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(start);
 
 		// Finish the job
 		o = JobProcedureDomain.create(job.id(), 0, "E1", p.getClass().getSimpleName(), p.procedureIndex());
 		Procedure beforeInc = p;
-		p = procedureUpdate.internalUpdate(o, job.currentProcedure());
+		procedureUpdate.internalUpdate(o, job.currentProcedure());
+		p = job.currentProcedure();
 
 		assertEquals(p.executable().getClass().getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(true, beforeInc.isFinished());
@@ -169,7 +170,7 @@ public class ProcedureUpdateTest {
 		assertEquals(true, job.isFinished());
 		assertEquals(null, job.currentProcedure().dataInputDomain()); // Can't be added anymore if its finished --> EndProcedure is always finished
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(start);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(beforeInc); 
+		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(beforeInc);
 	}
 
 }

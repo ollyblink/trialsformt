@@ -11,6 +11,6 @@ public interface IUpdate {
 	 * @param procedure
 	 * @return updated procedure (either the same as before or the one to which it was updated) or null if procedure input parameter was null
 	 */
-	public Procedure executeUpdate(IDomain outputDomain, Procedure procedure);
+	public void executeUpdate(IDomain outputDomain, Procedure procedure);
 
 }

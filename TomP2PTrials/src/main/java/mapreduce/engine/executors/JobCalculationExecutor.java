@@ -47,7 +47,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 		// Now we actually wanna retrieve the data from the specified locations...
 		// ListMultimap<Task, BaseFuture> listMultimap = getMultimap(procedure);
 		// listMultimap.put(task,
-		task.incrementActiveCount();
+//		task.incrementActiveCount();
 		dhtConnectionProvider.getAll(task.key(), procedure.dataInputDomain().toString()).awaitUninterruptibly()
 				.addListener(new BaseFutureAdapter<FutureGet>() {
 

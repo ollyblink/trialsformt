@@ -41,7 +41,7 @@ public class TaskUpdateTest {
 		// Both null
 		outputDomain = null;
 		procedure = null;
-		procedure = taskUpdate.executeUpdate(outputDomain, procedure);
+		taskUpdate.executeUpdate(outputDomain, procedure);
 		assertEquals(null, procedure);
 
 	}
@@ -51,7 +51,7 @@ public class TaskUpdateTest {
 		// Procedure null
 		procedure = null;
 		outputDomain = Mockito.mock(IDomain.class);
-		procedure = taskUpdate.executeUpdate(outputDomain, procedure);
+		taskUpdate.executeUpdate(outputDomain, procedure);
 		assertEquals(null, procedure);
 	}
 
@@ -61,7 +61,7 @@ public class TaskUpdateTest {
 		procedure = Mockito.mock(Procedure.class);
 		Procedure tmp = procedure;
 		outputDomain = null;
-		procedure = taskUpdate.executeUpdate(outputDomain, procedure);
+		taskUpdate.executeUpdate(outputDomain, procedure);
 		assertEquals(tmp, procedure);
 
 	}
@@ -72,7 +72,7 @@ public class TaskUpdateTest {
 		procedure = Mockito.mock(Procedure.class);
 		Procedure tmp = procedure;
 		outputDomain = Mockito.mock(IDomain.class);
-		procedure = taskUpdate.executeUpdate(outputDomain, procedure);
+		taskUpdate.executeUpdate(outputDomain, procedure);
 		assertEquals(tmp, procedure);
 	}
 
@@ -82,7 +82,7 @@ public class TaskUpdateTest {
 		Procedure procedure = Mockito.mock(Procedure.class);
 		Procedure pTmp = procedure;
 		// Wrong domain type --> returns old procedure and logs exception
-		procedure = taskUpdate.internalUpdate(outputDomain, procedure);
+		taskUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(pTmp, procedure);
 	}
 
@@ -94,7 +94,7 @@ public class TaskUpdateTest {
 		Procedure procedure = Mockito.mock(Procedure.class);
 		Procedure pTmp = procedure;
 		// Wrong domain type --> returns old procedure and logs exception
-		procedure = taskUpdate.internalUpdate(outputDomain, procedure);
+		taskUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(pTmp, procedure);
 		taskUpdate = tmp;
 	}
@@ -107,7 +107,7 @@ public class TaskUpdateTest {
 		ExecutorTaskDomain outputDomain = ExecutorTaskDomain.create("hello", "E1", 0, null);
 
 		assertEquals(0, procedure.tasks().size());
-		procedure = taskUpdate.internalUpdate(outputDomain, procedure);
+		taskUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(1, procedure.tasks().size());
 		Task task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -123,7 +123,7 @@ public class TaskUpdateTest {
 		ExecutorTaskDomain outputDomain = ExecutorTaskDomain.create("hello", "E1", 0, null);
 
 		assertEquals(0, procedure.tasks().size());
-		procedure = taskUpdate.internalUpdate(outputDomain, procedure);
+		taskUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(1, procedure.tasks().size());
 		Task task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -133,7 +133,7 @@ public class TaskUpdateTest {
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
-		procedure = taskUpdate.internalUpdate(outputDomain, procedure);// Second execution with the same output domain should not have any effect
+		taskUpdate.internalUpdate(outputDomain, procedure);// Second execution with the same output domain should not have any effect
 		assertEquals(1, procedure.tasks().size());
 		task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -145,7 +145,7 @@ public class TaskUpdateTest {
 
 		// From same executor, but different domain (it's an additional execution!!)
 		ExecutorTaskDomain outputDomain2 = ExecutorTaskDomain.create("hello", "E1", 1, null);
-		procedure = taskUpdate.internalUpdate(outputDomain2, procedure);
+		taskUpdate.internalUpdate(outputDomain2, procedure);
 		assertEquals(1, procedure.tasks().size()); // will stay the same as it contains it already
 		task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -157,7 +157,7 @@ public class TaskUpdateTest {
 
 		// From same executor, but different domain (it's an additional execution!!)
 		ExecutorTaskDomain outputDomain3 = ExecutorTaskDomain.create("hello", "E1", 2, null);
-		procedure = taskUpdate.internalUpdate(outputDomain3, procedure);
+		taskUpdate.internalUpdate(outputDomain3, procedure);
 		assertEquals(1, procedure.tasks().size()); // will stay the same as it contains it already
 		task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -178,7 +178,7 @@ public class TaskUpdateTest {
 		ExecutorTaskDomain outputDomain = ExecutorTaskDomain.create("hello", "E1", 0, null);
 
 		assertEquals(0, procedure.tasks().size());
-		procedure = taskUpdate.internalUpdate(outputDomain, procedure);
+		taskUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(1, procedure.tasks().size());
 		Task task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -188,7 +188,7 @@ public class TaskUpdateTest {
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
-		procedure = taskUpdate.internalUpdate(outputDomain, procedure);// Second execution with the same output domain should not have any effect
+		taskUpdate.internalUpdate(outputDomain, procedure);// Second execution with the same output domain should not have any effect
 		assertEquals(1, procedure.tasks().size());
 		task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -200,7 +200,7 @@ public class TaskUpdateTest {
 
 		// From same executor, but different domain (it's an additional execution!!)
 		ExecutorTaskDomain outputDomain2 = ExecutorTaskDomain.create("hello", "E1", 1, null);
-		procedure = taskUpdate.internalUpdate(outputDomain2, procedure);
+		taskUpdate.internalUpdate(outputDomain2, procedure);
 		assertEquals(1, procedure.tasks().size()); // will stay the same as it contains it already
 		task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -212,7 +212,7 @@ public class TaskUpdateTest {
 
 		// From same executor, but different domain (it's an additional execution!!)
 		ExecutorTaskDomain outputDomain3 = ExecutorTaskDomain.create("hello", "E1", 2, null);
-		procedure = taskUpdate.internalUpdate(outputDomain3, procedure);
+		taskUpdate.internalUpdate(outputDomain3, procedure);
 		assertEquals(1, procedure.tasks().size()); // will stay the same as it contains it already
 		task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -224,7 +224,7 @@ public class TaskUpdateTest {
 
 		// From different executor finally
 		ExecutorTaskDomain outputDomain4 = ExecutorTaskDomain.create("hello", "E2", 0, null);
-		procedure = taskUpdate.internalUpdate(outputDomain4, procedure);
+		taskUpdate.internalUpdate(outputDomain4, procedure);
 		assertEquals(1, procedure.tasks().size()); // will stay the same as it contains it already
 		task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());
@@ -236,7 +236,7 @@ public class TaskUpdateTest {
 
 		// From different executor again, but nothing changes anymore due to the finished procedure
 		ExecutorTaskDomain outputDomain5 = ExecutorTaskDomain.create("hello", "E3", 0, null);
-		procedure = taskUpdate.internalUpdate(outputDomain5, procedure);
+		taskUpdate.internalUpdate(outputDomain5, procedure);
 		assertEquals(1, procedure.tasks().size()); // will stay the same as it contains it already
 		task = procedure.tasks().get(0);
 		assertEquals("hello", task.key());

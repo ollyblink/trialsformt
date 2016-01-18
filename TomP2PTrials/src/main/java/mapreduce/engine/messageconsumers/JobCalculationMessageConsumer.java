@@ -67,61 +67,83 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	private void handleReceivedMessage(Job job, IDomain outputDomain, JobProcedureDomain inputDomain, IUpdate iUpdate) {
-
 		if (job == null || outputDomain == null || inputDomain == null || iUpdate == null) {
 			return;
 		}
-		Procedure procedure = job.currentProcedure();
-		JobProcedureDomain receivedOutputProcedureDomain = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
+		JobProcedureDomain rJPD = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
 				: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
-		if (procedure.procedureIndex() <= receivedOutputProcedureDomain.procedureIndex()) {
-			if (procedure.procedureIndex() < receivedOutputProcedureDomain.procedureIndex()) {
-				// Means this executor is behind in the execution than the one that sent this message
+
+		if (job.currentProcedure().procedureIndex() > rJPD.procedureIndex()) {
+			logger.info("Received an old message: nothing to do.");
+			return;
+		} else {
+			// need to increment procedure because we are behind in execution?
+			tryIncrementProcedure(job, inputDomain, rJPD);
+
+			// Same input data? Then we may try to update tasks/procedures
+			tryUpdate(job, inputDomain, outputDomain, iUpdate);
+
+			// Anything left to execute for this procedure?
+			tryExecuteProcedure(job);
+		}
+	}
+
+	private void tryIncrementProcedure(Job job, JobProcedureDomain dataInputDomain, JobProcedureDomain rJPD) {
+		Procedure procedure = job.currentProcedure();
+		if (procedure.procedureIndex() < rJPD.procedureIndex()) {
+			// Means this executor is behind in the execution than the one that sent this message --> increment until we are up to date again
+			cancelProcedureExecution(procedure);
+			while (procedure.procedureIndex() < rJPD.procedureIndex()) {
+				job.incrementProcedureIndex();
+			}
+			procedure.dataInputDomain(dataInputDomain);
+		} // no else needed... if it's the same procedure index, we are up to date and can try to update
+	}
+
+	private void tryUpdate(Job job, JobProcedureDomain inputDomain, IDomain outputDomain, IUpdate iUpdate) {
+		Procedure procedure = job.currentProcedure();
+		if (procedure.dataInputDomain().equals(inputDomain)) { // same procedure, same input data location: everything is fine!
+			if (procedure.dataInputDomain().expectedNrOfFiles() < inputDomain.expectedNrOfFiles()) {// looks like the received had more already
+				procedure.dataInputDomain().expectedNrOfFiles(inputDomain.expectedNrOfFiles());
+			}
+			iUpdate.executeUpdate(outputDomain, procedure); // Only here: execute the received task/procedure update
+		} else { // May have to change input data location (inputDomain)
+			// executor of received message executes on different input data! Need to synchronize
+			if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {
+				// We have completed fewer tasks with our data set than the incoming... abort us and use the incoming data set location instead
 				cancelProcedureExecution(procedure);
-				while (procedure.procedureIndex() < receivedOutputProcedureDomain.procedureIndex()) {
-					job.incrementProcedureIndex();
-				}
 				procedure.dataInputDomain(inputDomain);
-			} // no else needed... if it's the same procedure index, we are up to date and can update
-			if (procedure.dataInputDomain().equals(inputDomain)) { // same procedure, same input data location: everything is fine!
-				if (procedure.dataInputDomain().expectedNrOfFiles() < inputDomain.expectedNrOfFiles()) {// looks like the received had more already
-					procedure.dataInputDomain().expectedNrOfFiles(inputDomain.expectedNrOfFiles());
+				// tryExecuting(procedure);
+			} else if (procedure.nrOfFinishedTasks() == inputDomain.nrOfFinishedTasks()) { // What if they executed the same number of tasks?
+				// TODO: What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most
+				// likely finish more tasks quicker
+				logger.info("TODO: finished the same number of tasks with different data sets...\n"
+						+ "What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most likely finish more tasks quicker\n"
+						+ "Or compare the tasks output values size");
+			} // else{ ignore, as we are the ones that finished more already...
+		}
+	}
+
+	private void tryExecuteProcedure(Job job) {
+		Procedure procedure = job.currentProcedure();
+		if (!job.isFinished()) {
+			if ((procedure.tasks().size() < procedure.dataInputDomain().expectedNrOfFiles() || procedure.tasks().size() == 0)
+					&& procedure.procedureIndex() > 0) {
+				// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
+				// procedure
+				getTaskKeysFromNetwork(procedure);
+			} else if (procedure.tasks().size() == procedure.dataInputDomain().expectedNrOfFiles()) {
+				for (Task task : procedure.tasks()) {
+					submitTask(procedure, task);
 				}
-				procedure = iUpdate.executeUpdate(outputDomain, procedure); //Only here: execute the received task/procedure update
-			} else { // May have to change input data location (inputDomain)
-				// executor of received message executes on different input data! Need to synchronize
-				if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {
-					// We have completed fewer tasks with our data set than the incoming... abort us and use the incoming data set location instead
-					cancelProcedureExecution(procedure);
-					procedure.dataInputDomain(inputDomain);
-					// tryExecuting(procedure);
-				} else if (procedure.nrOfFinishedTasks() == inputDomain.nrOfFinishedTasks()) { // What if they executed the same number of tasks?
-					// TODO: What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most
-					// likely finish more tasks quicker
-					logger.info("TODO: finished the same number of tasks with different data sets...\n"
-							+ "What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most likely finish more tasks quicker\n"
-							+ "Or compare the tasks output values size");
-				} // else{ ignore, as we are the ones that finished more already...
 			}
-			if (!job.isFinished()) {
-				if ((procedure.tasks().size() < procedure.dataInputDomain().expectedNrOfFiles() || procedure.tasks().size() == 0)
-						&& procedure.procedureIndex() > 0) {
-					// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
-					// procedure
-					getTaskKeysFromNetwork(procedure);
-				} else if (procedure.tasks().size() == procedure.dataInputDomain().expectedNrOfFiles()) {
-					for (Task task : procedure.tasks()) {
-						submitTask(procedure, task);
-					}
-				}
-			} else {
-				ResultPrinter.printResults(dhtConnectionProvider, procedure.resultOutputDomain().toString());
-			}
+		} else {
+			ResultPrinter.printResults(dhtConnectionProvider, procedure.resultOutputDomain().toString());
 		}
 	}
 
 	private void submitTask(Procedure procedure, Task task) {
-		if (task.canBeExecuted()) { 
+		if (task.canBeExecuted()) {
 			task.incrementActiveCount();
 			addTaskFuture(procedure, task, threadPoolExecutor.submit(new Runnable() {
 

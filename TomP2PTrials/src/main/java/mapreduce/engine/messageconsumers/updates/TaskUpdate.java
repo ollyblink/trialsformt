@@ -17,7 +17,7 @@ public class TaskUpdate extends AbstractUpdate {
 	}
 
 	@Override
-	protected Procedure internalUpdate(IDomain outputDomain, Procedure procedure) throws ClassCastException, NullPointerException {
+	protected void internalUpdate(IDomain outputDomain, Procedure procedure) throws ClassCastException, NullPointerException {
 		ExecutorTaskDomain outputETDomain = (ExecutorTaskDomain) outputDomain;
 		Task receivedTask = Task.create(outputETDomain.taskId());
 		List<Task> tasks = procedure.tasks();
@@ -36,8 +36,7 @@ public class TaskUpdate extends AbstractUpdate {
 				// Transfer data to procedure domain! This may cause the procedure to become finished
 				msgConsumer.executor().switchDataFromTaskToProcedureDomain(procedure, task);
 			}
-		}
-		return procedure;
+		} 
 
 	}
 }

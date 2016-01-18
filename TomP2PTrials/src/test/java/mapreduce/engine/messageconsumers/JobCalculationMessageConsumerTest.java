@@ -2,14 +2,20 @@ package mapreduce.engine.messageconsumers;
 
 import static org.junit.Assert.*;
 
-import org.junit.AfterClass;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import mapreduce.engine.executors.JobCalculationExecutor;
+import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.jobs.Job;
+import mapreduce.execution.procedures.Procedure;
+import mapreduce.execution.procedures.StartProcedure;
+import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.storage.IDHTConnectionProvider;
-import mapreduce.testutils.TestUtils;
 
 public class JobCalculationMessageConsumerTest {
 
@@ -26,20 +32,41 @@ public class JobCalculationMessageConsumerTest {
 		// Calculation MessageConsumer
 		calculationMsgConsumer = JobCalculationMessageConsumer.create();
 		calculationMsgConsumer.dhtConnectionProvider(mockDHT).executor(calculationExecutor);
-//		calculationMsgConsumer.cancelProcedureExecution(procedure);
-//		calculationMsgConsumer.cancelTaskExecution(procedure, task);
-//		calculationMsgConsumer.handleCompletedProcedure(job, outputDomain, inputDomain);
-//		calculationMsgConsumer.handleCompletedTask(job, outputDomain, inputDomain);
-//		calculationMsgConsumer.printResults(job);
 
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
 	}
 
 	@Test
-	public void testHandleCompletedTask() {
+	public void testTryIncrementProcedure() throws Exception {
+		Method tryIncrementProcedureMethod = calculationMsgConsumer.getClass().getDeclaredMethod("tryIncrementProcedure", Job.class,
+				JobProcedureDomain.class, JobProcedureDomain.class);
+		tryIncrementProcedureMethod.setAccessible(true);
+
+		// Currently: first procedure (Start procedure)
+		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false);
+		JobProcedureDomain dataInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", "INITIAL", -1);
+		job.currentProcedure().dataInputDomain(dataInputDomain);
+		JobProcedureDomain rOutputDomain = JobProcedureDomain.create(job.id(), 0, "E1",
+				job.currentProcedure().executable().getClass().getSimpleName(), job.currentProcedure().procedureIndex());
+		job.currentProcedure().addOutputDomain(rOutputDomain);
+
+		
+		// Incoming: same: nothing happens 
+		String procedureNameBefore = job.currentProcedure().executable().getClass().getSimpleName();
+		int procedureIndexBefore = job.currentProcedure().procedureIndex();
+		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, dataInputDomain, rOutputDomain);
+		String procedureNameAfter = job.currentProcedure().executable().getClass().getSimpleName();
+		int procedureIndexAfter = job.currentProcedure().procedureIndex();
+		assertEquals(procedureNameBefore, procedureNameAfter);
+		assertEquals(procedureIndexBefore, procedureIndexAfter);
+		
+//		//Incoming: after: updates!
+//		String procedureNameBefore = job.currentProcedure().executable().getClass().getSimpleName();
+//		int procedureIndexBefore = job.currentProcedure().procedureIndex();
+//		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, dataInputDomain, rOutputDomain);
+//		String procedureNameAfter = job.currentProcedure().executable().getClass().getSimpleName();
+//		int procedureIndexAfter = job.currentProcedure().procedureIndex();
+//		assertEquals(procedureNameBefore, procedureNameAfter);
+//		assertEquals(procedureIndexBefore, procedureIndexAfter);
 	}
 
 	@Test
@@ -51,6 +78,6 @@ public class JobCalculationMessageConsumerTest {
 	}
 
 	@Test
-	public void testcancelProcedureExecution() {
+	public void testCancelProcedureExecution() {
 	}
 }
