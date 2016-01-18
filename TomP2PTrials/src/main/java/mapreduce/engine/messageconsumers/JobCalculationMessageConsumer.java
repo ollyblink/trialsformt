@@ -13,12 +13,14 @@ import com.google.common.collect.ListMultimap;
 
 import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobCalculationExecutor;
+import mapreduce.engine.messageconsumers.updates.IUpdate;
+import mapreduce.engine.messageconsumers.updates.TaskUpdate;
+import mapreduce.engine.messageconsumers.updates.ProcedureUpdate;
 import mapreduce.engine.multithreading.PriorityExecutor;
 import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.IDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
-import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.tasks.Task;
 import mapreduce.storage.IDHTConnectionProvider;
@@ -30,35 +32,30 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
 
 public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
+	private static final int DEFAULT_NR_OF_THREADS = 1;
+
 	private static Logger logger = LoggerFactory.getLogger(JobCalculationMessageConsumer.class);
 
-	/** Only used to distinguish if its a completed procedure or task to update */
-	private interface IUpdate {
-		public Procedure executeUpdate(IDomain outputDomain, Procedure currentProcedure);
-	}
-
 	private PriorityExecutor threadPoolExecutor;
-
-	private int maxThreads = 8;
 
 	private Map<String, Boolean> currentlyRetrievingTaskKeysForProcedure = SyncedCollectionProvider.syncedHashMap();
 
 	private Map<String, ListMultimap<Task, Future<?>>> futures;
 
-	private JobCalculationMessageConsumer() {
+	private JobCalculationMessageConsumer(int maxThreads) {
+		super();
 		futures = SyncedCollectionProvider.syncedHashMap();
 		this.threadPoolExecutor = PriorityExecutor.newFixedThreadPool(maxThreads);
 
 	}
 
-	public static JobCalculationMessageConsumer create() {
-		return new JobCalculationMessageConsumer();
+	public static JobCalculationMessageConsumer create(int nrOfThreads) {
+		return new JobCalculationMessageConsumer(nrOfThreads);
 	}
 
-	// @Override
-	// public MRJobExecutionManagerMessageConsumer canTake(boolean canTake) {
-	// return (MRJobExecutionManagerMessageConsumer) super.canTake(canTake);
-	// }
+	public static JobCalculationMessageConsumer create() {
+		return new JobCalculationMessageConsumer(DEFAULT_NR_OF_THREADS);
+	}
 
 	private void handleReceivedMessage(Job job, IDomain outputDomain, JobProcedureDomain inputDomain, IUpdate iUpdate) {
 
@@ -110,7 +107,8 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	private void tryExecuting(Procedure procedure) {
-		if ((procedure.tasks().size() < procedure.dataInputDomain().expectedNrOfFiles() || procedure.tasks().size() == 0) && procedure.procedureIndex() > 0) {
+		if ((procedure.tasks().size() < procedure.dataInputDomain().expectedNrOfFiles() || procedure.tasks().size() == 0)
+				&& procedure.procedureIndex() > 0) {
 			// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
 			// procedure
 			getTaskKeysFromNetwork(procedure);
@@ -123,55 +121,12 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 
 	@Override
 	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
-		handleReceivedMessage(job, outputDomain, inputDomain, new IUpdate() {
-			@Override
-			public Procedure executeUpdate(IDomain outputDomain, Procedure procedure) {
-				JobProcedureDomain outputJPD = (JobProcedureDomain) outputDomain;
-				procedure.addOutputDomain(outputJPD);
-				if (procedure.isFinished()) {
-					cancelProcedureExecution(procedure);
-					job.incrementProcedureIndex();
-					job.currentProcedure().dataInputDomain(outputJPD);
-					if (job.currentProcedure().executable().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
-						job.isFinished(true);
-						printResults(job);
-					} else {
-						procedure = job.currentProcedure();
-					}
-				}
-				return procedure;
-			}
-		});
+		handleReceivedMessage(job, outputDomain, inputDomain, new ProcedureUpdate(job, this));
 	}
 
 	@Override
 	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
-		handleReceivedMessage(job, outputDomain, inputDomain, new IUpdate() {
-
-			@Override
-			public Procedure executeUpdate(IDomain outputDomain, Procedure procedure) {
-				ExecutorTaskDomain outputETDomain = (ExecutorTaskDomain) outputDomain;
-				Task receivedTask = Task.create(outputETDomain.taskId());
-				List<Task> tasks = procedure.tasks();
-				Task task = receivedTask;
-				if (!tasks.contains(task)) {
-					procedure.addTask(task);
-				} else {
-					task = tasks.get(tasks.indexOf(task));
-				}
-				if (!task.isFinished()) {// Is finished before adding new output procedure domain? then ignore update
-					task.addOutputDomain(outputETDomain);
-					task.decrementActiveCount(); // TODO this one looks like its at the wrong position... rethink
-					if (task.isFinished()) {// Is finished after adding new output procedure domain? then abort any executions of this task and
-											// transfer the task's output <K,{V}> to the procedure domain
-						cancelTaskExecution(procedure, task); // If so, no execution needed anymore
-						// Transfer data to procedure domain! This may cause the procedure to become finished
-						executor().switchDataFromTaskToProcedureDomain(procedure, task);
-					}
-				}
-				return procedure;
-			}
-		});
+		handleReceivedMessage(job, outputDomain, inputDomain, new TaskUpdate(this));
 	}
 
 	private void submitTask(Procedure procedure, Task task) {
@@ -198,7 +153,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		taskFutures.put(task, taskFuture);
 	}
 
-	protected void cancelProcedureExecution(Procedure procedure) {
+	public void cancelProcedureExecution(Procedure procedure) {
 		ListMultimap<Task, Future<?>> procedureFutures = futures.get(procedure.dataInputDomain().toString());
 		if (procedureFutures != null) {
 			for (Future<?> taskFuture : procedureFutures.values()) {
@@ -207,7 +162,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		}
 	}
 
-	protected void cancelTaskExecution(Procedure procedure, Task task) {
+	public void cancelTaskExecution(Procedure procedure, Task task) {
 		ListMultimap<Task, Future<?>> procedureFutures = futures.get(procedure.dataInputDomain().toString());
 		if (procedureFutures != null) {
 			List<Future<?>> taskFutures = procedureFutures.get(task);
@@ -257,7 +212,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		}
 	}
 
-	private void printResults(Job job) {
+	public void printResults(Job job) {
 		// try {
 		// Thread.sleep(2000);
 		// } catch (InterruptedException e) {

@@ -21,7 +21,7 @@ public abstract class AbstractFinishable implements IFinishable {
 	/** How many times this object needs to be executed before it is declared finished */
 	protected int nrOfSameResultHash = 1; // Needs at least one
 	/** Assert that there are multiple output domains received before a task is finished */
-	private boolean needsMultipleDifferentDomains;
+	private boolean needsMultipleDifferentExecutors;
 
 	public AbstractFinishable() {
 		this.outputDomains = SyncedCollectionProvider.syncedArrayList();
@@ -49,10 +49,12 @@ public abstract class AbstractFinishable implements IFinishable {
 		Number160 r = null;
 		for (Number160 resultHash : results.keySet()) {
 			if (results.get(resultHash).size() >= nrOfSameResultHash) {
-				if (needsMultipleDifferentDomains) {
+				if (needsMultipleDifferentExecutors) {
 					List<IDomain> list = results.get(resultHash);
-					Set<IDomain> asSet = new HashSet<>();
-					asSet.addAll(list);
+					Set<String> asSet = new HashSet<>();
+					for(IDomain d: list){
+						asSet.add(d.executor());
+					}
 					if (asSet.size() < nrOfSameResultHash) {
 						continue;
 					}
@@ -102,7 +104,7 @@ public abstract class AbstractFinishable implements IFinishable {
 
 	@Override
 	public AbstractFinishable addOutputDomain(IDomain domain) {
-		if (!isFinished()) {
+		if (!isFinished() && !this.outputDomains.contains(domain)) {
 			this.outputDomains.add(domain);
 		}
 		return this;
@@ -115,8 +117,8 @@ public abstract class AbstractFinishable implements IFinishable {
 	}
 
 	@Override
-	public AbstractFinishable needsMultipleDifferentDomains(boolean needsMultipleDifferentDomains) {
-		this.needsMultipleDifferentDomains = needsMultipleDifferentDomains;
+	public AbstractFinishable needsMultipleDifferentExecutors(boolean needsMultipleDifferentExecutors) {
+		this.needsMultipleDifferentExecutors = needsMultipleDifferentExecutors;
 		return this;
 	}
 

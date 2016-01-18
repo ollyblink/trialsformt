@@ -3,6 +3,7 @@ package mapreduce.testutils;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import generictests.Example;
 import generictests.MyBroadcastHandler;
@@ -14,6 +15,12 @@ import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.dht.PeerDHT;
 
 public class TestUtils {
+	private static Random random = new Random()	;
+
+	public static IDHTConnectionProvider getTestConnectionProvider() {
+		return getTestConnectionProvider(random.nextInt(40000) + 4000, 1, false, null, null);
+
+	}
 
 	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers) {
 		return getTestConnectionProvider(port, nrOfPeers, false, null, null);

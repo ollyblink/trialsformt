@@ -12,7 +12,7 @@ import net.tomp2p.peers.Number160;
 public interface IFinishable {
 	public boolean isFinished();
 
-	public IFinishable needsMultipleDifferentDomains(boolean needsMultipleDifferentDomains);
+	public IFinishable needsMultipleDifferentExecutors(boolean needsMultipleDifferentDomains);
 
 	public IFinishable addOutputDomain(IDomain domain);
 

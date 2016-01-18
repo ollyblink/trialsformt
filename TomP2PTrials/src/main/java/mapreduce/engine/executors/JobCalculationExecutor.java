@@ -47,70 +47,76 @@ public class JobCalculationExecutor extends AbstractExecutor {
 		// Now we actually wanna retrieve the data from the specified locations...
 		// ListMultimap<Task, BaseFuture> listMultimap = getMultimap(procedure);
 		// listMultimap.put(task,
-		dhtConnectionProvider.getAll(task.key(), procedure.dataInputDomain().toString()).addListener(new BaseFutureAdapter<FutureGet>() {
+		task.incrementActiveCount();
+		dhtConnectionProvider.getAll(task.key(), procedure.dataInputDomain().toString()).awaitUninterruptibly()
+				.addListener(new BaseFutureAdapter<FutureGet>() {
 
-			@Override
-			public void operationComplete(FutureGet future) throws Exception {
-				if (future.isSuccess()) {
-					List<Object> values = syncedArrayList();
-					Set<Number640> valueSet = future.dataMap().keySet();
-					for (Number640 valueHash : valueSet) {
-						Object taskValue = ((Value) future.dataMap().get(valueHash).object()).value();
-						values.add(taskValue);
-					}
-
-					JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.jobId(), procedure.dataInputDomain().jobSubmissionCount(), id,
-							procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
-
-					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
-
-					// logger.info("executeTask: outputJPD: " + outputJPD.toString() + ", outputETD: " + outputETD.toString() + ", procedure:
-					// "
-					// + procedure);
-					IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
-					if (procedure.combiner() != null) {
-						IContext combinerContext = DHTStorageContext.create().outputExecutorTaskDomain(outputETD)
-								.dhtConnectionProvider(dhtConnectionProvider);
-						context.combiner((IExecutable) procedure.combiner(), combinerContext);
-					}
-					((IExecutable) procedure.executable()).process(task.key(), values, context);
-					if (procedure.combiner() != null) {
-						context.combine();
-					}
-					IContext contextToUse = (procedure.combiner() == null ? context : context.combinerContext());
-					Futures.whenAllSuccess(contextToUse.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
-						@Override
-						public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
-							if (future.isSuccess()) {
-								outputETD.resultHash(contextToUse.resultHash());
-								CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
-										procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
-								// dhtCon.broadcastHandler().addBCMessage(msg);
-								dhtConnectionProvider.broadcastHandler().processMessage(msg,
-										dhtConnectionProvider.broadcastHandler().getJob(outputJPD.jobId()));
-								// Adds it to itself, does not receive broadcasts... Makes sure this result is ignored in case another was
-								// received
-								// already
-								dhtConnectionProvider.broadcastCompletion(msg);
-								logger.info("executeTask: Successfully broadcasted TaskCompletedBCMessage for task " + task);
-							} else {
-								logger.warn("executeTask: No success on task execution. Reason: " + future.failedReason());
+					@Override
+					public void operationComplete(FutureGet future) throws Exception {
+						if (future.isSuccess()) {
+							List<Object> values = syncedArrayList();
+							Set<Number640> valueSet = future.dataMap().keySet();
+							for (Number640 valueHash : valueSet) {
+								Object taskValue = ((Value) future.dataMap().get(valueHash).object()).value();
+								values.add(taskValue);
 							}
-							// task.decrementActiveCount();
+
+							JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.jobId(),
+									procedure.dataInputDomain().jobSubmissionCount(), id, procedure.executable().getClass().getSimpleName(),
+									procedure.procedureIndex());
+
+							ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
+
+							// logger.info("executeTask: outputJPD: " + outputJPD.toString() + ", outputETD: " + outputETD.toString() + ", procedure:
+							// "
+							// + procedure);
+							IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD)
+									.dhtConnectionProvider(dhtConnectionProvider);
+							if (procedure.combiner() != null) {
+								IContext combinerContext = DHTStorageContext.create().outputExecutorTaskDomain(outputETD)
+										.dhtConnectionProvider(dhtConnectionProvider);
+								context.combiner((IExecutable) procedure.combiner(), combinerContext);
+							}
+							((IExecutable) procedure.executable()).process(task.key(), values, context);
+							if (procedure.combiner() != null) {
+								context.combine();
+							}
+							IContext contextToUse = (procedure.combiner() == null ? context : context.combinerContext());
+							Futures.whenAllSuccess(contextToUse.futurePutData()).awaitUninterruptibly()
+									.addListener(new BaseFutureAdapter<FutureDone<FutureGet[]>>() {
+								@Override
+								public void operationComplete(FutureDone<FutureGet[]> future) throws Exception {
+									if (future.isSuccess()) {
+										outputETD.resultHash(contextToUse.resultHash());
+										CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
+												procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
+										// dhtCon.broadcastHandler().addBCMessage(msg);
+										dhtConnectionProvider.broadcastHandler().processMessage(msg,
+												dhtConnectionProvider.broadcastHandler().getJob(outputJPD.jobId()));
+										// Adds it to itself, does not receive broadcasts... Makes sure this result is ignored in case another was
+										// received
+										// already
+										dhtConnectionProvider.broadcastCompletion(msg);//
+										task.decrementActiveCount(); // TODO this one looks like its at the wrong position... rethink
+
+										logger.info("executeTask: Successfully broadcasted TaskCompletedBCMessage for task " + task);
+									} else {
+										logger.warn("executeTask: No success on task execution. Reason: " + future.failedReason());
+									}
+								}
+
+							});
+						} else {
+							logger.info("Could not retrieve data for task " + task.key() + " in job procedure domain: "
+									+ procedure.dataInputDomain().toString() + ". Failed reason: " + future.failedReason());
+
 						}
+					}
 
-					});
-				} else {
-					logger.info("Could not retrieve data for task " + task.key() + " in job procedure domain: "
-							+ procedure.dataInputDomain().toString() + ". Failed reason: " + future.failedReason());
-					// task.decrementActiveCount();
-				}
-
-			}
-
-		})
-		// )
-		;
+				})
+				// )
+				;
+		task.decrementActiveCount();
 		// }
 	}
 
@@ -149,7 +155,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 																+ to.toString() + ". ");
 
 												CompletedBCMessage msg = tryFinishProcedure(procedure);
-												if (msg != null) { 
+												if (msg != null) {
 													dhtConnectionProvider.broadcastHandler().processMessage(msg,
 															dhtConnectionProvider.broadcastHandler().getJob(procedure.jobId()));
 													dhtConnectionProvider.broadcastCompletion(msg);

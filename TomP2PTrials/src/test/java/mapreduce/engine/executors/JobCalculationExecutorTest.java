@@ -273,7 +273,7 @@ public class JobCalculationExecutorTest {
 				.expectedNrOfFiles(1);
 
 		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).dataInputDomain(dataDomain).nrOfSameResultHash(1)
-				.needsMultipleDifferentDomains(false).nrOfSameResultHashForTasks(1).needsMultipleDifferentDomainsForTasks(false);
+				.needsMultipleDifferentExecutors(false).nrOfSameResultHashForTasks(1).needsMultipleDifferentExecutorsForTasks(false);
 
 		jobExecutor.tryFinishProcedure(procedure);
 		assertEquals(false, procedure.isFinished());

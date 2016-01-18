@@ -42,7 +42,7 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 	private int nrOfSameResultHashForTasks = 1;
 	/** Just to make sure this indeed is the same procedure of the same job (may be another job with the same procedure) */
 	private String jobId;
-	private boolean needsMultipleDifferentDomainsForTasks;
+	private boolean needsMultipleDifferentExecutorsForTasks;
 
 	private Procedure(Object executable, int procedureIndex) {
 		this.executable = executable;
@@ -146,7 +146,7 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 		synchronized (tasks) {
 			if (!this.tasks.contains(task)) {
 				task.nrOfSameResultHash(nrOfSameResultHashForTasks);
-				task.needsMultipleDifferentDomains(needsMultipleDifferentDomainsForTasks);
+				task.needsMultipleDifferentExecutors(needsMultipleDifferentExecutorsForTasks);
 				this.tasks.add(task);
 			}
 		}
@@ -190,15 +190,15 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 	}
 
 	@Override
-	public Procedure needsMultipleDifferentDomains(boolean needsMultipleDifferentDomains) {
-		return (Procedure) super.needsMultipleDifferentDomains(needsMultipleDifferentDomains);
+	public Procedure needsMultipleDifferentExecutors(boolean needsMultipleDifferentDomains) {
+		return (Procedure) super.needsMultipleDifferentExecutors(needsMultipleDifferentDomains);
 	}
 
-	public Procedure needsMultipleDifferentDomainsForTasks(boolean needsMultipleDifferentDomainsForTasks) {
-		this.needsMultipleDifferentDomainsForTasks = needsMultipleDifferentDomainsForTasks;
+	public Procedure needsMultipleDifferentExecutorsForTasks(boolean needsMultipleDifferentExecutorsForTasks) {
+		this.needsMultipleDifferentExecutorsForTasks = needsMultipleDifferentExecutorsForTasks;
 		synchronized (tasks) { // If it's set on the go, should update all tasks (hopefully never happens...)
 			for (Task task : tasks) {
-				task.needsMultipleDifferentDomains(needsMultipleDifferentDomainsForTasks);
+				task.needsMultipleDifferentExecutors(needsMultipleDifferentExecutorsForTasks);
 			}
 		}
 		return this;
@@ -221,7 +221,7 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 	public String toString() {
 		return "Procedure [executable=" + executable + ", procedureIndex=" + procedureIndex + ", tasks=" + tasks + ", dataInputDomain="
 				+ dataInputDomain + ", combiner=" + combiner + ", nrOfSameResultHashForTasks=" + nrOfSameResultHashForTasks + ", jobId=" + jobId
-				+ ", needsMultipleDifferentDomainsForTasks=" + needsMultipleDifferentDomainsForTasks + "]";
+				+ ", needsMultipleDifferentDomainsForTasks=" + needsMultipleDifferentExecutorsForTasks + "]";
 	}
 
 	@Override
