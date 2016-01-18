@@ -23,7 +23,6 @@ import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
@@ -41,7 +40,7 @@ import net.tomp2p.storage.StorageDisk;
 public class DHTConnectionProvider implements IDHTConnectionProvider {
 	private static final int DEFAULT_NUMBER_OF_PEERS = 1;
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
-	private List<PeerDHT> peerDHTs;
+	private List<PeerDHT> peerDHTs; // TODO: just one...
 	private AbstractMapReduceBroadcastHandler broadcastHandler;
 	private String bootstrapIP;
 	private int port;

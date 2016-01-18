@@ -48,6 +48,6 @@ public class SubmitterMain {
 				.addSucceedingProcedure(jsReducer, null, 1, 1, false, false);
 
 		submissionExecutor.submit(job);
-		Thread.sleep(Long.MAX_VALUE);
+//		Thread.sleep(Long.MAX_VALUE);
 	}
 }

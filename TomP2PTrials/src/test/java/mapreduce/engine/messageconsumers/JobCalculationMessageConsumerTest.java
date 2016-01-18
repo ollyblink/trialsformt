@@ -12,6 +12,7 @@ import org.mockito.Mockito;
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
+import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.StartProcedure;
 import mapreduce.execution.procedures.WordCountMapper;
@@ -37,36 +38,57 @@ public class JobCalculationMessageConsumerTest {
 
 	@Test
 	public void testTryIncrementProcedure() throws Exception {
+
 		Method tryIncrementProcedureMethod = calculationMsgConsumer.getClass().getDeclaredMethod("tryIncrementProcedure", Job.class,
 				JobProcedureDomain.class, JobProcedureDomain.class);
 		tryIncrementProcedureMethod.setAccessible(true);
 
-		// Currently: first procedure (Start procedure)
-		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false);
-		JobProcedureDomain dataInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", "INITIAL", -1);
-		job.currentProcedure().dataInputDomain(dataInputDomain);
-		JobProcedureDomain rOutputDomain = JobProcedureDomain.create(job.id(), 0, "E1",
-				job.currentProcedure().executable().getClass().getSimpleName(), job.currentProcedure().procedureIndex());
-		job.currentProcedure().addOutputDomain(rOutputDomain);
+		Job job = Job.create("S1")
+				.addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false);
+		JobProcedureDomain firstInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", "INITIAL", -1);
+		JobProcedureDomain secondInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain thirdInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
+		JobProcedureDomain lastInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", EndProcedure.class.getSimpleName(), 2);
 
-		
-		// Incoming: same: nothing happens 
+		JobProcedureDomain firstOutputDomain = secondInputDomain;
+		JobProcedureDomain secondOutputDomain = thirdInputDomain;
+		JobProcedureDomain thirdOutputDomain = lastInputDomain;
+
+		job.currentProcedure().dataInputDomain(firstInputDomain);
+		job.currentProcedure().addOutputDomain(firstOutputDomain);
+
+		// Currently: second procedure (Start procedure)
+		job.incrementProcedureIndex(); 
+
+		// Incoming: result for procedure before: nothing happens
 		String procedureNameBefore = job.currentProcedure().executable().getClass().getSimpleName();
 		int procedureIndexBefore = job.currentProcedure().procedureIndex();
-		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, dataInputDomain, rOutputDomain);
+		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, firstInputDomain, firstOutputDomain);
 		String procedureNameAfter = job.currentProcedure().executable().getClass().getSimpleName();
 		int procedureIndexAfter = job.currentProcedure().procedureIndex();
 		assertEquals(procedureNameBefore, procedureNameAfter);
 		assertEquals(procedureIndexBefore, procedureIndexAfter);
-		
-//		//Incoming: after: updates!
-//		String procedureNameBefore = job.currentProcedure().executable().getClass().getSimpleName();
-//		int procedureIndexBefore = job.currentProcedure().procedureIndex();
-//		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, dataInputDomain, rOutputDomain);
-//		String procedureNameAfter = job.currentProcedure().executable().getClass().getSimpleName();
-//		int procedureIndexAfter = job.currentProcedure().procedureIndex();
-//		assertEquals(procedureNameBefore, procedureNameAfter);
-//		assertEquals(procedureIndexBefore, procedureIndexAfter);
+		assertEquals(secondInputDomain, job.currentProcedure().dataInputDomain());
+
+		// Incoming: result for same procedure: nothing happens
+		procedureNameBefore = job.currentProcedure().executable().getClass().getSimpleName();
+		procedureIndexBefore = job.currentProcedure().procedureIndex();
+		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, secondInputDomain, secondOutputDomain);
+		procedureNameAfter = job.currentProcedure().executable().getClass().getSimpleName();
+		procedureIndexAfter = job.currentProcedure().procedureIndex();
+		assertEquals(procedureNameBefore, procedureNameAfter);
+		assertEquals(procedureIndexBefore, procedureIndexAfter);
+		assertEquals(secondInputDomain, job.currentProcedure().dataInputDomain());
+
+		// //Incoming: after: updates current procedure to the one received
+		procedureNameBefore = job.currentProcedure().executable().getClass().getSimpleName();
+		procedureIndexBefore = job.currentProcedure().procedureIndex();
+		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, thirdInputDomain, thirdOutputDomain);
+		procedureNameAfter = job.currentProcedure().executable().getClass().getSimpleName();
+		procedureIndexAfter = job.currentProcedure().procedureIndex();
+		assertEquals(EndProcedure.class.getSimpleName(), procedureNameAfter);
+		assertEquals(2, procedureIndexAfter);
+		assertEquals(thirdInputDomain, job.currentProcedure().dataInputDomain());
 	}
 
 	@Test

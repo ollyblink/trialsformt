@@ -1,6 +1,7 @@
 package mapreduce.execution.jobs;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import mapreduce.execution.procedures.EndProcedure;
@@ -75,6 +76,7 @@ public class Job implements Serializable, Cloneable {
 		this.currentProcedureIndex = 0;
 		this.procedures = SyncedCollectionProvider.syncedArrayList();
 		this.addSucceedingProcedure(StartProcedure.create(), null, 1, 1, false, false);// Add initial
+		this.addSucceedingProcedure(EndProcedure.create(), null, 0, 0, false, false);
 	}
 
 	public static Job create(String jobSubmitterID) {
@@ -163,8 +165,8 @@ public class Job implements Serializable, Cloneable {
 	public Procedure procedure(int index) {
 		if (index < 0) {
 			return procedures.get(0);
-		} else if (index >= procedures.size()) {
-			return createProcedure(EndProcedure.create(), null, 0, 0, false, false);
+		} else if (index >= procedures.size() - 1) {
+			return procedures.get(procedures.size() - 1);
 		} else {
 			return procedures.get(index);
 		}
@@ -209,10 +211,27 @@ public class Job implements Serializable, Cloneable {
 		if (procedure == null) {
 			return this;
 		}
-		Procedure procedureInformation = createProcedure(procedure, combiner, nrOfSameResultHashForProcedure, nrOfSameResultHashForTasks,
+		Procedure procedureI = createProcedure(procedure, combiner, nrOfSameResultHashForProcedure, nrOfSameResultHashForTasks,
 				needsMultipleDifferentExecutors, needsMultipleDifferentExecutorsForTasks);
-		this.procedures.add(procedureInformation);
+		if (this.procedures.size() < 2) {
+			this.procedures.add(procedureI); 
+		} else {
+			this.procedures.add(this.procedures.size() - 1, procedureI);
+		}
 		return this;
+	}
+
+	public static void main(String[] args) {
+		List<Integer> list = new ArrayList<>();
+		list.add(list.size(), 1);
+		list.add(list.size(), 10);
+		list.add(list.size() - 1, 2);
+		list.add(list.size() - 1, 3);
+		list.add(list.size() - 1, 4);
+		list.add(list.size() - 1, 5);
+		list.add(list.size() - 1, 6);
+		list.add(list.size() - 1, 7);
+		System.out.println(list);
 	}
 
 	private Procedure createProcedure(Object procedure, Object combiner, int nrOfSameResultHashForProcedure, int nrOfSameResultHashForTasks,

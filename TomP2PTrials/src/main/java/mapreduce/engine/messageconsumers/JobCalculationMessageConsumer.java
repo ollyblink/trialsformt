@@ -89,14 +89,13 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	private void tryIncrementProcedure(Job job, JobProcedureDomain dataInputDomain, JobProcedureDomain rJPD) {
-		Procedure procedure = job.currentProcedure();
-		if (procedure.procedureIndex() < rJPD.procedureIndex()) {
+		if (job.currentProcedure().procedureIndex() < rJPD.procedureIndex()) {
 			// Means this executor is behind in the execution than the one that sent this message --> increment until we are up to date again
-			cancelProcedureExecution(procedure);
-			while (procedure.procedureIndex() < rJPD.procedureIndex()) {
+			cancelProcedureExecution(job.currentProcedure());
+			while (job.currentProcedure().procedureIndex() < rJPD.procedureIndex()) {
 				job.incrementProcedureIndex();
 			}
-			procedure.dataInputDomain(dataInputDomain);
+			job.currentProcedure().dataInputDomain(dataInputDomain);
 		} // no else needed... if it's the same procedure index, we are up to date and can try to update
 	}
 
