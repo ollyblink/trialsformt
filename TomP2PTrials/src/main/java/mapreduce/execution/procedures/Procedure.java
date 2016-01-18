@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.finishables.AbstractFinishable;
 import mapreduce.execution.tasks.Task;
-import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
