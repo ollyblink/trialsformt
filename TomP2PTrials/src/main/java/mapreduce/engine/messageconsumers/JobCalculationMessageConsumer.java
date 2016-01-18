@@ -56,6 +56,16 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		return new JobCalculationMessageConsumer(DEFAULT_NR_OF_THREADS);
 	}
 
+	@Override
+	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
+		handleReceivedMessage(job, outputDomain, inputDomain, new ProcedureUpdate(job, this));
+	}
+
+	@Override
+	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
+		handleReceivedMessage(job, outputDomain, inputDomain, new TaskUpdate(this));
+	}
+
 	private void handleReceivedMessage(Job job, IDomain outputDomain, JobProcedureDomain inputDomain, IUpdate iUpdate) {
 
 		if (job == null || outputDomain == null || inputDomain == null || iUpdate == null) {
@@ -77,7 +87,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 				if (procedure.dataInputDomain().expectedNrOfFiles() < inputDomain.expectedNrOfFiles()) {// looks like the received had more already
 					procedure.dataInputDomain().expectedNrOfFiles(inputDomain.expectedNrOfFiles());
 				}
-				procedure = iUpdate.executeUpdate(outputDomain, procedure);
+				procedure = iUpdate.executeUpdate(outputDomain, procedure); //Only here: execute the received task/procedure update
 			} else { // May have to change input data location (inputDomain)
 				// executor of received message executes on different input data! Need to synchronize
 				if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {
@@ -94,45 +104,24 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 				} // else{ ignore, as we are the ones that finished more already...
 			}
 			if (!job.isFinished()) {
-				tryExecuting(procedure);
+				if ((procedure.tasks().size() < procedure.dataInputDomain().expectedNrOfFiles() || procedure.tasks().size() == 0)
+						&& procedure.procedureIndex() > 0) {
+					// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
+					// procedure
+					getTaskKeysFromNetwork(procedure);
+				} else if (procedure.tasks().size() == procedure.dataInputDomain().expectedNrOfFiles()) {
+					for (Task task : procedure.tasks()) {
+						submitTask(procedure, task);
+					}
+				}
 			} else {
 				ResultPrinter.printResults(dhtConnectionProvider, procedure.resultOutputDomain().toString());
 			}
-
 		}
-		// else if (receivedOutputProcedureDomain.procedureIndex() == 0) {// Start procedure... handle differently
-		//
-		// }
-		// else{ ignore, as this is a message for an old procedure }
-		//
-	}
-
-	private void tryExecuting(Procedure procedure) {
-		if ((procedure.tasks().size() < procedure.dataInputDomain().expectedNrOfFiles() || procedure.tasks().size() == 0)
-				&& procedure.procedureIndex() > 0) {
-			// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
-			// procedure
-			getTaskKeysFromNetwork(procedure);
-		} else if (procedure.tasks().size() == procedure.dataInputDomain().expectedNrOfFiles()) {
-			for (Task task : procedure.tasks()) {
-				submitTask(procedure, task);
-			}
-		}
-	}
-
-	@Override
-	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
-		handleReceivedMessage(job, outputDomain, inputDomain, new ProcedureUpdate(job, this));
-	}
-
-	@Override
-	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
-		handleReceivedMessage(job, outputDomain, inputDomain, new TaskUpdate(this));
 	}
 
 	private void submitTask(Procedure procedure, Task task) {
-		if (task.canBeExecuted()) {
-
+		if (task.canBeExecuted()) { 
 			task.incrementActiveCount();
 			addTaskFuture(procedure, task, threadPoolExecutor.submit(new Runnable() {
 
