@@ -58,7 +58,7 @@ public class TimeoutTests {
 		Mockito.when(oldID.expectedNrOfFiles()).thenReturn(1);
 
 		procedure = Mockito.mock(Procedure.class);
-		Mockito.when(procedure.tasks()).thenReturn(tasks);
+//		Mockito.when(procedure.tasks()).thenReturn(tasks);
 		Mockito.when(procedure.dataInputDomain()).thenReturn(oldID);
 		// Job
 		job = Mockito.mock(Job.class);
@@ -115,7 +115,7 @@ public class TimeoutTests {
 		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
 		Thread.sleep(3000);
 		Mockito.verify(job, Mockito.times(1)).currentProcedure();
-		Mockito.verify(procedure, Mockito.times(1)).tasks();
+//		Mockito.verify(procedure, Mockito.times(1)).tasks();
 		Mockito.verify(procedure, Mockito.times(1)).dataInputDomain();
 		Mockito.verify(tasks, Mockito.times(1)).size();
 		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).messageConsumer();

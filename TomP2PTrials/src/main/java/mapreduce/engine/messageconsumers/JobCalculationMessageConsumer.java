@@ -1,10 +1,12 @@
 package mapreduce.engine.messageconsumers;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import org.apache.logging.log4j.core.config.AwaitUnconditionallyReliabilityStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +14,7 @@ import com.google.common.collect.ListMultimap;
 
 import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobCalculationExecutor;
+import mapreduce.engine.executors.performance.PerformanceInfo;
 import mapreduce.engine.messageconsumers.updates.IUpdate;
 import mapreduce.engine.messageconsumers.updates.ProcedureUpdate;
 import mapreduce.engine.messageconsumers.updates.TaskUpdate;
@@ -24,8 +27,9 @@ import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.tasks.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
-import mapreduce.utils.ResultPrinter;
 import mapreduce.utils.SyncedCollectionProvider;
+import mapreduce.utils.resultprinter.IResultPrinter;
+import mapreduce.utils.resultprinter.DefaultResultPrinter;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
@@ -39,11 +43,23 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 
 	private Map<String, Boolean> currentlyRetrievingTaskKeysForProcedure = SyncedCollectionProvider.syncedHashMap();
 
-	private Map<String, ListMultimap<Task, Future<?>>> futures;
+	private Map<String, ListMultimap<Task, Future<?>>> futures = SyncedCollectionProvider.syncedHashMap();
+
+	private Comparator<PerformanceInfo> performanceEvaluator = new Comparator<PerformanceInfo>() {
+
+		@Override
+		public int compare(PerformanceInfo o1, PerformanceInfo o2) {
+			// TODO: finished the same number of tasks with different data sets... What could it be? E.g. compare processor capabilities and take
+			// the one with the better ones as the faster will most likely finish more tasks quicker. Or compare the tasks output values size
+			return 1;
+		}
+
+	};
+
+	private IResultPrinter resultPrinter = DefaultResultPrinter.create();
 
 	private JobCalculationMessageConsumer(int maxThreads) {
 		super();
-		futures = SyncedCollectionProvider.syncedHashMap();
 		this.threadPoolExecutor = PriorityExecutor.newFixedThreadPool(maxThreads);
 
 	}
@@ -73,33 +89,34 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		JobProcedureDomain rJPD = (outputDomain instanceof JobProcedureDomain ? (JobProcedureDomain) outputDomain
 				: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
 
-		if (job.currentProcedure().procedureIndex() > rJPD.procedureIndex()) {
+		boolean receivedOutdatedMessage = job.currentProcedure().procedureIndex() > rJPD.procedureIndex();
+		if (receivedOutdatedMessage) {
 			logger.info("Received an old message: nothing to do.");
 			return;
 		} else {
 			// need to increment procedure because we are behind in execution?
 			tryIncrementProcedure(job, inputDomain, rJPD);
-
 			// Same input data? Then we may try to update tasks/procedures
-			tryUpdate(job, inputDomain, outputDomain, iUpdate);
-
+			tryUpdateTasksOrProcedures(job, inputDomain, outputDomain, iUpdate);
 			// Anything left to execute for this procedure?
 			tryExecuteProcedure(job);
 		}
 	}
 
 	private void tryIncrementProcedure(Job job, JobProcedureDomain dataInputDomain, JobProcedureDomain rJPD) {
-		if (job.currentProcedure().procedureIndex() < rJPD.procedureIndex()) {
+		int currentProcIndex = job.currentProcedure().procedureIndex();
+		int receivedPIndex = rJPD.procedureIndex();
+		if (currentProcIndex < receivedPIndex) {
 			// Means this executor is behind in the execution than the one that sent this message --> increment until we are up to date again
 			cancelProcedureExecution(job.currentProcedure());
-			while (job.currentProcedure().procedureIndex() < rJPD.procedureIndex()) {
+			while (job.currentProcedure().procedureIndex() < receivedPIndex) {
 				job.incrementProcedureIndex();
 			}
 			job.currentProcedure().dataInputDomain(dataInputDomain);
 		} // no else needed... if it's the same procedure index, we are up to date and can try to update
 	}
 
-	private void tryUpdate(Job job, JobProcedureDomain inputDomain, IDomain outputDomain, IUpdate iUpdate) {
+	private void tryUpdateTasksOrProcedures(Job job, JobProcedureDomain inputDomain, IDomain outputDomain, IUpdate iUpdate) {
 		Procedure procedure = job.currentProcedure();
 		if (procedure.dataInputDomain().equals(inputDomain)) { // same procedure, same input data location: everything is fine!
 			if (procedure.dataInputDomain().expectedNrOfFiles() < inputDomain.expectedNrOfFiles()) {// looks like the received had more already
@@ -108,51 +125,96 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			iUpdate.executeUpdate(outputDomain, procedure); // Only here: execute the received task/procedure update
 		} else { // May have to change input data location (inputDomain)
 			// executor of received message executes on different input data! Need to synchronize
-			if (procedure.nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {
-				// We have completed fewer tasks with our data set than the incoming... abort us and use the incoming data set location instead
-				cancelProcedureExecution(procedure);
-				procedure.dataInputDomain(inputDomain);
-				// tryExecuting(procedure);
-			} else if (procedure.nrOfFinishedTasks() == inputDomain.nrOfFinishedTasks()) { // What if they executed the same number of tasks?
-				// TODO: What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most
-				// likely finish more tasks quicker
-				logger.info("TODO: finished the same number of tasks with different data sets...\n"
-						+ "What could it be? E.g. compare processor capabilities and take the one with the better ones as the faster will most likely finish more tasks quicker\n"
-						+ "Or compare the tasks output values size");
-			} // else{ ignore, as we are the ones that finished more already...
+			changeDataInputDomain(inputDomain, procedure);
 		}
+	}
+
+	private void changeDataInputDomain(JobProcedureDomain inputDomain, Procedure procedure) {
+		if (procedure.dataInputDomain().nrOfFinishedTasks() < inputDomain.nrOfFinishedTasks()) {
+			// We have completed fewer tasks with our data set than the incoming... abort us and use the incoming data set location instead
+			cancelCurrentExecutionsAndUpdateDataInputDomain(inputDomain, procedure);
+		} else {
+			boolean haveExecutedTheSameNrOfTasks = procedure.dataInputDomain().nrOfFinishedTasks() == inputDomain.nrOfFinishedTasks();
+			if (haveExecutedTheSameNrOfTasks) {
+				int comparisonResult = this.performanceEvaluator.compare(executor.performanceInformation(),
+						inputDomain.executorPerformanceInformation());
+				boolean thisExecutorHasWorsePerformance = comparisonResult == -1;
+				if (thisExecutorHasWorsePerformance) {
+					// we are expected to finish later due to worse performance --> abort this one's execution
+					cancelCurrentExecutionsAndUpdateDataInputDomain(inputDomain, procedure);
+				}
+			}
+		} // else{ ignore, as we are the ones that finished more already...
+	}
+
+	private void cancelCurrentExecutionsAndUpdateDataInputDomain(JobProcedureDomain inputDomain, Procedure procedure) {
+		cancelProcedureExecution(procedure);
+		procedure.dataInputDomain(inputDomain);
 	}
 
 	private void tryExecuteProcedure(Job job) {
 		Procedure procedure = job.currentProcedure();
 		if (!job.isFinished()) {
-			if ((procedure.tasks().size() < procedure.dataInputDomain().expectedNrOfFiles() || procedure.tasks().size() == 0)
-					&& procedure.procedureIndex() > 0) {
-				// This means that there are still some tasks left in the dht and that it is currently not retrieving the tasks for this
-				// procedure
-				getTaskKeysFromNetwork(procedure);
-			} else if (procedure.tasks().size() == procedure.dataInputDomain().expectedNrOfFiles()) {
-				for (Task task : procedure.tasks()) {
-					submitTask(procedure, task);
+			boolean isNotComplete = procedure.tasksSize() < procedure.dataInputDomain().expectedNrOfFiles();
+			boolean isNotStartProcedure = procedure.procedureIndex() > 0;
+			if (isNotComplete && isNotStartProcedure) {
+				tryRetrieveMoreTasksFromDHT(procedure);
+			} else {
+				boolean isExpectedToBeComplete = procedure.tasksSize() == procedure.dataInputDomain().expectedNrOfFiles();
+				if (isExpectedToBeComplete) {
+					trySubmitTasks(procedure);
 				}
 			}
-		} else {
-			ResultPrinter.printResults(dhtConnectionProvider, procedure.resultOutputDomain().toString());
+		} else {// if(job.isFinished()){
+			resultPrinter.printResults(dhtConnectionProvider, procedure.resultOutputDomain().toString());
 		}
 	}
 
-	private void submitTask(Procedure procedure, Task task) {
-		if (task.canBeExecuted()) {
-			task.incrementActiveCount();
-			addTaskFuture(procedure, task, threadPoolExecutor.submit(new Runnable() {
+	private void tryRetrieveMoreTasksFromDHT(Procedure procedure) {
+		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
+		Boolean retrieving = currentlyRetrievingTaskKeysForProcedure.get(dataInputDomain.toString());
+		if ((retrieving == null || !retrieving)) { // This makes sure that if it is concurrently executed, retrieval is only once called...
+			logger.info("Retrieving tasks for: " + dataInputDomain.toString());
+			currentlyRetrievingTaskKeysForProcedure.put(dataInputDomain.toString(), true);
+			dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, dataInputDomain.toString()).awaitUninterruptibly()
+					.addListener(new BaseFutureAdapter<FutureGet>() {
 
-				@Override
-				public void run() {
-					executor().executeTask(task, procedure);
-				}
-
-			}, task));
+						@Override
+						public void operationComplete(FutureGet future) throws Exception {
+							if (future.isSuccess()) {
+								int actualNrOfTasks = future.dataMap().size();
+								logger.info("retrieved " + actualNrOfTasks + " tasks from dataInputDomain: " + dataInputDomain.toString());
+								dataInputDomain.expectedNrOfFiles(actualNrOfTasks);
+								for (Number640 keyHash : future.dataMap().keySet()) {
+									String key = (String) future.dataMap().get(keyHash).object();
+									Task task = Task.create(key);
+									procedure.addTask(task);
+								}
+								trySubmitTasks(procedure);
+							} else {
+								logger.info("Fail reason: " + future.failedReason());
+							}
+						}
+					});
+			currentlyRetrievingTaskKeysForProcedure.remove(dataInputDomain.toString());
 		}
+	}
+
+	private void trySubmitTasks(Procedure procedure) {
+		procedure.shuffleTasks();
+		Task task = null;
+		while ((task = procedure.nextExecutableTask()) != null) {
+			addTaskFuture(procedure, task, threadPoolExecutor.submit(createTaskExecutionRunnable(procedure, task), task));
+		}
+	}
+
+	private Runnable createTaskExecutionRunnable(Procedure procedure, Task task) {
+		return new Runnable() {
+			@Override
+			public void run() {
+				executor().executeTask(task, procedure);
+			}
+		};
 	}
 
 	private void addTaskFuture(Procedure procedure, Task task, Future<?> taskFuture) {
@@ -183,46 +245,6 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		}
 	}
 
-	private void getTaskKeysFromNetwork(Procedure procedure) {
-
-		Boolean retrieving = currentlyRetrievingTaskKeysForProcedure.get(procedure.dataInputDomain().toString());
-		if ((retrieving == null || !retrieving)) {
-			logger.info("Retrieving tasks for: " + procedure.dataInputDomain().toString());
-			currentlyRetrievingTaskKeysForProcedure.put(procedure.dataInputDomain().toString(), true);
-
-			dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, procedure.dataInputDomain().toString())
-					.addListener(new BaseFutureAdapter<FutureGet>() {
-
-						@Override
-						public void operationComplete(FutureGet future) throws Exception {
-							if (future.isSuccess()) {
-								logger.info("Success");
-								procedure.dataInputDomain().expectedNrOfFiles(future.dataMap().size());
-								for (Number640 keyHash : future.dataMap().keySet()) {
-									String key = (String) future.dataMap().get(keyHash).object();
-									Task task = Task.create(key);
-									if (!procedure.tasks().contains(task)) {// Don't need to add it more, got it e.g. from a BC
-										procedure.tasks().add(task);
-									}
-								}
-								synchronized (procedure.tasks()) {
-									Collections.shuffle(procedure.tasks());
-								}
-
-								for (Task task : procedure.tasks()) {
-									submitTask(procedure, task);
-								}
-
-								currentlyRetrievingTaskKeysForProcedure.remove(procedure.dataInputDomain().toString());
-							} else {
-								logger.info("Fail reason: " + future.failedReason());
-							}
-						}
-
-					});
-		}
-	}
-
 	@Override
 	public JobCalculationExecutor executor() {
 		return (JobCalculationExecutor) super.executor();
@@ -238,4 +260,13 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		return (JobCalculationMessageConsumer) super.executor(executor);
 	}
 
+	public JobCalculationMessageConsumer resultPrinter(IResultPrinter resultPrinter) {
+		this.resultPrinter = resultPrinter;
+		return this;
+	}
+
+	public JobCalculationMessageConsumer performanceEvaluator(Comparator<PerformanceInfo> performanceEvaluator) {
+		this.performanceEvaluator = performanceEvaluator;
+		return this;
+	}
 }

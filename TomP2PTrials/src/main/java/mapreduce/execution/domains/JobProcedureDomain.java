@@ -1,5 +1,6 @@
 package mapreduce.execution.domains;
 
+import mapreduce.engine.executors.performance.PerformanceInfo;
 import mapreduce.utils.DomainProvider;
 import net.tomp2p.peers.Number160;
 
@@ -25,6 +26,7 @@ public class JobProcedureDomain implements IDomain {
 	 */
 	private int nrOfFinishedTasks;
 	private int jobSubmissionCount;
+	private PerformanceInfo executorPerformanceInformation;
 
 	private JobProcedureDomain() {
 
@@ -151,4 +153,12 @@ public class JobProcedureDomain implements IDomain {
 		return this.jobSubmissionCount;
 	}
 
+	public PerformanceInfo executorPerformanceInformation() {
+		return this.executorPerformanceInformation;
+	}
+
+	public JobProcedureDomain executorPerformanceInformation(PerformanceInfo executorPerformanceInformation) {
+		this.executorPerformanceInformation = executorPerformanceInformation;
+		return this;
+	}
 }

@@ -84,15 +84,10 @@ public class Job implements Serializable, Cloneable {
 	}
 
 	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel) {
-		return new Job(jobSubmitterID, priorityLevel).isFinished(false).fileInputFolderPath(null).maxFileSize(DEFAULT_MAX_FILE_SIZE)
+		return new Job(jobSubmitterID, priorityLevel).fileInputFolderPath(null).maxFileSize(DEFAULT_MAX_FILE_SIZE)
 				.useLocalStorageFirst(DEFAULT_USE_LOCAL_STORAGE_FIRST).timeToLive(DEFAULT_TIME_TO_LIVE);
 	}
-
-	// Setters
-	public Job isFinished(boolean isFinished) {
-		this.isFinished = isFinished;
-		return this;
-	}
+ 
 
 	public Job fileInputFolderPath(String fileInputFolderPath) {
 		this.fileInputFolderPath = fileInputFolderPath;
@@ -116,7 +111,12 @@ public class Job implements Serializable, Cloneable {
 
 	// Getters
 	public boolean isFinished() {
-		return isFinished;
+		for (Procedure procedure : procedures) {
+			if (!procedure.isFinished()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public long timeToLive() {
@@ -214,24 +214,13 @@ public class Job implements Serializable, Cloneable {
 		Procedure procedureI = createProcedure(procedure, combiner, nrOfSameResultHashForProcedure, nrOfSameResultHashForTasks,
 				needsMultipleDifferentExecutors, needsMultipleDifferentExecutorsForTasks);
 		if (this.procedures.size() < 2) {
-			this.procedures.add(procedureI); 
+			this.procedures.add(procedureI.procedureIndex(procedures.size()));
 		} else {
-			this.procedures.add(this.procedures.size() - 1, procedureI);
+			this.procedures.add(this.procedures.size() - 1, procedureI.procedureIndex(procedures.size() - 1));
+			// Adapting last procedure index (EndProcedure)
+			this.procedures.get(this.procedures.size() - 1).procedureIndex(this.procedures.size() - 1);
 		}
 		return this;
-	}
-
-	public static void main(String[] args) {
-		List<Integer> list = new ArrayList<>();
-		list.add(list.size(), 1);
-		list.add(list.size(), 10);
-		list.add(list.size() - 1, 2);
-		list.add(list.size() - 1, 3);
-		list.add(list.size() - 1, 4);
-		list.add(list.size() - 1, 5);
-		list.add(list.size() - 1, 6);
-		list.add(list.size() - 1, 7);
-		System.out.println(list);
 	}
 
 	private Procedure createProcedure(Object procedure, Object combiner, int nrOfSameResultHashForProcedure, int nrOfSameResultHashForTasks,
@@ -239,7 +228,7 @@ public class Job implements Serializable, Cloneable {
 		nrOfSameResultHashForProcedure = (nrOfSameResultHashForProcedure < 0 ? 0 : nrOfSameResultHashForProcedure);
 		nrOfSameResultHashForTasks = (nrOfSameResultHashForTasks < 0 ? 0 : nrOfSameResultHashForTasks);
 
-		Procedure procedureInformation = Procedure.create(procedure, this.procedures.size()).nrOfSameResultHash(nrOfSameResultHashForProcedure)
+		Procedure procedureInformation = Procedure.create(procedure, -1).nrOfSameResultHash(nrOfSameResultHashForProcedure)
 				.needsMultipleDifferentExecutors(needsMultipleDifferentExecutors).nrOfSameResultHashForTasks(nrOfSameResultHashForTasks)
 				.needsMultipleDifferentExecutorsForTasks(needsMultipleDifferentExecutorsForTasks).combiner(combiner);
 		return procedureInformation;

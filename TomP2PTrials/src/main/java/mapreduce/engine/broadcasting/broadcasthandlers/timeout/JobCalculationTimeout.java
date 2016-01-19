@@ -28,7 +28,7 @@ public class JobCalculationTimeout extends AbstractTimeout {
 			if (inputDomain != null && inputDomain.procedureIndex() == -1) {
 				// handle start differently first, because it may be due to expected file size that is not the same...
 				Procedure currentProcedure = job.currentProcedure();
-				int actualTasksSize = currentProcedure.tasks().size();
+				int actualTasksSize = currentProcedure.tasksSize();
 				int expectedTasksSize = inputDomain.expectedNrOfFiles();
 				if (actualTasksSize < expectedTasksSize) {
 					currentProcedure.dataInputDomain().expectedNrOfFiles(actualTasksSize);

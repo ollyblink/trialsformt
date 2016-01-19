@@ -168,7 +168,7 @@ public class ProcedureUpdateTest {
 		assertEquals(EndProcedure.class.getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(EndProcedure.class.getSimpleName(), p.executable().getClass().getSimpleName());
 		assertEquals(true, job.isFinished());
-		assertEquals(null, job.currentProcedure().dataInputDomain()); // Can't be added anymore if its finished --> EndProcedure is always finished
+		assertEquals(o, job.currentProcedure().dataInputDomain());  
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(start);
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(beforeInc);
 	}

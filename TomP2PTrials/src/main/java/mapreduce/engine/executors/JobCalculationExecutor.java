@@ -190,22 +190,12 @@ public class JobCalculationExecutor extends AbstractExecutor {
 	public CompletedBCMessage tryFinishProcedure(Procedure procedure) {
 		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
 		int expectedSize = dataInputDomain.expectedNrOfFiles();
-		List<Task> tasks = procedure.tasks();
-		int currentSize = tasks.size();
-		logger.info("Tasks: " + tasks);
+//		List<Task> tasks = procedure.tasks();
+		int currentSize = procedure.tasksSize(); 
 		logger.info("tryFinishProcedure: data input domain procedure: " + dataInputDomain.procedureSimpleName());
 		logger.info("tryFinishProcedure: expectedSize == currentSize? " + expectedSize + "==" + currentSize);
-		if (expectedSize == currentSize) {
-			boolean isProcedureCompleted = true;
-			synchronized (tasks) {
-				for (Task task : tasks) {
-					if (!task.isFinished() || !task.isInProcedureDomain()) {
-						isProcedureCompleted = false;
-					}
-				}
-			}
-			logger.info("tryFinishProcedure: isProcedureCompleted: " + isProcedureCompleted);
-			if (isProcedureCompleted) {
+		if (expectedSize == currentSize) {  
+			if (procedure.isCompleted()) {
 				JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), dataInputDomain.jobSubmissionCount(), id,
 						procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
 				CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to.resultHash(procedure.calculateResultHash()),

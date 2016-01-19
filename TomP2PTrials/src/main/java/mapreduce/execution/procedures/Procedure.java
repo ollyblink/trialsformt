@@ -1,6 +1,7 @@
 package mapreduce.execution.procedures;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -17,7 +18,7 @@ import net.tomp2p.peers.Number160;
  * @author Oliver
  *
  */
-public   class Procedure extends AbstractFinishable implements Serializable, Cloneable {
+public class Procedure extends AbstractFinishable implements Serializable, Cloneable {
 	private static Logger logger = LoggerFactory.getLogger(Procedure.class);
 
 	/**
@@ -27,7 +28,7 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 	/** The actual procedure to execute */
 	private Object executable;
 	/** Which procedure in the job's procedure list (@link{Job} it is (counted from 0 == StartProcedure to N-1 == EndProcedure) */
-	private final int procedureIndex;
+	private int procedureIndex;
 	/** Tasks this procedure needs to execute */
 	private List<Task> tasks;
 	/** Location of keys to create the tasks for this procedure */
@@ -140,8 +141,24 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 		return this.procedureIndex;
 	}
 
+	public Procedure procedureIndex(int procedureIndex) {
+		this.procedureIndex = procedureIndex;
+		return this;
+	}
+
+	public boolean isCompleted() {
+		synchronized (tasks) {
+			for (Task task : tasks) {
+				if (!task.isFinished() || !task.isInProcedureDomain()) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	public Procedure addTask(Task task) {
-		logger.info("add task "+task);
+		logger.info("add task " + task);
 		synchronized (tasks) {
 			if (!this.tasks.contains(task)) {
 				task.nrOfSameResultHash(nrOfSameResultHashForTasks);
@@ -152,8 +169,33 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 		return this;
 	}
 
-	public List<Task> tasks() {
-		return this.tasks;
+	public void shuffleTasks() {
+		synchronized (tasks) { // Don't want to execute the same tasks first always...
+			Collections.shuffle(tasks);
+		}
+	}
+
+	public Task nextExecutableTask() {
+		synchronized (tasks) {
+			for (Task task : tasks) {
+				if (task.canBeExecuted()) {
+					task.incrementActiveCount();
+					return task;
+				}
+			}
+		}
+		return null;
+	}
+	public Task getTask(Task task) {
+		if (tasks.contains(task)) {
+			return tasks.get(tasks.indexOf(task));
+		} else {
+			return null;
+		}
+	}
+
+	public int tasksSize() {
+		return tasks.size();
 	}
 
 	public Object combiner() {
@@ -167,7 +209,7 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 
 	public Procedure dataInputDomain(JobProcedureDomain dataInputDomain) {
 		this.dataInputDomain = dataInputDomain;
-		if(this.jobId == null){
+		if (this.jobId == null) {
 			this.jobId = dataInputDomain.jobId();
 		}
 		return this;
@@ -176,10 +218,12 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 	public JobProcedureDomain dataInputDomain() {
 		return this.dataInputDomain;
 	}
-	@Override 
+
+	@Override
 	public JobProcedureDomain resultOutputDomain() {
 		return (JobProcedureDomain) super.resultOutputDomain();
 	}
+
 	/**
 	 * Set via dataInputDomain
 	 * 
@@ -261,5 +305,6 @@ public   class Procedure extends AbstractFinishable implements Serializable, Clo
 			return false;
 		return true;
 	}
+
 
 }

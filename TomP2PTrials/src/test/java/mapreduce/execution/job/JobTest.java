@@ -13,7 +13,8 @@ public class JobTest {
 	@Test
 	public void testAddingAndIncrementProcedure() {
 
-		Job job = Job.create("TEST").addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false)
+		Job job = Job.create("TEST")
+				.addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false)
 				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		assertEquals("StartProcedure", job.procedure(-100).executable().getClass().getSimpleName());

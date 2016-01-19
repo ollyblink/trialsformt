@@ -107,7 +107,7 @@ public class JobCalculationBroadcastHandlerTest {
 				.thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(), "Submitter", StartProcedure.class.getSimpleName(), 0));
 		Mockito.when(msg.outputDomain()).thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(), "Submitter", "INITIAL", -1));
 
-		job.isFinished(false);
+//		job.isFinished(false);
 		broadcastHandler.jobFutures().clear();
 		broadcastHandler.processMessage(msg, job);
 		assertEquals(false, broadcastHandler.jobFutures().isEmpty());
@@ -119,7 +119,7 @@ public class JobCalculationBroadcastHandlerTest {
 				.thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(), "Submitter", StartProcedure.class.getSimpleName(), 0));
 		Mockito.when(msg.outputDomain()).thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(), "Submitter", "INITIAL", -1));
 
-		job.isFinished(true);
+//		job.isFinished(true);
 		broadcastHandler.jobFutures().clear();
 		broadcastHandler.processMessage(msg, job);
 
@@ -127,6 +127,6 @@ public class JobCalculationBroadcastHandlerTest {
 		assertEquals(false, broadcastHandler.getJob(job.id()) != null);
 		assertEquals(0, broadcastHandler.jobFutures().keySet().size());
 		Mockito.verify(msg, Mockito.times(0)).execute(job, messageConsumer);
-		job.isFinished(wasFinished);
+//		job.isFinished(wasFinished);
 	}
 }

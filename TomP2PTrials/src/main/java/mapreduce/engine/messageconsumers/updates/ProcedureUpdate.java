@@ -27,9 +27,10 @@ public class ProcedureUpdate extends AbstractUpdate {
 			JobProcedureDomain resultOutputDomain = procedure.resultOutputDomain();
 			job.incrementProcedureIndex();
 			job.currentProcedure().dataInputDomain(resultOutputDomain);
-			if (job.currentProcedure().executable().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
-				job.isFinished(true);
-			}
 		}
 	}
 }
+// Below code should not be needed as EndProcedure is always finished...
+// if (job.currentProcedure().executable().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
+// job.isFinished(true);
+// }

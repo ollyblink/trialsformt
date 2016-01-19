@@ -74,7 +74,7 @@ public class JobCalculationExecutorTest {
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.newStatusIndex(), outputJPD);
 
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
-		procedure.dataInputDomain(inputJPD).tasks().add(task);
+		procedure.dataInputDomain(inputJPD).addTask(task);
 
 		Map<String, Integer> toCheck = new HashMap<>();
 		for (int i = 0; i < 1000; ++i) {
