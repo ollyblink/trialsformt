@@ -2,12 +2,17 @@ package mapreduce.engine.messageconsumers;
 
 import static org.junit.Assert.assertEquals;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Comparator;
+import java.util.Map;
+import java.util.concurrent.Future;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import com.google.common.collect.ListMultimap;
 
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.executors.performance.PerformanceInfo;
@@ -16,6 +21,7 @@ import mapreduce.execution.domains.IDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
 import mapreduce.execution.procedures.EndProcedure;
+import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.StartProcedure;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.tasks.Task;
@@ -101,8 +107,8 @@ public class JobCalculationMessageConsumerTest {
 	@Test
 	public void testTryUpdateTasksOrProcedures() throws Exception {
 
-		Method tryUpdate = JobCalculationMessageConsumer.class.getDeclaredMethod("tryUpdate", Job.class, JobProcedureDomain.class, IDomain.class,
-				IUpdate.class);
+		Method tryUpdate = JobCalculationMessageConsumer.class.getDeclaredMethod("tryUpdateTasksOrProcedures", Job.class, JobProcedureDomain.class,
+				IDomain.class, IUpdate.class);
 		tryUpdate.setAccessible(true);
 
 		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false);
@@ -212,16 +218,23 @@ public class JobCalculationMessageConsumerTest {
 		// Input: nr of tasks in current procedure is 0
 		// Expected nr of tasks is 1
 		job.currentProcedure().dataInputDomain(in.expectedNrOfFiles(1));
+
+		Field boolsForRetrieving = JobCalculationMessageConsumer.class.getDeclaredField("currentlyRetrievingTaskKeysForProcedure");
+		boolsForRetrieving.setAccessible(true);
+		Map<String, Boolean> field = (Map<String, Boolean>) boolsForRetrieving.get(calculationMsgConsumer);
 		Mockito.when(mockDHT.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, job.currentProcedure().dataInputDomain().toString()))
 				.thenReturn(Mockito.mock(FutureGet.class));
+		assertEquals(null, field.get(job.currentProcedure().dataInputDomain().toString()));
 		tryExecuteProcedure.invoke(calculationMsgConsumer, job);
+		assertEquals(true, field.get(job.currentProcedure().dataInputDomain().toString())); // It's not removed anymore because there is no actual
+																							// listener
 		Mockito.verify(mockDHT, Mockito.times(1)).getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS,
 				job.currentProcedure().dataInputDomain().toString());
 
 		// Case 2: it seems that the other executor thinks there are the same number of tasks: Simply try to execute the tasks by adding them to the
 		// queue for scheduling
 		Task task = Mockito.mock(Task.class);
-		Mockito.when(task.canBeExecuted()).thenReturn(true);
+		Mockito.when(task.canBeExecuted()).thenReturn(false);
 		job.currentProcedure().addTask(task);
 		tryExecuteProcedure.invoke(calculationMsgConsumer, job);
 		Mockito.verify(task, Mockito.times(1)).canBeExecuted(); // This means the task was tried to submit, which only happens if the else-if part is
@@ -231,7 +244,6 @@ public class JobCalculationMessageConsumerTest {
 		// ===========================================================================================================================================
 		// Job is finished: should simply print results to output
 		// ===========================================================================================================================================
-
 		job.currentProcedure().addOutputDomain(out);
 		IResultPrinter resultPrinter = Mockito.mock(IResultPrinter.class);
 		calculationMsgConsumer.resultPrinter(resultPrinter);
@@ -241,15 +253,25 @@ public class JobCalculationMessageConsumerTest {
 	}
 
 	@Test
-	public void testTryRetrieveMoreTasksFromDHT() {
-		// tests currentlyRetrievingTaskKeysForProcedure
-		
-
-	}
-
-	@Test
-	public void testTrySubmitTasks() {
+	public void testTrySubmitTasks() throws Exception {
 		// Also tests addTaskFuture and createTaskExecutionRunnable
+		Method tryExecuteProcedure = JobCalculationMessageConsumer.class.getDeclaredMethod("trySubmitTasks", Procedure.class);
+		tryExecuteProcedure.setAccessible(true);
+
+		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 2, false, false);
+
+		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
+		job.currentProcedure().nrOfSameResultHash(0);
+		job.currentProcedure().nrOfSameResultHashForTasks(0);
+		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
+		job.currentProcedure().addTask(Task.create("hello"));
+
+		Field futuresField = JobCalculationMessageConsumer.class.getDeclaredField("futures");
+		futuresField.setAccessible(true);
+		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
+		assertEquals(1, futures.size());
+		tryExecuteProcedure.invoke(job.currentProcedure());
 
 	}
 

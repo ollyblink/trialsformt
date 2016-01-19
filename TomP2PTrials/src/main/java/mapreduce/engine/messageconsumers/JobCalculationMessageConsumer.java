@@ -176,7 +176,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		if ((retrieving == null || !retrieving)) { // This makes sure that if it is concurrently executed, retrieval is only once called...
 			logger.info("Retrieving tasks for: " + dataInputDomain.toString());
 			currentlyRetrievingTaskKeysForProcedure.put(dataInputDomain.toString(), true);
-			dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, dataInputDomain.toString()).awaitUninterruptibly()
+			dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, dataInputDomain.toString())
 					.addListener(new BaseFutureAdapter<FutureGet>() {
 
 						@Override
@@ -191,12 +191,12 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 									procedure.addTask(task);
 								}
 								trySubmitTasks(procedure);
+								currentlyRetrievingTaskKeysForProcedure.remove(dataInputDomain.toString());
 							} else {
 								logger.info("Fail reason: " + future.failedReason());
 							}
 						}
 					});
-			currentlyRetrievingTaskKeysForProcedure.remove(dataInputDomain.toString());
 		}
 	}
 
