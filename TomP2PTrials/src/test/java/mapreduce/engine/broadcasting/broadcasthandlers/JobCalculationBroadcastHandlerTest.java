@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.Random;
 import java.util.concurrent.Future;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -24,13 +24,13 @@ import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileUtils;
 
 public class JobCalculationBroadcastHandlerTest {
-	private static Random random = new Random();
-	private static JobCalculationBroadcastHandler broadcastHandler;
-	private static Job job;
-	private static IMessageConsumer messageConsumer;
+	private Random random = new Random();
+	private JobCalculationBroadcastHandler broadcastHandler;
+	private Job job;
+	private IMessageConsumer messageConsumer;
 
-	@BeforeClass
-	public static void setUp() {
+	@Before
+	public void setUp() {
 
 		String jsMapper = FileUtils.INSTANCE
 				.readLines(System.getProperty("user.dir") + "/src/main/java/mapreduce/execution/procedures/wordcountmapper.js");
@@ -101,13 +101,11 @@ public class JobCalculationBroadcastHandlerTest {
 
 	@Test
 	public void testProcessMessage() {
-		boolean wasFinished = job.isFinished();
 		CompletedBCMessage msg = Mockito.mock(CompletedBCMessage.class);
 		Mockito.when(msg.inputDomain())
 				.thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(), "Submitter", StartProcedure.class.getSimpleName(), 0));
 		Mockito.when(msg.outputDomain()).thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(), "Submitter", "INITIAL", -1));
 
-//		job.isFinished(false);
 		broadcastHandler.jobFutures().clear();
 		broadcastHandler.processMessage(msg, job);
 		assertEquals(false, broadcastHandler.jobFutures().isEmpty());
@@ -119,14 +117,17 @@ public class JobCalculationBroadcastHandlerTest {
 				.thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(), "Submitter", StartProcedure.class.getSimpleName(), 0));
 		Mockito.when(msg.outputDomain()).thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(), "Submitter", "INITIAL", -1));
 
-//		job.isFinished(true);
 		broadcastHandler.jobFutures().clear();
+		//The next one should try it with a finished job. Nothing should happen and jobFutures should stay empty
+		job = Job.create("Submitter");
+		job.currentProcedure().nrOfSameResultHash(0)
+//		.nrOfSameResultHashForTasks(0)
+		;
 		broadcastHandler.processMessage(msg, job);
 
 		assertEquals(true, broadcastHandler.jobFutures().isEmpty());
 		assertEquals(false, broadcastHandler.getJob(job.id()) != null);
 		assertEquals(0, broadcastHandler.jobFutures().keySet().size());
 		Mockito.verify(msg, Mockito.times(0)).execute(job, messageConsumer);
-//		job.isFinished(wasFinished);
 	}
 }

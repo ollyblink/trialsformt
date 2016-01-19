@@ -232,6 +232,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			for (Future<?> taskFuture : procedureFutures.values()) {
 				taskFuture.cancel(true);
 			}
+			procedureFutures.clear();
 		}
 	}
 
@@ -242,6 +243,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			for (Future<?> taskFuture : taskFutures) {
 				taskFuture.cancel(true);
 			}
+			procedureFutures.get(task).clear();
 		}
 	}
 

@@ -131,17 +131,26 @@ public class ProcedureTest {
 	}
 
 	@Test
-	public void testShuffleTasks() {
-		fail();
+	public void testNextExecutableTask() {
+		int max = 25;
+		Procedure procedure = Procedure.create(null, 0).nrOfSameResultHashForTasks(max/2);
+		procedure.addTask(Task.create("hello"));
+		procedure.addTask(Task.create("world"));
+		
+		for (int i = 0; i < max; ++i) {
+			Task task = procedure.nextExecutableTask();
+			if (i >= 0 && i < (max / 2)) {
+				assertEquals("hello", task.key());
+			} else if (i >= (max / 2) && i < max-1) {
+				assertEquals("world", task.key());
+			} else {
+				assertEquals(null, task);
+			}
+		}
 	}
 
 	@Test
-	public void testNextExecutableTask() {
-		fail();
-	}
-	
-	@Test
-	public void testAll(){
-		//Need to make all tests for procedure, also private methods!!!
+	public void testAll() {
+		// Need to make all tests for procedure, also private methods!!!
 	}
 }

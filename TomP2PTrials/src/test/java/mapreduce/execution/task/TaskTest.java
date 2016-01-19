@@ -136,8 +136,15 @@ public class TaskTest {
 		assertEquals(new Integer(1), task.activeCount());
 		assertEquals(false, task.isFinished());
 
-		// same result hash, currentMaxNr stays increases
+		// same domain cannot be added twice. Stays the same!
 		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E1", 0, null).resultHash(Number160.ONE));
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(1), task.activeCount());
+		assertEquals(false, task.isFinished());
+		
+		// same result hash, currentMaxNr stays increases
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 0, null).resultHash(Number160.ONE));
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(1), task.activeCount());

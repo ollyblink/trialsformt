@@ -259,31 +259,115 @@ public class JobCalculationMessageConsumerTest {
 		tryExecuteProcedure.setAccessible(true);
 
 		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 2, false, false);
-
 		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
 		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
 		job.currentProcedure().nrOfSameResultHash(0);
 		job.currentProcedure().nrOfSameResultHashForTasks(0);
 		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
-		job.currentProcedure().addTask(Task.create("hello"));
-
+		job.currentProcedure().dataInputDomain(in);
+		job.currentProcedure().addOutputDomain(out);
+		Task helloTask = Task.create("hello");
+		job.currentProcedure().addTask(helloTask);
 		Field futuresField = JobCalculationMessageConsumer.class.getDeclaredField("futures");
 		futuresField.setAccessible(true);
 		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
+		assertEquals(0, futures.size());
+		assertEquals(0, futures.keySet().size());
+		assertEquals(false, futures.containsKey(job.currentProcedure().dataInputDomain().toString()));
+		tryExecuteProcedure.invoke(calculationMsgConsumer, job.currentProcedure());
 		assertEquals(1, futures.size());
-		tryExecuteProcedure.invoke(job.currentProcedure());
-
+		assertEquals(1, futures.keySet().size());
+		assertEquals(true, futures.containsKey(job.currentProcedure().dataInputDomain().toString()));
+		assertEquals(1, futures.get(job.currentProcedure().dataInputDomain().toString()).keySet().size());
+		assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).containsKey(helloTask)); 
 	}
 
 	@Test
-	public void testCancelTaskExecution() {
+	public void testCancelTaskExecution() throws Exception {
+		Field futuresField = JobCalculationMessageConsumer.class.getDeclaredField("futures");
+		futuresField.setAccessible(true);
+
+		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 2, false, false);
+		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
+		job.currentProcedure().nrOfSameResultHash(0);
+		job.currentProcedure().nrOfSameResultHashForTasks(0);
+		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
+		job.currentProcedure().dataInputDomain(in);
+		job.currentProcedure().addOutputDomain(out);
+		Task task1 = Task.create("hello");
+		Task task2 = Task.create("world");
+		job.currentProcedure().addTask(task1);
+		job.currentProcedure().addTask(task2);
+
+		// Next submits the tasks
+		Method trySubmitTasks = JobCalculationMessageConsumer.class.getDeclaredMethod("trySubmitTasks", Procedure.class);
+		trySubmitTasks.setAccessible(true);
+		trySubmitTasks.invoke(calculationMsgConsumer, job.currentProcedure());
+		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
+
+		assertEquals(4, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
+		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
+		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());
+		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(0).isCancelled());
+		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(1).isCancelled());
+		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
+		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
+
+		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure(), task1);
+		//// futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
+		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
+		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
+		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());
+		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(0).isCancelled());
+		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(1).isCancelled());
+		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
+		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
+		//
+		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure(), task2);
+		//// futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
+		//
+		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
+		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
+		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());
+		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(0).isCancelled());
+		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(1).isCancelled());
+		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
+		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
+		futures.clear();
 	}
 
 	@Test
-	public void testCancelProcedureExecution() {
-	}
+	public void testCancelProcedure() throws Exception {
+		Field futuresField = JobCalculationMessageConsumer.class.getDeclaredField("futures");
+		futuresField.setAccessible(true);
 
-	@Test
-	public void testHandleReceivedMessage() {
+		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 2, false, false);
+		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
+		job.currentProcedure().nrOfSameResultHash(0);
+		job.currentProcedure().nrOfSameResultHashForTasks(0);
+		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
+		job.currentProcedure().dataInputDomain(in);
+		job.currentProcedure().addOutputDomain(out);
+		Task task1 = Task.create("hello");
+		Task task2 = Task.create("world");
+		job.currentProcedure().addTask(task1);
+		job.currentProcedure().addTask(task2);
+
+		// Next submits the tasks
+		Method trySubmitTasks = JobCalculationMessageConsumer.class.getDeclaredMethod("trySubmitTasks", Procedure.class);
+		trySubmitTasks.setAccessible(true);
+		trySubmitTasks.invoke(calculationMsgConsumer, job.currentProcedure());
+		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
+		assertEquals(4, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
+		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
+		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());
+		calculationMsgConsumer.cancelProcedureExecution(job.currentProcedure());
+		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
+		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
+		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());
+		futures.clear();
 	}
+ 
 }

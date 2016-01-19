@@ -157,8 +157,7 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 		return true;
 	}
 
-	public Procedure addTask(Task task) {
-		logger.info("add task " + task);
+	public Procedure addTask(Task task) { 
 		synchronized (tasks) {
 			if (!this.tasks.contains(task)) {
 				task.nrOfSameResultHash(nrOfSameResultHashForTasks);

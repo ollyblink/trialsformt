@@ -26,7 +26,6 @@ import mapreduce.storage.IDHTConnectionProvider;
 
 public class TimeoutTests {
 
-	private List tasks;
 	private JobProcedureDomain oldID;
 	private Procedure procedure;
 	private Job job;
@@ -49,16 +48,13 @@ public class TimeoutTests {
 
 		timeToLive = 2000l;
 
-		// Tasks
-		tasks = Mockito.mock(List.class);
-		Mockito.when(tasks.size()).thenReturn(1);
 		// Procedure
 		oldID = Mockito.mock(JobProcedureDomain.class);
 		Mockito.when(oldID.procedureIndex()).thenReturn(-1);
 		Mockito.when(oldID.expectedNrOfFiles()).thenReturn(1);
 
 		procedure = Mockito.mock(Procedure.class);
-//		Mockito.when(procedure.tasks()).thenReturn(tasks);
+		Mockito.when(procedure.tasksSize()).thenReturn(1); 
 		Mockito.when(procedure.dataInputDomain()).thenReturn(oldID);
 		// Job
 		job = Mockito.mock(Job.class);
@@ -115,9 +111,9 @@ public class TimeoutTests {
 		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
 		Thread.sleep(3000);
 		Mockito.verify(job, Mockito.times(1)).currentProcedure();
-//		Mockito.verify(procedure, Mockito.times(1)).tasks();
+		// Mockito.verify(procedure, Mockito.times(1)).tasks();
 		Mockito.verify(procedure, Mockito.times(1)).dataInputDomain();
-		Mockito.verify(tasks, Mockito.times(1)).size();
+		Mockito.verify(procedure, Mockito.times(1)).tasksSize();
 		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).messageConsumer();
 		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).dhtConnectionProvider();
 		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).processMessage(mockMsg, job);
