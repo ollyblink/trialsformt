@@ -31,21 +31,6 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		return this;
 	}
 
-	@Override
-	public Task addOutputDomain(IDomain domain) {
-		if (domain.executor().equals(localExecutorId) && !this.outputDomains.contains(domain)) {
-			decrementActiveCount();
-		}
-		return (Task) super.addOutputDomain(domain);
-	}
-
-	public Task incrementActiveCount() {
-		if (canBeExecuted()) {
-			++this.activeCount;
-		}
-		return this;
-	}
-
 	/**
 	 * Checks if a task can be executed or not. Important when adding to the executor in @see{JobCalculationMessageConsumer.trySubmitTasks}
 	 * 
@@ -64,6 +49,32 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		} else { // Doesn't matter, can execute until all tasks are finished also by the same executor
 			return currentMaxNrOfSameResultHash() + activeCount < nrOfSameResultHash;
 		}
+	}
+
+	@Override
+	public Task addOutputDomain(IDomain domain) {
+		if (!this.outputDomains.contains(domain)) {
+			if (!isFinished()) {
+				if (needsMultipleDifferentExecutors) {
+					if (!containsExecutor(domain.executor())) {
+						this.outputDomains.add(domain);
+					}
+				} else {
+					this.outputDomains.add(domain);
+				}
+			}
+			if (domain.executor().equals(localExecutorId)) {
+				decrementActiveCount();
+			}
+		}
+		return this;
+	}
+
+	public Task incrementActiveCount() {
+		if (canBeExecuted()) {
+			++this.activeCount;
+		}
+		return this;
 	}
 
 	public Integer activeCount() {

@@ -8,6 +8,7 @@ public enum DomainProvider {
 	public static final String PROCEDURE_OUTPUT_RESULT_KEYS = "PROCEDURE_OUTPUT_RESULT_KEYS";
 	public static final String TASK_OUTPUT_RESULT_KEYS = "TASK_OUTPUT_RESULT_KEYS";
 	public static final String JOB = "JOB";
+	public static final String INITIAL_PROCEDURE = "INITIAL_PROCEDURE";
 
 	public String executorTaskDomain(ExecutorTaskDomain executorTaskDomainParameter) {
 		// ETD = EXECUTOR_TASK_DOMAIN

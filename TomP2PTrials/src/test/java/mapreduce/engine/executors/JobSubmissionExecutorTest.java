@@ -32,19 +32,25 @@ import net.tomp2p.peers.Number640;
 public class JobSubmissionExecutorTest {
 	private static Logger logger = LoggerFactory.getLogger(JobSubmissionExecutorTest.class);
 
-	private static JobSubmissionExecutor jobSubmissionManager;
+	private static JobSubmissionExecutor sExecutor;
 
 	@Test
-	public void test() throws IOException {
+	public void testSubmission() throws IOException {
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
 
-		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(5001, 1)
-				.broadcastHandler(Mockito.mock(JobSubmissionBroadcastHandler.class));
-		jobSubmissionManager = JobSubmissionExecutor.create().dhtConnectionProvider(dhtConnectionProvider);
-		dhtConnectionProvider.broadcastHandler().messageConsumer(JobSubmissionMessageConsumer.create().executor(jobSubmissionManager));
+		JobSubmissionBroadcastHandler sBCHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
+		JobSubmissionMessageConsumer sMsgConsumer = Mockito.mock(JobSubmissionMessageConsumer.class);
+		sExecutor = JobSubmissionExecutor.create();
 
-		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_KILO_BYTES);
-		jobSubmissionManager.submit(job);
+		Mockito.when(sMsgConsumer.executor()).thenReturn(sExecutor);
+		Mockito.when(sBCHandler.executorId()).thenReturn(sExecutor.id());
+		Mockito.when(sBCHandler.messageConsumer()).thenReturn(sMsgConsumer);
+
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(5001, 1).broadcastHandler(sBCHandler);
+		sExecutor.dhtConnectionProvider(dhtConnectionProvider);
+
+		Job job = Job.create(sExecutor.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_KILO_BYTES);
+		sExecutor.submit(job);
 
 		try {
 			Thread.sleep(2000);
@@ -115,6 +121,7 @@ public class JobSubmissionExecutorTest {
 									for (Object o : values) {
 										assertEquals(true, vals.containsValue(o));
 									}
+									logger.info(key + ": " + vals);
 								}
 								finished.set(0, true);
 							} else {

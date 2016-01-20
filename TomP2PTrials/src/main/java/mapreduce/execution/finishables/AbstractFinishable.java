@@ -9,6 +9,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.execution.domains.IDomain;
+import mapreduce.execution.tasks.Task;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
@@ -44,9 +45,9 @@ public abstract class AbstractFinishable implements IFinishable {
 		return resultOutputDomain;
 	}
 
-	protected boolean containsExecutor(String localExecutorId) { 
-		for(IDomain domain: outputDomains){
-			if(domain.executor().equals(localExecutorId)){
+	protected boolean containsExecutor(String localExecutorId) {
+		for (IDomain domain : outputDomains) {
+			if (domain.executor().equals(localExecutorId)) {
 				return true;
 			}
 		}
@@ -114,8 +115,16 @@ public abstract class AbstractFinishable implements IFinishable {
 
 	@Override
 	public AbstractFinishable addOutputDomain(IDomain domain) {
-		if (!isFinished() && !this.outputDomains.contains(domain)) {
-			this.outputDomains.add(domain);
+		if (!this.outputDomains.contains(domain)) {
+			if (!isFinished()) {
+				if (needsMultipleDifferentExecutors) {
+					if (!containsExecutor(domain.executor())) {
+						this.outputDomains.add(domain);
+					}
+				} else {
+					this.outputDomains.add(domain);
+				}
+			}
 		}
 		return this;
 	}

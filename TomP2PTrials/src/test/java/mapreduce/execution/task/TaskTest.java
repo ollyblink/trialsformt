@@ -128,14 +128,14 @@ public class TaskTest {
 		assertEquals(new Integer(1), task.activeCount());
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(true, task.isFinished());
-		
+
 		// Another of the other executor... ignored
 		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 1, null).resultHash(Number160.ONE));
 		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(1), task.activeCount());
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(true, task.isFinished());
-		
+
 		// Another of the other executor... ignored
 		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 2, null).resultHash(Number160.ONE));
 		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
@@ -173,11 +173,72 @@ public class TaskTest {
 
 		// Now this one finishes the execution and one result domain for this executor is available --> active count cannot be increased anymore, task
 		// may not be executed anymore
-		task.addOutputDomain(ExecutorTaskDomain.create("1", executor, -1, null));
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), executor, 0, null).resultHash(Number160.ZERO));
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
 		assertEquals(false, task.isFinished());
+
+		// Active count cannot be increased anymore now
+		task.incrementActiveCount();
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(false, task.isFinished());
+
+		// Adding another of the same executor has no effect whatsoever (should not happen anyways)
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), executor, 0, null).resultHash(Number160.ZERO));
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(false, task.isFinished());
+
+		// Adding another of the same executor has no effect whatsoever (should not happen anyways)
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), executor, 1, null).resultHash(Number160.ZERO));
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(false, task.isFinished());
+
+		// Adding another of a different executor, however, increases the nr of result hashs
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 0, null).resultHash(Number160.ZERO));
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(true, task.isFinished());
+
+		// Next check that every executor may only occur once (external same executor may not be added twice either
+		task.nrOfSameResultHash(3);
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 0, null).resultHash(Number160.ZERO));
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(false, task.isFinished());
+
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 0, null).resultHash(Number160.ONE));
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(false, task.isFinished());
+
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E3", 0, null).resultHash(Number160.ONE));
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(false, task.isFinished());
+
+		// E3 had it's shot ... although it comes in with another result hash, it is ignored
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E3", 1, null).resultHash(Number160.ZERO));
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(false, task.isFinished());
+
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E4", 1, null).resultHash(Number160.ZERO));
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(new Integer(3), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(true, task.isFinished());
 	}
 
 }

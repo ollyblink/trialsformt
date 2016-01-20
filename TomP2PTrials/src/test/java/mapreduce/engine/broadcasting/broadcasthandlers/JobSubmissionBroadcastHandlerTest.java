@@ -1,37 +1,24 @@
 package mapreduce.engine.broadcasting.broadcasthandlers;
 
-import static org.junit.Assert.fail;
-
-import java.util.Random;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import mapreduce.engine.executors.IExecutor;
-import mapreduce.engine.messageconsumers.IMessageConsumer;
+import mapreduce.engine.broadcasting.messages.IBCMessage;
+import mapreduce.engine.executors.JobSubmissionExecutor;
+import mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer;
+import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
-import mapreduce.utils.FileUtils;
 
 public class JobSubmissionBroadcastHandlerTest {
-	private static Random random = new Random();
 	private static JobSubmissionBroadcastHandler broadcastHandler;
-	private static Job job;
-	private static IMessageConsumer messageConsumer;
+	private static JobSubmissionMessageConsumer messageConsumer;
 
 	@BeforeClass
 	public static void setUp() {
 
-		String jsMapper = FileUtils.INSTANCE
-				.readLines(System.getProperty("user.dir") + "/src/main/java/mapreduce/execution/procedures/wordcountmapper.js");
-		String jsReducer = FileUtils.INSTANCE
-				.readLines(System.getProperty("user.dir") + "/src/main/java/mapreduce/execution/procedures/wordcountreducer.js");
-
-		job = Job.create("Submitter").addSucceedingProcedure(jsMapper, jsReducer, 1, 1, false, false).addSucceedingProcedure(jsReducer, null, 1, 1,
-				false, false);
-
-		messageConsumer = Mockito.mock(IMessageConsumer.class);
-		IExecutor executor = Mockito.mock(IExecutor.class);
+		messageConsumer = Mockito.mock(JobSubmissionMessageConsumer.class);
+		JobSubmissionExecutor executor = Mockito.mock(JobSubmissionExecutor.class);
 		Mockito.when(executor.id()).thenReturn("Executor");
 		Mockito.when(messageConsumer.executor()).thenReturn(executor);
 
@@ -40,8 +27,42 @@ public class JobSubmissionBroadcastHandlerTest {
 	}
 
 	@Test
-	public void test() {
-		fail();
+	public void testEvaluateReceivedMessage() {
+		Job job = Mockito.mock(Job.class);
+		Mockito.when(job.id()).thenReturn("J1");
+		Mockito.when(job.isFinished()).thenReturn(false);
+		
+		JobProcedureDomain in = Mockito.mock(JobProcedureDomain.class);
+		Mockito.when(in.jobId()).thenReturn(job.id());
+		JobProcedureDomain out = Mockito.mock(JobProcedureDomain.class);
+		IBCMessage bcMessage = Mockito.mock(IBCMessage.class);
+		Mockito.when(bcMessage.inputDomain()).thenReturn(in);
+		Mockito.when(bcMessage.outputDomain()).thenReturn(out);
+		
+		broadcastHandler.evaluateReceivedMessage(null);
+		Mockito.verify(bcMessage, Mockito.times(0)).execute(job, messageConsumer);
+	}
+
+	@Test
+	public void testProcessMessage() {
+		// ========================================================================================================================================
+		// an incoming message should only be forwarded in case it is a COMPLETED_PROCEDURE message for a job that was submitted by this submitter,
+		// and only if the job is already finished as else it is not of relevance for retrieval yet.
+		// ========================================================================================================================================
+
+		Job job = Mockito.mock(Job.class);
+		Mockito.when(job.isFinished()).thenReturn(false);
+		IBCMessage bcMessage = Mockito.mock(IBCMessage.class);
+
+		// Only way to check if it entered the else part is to check if bcMessage.execute(job, msgConsumer) was not invoked
+		broadcastHandler.processMessage(bcMessage, job);
+		Mockito.verify(bcMessage, Mockito.times(0)).execute(job, messageConsumer);
+
+		// Now the job is finished
+		Mockito.when(job.isFinished()).thenReturn(true);
+		broadcastHandler.processMessage(bcMessage, job);
+		Mockito.verify(bcMessage, Mockito.times(1)).execute(job, messageConsumer);
+
 	}
 
 }

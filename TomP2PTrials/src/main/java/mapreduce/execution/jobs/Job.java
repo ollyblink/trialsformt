@@ -62,11 +62,12 @@ public class Job implements Serializable, Cloneable {
 	 */
 	private boolean useLocalStorageFirst;
 
-	private boolean isFinished;
-
 	private long timeToLive;
 
 	private int submissionCounter = 0;
+
+	/** used by the submitting entity to mark this job as truely finished */
+	private boolean isRetrieved;
 
 	private Job(String jobSubmitterID, PriorityLevel priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
@@ -87,7 +88,6 @@ public class Job implements Serializable, Cloneable {
 		return new Job(jobSubmitterID, priorityLevel).fileInputFolderPath(null).maxFileSize(DEFAULT_MAX_FILE_SIZE)
 				.useLocalStorageFirst(DEFAULT_USE_LOCAL_STORAGE_FIRST).timeToLive(DEFAULT_TIME_TO_LIVE);
 	}
- 
 
 	public Job fileInputFolderPath(String fileInputFolderPath) {
 		this.fileInputFolderPath = fileInputFolderPath;
@@ -337,6 +337,15 @@ public class Job implements Serializable, Cloneable {
 
 	public int submissionCount() {
 		return this.submissionCounter;
+	}
+
+	public boolean isRetrieved() {
+		return isRetrieved;
+	}
+
+	public Job isRetrieved(boolean isRetrieved) {
+		this.isRetrieved = isRetrieved;
+		return this;
 	}
 
 }

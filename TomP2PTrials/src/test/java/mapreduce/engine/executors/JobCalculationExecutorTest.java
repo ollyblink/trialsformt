@@ -283,7 +283,7 @@ public class JobCalculationExecutorTest {
 		jobExecutor.tryFinishProcedure(procedure);
 		assertEquals(false, procedure.isFinished());
 
-		task1.addOutputDomain(ExecutorTaskDomain.create(task1.key(), null, 0, null));
+		task1.addOutputDomain(ExecutorTaskDomain.create(task1.key(), "E1", 0, null));
 		task1.isInProcedureDomain(true);
 	}
 }

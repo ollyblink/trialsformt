@@ -70,7 +70,7 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 					bcMessage.execute(job, messageConsumer);
 				}
 			}, job.priorityLevel(), job.creationTime(), bcMessage.procedureIndex(), bcMessage.status(), bcMessage.creationTime()));
-			updateTimestamp(job, bcMessage);
+			updateTimeout(job, bcMessage);
 		} else {
 			abortJobExecution(job);
 		}

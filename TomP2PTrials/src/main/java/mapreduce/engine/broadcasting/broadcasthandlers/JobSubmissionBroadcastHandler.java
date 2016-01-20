@@ -1,41 +1,40 @@
 package mapreduce.engine.broadcasting.broadcasthandlers;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import mapreduce.engine.broadcasting.messages.BCMessageStatus;
 import mapreduce.engine.broadcasting.messages.IBCMessage;
+import mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer;
 import mapreduce.execution.jobs.Job;
 
 public class JobSubmissionBroadcastHandler extends AbstractMapReduceBroadcastHandler {
 
-	private static Logger logger = LoggerFactory.getLogger(JobSubmissionBroadcastHandler.class);
+	// private static Logger logger = LoggerFactory.getLogger(JobSubmissionBroadcastHandler.class);
 
 	@Override
 	public void evaluateReceivedMessage(IBCMessage bcMessage) {
+		if (bcMessage == null || bcMessage.inputDomain() == null || bcMessage.inputDomain().jobId() == null) {
+			return;
+		}
 		String jobId = bcMessage.inputDomain().jobId();
-		String jobSubmitter = jobId.substring(jobId.lastIndexOf("("), jobId.lastIndexOf(")") + 1);
+		Job job = ((JobSubmissionMessageConsumer)messageConsumer).executor().job(jobId);
 
 		// Only receive messages for jobs that have been added by this submitter
-		if (messageConsumer.executor().id() != null && jobSubmitter.equals(messageConsumer.executor().id())) {
-			processMessage(bcMessage, getJob(jobId));
+		if (job != null && messageConsumer.executor() != null && messageConsumer.executor().id() != null && job.jobSubmitterID() != null
+				&& job.jobSubmitterID().equals(messageConsumer.executor().id())) {
+			processMessage(bcMessage, job);
 		}
 
 	}
 
 	@Override
 	public void processMessage(IBCMessage bcMessage, Job job) {
-		logger.info(" job: " + job);
-		if (job != null) {
-			if (bcMessage.status() == BCMessageStatus.COMPLETED_PROCEDURE) {
-				if (job.isFinished()) {// This is the only thing we actually care about... is it finished and can the data be retrieved?
-					abortJobExecution(job);
-					bcMessage.execute(job, messageConsumer);
-					return;
-				}
-			}
-			// Simply update the timer, nothing else to do...
-			updateTimestamp(job, bcMessage);
+		if (job == null || bcMessage == null) {
+			return;
+		}
+		if (job.isFinished()) {
+			bcMessage.execute(job, messageConsumer);
+			stopTimeout(job);
+			return;
+		} else {
+			updateTimeout(job, bcMessage);
 		}
 	}
 

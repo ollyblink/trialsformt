@@ -30,6 +30,7 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 	protected ListMultimap<Job, Future<?>> jobFuturesFor = SyncedCollectionProvider.syncedArrayListMultimap();
 
 	protected Map<Job, AbstractTimeout> timeouts = SyncedCollectionProvider.syncedHashMap();
+	private Thread timeoutThread;
 
 	protected AbstractMapReduceBroadcastHandler(int nrOfConcurrentlyExecutedBCMessages) {
 		this.taskExecutionServer = PriorityExecutor.newFixedThreadPool(nrOfConcurrentlyExecutedBCMessages);
@@ -60,14 +61,21 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 		}
 	}
 
-	protected void updateTimestamp(Job job, IBCMessage bcMessage) {
+	protected void updateTimeout(Job job, IBCMessage bcMessage) {
 		if (timeouts.containsKey(job)) {
 			timeouts.get(job).retrievalTimestamp(System.currentTimeMillis(), bcMessage);
 		} else {
 			AbstractTimeout timeout = AbstractTimeout.create(this, job, System.currentTimeMillis(), bcMessage, job.timeToLive());
-			timeouts.put(job, timeout);
-			Thread thread = new Thread(timeout);// timeoutcounter for job
-			thread.start();
+			this.timeouts.put(job, timeout);
+			this.timeoutThread = new Thread(timeout);// timeoutcounter for job
+			this.timeoutThread.start();
+		}
+	}
+
+	protected void stopTimeout(Job job) {
+		if (timeouts.containsKey(job)) {
+			this.timeoutThread.interrupt();
+			this.timeouts.remove(job);
 		}
 	}
 

@@ -200,7 +200,7 @@ public class TaskUpdateTest {
 		task = procedure.getTask(task);
 		assertEquals("hello", task.key());
 		assertEquals(false, task.isFinished());
-		assertEquals(2, task.nrOfOutputDomains());
+		assertEquals(1, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelTaskExecution(procedure, task);
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
@@ -211,7 +211,7 @@ public class TaskUpdateTest {
 		task = procedure.getTask(task);
 		assertEquals("hello", task.key());
 		assertEquals(false, task.isFinished());
-		assertEquals(3, task.nrOfOutputDomains());
+		assertEquals(1, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelTaskExecution(procedure, task);
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
@@ -222,7 +222,7 @@ public class TaskUpdateTest {
 		task = procedure.getTask(task);
 		assertEquals("hello", task.key());
 		assertEquals(true, task.isFinished());
-		assertEquals(4, task.nrOfOutputDomains());
+		assertEquals(2, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelTaskExecution(procedure, task);
 		Mockito.verify(calculationExecutor, Mockito.times(1)).switchDataFromTaskToProcedureDomain(procedure, task);
 
@@ -233,7 +233,7 @@ public class TaskUpdateTest {
 		task = procedure.getTask(task);
 		assertEquals("hello", task.key());
 		assertEquals(true, task.isFinished());
-		assertEquals(4, task.nrOfOutputDomains()); // Won't be added anymore
+		assertEquals(2, task.nrOfOutputDomains()); // Won't be added anymore
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelTaskExecution(procedure, task);
 		Mockito.verify(calculationExecutor, Mockito.times(1)).switchDataFromTaskToProcedureDomain(procedure, task);
 	}
