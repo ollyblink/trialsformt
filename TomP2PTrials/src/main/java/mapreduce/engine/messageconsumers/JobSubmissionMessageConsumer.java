@@ -39,7 +39,7 @@ public class JobSubmissionMessageConsumer extends AbstractMessageConsumer {
 		if (job.jobSubmitterID().equals(executor.id()) && executor().submittedJob(job) && !executor().jobIsRetrieved(job)) {
 			if (outputDomain.procedureSimpleName().equals(EndProcedure.class.getSimpleName())) {
 				logger.info("Job is finished. Final data location domain: " + outputDomain);
-				executor().retrieveDataOfFInishedJob(outputDomain);
+				executor().retrieveAndStoreDataOfFinishedJob(outputDomain);
 			}
 		}
 	}

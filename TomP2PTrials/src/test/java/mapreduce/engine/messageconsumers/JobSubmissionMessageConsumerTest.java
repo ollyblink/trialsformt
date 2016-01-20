@@ -51,14 +51,14 @@ public class JobSubmissionMessageConsumerTest {
 		Mockito.when(executor.submittedJob(job2)).thenReturn(false);
 		Mockito.when(executor.jobIsRetrieved(job2)).thenReturn(false);
 		collectMethod.invoke(messageConsumer, job2, outputDomain, inputDomain);
-		Mockito.verify(executor, Mockito.times(0)).retrieveDataOfFInishedJob(outputDomain);
+		Mockito.verify(executor, Mockito.times(0)).retrieveAndStoreDataOfFinishedJob(outputDomain);
 
 		// Second: same submitter, never submitted (? don't know yet where this may happen, just make it sure it never happens here)
 		Mockito.when(executor.submittedJob(job)).thenReturn(false);
 		Mockito.when(executor.jobIsRetrieved(job)).thenReturn(false);
 		Mockito.when(job.isFinished()).thenReturn(false);
 		collectMethod.invoke(messageConsumer, job, outputDomain, inputDomain);
-		Mockito.verify(executor, Mockito.times(0)).retrieveDataOfFInishedJob(outputDomain);
+		Mockito.verify(executor, Mockito.times(0)).retrieveAndStoreDataOfFinishedJob(outputDomain);
 
 		// Third: same submitter, submitted, but already retrieved once... (May happen if a message from another finishing executor comes in -->
 		// ignore!)
@@ -66,13 +66,13 @@ public class JobSubmissionMessageConsumerTest {
 		Mockito.when(executor.jobIsRetrieved(job)).thenReturn(true);
 		Mockito.when(job.isFinished()).thenReturn(false);
 		collectMethod.invoke(messageConsumer, job, outputDomain, inputDomain);
-		Mockito.verify(executor, Mockito.times(0)).retrieveDataOfFInishedJob(outputDomain);
+		Mockito.verify(executor, Mockito.times(0)).retrieveAndStoreDataOfFinishedJob(outputDomain);
 
 		// Third: same submitter, submitted, job finished, never retrieved before: retrieval possible!
 		Mockito.when(executor.submittedJob(job)).thenReturn(true);
 		Mockito.when(executor.jobIsRetrieved(job)).thenReturn(false);
 		Mockito.when(job.isFinished()).thenReturn(true);
 		collectMethod.invoke(messageConsumer, job, outputDomain, inputDomain);
-		Mockito.verify(executor, Mockito.times(1)).retrieveDataOfFInishedJob(outputDomain);
+		Mockito.verify(executor, Mockito.times(1)).retrieveAndStoreDataOfFinishedJob(outputDomain);
 	}
 }

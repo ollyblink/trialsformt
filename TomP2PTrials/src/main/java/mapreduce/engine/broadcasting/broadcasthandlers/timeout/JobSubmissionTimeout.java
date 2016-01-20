@@ -11,8 +11,8 @@ import mapreduce.execution.jobs.Job;
 public class JobSubmissionTimeout extends AbstractTimeout {
 	private static Logger logger = LoggerFactory.getLogger(JobSubmissionTimeout.class);
 
-	public JobSubmissionTimeout(JobSubmissionBroadcastHandler broadcastHandler, Job job, long retrievalTimestamp, IBCMessage bcMessage,
-			long timeToLive) {
+	public JobSubmissionTimeout(JobSubmissionBroadcastHandler broadcastHandler, Job job,
+			long retrievalTimestamp, IBCMessage bcMessage, long timeToLive) {
 		super(broadcastHandler, job, retrievalTimestamp, bcMessage, timeToLive);
 	}
 
@@ -21,8 +21,12 @@ public class JobSubmissionTimeout extends AbstractTimeout {
 		sleep();
 		synchronized (this.broadcastHandler) {
 			logger.info(" Timeout: try resubmitting job " + job);
-//			this.broadcastHandler.abortJobExecution(job);
-			((JobSubmissionExecutor) broadcastHandler.messageConsumer().executor()).resubmitJobIfPossible(job);
+			// this.broadcastHandler.abortJobExecution(job);
+			if (job.incrementSubmissionCounter() < job.maxNrOfSubmissionTrials()) {
+				((JobSubmissionExecutor) broadcastHandler.messageConsumer().executor()).submit(job);
+			} else {
+				System.err.println("Job submission aborted. Job: " + job);
+			}
 		}
 	}
 
