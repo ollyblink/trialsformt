@@ -81,7 +81,6 @@ public class ExecutorTaskDomain implements IDomain {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((jobProcedureDomain == null) ? 0 : jobProcedureDomain.hashCode());
-		result = prime * result + ((resultHash == null) ? 0 : resultHash.hashCode());
 		result = prime * result + ((taskExecutor == null) ? 0 : taskExecutor.hashCode());
 		result = prime * result + ((taskId == null) ? 0 : taskId.hashCode());
 		result = prime * result + taskStatusIndex;
@@ -102,11 +101,6 @@ public class ExecutorTaskDomain implements IDomain {
 				return false;
 		} else if (!jobProcedureDomain.equals(other.jobProcedureDomain))
 			return false;
-		if (resultHash == null) {
-			if (other.resultHash != null)
-				return false;
-		} else if (!resultHash.equals(other.resultHash))
-			return false;
 		if (taskExecutor == null) {
 			if (other.taskExecutor != null)
 				return false;
@@ -121,7 +115,6 @@ public class ExecutorTaskDomain implements IDomain {
 			return false;
 		return true;
 	}
-
-	
+ 
 
 }

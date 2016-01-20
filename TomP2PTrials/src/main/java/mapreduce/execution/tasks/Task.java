@@ -15,6 +15,8 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	private static final long serialVersionUID = 4696324648240806323L;
 	/** Key of this task to get the values for */
 	private final String key;
+	/** The executor of this task. */
+	private String localExecutorId;
 	/** Set true if this tasks's result keys and values were successfully transferred from executor task domain to executor job procedure domain */
 	private volatile boolean isInProcedureDomain = false;
 	/** Used in the scheduler to not schedule too many executions of the same task */
@@ -22,11 +24,19 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	/** Just a counter to be used in the executor task domains */
 	private volatile int statusIndex = 0;
 
-	public Task decrementActiveCount() {
+	private Task decrementActiveCount() {
 		if (this.activeCount > 0) {
 			--this.activeCount;
 		}
 		return this;
+	}
+
+	@Override
+	public Task addOutputDomain(IDomain domain) {
+		if (domain.executor().equals(localExecutorId) && !this.outputDomains.contains(domain)) {
+			decrementActiveCount();
+		}
+		return (Task) super.addOutputDomain(domain);
 	}
 
 	public Task incrementActiveCount() {
@@ -36,8 +46,24 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		return this;
 	}
 
+	/**
+	 * Checks if a task can be executed or not. Important when adding to the executor in @see{JobCalculationMessageConsumer.trySubmitTasks}
+	 * 
+	 * @param localExecutorId
+	 * @return
+	 */
 	public boolean canBeExecuted() {
-		return currentMaxNrOfSameResultHash() + activeCount < nrOfSameResultHash;
+		if (needsMultipleDifferentExecutors) {
+			// Active count is only increased when the local executor starts execution. As such, when active count is 1, it cannot be executed more.
+			// Else, it has to be checked if this executor actually finished. If not: can execute, else it cannot be executed
+			if (containsExecutor(this.localExecutorId)) {
+				return false;
+			} else {
+				return activeCount < 1;
+			}
+		} else { // Doesn't matter, can execute until all tasks are finished also by the same executor
+			return currentMaxNrOfSameResultHash() + activeCount < nrOfSameResultHash;
+		}
 	}
 
 	public Integer activeCount() {
@@ -45,7 +71,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	/**
-	 * Earlier, this had a meaning. Now it's only there to tell apart the execution, if the same executor executes the task multiple times
+	 * Earlier, this had an actual meaning. Now it's only there to tell apart the executions if the same executor executes the task multiple times
 	 * 
 	 * @return
 	 */
@@ -53,12 +79,18 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		return this.statusIndex++;
 	}
 
-	private Task(String key) {
-		this.key = key;
+	private Task() {
+		this.key = "";
+		this.localExecutorId = "";
 	}
 
-	public static Task create(String key) {
-		return new Task(key);
+	private Task(String key, String localExecutorId) {
+		this.key = key;
+		this.localExecutorId = localExecutorId;
+	}
+
+	public static Task create(String key, String localExecutorId) {
+		return new Task(key, localExecutorId);
 	}
 
 	public String key() {
@@ -93,17 +125,14 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	@Override
-	public Task addOutputDomain(IDomain domain) {
-		return (Task) super.addOutputDomain(domain);
-	}
-	@Override 
 	public ExecutorTaskDomain resultOutputDomain() {
 		return (ExecutorTaskDomain) super.resultOutputDomain();
 	}
+
 	@Override
 	public String toString() {
 		return "Task [key=" + key
-//				+ ", isInProcedureDomain=" + isInProcedureDomain + " " + super.toString() 
+		// + ", isInProcedureDomain=" + isInProcedureDomain + " " + super.toString()
 				+ "]";
 	}
 
@@ -149,7 +178,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		return null;
 	}
 
-	public int nrOfSameResultHash() { 
+	public int nrOfSameResultHash() {
 		return nrOfSameResultHash;
 	}
 

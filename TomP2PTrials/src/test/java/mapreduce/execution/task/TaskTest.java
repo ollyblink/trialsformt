@@ -19,7 +19,7 @@ public class TaskTest {
 		int trueResult = 100;
 		int falseResult = 99;
 
-		Task task = Task.create("hello");
+		Task task = Task.create("hello", "E1");
 		ExecutorTaskDomain etd = ExecutorTaskDomain
 				.create("hello", executor1, task.newStatusIndex(), JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
@@ -63,106 +63,121 @@ public class TaskTest {
 	}
 
 	@Test
-	public void testActiveCountAndNrOfSameResultHash() {
-		Task task = Task.create("1").nrOfSameResultHash(2);
-		assertEquals(true, task.canBeExecuted());
+	public void testActiveCountAndNrOfSameResultHashSameExecutorPossible() {
+		// ===========================================================================================================================================
+		// Here the task may be executed by the same executor multiple times.
+		// ===========================================================================================================================================
+
+		String localExecutorId = "E1";
+		Task task = (Task) Task.create("1", localExecutorId).nrOfSameResultHash(2).needsMultipleDifferentExecutors(false);
 		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(true, task.canBeExecuted());
 		assertEquals(false, task.isFinished());
 
 		task.incrementActiveCount();
-		assertEquals(true, task.canBeExecuted());
 		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(1), task.activeCount());
+		assertEquals(true, task.canBeExecuted());
 		assertEquals(false, task.isFinished());
 
 		task.incrementActiveCount();
-		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(2), task.activeCount());
+		assertEquals(false, task.canBeExecuted());
 		assertEquals(false, task.isFinished());
 
 		// Cannot increment more than number of same result hash
 		task.incrementActiveCount();
-		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(2), task.activeCount());
+		assertEquals(false, task.canBeExecuted());
 		assertEquals(false, task.isFinished());
 
 		// Decrementing again
-		task.decrementActiveCount();
-		assertEquals(true, task.canBeExecuted());
-		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), localExecutorId, 0, null).resultHash(Number160.ZERO));
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(1), task.activeCount());
+		assertEquals(false, task.canBeExecuted());
 		assertEquals(false, task.isFinished());
 
-		task.decrementActiveCount();
-		assertEquals(true, task.canBeExecuted());
-		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
+		// Not same result hash, currentMaxNr stays the same
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), localExecutorId, 1, null).resultHash(Number160.ONE));
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
-		assertEquals(false, task.isFinished());
-
-		// Decrement cannot go below 0
-		task.decrementActiveCount();
 		assertEquals(true, task.canBeExecuted());
-		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
-		assertEquals(new Integer(0), task.activeCount());
 		assertEquals(false, task.isFinished());
 
 		// Increment again by 1
 		task.incrementActiveCount();
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(1), task.activeCount());
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(false, task.isFinished());
+
+		// same domain cannot be added twice. Stays the same!
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), localExecutorId, 0, null).resultHash(Number160.ONE));
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(1), task.activeCount());
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(false, task.isFinished());
+
+		// same result hash, currentMaxNr increases, different executor
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 0, null).resultHash(Number160.ONE));
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(1), task.activeCount());
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(true, task.isFinished());
+		
+		// Another of the other executor... ignored
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 1, null).resultHash(Number160.ONE));
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(1), task.activeCount());
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(true, task.isFinished());
+		
+		// Another of the other executor... ignored
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 2, null).resultHash(Number160.ONE));
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(1), task.activeCount());
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(true, task.isFinished());
+
+		// Current executor finishes, but has no effect anymore except decreasing the active count
+		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), localExecutorId, 2, null).resultHash(Number160.ZERO));
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(true, task.isFinished());
+	}
+
+	@Test
+	public void testActiveCountAndNrOfSameResultHashDifferentExecutors() {
+		// ===========================================================================================================================================
+		// Here the task may be executed by the same executor ONLY ONCE.
+		// ===========================================================================================================================================
+
+		String executor = "E1";
+		Task task = (Task) Task.create("1", executor).nrOfSameResultHash(2).needsMultipleDifferentExecutors(true);
 		assertEquals(true, task.canBeExecuted());
+		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(false, task.isFinished());
+
+		task.incrementActiveCount();
+		// Now it should not be possible to execute the task once more
+		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(1), task.activeCount());
 		assertEquals(false, task.isFinished());
 
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E1", 0, null).resultHash(Number160.ZERO));
+		// Now this one finishes the execution and one result domain for this executor is available --> active count cannot be increased anymore, task
+		// may not be executed anymore
+		task.addOutputDomain(ExecutorTaskDomain.create("1", executor, -1, null));
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
-		assertEquals(new Integer(1), task.activeCount());
-		assertEquals(false, task.isFinished());
-
-		// Not same result hash, currentMaxNr stays the same
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E1", 0, null).resultHash(Number160.ONE));
-		assertEquals(false, task.canBeExecuted());
-		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
-		assertEquals(new Integer(1), task.activeCount());
-		assertEquals(false, task.isFinished());
-
-		// Cannot be incremented more as there is already a result output hash
-		task.incrementActiveCount();
-		assertEquals(false, task.canBeExecuted());
-		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
-		assertEquals(new Integer(1), task.activeCount());
-		assertEquals(false, task.isFinished());
-
-		// same domain cannot be added twice. Stays the same!
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E1", 0, null).resultHash(Number160.ONE));
-		assertEquals(false, task.canBeExecuted());
-		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
-		assertEquals(new Integer(1), task.activeCount());
-		assertEquals(false, task.isFinished());
-		
-		// same result hash, currentMaxNr stays increases
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 0, null).resultHash(Number160.ONE));
-		assertEquals(false, task.canBeExecuted());
-		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
-		assertEquals(new Integer(1), task.activeCount());
-		assertEquals(true, task.isFinished());
-
-		// Decrementing again: Task stays finished and cannot be executed again
-		task.decrementActiveCount();
-		assertEquals(false, task.canBeExecuted());
-		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
-		assertEquals(true, task.isFinished());
-
-		// Decrement not below 0
-		task.decrementActiveCount();
-		assertEquals(false, task.canBeExecuted());
-		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
-		assertEquals(new Integer(0), task.activeCount());
-		assertEquals(true, task.isFinished());
+		assertEquals(false, task.isFinished());
 	}
 
 }

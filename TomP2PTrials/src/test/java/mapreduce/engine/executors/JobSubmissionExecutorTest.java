@@ -2,25 +2,21 @@ package mapreduce.engine.executors;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import mapreduce.engine.executors.JobSubmissionExecutor;
+import mapreduce.engine.broadcasting.broadcasthandlers.JobSubmissionBroadcastHandler;
+import mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer;
 import mapreduce.execution.jobs.Job;
-import mapreduce.execution.tasks.taskdatacomposing.MaxFileSizeTaskDataComposer;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
@@ -42,8 +38,10 @@ public class JobSubmissionExecutorTest {
 	public void test() throws IOException {
 		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles";
 
-		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(5001, 1);
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(5001, 1)
+				.broadcastHandler(Mockito.mock(JobSubmissionBroadcastHandler.class));
 		jobSubmissionManager = JobSubmissionExecutor.create().dhtConnectionProvider(dhtConnectionProvider);
+		dhtConnectionProvider.broadcastHandler().messageConsumer(JobSubmissionMessageConsumer.create().executor(jobSubmissionManager));
 
 		Job job = Job.create(jobSubmissionManager.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.TWO_KILO_BYTES);
 		jobSubmissionManager.submit(job);

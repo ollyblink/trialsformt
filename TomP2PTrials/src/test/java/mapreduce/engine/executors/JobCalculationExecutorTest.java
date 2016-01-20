@@ -68,7 +68,7 @@ public class JobCalculationExecutorTest {
 		job.incrementProcedureIndex();
 		Procedure procedure = job.currentProcedure();
 		String executor = "Executor_1";
-		Task task = Task.create("file1");
+		Task task = Task.create("file1", executor);
 		JobProcedureDomain inputJPD = JobProcedureDomain.create(job.id(), 0, executor, StartProcedure.class.getSimpleName(), 0).expectedNrOfFiles(1);
 		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), 0, executor, WordCountMapper.class.getSimpleName(), 1);
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.newStatusIndex(), outputJPD);
@@ -169,7 +169,7 @@ public class JobCalculationExecutorTest {
 		addTaskDataToProcedureDomain(dhtConnectionProvider, "file1", testIsText, dataDomain.toString());
 		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).dataInputDomain(dataDomain).combiner(combiner);
 
-		jobExecutor.executeTask(Task.create("file1"), procedure);
+		jobExecutor.executeTask(Task.create("file1", "E1"), procedure);
 
 		Thread.sleep(2000);
 		JobProcedureDomain outputJPD = JobProcedureDomain
@@ -278,7 +278,7 @@ public class JobCalculationExecutorTest {
 		jobExecutor.tryFinishProcedure(procedure);
 		assertEquals(false, procedure.isFinished());
 
-		Task task1 = Task.create("hello");
+		Task task1 = Task.create("hello", "E1");
 		procedure.addTask(task1);
 		jobExecutor.tryFinishProcedure(procedure);
 		assertEquals(false, procedure.isFinished());

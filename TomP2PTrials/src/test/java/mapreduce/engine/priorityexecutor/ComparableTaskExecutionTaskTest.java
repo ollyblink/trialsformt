@@ -30,7 +30,7 @@ public class ComparableTaskExecutionTaskTest {
 	private void sortingTest(int numberOfResultHashs, int[] idOrder) {
 		List<Task> tasks = new ArrayList<>();
 		for (int i = 0; i < 6; ++i) {
-			tasks.add(Task.create(i + "").nrOfSameResultHash(numberOfResultHashs));
+			tasks.add((Task) Task.create(i + "", "E1").nrOfSameResultHash(numberOfResultHashs).needsMultipleDifferentExecutors(false));
 		}
 
 		// FINISHED
@@ -103,11 +103,10 @@ public class ComparableTaskExecutionTaskTest {
 		boolean[] trueValues = new boolean[6];
 
 		for (int i = 0; i < 6; ++i) {
-			trueValues[i] = false; 
+			trueValues[i] = false;
 		}
-		
 
-		for (int i = 0; i < 6; ++i) { 
+		for (int i = 0; i < 6; ++i) {
 			assertEquals(false, trueValues[i]);
 		}
 		for (Task task : tasks) {
@@ -120,8 +119,7 @@ public class ComparableTaskExecutionTaskTest {
 					trueValues[counter] = idOrder[counter] == Integer.parseInt(task.key());
 					try {
 						Thread.sleep(10);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
+					} catch (InterruptedException e) { 
 						e.printStackTrace();
 					}
 				}
@@ -134,10 +132,10 @@ public class ComparableTaskExecutionTaskTest {
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
-		for (int i = 0; i < 6; ++i) { 
+		}
+		for (int i = 0; i < 6; ++i) {
 			assertEquals(true, trueValues[i]);
-		} 
+		}
 	}
 
 }

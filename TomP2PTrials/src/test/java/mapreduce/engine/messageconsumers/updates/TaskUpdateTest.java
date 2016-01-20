@@ -27,6 +27,7 @@ public class TaskUpdateTest {
 	public void setUpBeforeTest() throws Exception {
 		// Calculation Executor
 		calculationExecutor = Mockito.mock(JobCalculationExecutor.class);
+		Mockito.when(calculationExecutor.id()).thenReturn("E1");
 		// Calculation MessageConsumer
 		calculationMsgConsumer = Mockito.mock(JobCalculationMessageConsumer.class);
 		Mockito.when(calculationMsgConsumer.executor()).thenReturn(calculationExecutor);
@@ -109,7 +110,7 @@ public class TaskUpdateTest {
 		assertEquals(0, procedure.tasksSize());
 		taskUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(1, procedure.tasksSize());
-		Task task = procedure.getTask(Task.create("hello"));
+		Task task = procedure.getTask(Task.create("hello", calculationExecutor.id()));
 		assertEquals("hello", task.key());
 		assertEquals(1, task.nrOfOutputDomains());
 		assertEquals(false, task.isFinished());
@@ -125,12 +126,11 @@ public class TaskUpdateTest {
 		assertEquals(0, procedure.tasksSize());
 		taskUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(1, procedure.tasksSize());
-		Task task = procedure.getTask(Task.create("hello"));
+		Task task = procedure.getTask(Task.create("hello", calculationExecutor.id()));
 		assertEquals("hello", task.key());
 		assertEquals(false, task.isFinished());
 		assertEquals(1, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
 		taskUpdate.internalUpdate(outputDomain, procedure);// Second execution with the same output domain should not have any effect
@@ -140,7 +140,6 @@ public class TaskUpdateTest {
 		assertEquals(false, task.isFinished());
 		assertEquals(1, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
 		// From same executor, but different domain (it's an additional execution!!)
@@ -152,7 +151,6 @@ public class TaskUpdateTest {
 		assertEquals(true, task.isFinished());
 		assertEquals(2, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(1)).switchDataFromTaskToProcedureDomain(procedure, task);
 
 		// From same executor, but different domain (it's an additional execution!!)
@@ -166,7 +164,6 @@ public class TaskUpdateTest {
 		// Nothing changes as this task is already finished
 		assertEquals(2, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(1)).switchDataFromTaskToProcedureDomain(procedure, task);
 	}
 
@@ -180,12 +177,11 @@ public class TaskUpdateTest {
 		assertEquals(0, procedure.tasksSize());
 		taskUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(1, procedure.tasksSize());
-		Task task = procedure.getTask(Task.create("hello"));
+		Task task = procedure.getTask(Task.create("hello", calculationExecutor.id()));
 		assertEquals("hello", task.key());
 		assertEquals(false, task.isFinished());
 		assertEquals(1, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
 		taskUpdate.internalUpdate(outputDomain, procedure);// Second execution with the same output domain should not have any effect
@@ -195,7 +191,6 @@ public class TaskUpdateTest {
 		assertEquals(false, task.isFinished());
 		assertEquals(1, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
 		// From same executor, but different domain (it's an additional execution!!)
@@ -207,7 +202,6 @@ public class TaskUpdateTest {
 		assertEquals(false, task.isFinished());
 		assertEquals(2, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
 		// From same executor, but different domain (it's an additional execution!!)
@@ -219,7 +213,6 @@ public class TaskUpdateTest {
 		assertEquals(false, task.isFinished());
 		assertEquals(3, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
 		// From different executor finally
@@ -231,7 +224,6 @@ public class TaskUpdateTest {
 		assertEquals(true, task.isFinished());
 		assertEquals(4, task.nrOfOutputDomains());
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(1)).switchDataFromTaskToProcedureDomain(procedure, task);
 
 		// From different executor again, but nothing changes anymore due to the finished procedure
@@ -243,7 +235,6 @@ public class TaskUpdateTest {
 		assertEquals(true, task.isFinished());
 		assertEquals(4, task.nrOfOutputDomains()); // Won't be added anymore
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelTaskExecution(procedure, task);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).executor();
 		Mockito.verify(calculationExecutor, Mockito.times(1)).switchDataFromTaskToProcedureDomain(procedure, task);
 	}
 

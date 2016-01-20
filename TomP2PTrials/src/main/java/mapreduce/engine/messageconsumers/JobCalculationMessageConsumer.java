@@ -1,12 +1,10 @@
 package mapreduce.engine.messageconsumers;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import org.apache.logging.log4j.core.config.AwaitUnconditionallyReliabilityStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +26,8 @@ import mapreduce.execution.tasks.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
-import mapreduce.utils.resultprinter.IResultPrinter;
 import mapreduce.utils.resultprinter.DefaultResultPrinter;
+import mapreduce.utils.resultprinter.IResultPrinter;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
@@ -187,7 +185,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 								dataInputDomain.expectedNrOfFiles(actualNrOfTasks);
 								for (Number640 keyHash : future.dataMap().keySet()) {
 									String key = (String) future.dataMap().get(keyHash).object();
-									Task task = Task.create(key);
+									Task task = Task.create(key, executor.id());
 									procedure.addTask(task);
 								}
 								trySubmitTasks(procedure);

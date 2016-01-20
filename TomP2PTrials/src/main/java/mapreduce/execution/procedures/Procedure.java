@@ -157,7 +157,7 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 		return true;
 	}
 
-	public Procedure addTask(Task task) { 
+	public Procedure addTask(Task task) {
 		synchronized (tasks) {
 			if (!this.tasks.contains(task)) {
 				task.nrOfSameResultHash(nrOfSameResultHashForTasks);
@@ -178,13 +178,15 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 		synchronized (tasks) {
 			for (Task task : tasks) {
 				if (task.canBeExecuted()) {
-					task.incrementActiveCount();
-					return task;
+					return task.incrementActiveCount();
+				} else {
+					continue; // look for next task to execute
 				}
 			}
 		}
 		return null;
 	}
+
 	public Task getTask(Task task) {
 		if (tasks.contains(task)) {
 			return tasks.get(tasks.indexOf(task));
@@ -304,6 +306,5 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 			return false;
 		return true;
 	}
-
 
 }

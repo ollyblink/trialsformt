@@ -19,7 +19,7 @@ public class TaskUpdate extends AbstractUpdate {
 	@Override
 	protected void internalUpdate(IDomain outputDomain, Procedure procedure) throws ClassCastException, NullPointerException {
 		ExecutorTaskDomain outputETDomain = (ExecutorTaskDomain) outputDomain;
-		Task receivedTask = Task.create(outputETDomain.taskId());
+		Task receivedTask = Task.create(outputETDomain.taskId(), msgConsumer.executor().id());
 		Task task = procedure.getTask(receivedTask);
 		if (task == null) {
 			task = receivedTask;

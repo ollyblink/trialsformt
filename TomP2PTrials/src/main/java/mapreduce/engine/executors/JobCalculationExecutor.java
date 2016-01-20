@@ -97,7 +97,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 										// received
 										// already
 										dhtConnectionProvider.broadcastCompletion(msg);//
-										task.decrementActiveCount(); // TODO this one looks like its at the wrong position... rethink
+//										task.decrementActiveCount(); // TODO this one looks like its at the wrong position... rethink
 
 										logger.info("executeTask: Successfully broadcasted TaskCompletedBCMessage for task " + task);
 									} else {
@@ -116,7 +116,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 				})
 				// )
 				;
-		task.decrementActiveCount();
+//		task.decrementActiveCount();
 		// }
 	}
 

@@ -37,7 +37,7 @@ public class DHTStorageContextTest {
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(4000, 1);
 
 		Job job = Job.create("SUBMITTER_1", PriorityLevel.MODERATE);
-		Task task = Task.create("hello");
+		Task task = Task.create("hello", executor);
 		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), 0, executor, "NONE", 0);
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), executor, task.newStatusIndex(), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);

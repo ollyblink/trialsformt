@@ -103,9 +103,9 @@ public class ProcedureTest {
 		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).nrOfSameResultHash(1).nrOfSameResultHashForTasks(10);
 		ExecutorTaskDomain etd = ExecutorTaskDomain.create("", "3", 0, JobProcedureDomain.create("", 0, "3", "", 0)).resultHash(Number160.ONE);
 
-		procedure.addTask(Task.create("1").addOutputDomain(etd));
-		procedure.addTask(Task.create("2").addOutputDomain(etd));
-		procedure.addTask(Task.create("3").addOutputDomain(etd));
+		procedure.addTask(Task.create("1", "E1").addOutputDomain(etd));
+		procedure.addTask(Task.create("2", "E1").addOutputDomain(etd));
+		procedure.addTask(Task.create("3", "E1").addOutputDomain(etd));
 
 		Field tasksF = Procedure.class.getDeclaredField("tasks");
 		tasksF.setAccessible(true);
@@ -134,8 +134,8 @@ public class ProcedureTest {
 	public void testNextExecutableTask() {
 		int max = 25;
 		Procedure procedure = Procedure.create(null, 0).nrOfSameResultHashForTasks(max/2);
-		procedure.addTask(Task.create("hello"));
-		procedure.addTask(Task.create("world"));
+		procedure.addTask((Task)Task.create("hello", "E1").needsMultipleDifferentExecutors(false));
+		procedure.addTask((Task)Task.create("world", "E1").needsMultipleDifferentExecutors(false));
 		
 		for (int i = 0; i < max; ++i) {
 			Task task = procedure.nextExecutableTask();
@@ -152,5 +152,6 @@ public class ProcedureTest {
 	@Test
 	public void testAll() {
 		// Need to make all tests for procedure, also private methods!!!
+		fail();
 	}
 }

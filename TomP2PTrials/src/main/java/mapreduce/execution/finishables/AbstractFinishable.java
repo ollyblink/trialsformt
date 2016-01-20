@@ -21,7 +21,7 @@ public abstract class AbstractFinishable implements IFinishable {
 	/** How many times this object needs to be executed before it is declared finished */
 	protected int nrOfSameResultHash = 1; // Needs at least one
 	/** Assert that there are multiple output domains received before a task is finished */
-	private boolean needsMultipleDifferentExecutors;
+	protected boolean needsMultipleDifferentExecutors;
 
 	public AbstractFinishable() {
 		this.outputDomains = SyncedCollectionProvider.syncedArrayList();
@@ -42,6 +42,15 @@ public abstract class AbstractFinishable implements IFinishable {
 	public IDomain resultOutputDomain() {
 		checkIfFinished();
 		return resultOutputDomain;
+	}
+
+	protected boolean containsExecutor(String localExecutorId) { 
+		for(IDomain domain: outputDomains){
+			if(domain.executor().equals(localExecutorId)){
+				return true;
+			}
+		}
+		return false;
 	}
 
 	protected void checkIfFinished() {

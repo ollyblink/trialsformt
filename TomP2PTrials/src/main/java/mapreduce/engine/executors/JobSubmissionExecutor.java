@@ -182,7 +182,7 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 			List<FutureDone<List<FuturePut>>> allDoneListeners, String keyfilePath, int filePartCounter, String vals) {
 		Collection<Object> values = new ArrayList<>();
 		values.add(vals);
-		Task task = Task.create(new File(keyfilePath).getName() + "_" + filePartCounter);
+		Task task = Task.create(new File(keyfilePath).getName() + "_" + filePartCounter, id);
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
 
