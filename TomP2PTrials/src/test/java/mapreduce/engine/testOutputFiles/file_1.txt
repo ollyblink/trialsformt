@@ -1,2 +1,0 @@
-world	15
-this	10

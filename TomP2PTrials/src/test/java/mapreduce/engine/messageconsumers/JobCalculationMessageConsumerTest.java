@@ -319,7 +319,7 @@ public class JobCalculationMessageConsumerTest {
 		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
 		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
 
-		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure(), task1);
+		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure().dataInputDomain().toString(), task1);
 		//// futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
 		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
 		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
@@ -329,7 +329,7 @@ public class JobCalculationMessageConsumerTest {
 		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
 		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
 		//
-		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure(), task2);
+		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure().dataInputDomain().toString(), task2);
 		//// futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
 		//
 		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
@@ -368,7 +368,7 @@ public class JobCalculationMessageConsumerTest {
 		assertEquals(4, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
 		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
 		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());
-		calculationMsgConsumer.cancelProcedureExecution(job.currentProcedure());
+		calculationMsgConsumer.cancelProcedureExecution(job.currentProcedure().dataInputDomain().toString());
 		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
 		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
 		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());

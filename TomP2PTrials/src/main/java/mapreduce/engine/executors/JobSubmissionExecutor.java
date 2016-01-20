@@ -175,7 +175,7 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 
 		logger.info("internal submit(): Put split: <" + task.key() + ", \"" + vals + "\">");
 		((IExecutable) procedure.executable()).process(task.key(), values, context);
-		allDoneListeners.add(Futures.whenAllSuccess(context.futurePutData())
+		Futures.whenAllSuccess(context.futurePutData())
 				.addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 					@Override
 					public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
@@ -193,7 +193,7 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 						}
 					}
 
-				}));
+				});
 	}
 
 	private List<String> filePaths(String fileInputFolderPath) {

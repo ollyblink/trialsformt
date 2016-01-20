@@ -23,7 +23,7 @@ public class ProcedureUpdate extends AbstractUpdate {
 		JobProcedureDomain outputJPD = (JobProcedureDomain) outputDomain;
 		procedure.addOutputDomain(outputJPD);
 		if (procedure.isFinished()) {
-			msgConsumer.cancelProcedureExecution(procedure);
+			msgConsumer.cancelProcedureExecution(procedure.dataInputDomain().toString());
 			JobProcedureDomain resultOutputDomain = procedure.resultOutputDomain();
 			job.incrementProcedureIndex();
 			job.currentProcedure().dataInputDomain(resultOutputDomain);
@@ -31,6 +31,8 @@ public class ProcedureUpdate extends AbstractUpdate {
 	}
 }
 // Below code should not be needed as EndProcedure is always finished...
-// if (job.currentProcedure().executable().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName())) {
+// if
+// (job.currentProcedure().executable().getClass().getSimpleName().equals(EndProcedure.class.getSimpleName()))
+// {
 // job.isFinished(true);
 // }

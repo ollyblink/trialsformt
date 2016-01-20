@@ -138,22 +138,27 @@ public class ProcedureUpdateTest {
 		assertEquals(start, job.currentProcedure());
 		assertEquals(false, start.isFinished());
 		assertEquals(0, job.currentProcedure().procedureIndex());
-		assertEquals(StartProcedure.class.getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
+		assertEquals(StartProcedure.class.getSimpleName(),
+				job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(false, job.isFinished());
 		assertEquals(null, job.currentProcedure().dataInputDomain());
-		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelProcedureExecution(start);
+		Mockito.verify(calculationMsgConsumer, Mockito.times(0))
+				.cancelProcedureExecution(start.dataInputDomain().toString());
 
-		IDomain o = JobProcedureDomain.create(job.id(), 0, "E1", start.getClass().getSimpleName(), start.procedureIndex());
-	 
+		IDomain o = JobProcedureDomain.create(job.id(), 0, "E1", start.getClass().getSimpleName(),
+				start.procedureIndex());
+
 		procedureUpdate.internalUpdate(o, job.currentProcedure());
 		Procedure p = job.currentProcedure();
 		assertEquals(true, start.isFinished());
 		assertEquals(false, p.isFinished());
 		assertEquals(1, job.currentProcedure().procedureIndex());
-		assertEquals(WordCountMapper.class.getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
+		assertEquals(WordCountMapper.class.getSimpleName(),
+				job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(false, job.isFinished());
 		assertEquals(o, job.currentProcedure().dataInputDomain());
-		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(start);
+		Mockito.verify(calculationMsgConsumer, Mockito.times(1))
+				.cancelProcedureExecution(start.dataInputDomain().toString());
 
 		// Finish the job
 		o = JobProcedureDomain.create(job.id(), 0, "E1", p.getClass().getSimpleName(), p.procedureIndex());
@@ -161,16 +166,20 @@ public class ProcedureUpdateTest {
 		procedureUpdate.internalUpdate(o, job.currentProcedure());
 		p = job.currentProcedure();
 
-		assertEquals(p.executable().getClass().getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
+		assertEquals(p.executable().getClass().getSimpleName(),
+				job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(true, beforeInc.isFinished());
 		assertEquals(true, p.isFinished());
 		assertEquals(2, job.currentProcedure().procedureIndex());
-		assertEquals(EndProcedure.class.getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
+		assertEquals(EndProcedure.class.getSimpleName(),
+				job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(EndProcedure.class.getSimpleName(), p.executable().getClass().getSimpleName());
 		assertEquals(true, job.isFinished());
-		assertEquals(o, job.currentProcedure().dataInputDomain());  
-		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(start);
-		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).cancelProcedureExecution(beforeInc);
+		assertEquals(o, job.currentProcedure().dataInputDomain());
+		Mockito.verify(calculationMsgConsumer, Mockito.times(1))
+				.cancelProcedureExecution(start.dataInputDomain().toString());
+		Mockito.verify(calculationMsgConsumer, Mockito.times(1))
+				.cancelProcedureExecution(beforeInc.dataInputDomain().toString());
 	}
 
 }
