@@ -1,6 +1,6 @@
 package mapreduce.execution.task;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -21,7 +21,8 @@ public class TaskTest {
 
 		Task task = Task.create("hello", "E1");
 		ExecutorTaskDomain etd = ExecutorTaskDomain
-				.create("hello", executor1, task.newStatusIndex(), JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
+				.create("hello", executor1, task.newStatusIndex(),
+						JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
 		task.addOutputDomain(etd);
 
@@ -34,7 +35,8 @@ public class TaskTest {
 		assertEquals(null, task.resultOutputDomain());
 
 		ExecutorTaskDomain etd2 = ExecutorTaskDomain
-				.create("hello", executor1, task.newStatusIndex(), JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
+				.create("hello", executor1, task.newStatusIndex(),
+						JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
 
 		task.addOutputDomain(etd2);
@@ -55,7 +57,8 @@ public class TaskTest {
 		assertEquals(null, task.resultOutputDomain());
 
 		ExecutorTaskDomain etd3 = ExecutorTaskDomain
-				.create("hello", executor2, task.newStatusIndex(), JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
+				.create("hello", executor2, task.newStatusIndex(),
+						JobProcedureDomain.create("job1", 0, submitter, "WordCount", 0))
 				.resultHash(Number160.createHash(trueResult));
 		task.addOutputDomain(etd3);
 		assertEquals(true, task.isFinished());
@@ -69,7 +72,8 @@ public class TaskTest {
 		// ===========================================================================================================================================
 
 		String localExecutorId = "E1";
-		Task task = (Task) Task.create("1", localExecutorId).nrOfSameResultHash(2).needsMultipleDifferentExecutors(false);
+		Task task = (Task) Task.create("1", localExecutorId).nrOfSameResultHash(2)
+				.needsMultipleDifferentExecutors(false);
 		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
 		assertEquals(true, task.canBeExecuted());
@@ -95,14 +99,16 @@ public class TaskTest {
 		assertEquals(false, task.isFinished());
 
 		// Decrementing again
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), localExecutorId, 0, null).resultHash(Number160.ZERO));
+		task.addOutputDomain(
+				ExecutorTaskDomain.create(task.key(), localExecutorId, 0, null).resultHash(Number160.ZERO));
 		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(1), task.activeCount());
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(false, task.isFinished());
 
 		// Not same result hash, currentMaxNr stays the same
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), localExecutorId, 1, null).resultHash(Number160.ONE));
+		task.addOutputDomain(
+				ExecutorTaskDomain.create(task.key(), localExecutorId, 1, null).resultHash(Number160.ONE));
 		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
 		assertEquals(true, task.canBeExecuted());
@@ -116,7 +122,8 @@ public class TaskTest {
 		assertEquals(false, task.isFinished());
 
 		// same domain cannot be added twice. Stays the same!
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), localExecutorId, 0, null).resultHash(Number160.ONE));
+		task.addOutputDomain(
+				ExecutorTaskDomain.create(task.key(), localExecutorId, 0, null).resultHash(Number160.ONE));
 		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(1), task.activeCount());
 		assertEquals(false, task.canBeExecuted());
@@ -144,7 +151,8 @@ public class TaskTest {
 		assertEquals(true, task.isFinished());
 
 		// Current executor finishes, but has no effect anymore except decreasing the active count
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), localExecutorId, 2, null).resultHash(Number160.ZERO));
+		task.addOutputDomain(
+				ExecutorTaskDomain.create(task.key(), localExecutorId, 2, null).resultHash(Number160.ZERO));
 		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
 		assertEquals(false, task.canBeExecuted());
@@ -158,7 +166,8 @@ public class TaskTest {
 		// ===========================================================================================================================================
 
 		String executor = "E1";
-		Task task = (Task) Task.create("1", executor).nrOfSameResultHash(2).needsMultipleDifferentExecutors(true);
+		Task task = (Task) Task.create("1", executor).nrOfSameResultHash(2)
+				.needsMultipleDifferentExecutors(true);
 		assertEquals(true, task.canBeExecuted());
 		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
@@ -171,9 +180,11 @@ public class TaskTest {
 		assertEquals(new Integer(1), task.activeCount());
 		assertEquals(false, task.isFinished());
 
-		// Now this one finishes the execution and one result domain for this executor is available --> active count cannot be increased anymore, task
+		// Now this one finishes the execution and one result domain for this executor is available --> active
+		// count cannot be increased anymore, task
 		// may not be executed anymore
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), executor, 0, null).resultHash(Number160.ZERO));
+		task.addOutputDomain(
+				ExecutorTaskDomain.create(task.key(), executor, 0, null).resultHash(Number160.ZERO));
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
@@ -187,14 +198,16 @@ public class TaskTest {
 		assertEquals(false, task.isFinished());
 
 		// Adding another of the same executor has no effect whatsoever (should not happen anyways)
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), executor, 0, null).resultHash(Number160.ZERO));
+		task.addOutputDomain(
+				ExecutorTaskDomain.create(task.key(), executor, 0, null).resultHash(Number160.ZERO));
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
 		assertEquals(false, task.isFinished());
 
 		// Adding another of the same executor has no effect whatsoever (should not happen anyways)
-		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), executor, 1, null).resultHash(Number160.ZERO));
+		task.addOutputDomain(
+				ExecutorTaskDomain.create(task.key(), executor, 1, null).resultHash(Number160.ZERO));
 		assertEquals(false, task.canBeExecuted());
 		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
@@ -207,7 +220,8 @@ public class TaskTest {
 		assertEquals(new Integer(0), task.activeCount());
 		assertEquals(true, task.isFinished());
 
-		// Next check that every executor may only occur once (external same executor may not be added twice either
+		// Next check that every executor may only occur once (external same executor may not be added twice
+		// either
 		task.nrOfSameResultHash(3);
 		task.addOutputDomain(ExecutorTaskDomain.create(task.key(), "E2", 0, null).resultHash(Number160.ZERO));
 		assertEquals(false, task.canBeExecuted());
@@ -239,6 +253,11 @@ public class TaskTest {
 		assertEquals(new Integer(3), task.currentMaxNrOfSameResultHash());
 		assertEquals(new Integer(0), task.activeCount());
 		assertEquals(true, task.isFinished());
+	}
+
+	@Test
+	public void testAll() {
+		fail();
 	}
 
 }

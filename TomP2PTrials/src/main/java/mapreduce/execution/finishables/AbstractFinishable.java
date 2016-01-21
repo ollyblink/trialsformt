@@ -79,7 +79,8 @@ public abstract class AbstractFinishable implements IFinishable {
 			}
 		}
 		if (isFinished) {
-			this.resultOutputDomain = results.get(r).get(0);// First just in case something happend at the end...
+			this.resultOutputDomain = results.get(r).get(0);// First just in case something happend at the
+															// end...
 		} else {
 			this.resultOutputDomain = null;
 		}
@@ -130,15 +131,16 @@ public abstract class AbstractFinishable implements IFinishable {
 	}
 
 	@Override
-	public String toString() {
-		return "AbstractFinishable [resultOutputDomain=" + resultOutputDomain + ", outputDomains=" + outputDomains + ", nrOfSameResultHash="
-				+ nrOfSameResultHash + ", isFinished()=" + isFinished() + "]";
-	}
-
-	@Override
 	public AbstractFinishable needsMultipleDifferentExecutors(boolean needsMultipleDifferentExecutors) {
 		this.needsMultipleDifferentExecutors = needsMultipleDifferentExecutors;
 		return this;
+	}
+
+	@Override
+	public String toString() {
+		return "AbstractFinishable [resultOutputDomain=" + resultOutputDomain + ", outputDomains="
+				+ outputDomains + ", nrOfSameResultHash=" + nrOfSameResultHash + ", isFinished()="
+				+ isFinished() + "]";
 	}
 
 }

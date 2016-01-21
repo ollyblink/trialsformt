@@ -27,20 +27,30 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	private static final long serialVersionUID = 1717123684693430690L;
 	/** The actual procedure to execute */
 	private Object executable;
-	/** Which procedure in the job's procedure list (@link{Job} it is (counted from 0 == StartProcedure to N-1 == EndProcedure) */
+	/**
+	 * Which procedure in the job's procedure list (@link{Job} it is (counted from 0 == StartProcedure to N-1
+	 * == EndProcedure)
+	 */
 	private int procedureIndex;
 	/** Tasks this procedure needs to execute */
 	private List<Task> tasks;
 	/** Location of keys to create the tasks for this procedure */
 	private JobProcedureDomain dataInputDomain;
 	/**
-	 * Used to combine data before it is sent to the dht. "Local" aggregation. Is often the same as the subsequent procedure (e.g. WordCount: Combiner
-	 * of WordCountMapper would be WordCountReducer as it locally reduces the words). It is not guaranteed that this always works!
+	 * Used to combine data before it is sent to the dht. "Local" aggregation. Is often the same as the
+	 * subsequent procedure (e.g. WordCount: Combiner of WordCountMapper would be WordCountReducer as it
+	 * locally reduces the words). It is not guaranteed that this always works!
 	 */
 	private Object combiner;
-	/** How many times should each task be executed and reach the same result hash until it is assumed to be a correct answer? */
+	/**
+	 * How many times should each task be executed and reach the same result hash until it is assumed to be a
+	 * correct answer?
+	 */
 	private int nrOfSameResultHashForTasks = 1;
-	/** Just to make sure this indeed is the same procedure of the same job (may be another job with the same procedure) */
+	/**
+	 * Just to make sure this indeed is the same procedure of the same job (may be another job with the same
+	 * procedure)
+	 */
 	private String jobId;
 	private boolean needsMultipleDifferentExecutorsForTasks;
 
@@ -61,18 +71,28 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	}
 
 	@Override
-	// Calculates the result hash as an XOR of all the task's result hash's with Number160.ZERO as a base hash. Returns null if not all tasks have
-	// finished yet
+	// Calculates the result hash as an XOR of all the task's result hash's with Number160.ZERO as a base
+	// hash.
+	// This method only returns a hash if all tasks finished and produced a hash. In any other case, null
+	// is returned finished yet
 	public Number160 calculateResultHash() {
-		Number160 resultHash = Number160.ZERO;
-		if (tasks.size() < dataInputDomain.expectedNrOfFiles()) {
-			return null; // not all possible tasks have been assigned yet...
+		if (dataInputDomain == null || tasks.size() < dataInputDomain.expectedNrOfFiles()) {
+			return null;
 		} else {
+			Number160 resultHash = null;
 			synchronized (tasks) {
 				for (Task task : tasks) {
+					if (resultHash == null) {
+						resultHash = Number160.ZERO;
+					}
 					if (task.isFinished()) {
 						Number160 taskResultHash = task.calculateResultHash();
-						resultHash = resultHash.xor(taskResultHash);
+						if (taskResultHash != null) {
+							resultHash = resultHash.xor(taskResultHash);
+						} else {
+							return null; // This result hash has not been set yet although the task is
+											// finished --> should never happen
+						}
 					} else {
 						return null; // All tasks have to be finished before this can be called
 					}
@@ -83,11 +103,13 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	}
 
 	/**
-	 * How many tasks of this procedure have finished (be aware: simply having all tasks finished does not mean that all tasks were already received)
-	 * --> Does not imply the procedure is completed yet! This method is exclusively used to inform other executors about the finishing state of this
-	 * executor. If it should be the case that two executors execute the same procedure on different input data sets, nrOfFinishedTasks will determine
-	 * which executor to cancel and which to keep (the idea is to execute only on the same data set to keep results consistent, even if the data may
-	 * have been corrupted as there is no way to determine that beforehand.
+	 * How many tasks of this procedure have finished (be aware: simply having all tasks finished does not
+	 * mean that all tasks were already received) --> Does not imply the procedure is completed yet! This
+	 * method is exclusively used to inform other executors about the finishing state of this executor. If it
+	 * should be the case that two executors execute the same procedure on different input data sets,
+	 * nrOfFinishedTasks will determine which executor to cancel and which to keep (the idea is to execute
+	 * only on the same data set to keep results consistent, even if the data may have been corrupted as there
+	 * is no way to determine that beforehand.
 	 * 
 	 * 
 	 * @return
@@ -243,7 +265,8 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 		return (Procedure) super.needsMultipleDifferentExecutors(needsMultipleDifferentDomains);
 	}
 
-	public Procedure needsMultipleDifferentExecutorsForTasks(boolean needsMultipleDifferentExecutorsForTasks) {
+	public Procedure needsMultipleDifferentExecutorsForTasks(
+			boolean needsMultipleDifferentExecutorsForTasks) {
 		this.needsMultipleDifferentExecutorsForTasks = needsMultipleDifferentExecutorsForTasks;
 		synchronized (tasks) { // If it's set on the go, should update all tasks (hopefully never happens...)
 			for (Task task : tasks) {
@@ -268,8 +291,9 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 
 	@Override
 	public String toString() {
-		return "Procedure [executable=" + executable + ", procedureIndex=" + procedureIndex + ", tasks=" + tasks + ", dataInputDomain="
-				+ dataInputDomain + ", combiner=" + combiner + ", nrOfSameResultHashForTasks=" + nrOfSameResultHashForTasks + ", jobId=" + jobId
+		return "Procedure [executable=" + executable + ", procedureIndex=" + procedureIndex + ", tasks="
+				+ tasks + ", dataInputDomain=" + dataInputDomain + ", combiner=" + combiner
+				+ ", nrOfSameResultHashForTasks=" + nrOfSameResultHashForTasks + ", jobId=" + jobId
 				+ ", needsMultipleDifferentDomainsForTasks=" + needsMultipleDifferentExecutorsForTasks + "]";
 	}
 
