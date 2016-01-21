@@ -119,7 +119,7 @@ public class TaskUpdateTest {
 	@Test
 	public void testTaskUpdateSameInputDomainFinished() throws ClassCastException, NullPointerException {
 		// In this case, procedure does not have any tasks --> task will be added to procedure
-		// Task will be finished as after second execution
+		// Task will be finished after second execution
 		Procedure procedure = Procedure.create(WordCountMapper.class, 1).nrOfSameResultHashForTasks(2).needsMultipleDifferentExecutorsForTasks(false);
 		ExecutorTaskDomain outputDomain = ExecutorTaskDomain.create("hello", "E1", 0, null);
 
