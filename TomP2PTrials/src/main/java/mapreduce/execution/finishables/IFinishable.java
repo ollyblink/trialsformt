@@ -26,4 +26,6 @@ public interface IFinishable {
 
 	public Integer currentMaxNrOfSameResultHash();
 
+	void reset();
+
 }

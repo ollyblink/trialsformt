@@ -47,12 +47,13 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	 * correct answer?
 	 */
 	private int nrOfSameResultHashForTasks = 1;
+	/** Assert that there are multiple output domains received before a task is finished */
+	private boolean needsMultipleDifferentExecutorsForTasks;
 	/**
 	 * Just to make sure this indeed is the same procedure of the same job (may be another job with the same
 	 * procedure)
 	 */
 	private String jobId;
-	private boolean needsMultipleDifferentExecutorsForTasks;
 
 	private Procedure(Object executable, int procedureIndex) {
 		this.executable = executable;

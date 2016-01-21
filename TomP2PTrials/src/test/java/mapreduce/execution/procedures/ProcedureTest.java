@@ -116,7 +116,7 @@ public class ProcedureTest {
 
 		Field tasksF = Procedure.class.getDeclaredField("tasks");
 		tasksF.setAccessible(true);
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings("unchecked") 
 		List<Task> tasks = (List<Task>) tasksF.get(procedure);
 		for (Task task : tasks) {
 			assertEquals(10, task.nrOfSameResultHash());
@@ -212,7 +212,7 @@ public class ProcedureTest {
 
 	@Test
 	public void testIsCompleted() {
-
+		
 	}
 
 	@Test

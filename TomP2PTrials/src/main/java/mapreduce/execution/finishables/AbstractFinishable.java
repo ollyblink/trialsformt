@@ -9,7 +9,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.execution.domains.IDomain;
-import mapreduce.execution.tasks.Task;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
@@ -21,11 +20,17 @@ public abstract class AbstractFinishable implements IFinishable {
 	protected List<IDomain> outputDomains;
 	/** How many times this object needs to be executed before it is declared finished */
 	protected int nrOfSameResultHash = 1; // Needs at least one
-	/** Assert that there are multiple output domains received before a task is finished */
+	/** Assert that there are multiple output domains received before a IFinishable is finished */
 	protected boolean needsMultipleDifferentExecutors;
 
 	public AbstractFinishable() {
 		this.outputDomains = SyncedCollectionProvider.syncedArrayList();
+	}
+
+	@Override
+	public void reset() {
+		resultOutputDomain = null;
+		outputDomains.clear();
 	}
 
 	@Override
@@ -62,7 +67,9 @@ public abstract class AbstractFinishable implements IFinishable {
 		boolean isFinished = false;
 		Number160 r = null;
 		for (Number160 resultHash : results.keySet()) {
-			if (results.get(resultHash).size() >= nrOfSameResultHash) {
+			if (resultHash == null) {
+				break;
+			} else if (results.get(resultHash).size() >= nrOfSameResultHash) {
 				if (needsMultipleDifferentExecutors) {
 					List<IDomain> list = results.get(resultHash);
 					Set<String> asSet = new HashSet<>();

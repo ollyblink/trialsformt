@@ -17,7 +17,10 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	private final String key;
 	/** The executor of this task. */
 	private String localExecutorId;
-	/** Set true if this tasks's result keys and values were successfully transferred from executor task domain to executor job procedure domain */
+	/**
+	 * Set true if this tasks's result keys and values were successfully transferred from executor task domain
+	 * to executor job procedure domain
+	 */
 	private volatile boolean isInProcedureDomain = false;
 	/** Used in the scheduler to not schedule too many executions of the same task */
 	private volatile int activeCount = 0;
@@ -32,15 +35,18 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	/**
-	 * Checks if a task can be executed or not. Important when adding to the executor in @see{JobCalculationMessageConsumer.trySubmitTasks}
+	 * Checks if a task can be executed or not. Important when adding to the executor
+	 * in @see{JobCalculationMessageConsumer.trySubmitTasks}
 	 * 
 	 * @param localExecutorId
 	 * @return
 	 */
 	public boolean canBeExecuted() {
 		if (needsMultipleDifferentExecutors) {
-			// Active count is only increased when the local executor starts execution. As such, when active count is 1, it cannot be executed more.
-			// Else, it has to be checked if this executor actually finished. If not: can execute, else it cannot be executed
+			// Active count is only increased when the local executor starts execution. As such, when active
+			// count is 1, it cannot be executed more.
+			// Else, it has to be checked if this executor actually finished. If not: can execute, else it
+			// cannot be executed
 			if (containsExecutor(this.localExecutorId)) {
 				return false;
 			} else {
@@ -53,21 +59,11 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 
 	@Override
 	public Task addOutputDomain(IDomain domain) {
-		if (!this.outputDomains.contains(domain)) {
-			if (!isFinished()) {
-				if (needsMultipleDifferentExecutors) {
-					if (!containsExecutor(domain.executor())) {
-						this.outputDomains.add(domain);
-					}
-				} else {
-					this.outputDomains.add(domain);
-				}
-			}
-			if (domain.executor().equals(localExecutorId)) {
-				decrementActiveCount();
-			}
+		if (!this.outputDomains.contains(domain) && domain.executor().equals(localExecutorId)) {
+			decrementActiveCount();
 		}
-		return this;
+		return (Task) super.addOutputDomain(domain);
+
 	}
 
 	public Task incrementActiveCount() {
@@ -82,7 +78,8 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	/**
-	 * Earlier, this had an actual meaning. Now it's only there to tell apart the executions if the same executor executes the task multiple times
+	 * Earlier, this had an actual meaning. Now it's only there to tell apart the executions if the same
+	 * executor executes the task multiple times
 	 * 
 	 * @return
 	 */
@@ -126,7 +123,10 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	public void reset() {
-		outputDomains.clear();
+		super.reset();
+		outputDomains.clear(); 
+		isInProcedureDomain = false;
+		activeCount = 0;
 		resultOutputDomain = null;
 	}
 

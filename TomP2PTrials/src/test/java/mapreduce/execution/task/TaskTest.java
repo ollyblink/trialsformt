@@ -1,11 +1,17 @@
 package mapreduce.execution.task;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
+import java.lang.reflect.Method;
 
 import org.junit.Test;
+import org.junit.rules.TestName;
+import org.mockito.Mockito;
 
 import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.IDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
+import mapreduce.execution.finishables.AbstractFinishable;
 import mapreduce.execution.tasks.Task;
 import net.tomp2p.peers.Number160;
 
@@ -256,8 +262,113 @@ public class TaskTest {
 	}
 
 	@Test
-	public void testAll() {
-		fail();
+	public void testReset() {
+		Task task = Task.create("Key", "E1");
+		task.nrOfSameResultHash(2);
+		task.incrementActiveCount();
+		task.incrementActiveCount();
+		IDomain etd = Mockito.mock(ExecutorTaskDomain.class);
+		Mockito.when(etd.executor()).thenReturn("E1");
+		IDomain etd2 = Mockito.mock(ExecutorTaskDomain.class);
+		Mockito.when(etd2.executor()).thenReturn("E2");
+		task.addOutputDomain(etd);
+		task.addOutputDomain(etd2);
+		task.isInProcedureDomain(true);
+		assertEquals(new Integer(1), task.activeCount());
+		assertEquals(2, task.nrOfOutputDomains());
+		assertEquals(true, task.isInProcedureDomain());
+		assertEquals(true, task.isFinished());
+		assertEquals(etd, task.resultOutputDomain());
+		task.reset();
+		assertEquals(new Integer(0), task.activeCount());
+		assertEquals(0, task.nrOfOutputDomains());
+		assertEquals(false, task.isInProcedureDomain());
+		assertEquals(false, task.isFinished());
+		assertEquals(null, task.resultOutputDomain());
+	}
+
+	@Test
+	public void testCanBeExecuted() {
+		Task task = Task.create("Key", "E1");
+		// Nope, cannot be executed
+		task.nrOfSameResultHash(0);
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(true, task.isFinished());
+
+		// Can
+		task.nrOfSameResultHash(1);
+		assertEquals(true, task.canBeExecuted());
+		assertEquals(false, task.isFinished());
+
+		// Cannot
+		task.incrementActiveCount();
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(false, task.isFinished());
+
+		// Cannot
+		IDomain etd = Mockito.mock(ExecutorTaskDomain.class);
+		Mockito.when(etd.executor()).thenReturn("E1");
+		Mockito.when(etd.resultHash()).thenReturn(Number160.ZERO);
+		task.addOutputDomain(etd);
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(true, task.isFinished());
+
+		// can again...
+		task.nrOfSameResultHash(2);
+		task.addOutputDomain(etd);
+		assertEquals(true, task.canBeExecuted());
+		assertEquals(false, task.isFinished());
+
+		// Nope
+		task.incrementActiveCount();
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(false, task.isFinished());
+
+		// Neither... and is finished btw.
+		IDomain etd2 = Mockito.mock(ExecutorTaskDomain.class);
+		Mockito.when(etd2.resultHash()).thenReturn(Number160.ZERO);
+		Mockito.when(etd2.executor()).thenReturn("E2");
+		task.addOutputDomain(etd2);
+		assertEquals(false, task.canBeExecuted());
+		assertEquals(true, task.isFinished());
+	}
+
+	@Test
+	public void testNewStatusIndex() {
+		Task task = Task.create("Key", "E1");
+		for (int i = 0; i < 10; ++i) {
+			assertEquals(i, task.newStatusIndex());
+		}
+
+	} 
+	@Test
+	public void testCalculateResultHash() {
+		Task task = Task.create("Key", "E1");
+
+	}
+
+	@Test
+	public void testAddOutputDomain() {
+		Task task = Task.create("Key", "E1");
+
+	}
+
+	@Test
+	public void testCurrentMaxNrOfSameResultHash() {
+		Task task = Task.create("Key", "E1");
+
+	}
+
+	@Test
+	public void testContainsExecutor() {
+		Task task = Task.create("Key", "E1");
+
+	}
+
+	@Test
+	public void testCheckIfFinished() {
+		Task task = Task.create("Key", "E1");
+
 	}
 
 }

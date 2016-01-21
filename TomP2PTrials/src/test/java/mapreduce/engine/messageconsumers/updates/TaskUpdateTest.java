@@ -138,7 +138,7 @@ public class TaskUpdateTest {
 		task = procedure.getTask(task);
 		assertEquals("hello", task.key());
 		assertEquals(false, task.isFinished());
-		assertEquals(1, task.nrOfOutputDomains());
+		assertEquals(1, task.nrOfOutputDomains()); 
 		Mockito.verify(calculationMsgConsumer, Mockito.times(0)).cancelTaskExecution(procedure.dataInputDomain().toString(), task);
 		Mockito.verify(calculationExecutor, Mockito.times(0)).switchDataFromTaskToProcedureDomain(procedure, task);
 
