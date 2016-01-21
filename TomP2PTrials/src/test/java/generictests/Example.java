@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
+import mapreduce.engine.broadcasting.broadcasthandlers.AbstractMapReduceBroadcastHandler;
 import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler;
 import mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandlerTest;
 import net.tomp2p.connection.Bindings;
@@ -82,7 +83,8 @@ public class Example {
 				if (action.equalsIgnoreCase("store")) {
 					System.out.println("Value to store?");
 					String value = scanner.nextLine();
-					put(peers[peerRandom.nextInt(peers.length)], new Number160(value.getBytes()), new Data(value));
+					put(peers[peerRandom.nextInt(peers.length)], new Number160(value.getBytes()),
+							new Data(value));
 
 				} else if (action.equalsIgnoreCase("retrieve")) {
 					System.out.println("key to retrieve?");
@@ -145,11 +147,13 @@ public class Example {
 		return peers;
 	}
 
-	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, JobCalculationBroadcastHandler bcHandler) throws IOException {
+	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port,
+			AbstractMapReduceBroadcastHandler bcHandler) throws IOException {
 		return createAndAttachPeersDHT(nr, port, bcHandler, null);
 	}
 
-	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port, JobCalculationBroadcastHandler bcHandler, PeerDHT master) throws IOException {
+	public static PeerDHT[] createAndAttachPeersDHT(int nr, int port,
+			AbstractMapReduceBroadcastHandler bcHandler, PeerDHT master) throws IOException {
 		StructuredBroadcastHandler bcH = null;
 		if (bcHandler == null) {
 			bcH = new MyBroadcastHandler(1);
@@ -161,19 +165,24 @@ public class Example {
 		if (master == null) {
 			for (int i = 0; i < nr; i++) {
 				if (i == 0) {
-					peers[0] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).ports(port).broadcastHandler(bcH).start()).start();
+					peers[0] = new PeerBuilderDHT(
+							new PeerBuilder(new Number160(RND)).ports(port).broadcastHandler(bcH).start())
+									.start();
 					System.err.println("Master: " + peers[0].peerID() + ", broadcast handler: " + bcH);
 				} else {
-					peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).masterPeer(peers[0].peer()).start())
-							.start();
-					System.err.println("Master: " + peers[0].peerID() + ", slave: " + peers[i].peerID() + ", broadcast handler: " + bcH);
+					peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH)
+							.masterPeer(peers[0].peer()).start()).start();
+					System.err.println("Master: " + peers[0].peerID() + ", slave: " + peers[i].peerID()
+							+ ", broadcast handler: " + bcH);
 				}
 			}
 		} else {
 			for (int i = 0; i < nr; i++) {
-				peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH).masterPeer(master.peer()).start()).start();
+				peers[i] = new PeerBuilderDHT(new PeerBuilder(new Number160(RND)).broadcastHandler(bcH)
+						.masterPeer(master.peer()).start()).start();
 
-				System.err.println("Master: " + master.peerID() + ", slave: " + peers[i].peerID() + ", broadcast handler: " + bcH);
+				System.err.println("Master: " + master.peerID() + ", slave: " + peers[i].peerID()
+						+ ", broadcast handler: " + bcH);
 			}
 		}
 		return peers;

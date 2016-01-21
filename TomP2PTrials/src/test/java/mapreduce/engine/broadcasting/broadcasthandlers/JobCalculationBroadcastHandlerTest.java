@@ -51,7 +51,7 @@ public class JobCalculationBroadcastHandlerTest {
 
 	@Test
 	public void testEvaluateReceivedMessage() throws Exception {
-		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1, null);
+		IDHTConnectionProvider dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1);
 
 		broadcastHandler.dhtConnectionProvider(dhtConnectionProvider);
 

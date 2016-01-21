@@ -23,20 +23,26 @@ public class JobSubmissionMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	@Override
-	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
+	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain,
+			JobProcedureDomain inputDomain) {
 		collect(job, outputDomain, inputDomain);
 	}
 
 	@Override
-	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain, JobProcedureDomain inputDomain) {
+	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain,
+			JobProcedureDomain inputDomain) {
 		collect(job, outputDomain.jobProcedureDomain(), inputDomain);
 	}
 
 	private void collect(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
-		if (job == null || outputDomain == null || inputDomain == null || outputDomain.procedureSimpleName() == null || !job.isFinished()) {
+		if (job == null || outputDomain == null || inputDomain == null
+				|| outputDomain.procedureSimpleName() == null || !job.isFinished()) {
 			return;
 		}
-		if (job.jobSubmitterID().equals(executor.id()) && executor().submittedJob(job) && !executor().jobIsRetrieved(job)) {
+		logger.info("Trying to collect data from " + outputDomain);
+
+		if (job.jobSubmitterID().equals(executor.id()) && executor().submittedJob(job)
+				&& !executor().jobIsRetrieved(job)) {
 			if (outputDomain.procedureSimpleName().equals(EndProcedure.class.getSimpleName())) {
 				logger.info("Job is finished. Final data location domain: " + outputDomain);
 				executor().retrieveAndStoreDataOfFinishedJob(outputDomain);

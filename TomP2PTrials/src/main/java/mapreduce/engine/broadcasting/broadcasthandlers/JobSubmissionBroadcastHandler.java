@@ -14,10 +14,11 @@ public class JobSubmissionBroadcastHandler extends AbstractMapReduceBroadcastHan
 			return;
 		}
 		String jobId = bcMessage.inputDomain().jobId();
-		Job job = ((JobSubmissionMessageConsumer)messageConsumer).executor().job(jobId);
+		Job job = ((JobSubmissionMessageConsumer) messageConsumer).executor().job(jobId);
 
 		// Only receive messages for jobs that have been added by this submitter
-		if (job != null && messageConsumer.executor() != null && messageConsumer.executor().id() != null && job.jobSubmitterID() != null
+		if (job != null && messageConsumer.executor() != null && messageConsumer.executor().id() != null
+				&& job.jobSubmitterID() != null
 				&& job.jobSubmitterID().equals(messageConsumer.executor().id())) {
 			processMessage(bcMessage, job);
 		}
@@ -39,10 +40,19 @@ public class JobSubmissionBroadcastHandler extends AbstractMapReduceBroadcastHan
 	}
 
 	/**
+	 * 
+	 * @return
+	 */
+	public static JobSubmissionBroadcastHandler create() {
+		return new JobSubmissionBroadcastHandler(1);
+	}
+
+	/**
 	 *
 	 * 
 	 * @param nrOfConcurrentlyExecutedBCMessages
-	 *            number of threads for this thread pool: how many bc messages may be executed at the same time?
+	 *            number of threads for this thread pool: how many bc messages may be executed at the same
+	 *            time?
 	 * @return
 	 */
 	public static JobSubmissionBroadcastHandler create(int nrOfConcurrentlyExecutedBCMessages) {

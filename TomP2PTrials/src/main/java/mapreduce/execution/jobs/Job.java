@@ -25,7 +25,12 @@ public class Job implements Serializable, Cloneable {
 	private static final FileSize DEFAULT_MAX_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
 	private static final boolean DEFAULT_USE_LOCAL_STORAGE_FIRST = false;
 	private static final long DEFAULT_TIME_TO_LIVE = 5000;
-
+	private static final String DEFAULT_RESULT_OUTPUT_FOLDER = System.getProperty("user.dir") + "/tmp/";
+	private static final FileSize DEFAULT_RESULT_OUTPUT_FILESIZE = FileSize.MEGA_BYTE;
+	/** The folder used to store the result data of the last procedure */
+	private String resultOutputFolder = DEFAULT_RESULT_OUTPUT_FOLDER;
+	/** How large the retrieved files can grow */
+	private FileSize outputFileSize = DEFAULT_RESULT_OUTPUT_FILESIZE;
 	/** specifies a unique id for this job */
 	private final String id;
 
@@ -372,6 +377,19 @@ public class Job implements Serializable, Cloneable {
 
 	public Job maxNrOfSubmissionTrials(int maxNrOfSubmissionTrials) {
 		this.maxNrOfSubmissionTrials = maxNrOfSubmissionTrials;
+		return this;
+	}
+
+	public String resultOutputFolder() {
+		return resultOutputFolder;
+	}
+
+	public FileSize outputFileSize(){
+		return this.outputFileSize;
+	}
+	public Job resultOutputFolder(String resultOutputFolder, FileSize outputFileSize) {
+		this.resultOutputFolder = resultOutputFolder + "/tmp";
+		this.outputFileSize = outputFileSize;
 		return this;
 	}
 }

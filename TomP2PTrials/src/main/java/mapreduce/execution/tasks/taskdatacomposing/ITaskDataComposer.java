@@ -39,4 +39,6 @@ public interface ITaskDataComposer {
 	public String splitValue();
 
 	public String remainingData();
+
+	public void reset();
 }

@@ -12,36 +12,36 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 	private String fileEncoding = "UTF-8";
 	private String splitValue = "\n";
 
-//	private String data = "";
+	// private String data = "";
 	private String remainingData = "";
 
 	public static MaxFileSizeTaskDataComposer create() {
 		return new MaxFileSizeTaskDataComposer();
 	}
 
-//	@Override
-//	public String append(String line) {
-//		String newData = this.data + line + this.splitValue;
-//		long newFileSizeCounter = newData.getBytes(Charset.forName(this.fileEncoding)).length;
-//		if (newFileSizeCounter >= maxFileSize.value()) {
-//			String currentData = this.data;
-//			this.data = "";
-//			this.data = line + this.splitValue;
-//			if (currentData.trim().length() == 0) {
-//				return null;
-//			} else {
-//				return currentData;
-//			}
-//		} else {
-//			this.data = newData;
-//			return null;
-//		}
-//	}
-//
-//	@Override
-//	public void reset() {
-//		this.data = "";
-//	}
+	// @Override
+	// public String append(String line) {
+	// String newData = this.data + line + this.splitValue;
+	// long newFileSizeCounter = newData.getBytes(Charset.forName(this.fileEncoding)).length;
+	// if (newFileSizeCounter >= maxFileSize.value()) {
+	// String currentData = this.data;
+	// this.data = "";
+	// this.data = line + this.splitValue;
+	// if (currentData.trim().length() == 0) {
+	// return null;
+	// } else {
+	// return currentData;
+	// }
+	// } else {
+	// this.data = newData;
+	// return null;
+	// }
+	// }
+	//
+	// @Override
+	// public void reset() {
+	// this.data = "";
+	// }
 
 	@Override
 	public String fileEncoding() {
@@ -63,26 +63,27 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 		return this;
 	}
 
-//	@Override
-//	public String currentValues() {
-//		return this.data;
-//	}
+	// @Override
+	// public String currentValues() {
+	// return this.data;
+	// }
 
 	@Override
 	public List<String> splitToSize(String toSplit) {
 		List<String> splits = new ArrayList<>();
 		String split = "";
-		
+
 		StringTokenizer tokens = new StringTokenizer(toSplit);
-		while (tokens.hasMoreTokens()) { 
+		while (tokens.hasMoreTokens()) {
 			String nextToken = tokens.nextToken();
-			if ((split + nextToken +" ").getBytes(Charset.forName(this.fileEncoding)).length >= maxFileSize.value()) {
+			if ((split + nextToken + " ").getBytes(Charset.forName(this.fileEncoding)).length >= maxFileSize
+					.value()) {
 				splits.add(split.trim());
 				split = "";
 			}
-			split += nextToken + " "; 
+			split += nextToken + " ";
 		}
-		 
+
 		this.remainingData = "";
 		if (split.length() > 0) {
 			this.remainingData = split.trim();
@@ -103,6 +104,12 @@ public class MaxFileSizeTaskDataComposer implements ITaskDataComposer {
 	@Override
 	public String splitValue() {
 		return splitValue;
+	}
+
+	@Override
+	public void reset() {
+		this.remainingData = "";
+		this.splitValue = "";
 	}
 
 }
