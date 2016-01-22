@@ -19,10 +19,11 @@ public class ProcedureUpdate extends AbstractUpdate {
 	}
 
 	@Override
-	protected void internalUpdate(IDomain outputDomain, Procedure procedure) {
+	protected void internalUpdate(IDomain outputDomain, Procedure procedure)
+			throws ClassCastException, NullPointerException {
 		JobProcedureDomain outputJPD = (JobProcedureDomain) outputDomain;
 		procedure.addOutputDomain(outputJPD);
-		if (procedure.isFinished()) {
+		if (procedure.isFinished() && procedure.dataInputDomain() != null) {
 			msgConsumer.cancelProcedureExecution(procedure.dataInputDomain().toString());
 			JobProcedureDomain resultOutputDomain = procedure.resultOutputDomain();
 			job.incrementProcedureIndex();

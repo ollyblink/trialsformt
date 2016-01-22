@@ -8,7 +8,7 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -37,8 +37,8 @@ public class JobCalculationMessageConsumerTest {
 	private static IDHTConnectionProvider mockDHT;
 	private static JobCalculationExecutor calculationExecutor;
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
+	@Before
+	public void setUpBefore() throws Exception {
 		mockDHT = Mockito.mock(IDHTConnectionProvider.class);
 		// Calculation Executor
 		calculationExecutor = Mockito.mock(JobCalculationExecutor.class);
@@ -52,15 +52,18 @@ public class JobCalculationMessageConsumerTest {
 	@Test
 	public void testTryIncrementProcedure() throws Exception {
 
-		Method tryIncrementProcedureMethod = calculationMsgConsumer.getClass().getDeclaredMethod("tryIncrementProcedure", Job.class,
-				JobProcedureDomain.class, JobProcedureDomain.class);
+		Method tryIncrementProcedureMethod = calculationMsgConsumer.getClass().getDeclaredMethod(
+				"tryIncrementProcedure", Job.class, JobProcedureDomain.class, JobProcedureDomain.class);
 		tryIncrementProcedureMethod.setAccessible(true);
 
 		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false);
 		JobProcedureDomain firstInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", "INITIAL", -1);
-		JobProcedureDomain secondInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
-		JobProcedureDomain thirdInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
-		JobProcedureDomain lastInputDomain = JobProcedureDomain.create(job.id(), 0, "E1", EndProcedure.class.getSimpleName(), 2);
+		JobProcedureDomain secondInputDomain = JobProcedureDomain.create(job.id(), 0, "E1",
+				StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain thirdInputDomain = JobProcedureDomain.create(job.id(), 0, "E1",
+				WordCountMapper.class.getSimpleName(), 1);
+		JobProcedureDomain lastInputDomain = JobProcedureDomain.create(job.id(), 0, "E1",
+				EndProcedure.class.getSimpleName(), 2);
 
 		JobProcedureDomain firstOutputDomain = secondInputDomain;
 		JobProcedureDomain secondOutputDomain = thirdInputDomain;
@@ -87,7 +90,8 @@ public class JobCalculationMessageConsumerTest {
 		// Incoming: result for same procedure: nothing happens
 		procedureNameBefore = job.currentProcedure().executable().getClass().getSimpleName();
 		procedureIndexBefore = job.currentProcedure().procedureIndex();
-		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, secondInputDomain, secondOutputDomain);
+		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, secondInputDomain,
+				secondOutputDomain);
 		procedureNameAfter = job.currentProcedure().executable().getClass().getSimpleName();
 		procedureIndexAfter = job.currentProcedure().procedureIndex();
 		assertEquals(procedureNameBefore, procedureNameAfter);
@@ -108,14 +112,16 @@ public class JobCalculationMessageConsumerTest {
 	@Test
 	public void testTryUpdateTasksOrProcedures() throws Exception {
 
-		Method tryUpdate = JobCalculationMessageConsumer.class.getDeclaredMethod("tryUpdateTasksOrProcedures", Job.class, JobProcedureDomain.class,
-				IDomain.class, IUpdate.class);
+		Method tryUpdate = JobCalculationMessageConsumer.class.getDeclaredMethod("tryUpdateTasksOrProcedures",
+				Job.class, JobProcedureDomain.class, IDomain.class, IUpdate.class);
 		tryUpdate.setAccessible(true);
 
 		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false);
 		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
-		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
-		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
+		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1",
+				StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1",
+				WordCountMapper.class.getSimpleName(), 1);
 		IUpdate update = Mockito.mock(IUpdate.class);
 
 		int local = 10;
@@ -128,11 +134,13 @@ public class JobCalculationMessageConsumerTest {
 		// ===========================================================================================================================================
 		// Same input domain: calls IUpdate.executeUpdate(), possible update of expectedNrOfFiles()
 		// ===========================================================================================================================================
-		// Here we want to check if the procedure's nr of expected files is updated when a new message comes in that tells it that there are more
+		// Here we want to check if the procedure's nr of expected files is updated when a new message comes
+		// in that tells it that there are more
 		// files (needed in case some files got lost somehow)
 
 		// Less: no update
-		JobProcedureDomain receivedIn = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0)
+		JobProcedureDomain receivedIn = JobProcedureDomain
+				.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0)
 				.expectedNrOfFiles(receivedLess);
 
 		assertEquals(10, job.currentProcedure().dataInputDomain().expectedNrOfFiles());
@@ -157,19 +165,26 @@ public class JobCalculationMessageConsumerTest {
 		// ===========================================================================================================================================
 		// Different input domain: Call to changeDataInputDomain(), possible change of data input domain
 		// ===========================================================================================================================================
-		// Here it is evaluated which data input domain to use as it turned out that two different executors use different data input domains for
-		// their data execution. This may happen if not all receive all broadcast messages. The idea is that the one that has fewer tasks finished
-		// aborts its execution. The other one ignores the update. If they executed the same number of tasks so far on different input domains, it has
+		// Here it is evaluated which data input domain to use as it turned out that two different executors
+		// use different data input domains for
+		// their data execution. This may happen if not all receive all broadcast messages. The idea is that
+		// the one that has fewer tasks finished
+		// aborts its execution. The other one ignores the update. If they executed the same number of tasks
+		// so far on different input domains, it has
 		// to be decided which one should abort.
 		in.nrOfFinishedTasks(local);
 
-		// No adaption as there are less executed in the received one --> the other one has to adapt the data input domain
-		receivedIn = JobProcedureDomain.create(job.id(), 0, "E2", StartProcedure.class.getSimpleName(), 0).nrOfFinishedTasks(receivedLess);
+		// No adaption as there are less executed in the received one --> the other one has to adapt the data
+		// input domain
+		receivedIn = JobProcedureDomain.create(job.id(), 0, "E2", StartProcedure.class.getSimpleName(), 0)
+				.nrOfFinishedTasks(receivedLess);
 		tryUpdate.invoke(calculationMsgConsumer, job, receivedIn, out, update);
 		assertEquals(in, job.currentProcedure().dataInputDomain());
 
-		// Adaption as there are more executed in the received one--> this one has to adapt the data input domain
-		receivedIn = JobProcedureDomain.create(job.id(), 0, "E2", StartProcedure.class.getSimpleName(), 0).nrOfFinishedTasks(receivedMore);
+		// Adaption as there are more executed in the received one--> this one has to adapt the data input
+		// domain
+		receivedIn = JobProcedureDomain.create(job.id(), 0, "E2", StartProcedure.class.getSimpleName(), 0)
+				.nrOfFinishedTasks(receivedMore);
 		tryUpdate.invoke(calculationMsgConsumer, job, receivedIn, out, update);
 		assertEquals(receivedIn, job.currentProcedure().dataInputDomain());
 
@@ -197,13 +212,16 @@ public class JobCalculationMessageConsumerTest {
 
 	@Test
 	public void testTryExecuteProcedure() throws Exception {
-		Method tryExecuteProcedure = JobCalculationMessageConsumer.class.getDeclaredMethod("tryExecuteProcedure", Job.class);
+		Method tryExecuteProcedure = JobCalculationMessageConsumer.class
+				.getDeclaredMethod("tryExecuteProcedure", Job.class);
 		tryExecuteProcedure.setAccessible(true);
 
 		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 0, false, false);
 
-		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
-		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
+		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1",
+				StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1",
+				WordCountMapper.class.getSimpleName(), 1);
 		job.currentProcedure().nrOfSameResultHash(0);
 		job.currentProcedure().nrOfSameResultHashForTasks(0);
 		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
@@ -211,35 +229,47 @@ public class JobCalculationMessageConsumerTest {
 		// ===========================================================================================================================================
 		// Job is NOT finished: Needs to be evaluated if all tasks have already been retrieved
 		// ===========================================================================================================================================
-		// Case 1: if the received nr of expected tasks is larger than the current task size more tasks may be retrieved from the dht. A special case
-		// is the StartProcedure: as tasks are only retrieved with broadcast (they are not put into dht directly when JobSubmissionExecutor.submit()
-		// is called), they cannot be retrieved from DHT. Thus, if the current procedure is the StartProcedure (procedureIndex == 0 always), then
-		// nothing should happen as these tasks do not need to be executed but only transferred once all tasks for the StartProcedure have been
+		// Case 1: if the received nr of expected tasks is larger than the current task size more tasks may be
+		// retrieved from the dht. A special case
+		// is the StartProcedure: as tasks are only retrieved with broadcast (they are not put into dht
+		// directly when JobSubmissionExecutor.submit()
+		// is called), they cannot be retrieved from DHT. Thus, if the current procedure is the StartProcedure
+		// (procedureIndex == 0 always), then
+		// nothing should happen as these tasks do not need to be executed but only transferred once all tasks
+		// for the StartProcedure have been
 		// received via broadcast
 		// Input: nr of tasks in current procedure is 0
 		// Expected nr of tasks is 1
 		job.currentProcedure().dataInputDomain(in.expectedNrOfFiles(1));
 
-		Field boolsForRetrieving = JobCalculationMessageConsumer.class.getDeclaredField("currentlyRetrievingTaskKeysForProcedure");
+		Field boolsForRetrieving = JobCalculationMessageConsumer.class
+				.getDeclaredField("currentlyRetrievingTaskKeysForProcedure");
 		boolsForRetrieving.setAccessible(true);
 		Map<String, Boolean> field = (Map<String, Boolean>) boolsForRetrieving.get(calculationMsgConsumer);
-		Mockito.when(mockDHT.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, job.currentProcedure().dataInputDomain().toString()))
+		Mockito.when(mockDHT.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS,
+				job.currentProcedure().dataInputDomain().toString()))
 				.thenReturn(Mockito.mock(FutureGet.class));
 		assertEquals(null, field.get(job.currentProcedure().dataInputDomain().toString()));
 		tryExecuteProcedure.invoke(calculationMsgConsumer, job);
-		assertEquals(true, field.get(job.currentProcedure().dataInputDomain().toString())); // It's not removed anymore because there is no actual
+		assertEquals(true, field.get(job.currentProcedure().dataInputDomain().toString())); // It's not
+																							// removed anymore
+																							// because there
+																							// is no actual
 																							// listener
 		Mockito.verify(mockDHT, Mockito.times(1)).getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS,
 				job.currentProcedure().dataInputDomain().toString());
 
-		// Case 2: it seems that the other executor thinks there are the same number of tasks: Simply try to execute the tasks by adding them to the
+		// Case 2: it seems that the other executor thinks there are the same number of tasks: Simply try to
+		// execute the tasks by adding them to the
 		// queue for scheduling
 		Task task = Mockito.mock(Task.class);
 		Mockito.when(task.canBeExecuted()).thenReturn(false);
 		job.currentProcedure().addTask(task);
 		tryExecuteProcedure.invoke(calculationMsgConsumer, job);
-		Mockito.verify(task, Mockito.times(1)).canBeExecuted(); // This means the task was tried to submit, which only happens if the else-if part is
-																// called (except for when the dht is called but this cannot happen here as it is only
+		Mockito.verify(task, Mockito.times(1)).canBeExecuted(); // This means the task was tried to submit,
+																// which only happens if the else-if part is
+																// called (except for when the dht is called
+																// but this cannot happen here as it is only
 																// a mock dht
 
 		// ===========================================================================================================================================
@@ -249,19 +279,23 @@ public class JobCalculationMessageConsumerTest {
 		IResultPrinter resultPrinter = Mockito.mock(IResultPrinter.class);
 		calculationMsgConsumer.resultPrinter(resultPrinter);
 		tryExecuteProcedure.invoke(calculationMsgConsumer, job);
-		Mockito.verify(resultPrinter, Mockito.timeout(1)).printResults(mockDHT, job.currentProcedure().resultOutputDomain().toString());
+		Mockito.verify(resultPrinter, Mockito.timeout(1)).printResults(mockDHT,
+				job.currentProcedure().resultOutputDomain().toString());
 
 	}
 
 	@Test
 	public void testTrySubmitTasks() throws Exception {
 		// Also tests addTaskFuture and createTaskExecutionRunnable
-		Method tryExecuteProcedure = JobCalculationMessageConsumer.class.getDeclaredMethod("trySubmitTasks", Procedure.class);
+		Method tryExecuteProcedure = JobCalculationMessageConsumer.class.getDeclaredMethod("trySubmitTasks",
+				Procedure.class);
 		tryExecuteProcedure.setAccessible(true);
 
 		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 2, false, false);
-		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
-		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
+		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1",
+				StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1",
+				WordCountMapper.class.getSimpleName(), 1);
 		job.currentProcedure().nrOfSameResultHash(0);
 		job.currentProcedure().nrOfSameResultHashForTasks(0);
 		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
@@ -271,7 +305,8 @@ public class JobCalculationMessageConsumerTest {
 		job.currentProcedure().addTask(helloTask);
 		Field futuresField = JobCalculationMessageConsumer.class.getDeclaredField("futures");
 		futuresField.setAccessible(true);
-		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
+		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField
+				.get(calculationMsgConsumer);
 		assertEquals(0, futures.size());
 		assertEquals(0, futures.keySet().size());
 		assertEquals(false, futures.containsKey(job.currentProcedure().dataInputDomain().toString()));
@@ -280,7 +315,8 @@ public class JobCalculationMessageConsumerTest {
 		assertEquals(1, futures.keySet().size());
 		assertEquals(true, futures.containsKey(job.currentProcedure().dataInputDomain().toString()));
 		assertEquals(1, futures.get(job.currentProcedure().dataInputDomain().toString()).keySet().size());
-		assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).containsKey(helloTask));
+		assertEquals(true,
+				futures.get(job.currentProcedure().dataInputDomain().toString()).containsKey(helloTask));
 	}
 
 	@Ignore
@@ -293,8 +329,10 @@ public class JobCalculationMessageConsumerTest {
 		futuresField.setAccessible(true);
 
 		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 2, false, false);
-		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
-		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
+		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1",
+				StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1",
+				WordCountMapper.class.getSimpleName(), 1);
 		job.currentProcedure().nrOfSameResultHash(0);
 		job.currentProcedure().nrOfSameResultHashForTasks(0);
 		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
@@ -306,39 +344,55 @@ public class JobCalculationMessageConsumerTest {
 		job.currentProcedure().addTask(task2);
 
 		// Next submits the tasks
-		Method trySubmitTasks = JobCalculationMessageConsumer.class.getDeclaredMethod("trySubmitTasks", Procedure.class);
+		Method trySubmitTasks = JobCalculationMessageConsumer.class.getDeclaredMethod("trySubmitTasks",
+				Procedure.class);
 		trySubmitTasks.setAccessible(true);
 		trySubmitTasks.invoke(calculationMsgConsumer, job.currentProcedure());
-		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
+		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField
+				.get(calculationMsgConsumer);
 
 		assertEquals(4, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
 		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
 		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());
-		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(0).isCancelled());
-		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(1).isCancelled());
-		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
-		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
+		// assertEquals(false,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(0).isCancelled());
+		// assertEquals(false,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(1).isCancelled());
+		// assertEquals(false,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
+		// assertEquals(false,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
 
-		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure().dataInputDomain().toString(), task1);
+		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure().dataInputDomain().toString(),
+				task1);
 		//// futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
 		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
 		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
 		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());
-		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(0).isCancelled());
-		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(1).isCancelled());
-		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
-		// assertEquals(false, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
+		// assertEquals(true,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(0).isCancelled());
+		// assertEquals(true,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(1).isCancelled());
+		// assertEquals(false,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
+		// assertEquals(false,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
 		//
-		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure().dataInputDomain().toString(), task2);
+		calculationMsgConsumer.cancelTaskExecution(job.currentProcedure().dataInputDomain().toString(),
+				task2);
 		//// futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
 		//
 		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
 		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
 		assertEquals(0, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());
-		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(0).isCancelled());
-		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(1).isCancelled());
-		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
-		// assertEquals(true, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
+		// assertEquals(true,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(0).isCancelled());
+		// assertEquals(true,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).get(1).isCancelled());
+		// assertEquals(true,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(0).isCancelled());
+		// assertEquals(true,
+		// futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).get(1).isCancelled());
 		futures.clear();
 	}
 
@@ -348,8 +402,10 @@ public class JobCalculationMessageConsumerTest {
 		futuresField.setAccessible(true);
 
 		Job job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 2, false, false);
-		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1", StartProcedure.class.getSimpleName(), 0);
-		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1", WordCountMapper.class.getSimpleName(), 1);
+		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1",
+				StartProcedure.class.getSimpleName(), 0);
+		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1",
+				WordCountMapper.class.getSimpleName(), 1);
 		job.currentProcedure().nrOfSameResultHash(0);
 		job.currentProcedure().nrOfSameResultHashForTasks(0);
 		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
@@ -361,10 +417,12 @@ public class JobCalculationMessageConsumerTest {
 		job.currentProcedure().addTask(task2);
 
 		// Next submits the tasks
-		Method trySubmitTasks = JobCalculationMessageConsumer.class.getDeclaredMethod("trySubmitTasks", Procedure.class);
+		Method trySubmitTasks = JobCalculationMessageConsumer.class.getDeclaredMethod("trySubmitTasks",
+				Procedure.class);
 		trySubmitTasks.setAccessible(true);
 		trySubmitTasks.invoke(calculationMsgConsumer, job.currentProcedure());
-		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField.get(calculationMsgConsumer);
+		Map<String, ListMultimap<Task, Future<?>>> futures = (Map<String, ListMultimap<Task, Future<?>>>) futuresField
+				.get(calculationMsgConsumer);
 		assertEquals(4, futures.get(job.currentProcedure().dataInputDomain().toString()).size());
 		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task1).size());
 		assertEquals(2, futures.get(job.currentProcedure().dataInputDomain().toString()).get(task2).size());

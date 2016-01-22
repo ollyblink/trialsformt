@@ -33,7 +33,7 @@ public class JobSubmissionBroadcastHandlerTest {
 		Mockito.when(job.isFinished()).thenReturn(false);
 		
 		JobProcedureDomain in = Mockito.mock(JobProcedureDomain.class);
-		Mockito.when(in.jobId()).thenReturn(job.id());
+		Mockito.when(in.jobId()).thenReturn("J1");
 		JobProcedureDomain out = Mockito.mock(JobProcedureDomain.class);
 		IBCMessage bcMessage = Mockito.mock(IBCMessage.class);
 		Mockito.when(bcMessage.inputDomain()).thenReturn(in);

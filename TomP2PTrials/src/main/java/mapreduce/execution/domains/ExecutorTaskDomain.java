@@ -14,7 +14,8 @@ public class ExecutorTaskDomain implements IDomain {
 	private Number160 resultHash;
 	private JobProcedureDomain jobProcedureDomain;
 
-	public static ExecutorTaskDomain create(String taskId, String taskExecutor, int taskStatusIndex, JobProcedureDomain jobProcedureDomain) {
+	public static ExecutorTaskDomain create(String taskId, String taskExecutor, int taskStatusIndex,
+			JobProcedureDomain jobProcedureDomain) {
 		return new ExecutorTaskDomain(taskId, taskExecutor, taskStatusIndex, jobProcedureDomain);
 	}
 
@@ -22,12 +23,13 @@ public class ExecutorTaskDomain implements IDomain {
 
 	}
 
-	private ExecutorTaskDomain(String taskId, String taskExecutor, int taskStatusIndex, JobProcedureDomain jobProcedureDomain) {
+	private ExecutorTaskDomain(String taskId, String taskExecutor, int taskStatusIndex,
+			JobProcedureDomain jobProcedureDomain) {
 		this.taskId = taskId;
 		this.taskExecutor = taskExecutor;
 		this.taskStatusIndex = taskStatusIndex;
-		this.resultHash = Number160.ZERO;
 		this.jobProcedureDomain = jobProcedureDomain;
+		this.resultHash = null;
 	}
 
 	@Override
@@ -39,6 +41,7 @@ public class ExecutorTaskDomain implements IDomain {
 	public String executor() {
 		return taskExecutor;
 	}
+
 	public String taskId() {
 		return taskId;
 	}
@@ -114,6 +117,5 @@ public class ExecutorTaskDomain implements IDomain {
 			return false;
 		return true;
 	}
- 
 
 }

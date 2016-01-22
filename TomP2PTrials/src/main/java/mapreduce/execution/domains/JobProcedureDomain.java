@@ -15,14 +15,14 @@ public class JobProcedureDomain implements IDomain {
 	private int procedureIndex;
 	private Number160 resultHash;
 	/**
-	 * Number of tasks for this procedure (may be different from tasks.size() because tasks are pulled after another and not all at the same time).
-	 * When the preceding procedure finishes, it will add the number of task's (==tasksSize) such that the next procedure knows how many tasks there
-	 * are to be processed.
+	 * Number of tasks for this procedure (may be different from tasks.size() because tasks are pulled after
+	 * another and not all at the same time). When the preceding procedure finishes, it will add the number of
+	 * task's (==tasksSize) such that the next procedure knows how many tasks there are to be processed.
 	 */
 	private volatile int expectedNrOfFiles;
 	/**
-	 * This data item is simply here for the MessageConsumer to decide which result to take if two executors execute a procedure on different input
-	 * domains
+	 * This data item is simply here for the MessageConsumer to decide which result to take if two executors
+	 * execute a procedure on different input domains
 	 */
 	private int nrOfFinishedTasks;
 	private int jobSubmissionCount;
@@ -32,18 +32,20 @@ public class JobProcedureDomain implements IDomain {
 
 	}
 
-	public static JobProcedureDomain create(String jobId, int jobSubmissionCount, String procedureExecutor, String procedureSimpleName,
-			int procedureIndex) {
-		return new JobProcedureDomain(jobId, jobSubmissionCount, procedureExecutor, procedureSimpleName, procedureIndex);
+	public static JobProcedureDomain create(String jobId, int jobSubmissionCount, String procedureExecutor,
+			String procedureSimpleName, int procedureIndex) {
+		return new JobProcedureDomain(jobId, jobSubmissionCount, procedureExecutor, procedureSimpleName,
+				procedureIndex);
 	}
 
-	private JobProcedureDomain(String jobId, int jobSubmissionCount, String procedureExecutor, String procedureSimpleName, int procedureIndex) {
+	private JobProcedureDomain(String jobId, int jobSubmissionCount, String procedureExecutor,
+			String procedureSimpleName, int procedureIndex) {
 		this.jobId = jobId;
 		this.jobSubmissionCount = jobSubmissionCount;
 		this.procedureExecutor = procedureExecutor;
 		this.procedureSimpleName = procedureSimpleName;
 		this.procedureIndex = procedureIndex;
-		this.resultHash = Number160.ZERO;
+		this.resultHash = null;
 	}
 
 	@Override
