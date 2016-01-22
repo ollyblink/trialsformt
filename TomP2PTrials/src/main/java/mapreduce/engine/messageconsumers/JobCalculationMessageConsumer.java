@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ListMultimap;
 
+import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
+import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.executors.performance.PerformanceInfo;
@@ -184,8 +186,9 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 					trySubmitTasks(procedure);
 				}
 			}
-		} else {// if(job.isFinished()){
-			resultPrinter.printResults(dhtConnectionProvider, procedure.resultOutputDomain().toString());
+		} else {// if(job.isFinished()){ 
+			//procedure has to be EndProcedure... this one has no output domain anymore, so data comes from input domain
+			resultPrinter.printResults(dhtConnectionProvider, procedure.dataInputDomain().toString());
 		}
 	}
 

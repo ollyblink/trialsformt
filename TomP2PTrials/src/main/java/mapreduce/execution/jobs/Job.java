@@ -384,12 +384,17 @@ public class Job implements Serializable, Cloneable {
 		return resultOutputFolder;
 	}
 
-	public FileSize outputFileSize(){
+	public FileSize outputFileSize() {
 		return this.outputFileSize;
 	}
+
 	public Job resultOutputFolder(String resultOutputFolder, FileSize outputFileSize) {
 		this.resultOutputFolder = resultOutputFolder + "/tmp";
 		this.outputFileSize = outputFileSize;
 		return this;
+	}
+
+	public int lastProcedureIndex() { 
+		return procedures.size() - 2;
 	}
 }
