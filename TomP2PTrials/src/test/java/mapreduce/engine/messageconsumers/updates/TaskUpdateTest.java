@@ -15,6 +15,7 @@ import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.StartProcedure;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.tasks.Task;
+import net.tomp2p.peers.Number160;
 
 public class TaskUpdateTest {
 	private TaskUpdate taskUpdate;
@@ -124,7 +125,8 @@ public class TaskUpdateTest {
 		// Task will be finished after second execution
 		Procedure procedure = Procedure.create(WordCountMapper.class, 1).nrOfSameResultHashForTasks(2)
 				.needsMultipleDifferentExecutorsForTasks(false);
-		ExecutorTaskDomain outputDomain = ExecutorTaskDomain.create("hello", "E1", 0, null);
+		ExecutorTaskDomain outputDomain = ExecutorTaskDomain.create("hello", "E1", 0, null)
+				.resultHash(Number160.ONE);
 		procedure.dataInputDomain(
 				JobProcedureDomain.create("J1", 0, "E1", StartProcedure.class.getSimpleName(), 0));
 		assertEquals(0, procedure.tasksSize());
@@ -152,7 +154,8 @@ public class TaskUpdateTest {
 				task);
 
 		// From same executor, but different domain (it's an additional execution!!)
-		ExecutorTaskDomain outputDomain2 = ExecutorTaskDomain.create("hello", "E1", 1, null);
+		ExecutorTaskDomain outputDomain2 = ExecutorTaskDomain.create("hello", "E1", 1, null)
+				.resultHash(Number160.ONE);
 		taskUpdate.internalUpdate(outputDomain2, procedure);
 		assertEquals(1, procedure.tasksSize()); // will stay the same as it contains it already
 		task = procedure.getTask(task);
@@ -165,7 +168,7 @@ public class TaskUpdateTest {
 				task);
 
 		// From same executor, but different domain (it's an additional execution!!)
-		ExecutorTaskDomain outputDomain3 = ExecutorTaskDomain.create("hello", "E1", 2, null);
+		ExecutorTaskDomain outputDomain3 = ExecutorTaskDomain.create("hello", "E1", 2, null).resultHash(Number160.ONE);
 		taskUpdate.internalUpdate(outputDomain3, procedure);
 		assertEquals(1, procedure.tasksSize()); // will stay the same as it contains it already
 		task = procedure.getTask(task);
@@ -186,10 +189,10 @@ public class TaskUpdateTest {
 		// Task will be finished as after second execution
 		Procedure procedure = Procedure.create(WordCountMapper.class, 1).nrOfSameResultHashForTasks(2)
 				.needsMultipleDifferentExecutorsForTasks(true);
-		ExecutorTaskDomain outputDomain = ExecutorTaskDomain.create("hello", "E1", 0, null);
+		ExecutorTaskDomain outputDomain = ExecutorTaskDomain.create("hello", "E1", 0, null).resultHash(Number160.ONE);
 		procedure.dataInputDomain(
 				JobProcedureDomain.create("J1", 0, "E1", StartProcedure.class.getSimpleName(), 0));
-		
+
 		assertEquals(0, procedure.tasksSize());
 		taskUpdate.internalUpdate(outputDomain, procedure);
 		assertEquals(1, procedure.tasksSize());
@@ -215,7 +218,7 @@ public class TaskUpdateTest {
 				task);
 
 		// From same executor, but different domain (it's an additional execution!!)
-		ExecutorTaskDomain outputDomain2 = ExecutorTaskDomain.create("hello", "E1", 1, null);
+		ExecutorTaskDomain outputDomain2 = ExecutorTaskDomain.create("hello", "E1", 1, null).resultHash(Number160.ONE);
 		taskUpdate.internalUpdate(outputDomain2, procedure);
 		assertEquals(1, procedure.tasksSize()); // will stay the same as it contains it already
 		task = procedure.getTask(task);
@@ -228,7 +231,7 @@ public class TaskUpdateTest {
 				task);
 
 		// From same executor, but different domain (it's an additional execution!!)
-		ExecutorTaskDomain outputDomain3 = ExecutorTaskDomain.create("hello", "E1", 2, null);
+		ExecutorTaskDomain outputDomain3 = ExecutorTaskDomain.create("hello", "E1", 2, null).resultHash(Number160.ONE);
 		taskUpdate.internalUpdate(outputDomain3, procedure);
 		assertEquals(1, procedure.tasksSize()); // will stay the same as it contains it already
 		task = procedure.getTask(task);
@@ -241,7 +244,7 @@ public class TaskUpdateTest {
 				task);
 
 		// From different executor finally
-		ExecutorTaskDomain outputDomain4 = ExecutorTaskDomain.create("hello", "E2", 0, null);
+		ExecutorTaskDomain outputDomain4 = ExecutorTaskDomain.create("hello", "E2", 0, null).resultHash(Number160.ONE);
 		taskUpdate.internalUpdate(outputDomain4, procedure);
 		assertEquals(1, procedure.tasksSize()); // will stay the same as it contains it already
 		task = procedure.getTask(task);
@@ -254,7 +257,7 @@ public class TaskUpdateTest {
 				task);
 
 		// From different executor again, but nothing changes anymore due to the finished procedure
-		ExecutorTaskDomain outputDomain5 = ExecutorTaskDomain.create("hello", "E3", 0, null);
+		ExecutorTaskDomain outputDomain5 = ExecutorTaskDomain.create("hello", "E3", 0, null).resultHash(Number160.ONE);
 		taskUpdate.internalUpdate(outputDomain5, procedure);
 		assertEquals(1, procedure.tasksSize()); // will stay the same as it contains it already
 		task = procedure.getTask(task);

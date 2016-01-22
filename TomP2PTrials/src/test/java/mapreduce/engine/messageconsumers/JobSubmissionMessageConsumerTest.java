@@ -71,6 +71,7 @@ public class JobSubmissionMessageConsumerTest {
 		// Third: same submitter, submitted, job finished, never retrieved before: retrieval possible!
 		Mockito.when(executor.submittedJob(job)).thenReturn(true);
 		Mockito.when(executor.jobIsRetrieved(job)).thenReturn(false);
+		Mockito.when(outputDomain.isJobFinished()).thenReturn(true);
 		Mockito.when(job.isFinished()).thenReturn(true);
 		collectMethod.invoke(messageConsumer, job, outputDomain, inputDomain);
 		Mockito.verify(executor, Mockito.times(1)).retrieveAndStoreDataOfFinishedJob(outputDomain);

@@ -195,6 +195,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(dataInputDomain,
 					dataInputDomain);
 			dhtConnectionProvider.broadcastCompletion(msg);
+			logger.info("Final data domain to retrieve results from: " + dataInputDomain);
 			resultPrinter.printResults(dhtConnectionProvider, dataInputDomain.toString());
 		}
 	}

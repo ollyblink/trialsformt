@@ -18,6 +18,7 @@ import com.google.common.collect.ListMultimap;
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.executors.performance.PerformanceInfo;
 import mapreduce.engine.messageconsumers.updates.IUpdate;
+import mapreduce.engine.messageconsumers.updates.ProcedureUpdate;
 import mapreduce.execution.domains.IDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.jobs.Job;
@@ -30,6 +31,7 @@ import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.resultprinter.IResultPrinter;
 import net.tomp2p.dht.FutureGet;
+import net.tomp2p.peers.Number160;
 
 public class JobCalculationMessageConsumerTest {
 
@@ -99,7 +101,6 @@ public class JobCalculationMessageConsumerTest {
 		assertEquals(secondInputDomain, job.currentProcedure().dataInputDomain());
 
 		// //Incoming: after: updates current procedure to the one received
-		System.err.println(job.currentProcedure().procedureIndex());
 		tryIncrementProcedureMethod.invoke(calculationMsgConsumer, job, thirdInputDomain, thirdOutputDomain);
 		procedureNameAfter = job.currentProcedure().executable().getClass().getSimpleName();
 		procedureIndexAfter = job.currentProcedure().procedureIndex();
@@ -221,7 +222,7 @@ public class JobCalculationMessageConsumerTest {
 		JobProcedureDomain in = JobProcedureDomain.create(job.id(), 0, "E1",
 				StartProcedure.class.getSimpleName(), 0);
 		JobProcedureDomain out = JobProcedureDomain.create(job.id(), 0, "E1",
-				WordCountMapper.class.getSimpleName(), 1);
+				WordCountMapper.class.getSimpleName(), 1).resultHash(Number160.ONE);
 		job.currentProcedure().nrOfSameResultHash(0);
 		job.currentProcedure().nrOfSameResultHashForTasks(0);
 		job.incrementProcedureIndex(); // Currently: second procedure (Wordcount mapper)
@@ -275,12 +276,13 @@ public class JobCalculationMessageConsumerTest {
 		// ===========================================================================================================================================
 		// Job is finished: should simply print results to output
 		// ===========================================================================================================================================
-		job.currentProcedure().addOutputDomain(out);
+ 		ProcedureUpdate update = new ProcedureUpdate(job, calculationMsgConsumer);
+		update.executeUpdate(out, job.currentProcedure());
 		IResultPrinter resultPrinter = Mockito.mock(IResultPrinter.class);
 		calculationMsgConsumer.resultPrinter(resultPrinter);
 		tryExecuteProcedure.invoke(calculationMsgConsumer, job);
 		Mockito.verify(resultPrinter, Mockito.timeout(1)).printResults(mockDHT,
-				job.currentProcedure().resultOutputDomain().toString());
+				job.currentProcedure().dataInputDomain().toString());
 
 	}
 

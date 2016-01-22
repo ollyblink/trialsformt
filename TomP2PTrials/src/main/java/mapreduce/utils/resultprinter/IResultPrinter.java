@@ -4,6 +4,6 @@ import mapreduce.storage.IDHTConnectionProvider;
 
 public interface IResultPrinter {
 
-	void printResults(IDHTConnectionProvider dhtConnectionProvider, String domainString);
+	public void printResults(IDHTConnectionProvider dhtConnectionProvider, String domainString);
 
 }

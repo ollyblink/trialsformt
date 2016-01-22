@@ -90,7 +90,7 @@ public class JobCalculationExecutorTest {
 			context.write(next, new Integer(1));
 		}
 
-		task.addOutputDomain(outputETD);
+		task.addOutputDomain(outputETD.resultHash(context.resultHash()));
 		procedure.dataInputDomain(inputJPD);
 		Futures.whenAllSuccess(context.futurePutData()).addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
 

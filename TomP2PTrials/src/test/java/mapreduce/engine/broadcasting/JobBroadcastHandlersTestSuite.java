@@ -9,7 +9,7 @@ import mapreduce.engine.broadcasting.broadcasthandlers.timeouts.TimeoutTests;
 import mapreduce.engine.broadcasting.messages.CompletedTaskBCMessageTest;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-	TimeoutTests.class, 
+	//TODO: TimeoutTests.class, 
 	JobCalculationBroadcastHandlerTest.class,
 	JobSubmissionBroadcastHandlerTest.class,
 	CompletedTaskBCMessageTest.class
