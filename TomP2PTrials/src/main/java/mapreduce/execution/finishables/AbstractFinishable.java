@@ -49,7 +49,7 @@ public abstract class AbstractFinishable implements IFinishable {
 		checkIfFinished();
 		return resultOutputDomain;
 	}
-
+ 
 	protected boolean containsExecutor(String localExecutorId) {
 		for (IDomain domain : outputDomains) {
 			if (domain.executor().equals(localExecutorId)) {
@@ -66,28 +66,30 @@ public abstract class AbstractFinishable implements IFinishable {
 		}
 		boolean isFinished = false;
 		Number160 r = null;
-		for (Number160 resultHash : results.keySet()) {
-			if (resultHash == null) {
-				break;
-			} else if (results.get(resultHash).size() >= nrOfSameResultHash) {
-				if (needsMultipleDifferentExecutors) {
-					List<IDomain> list = results.get(resultHash);
-					Set<String> asSet = new HashSet<>();
-					for (IDomain d : list) {
-						asSet.add(d.executor());
+		if (currentMaxNrOfSameResultHash() >= nrOfSameResultHash) { 
+			for (Number160 resultHash : results.keySet()) {
+				if (resultHash == null) {
+					break;
+				} else if (results.get(resultHash).size() >= nrOfSameResultHash) {
+					if (needsMultipleDifferentExecutors) {
+						List<IDomain> list = results.get(resultHash);
+						Set<String> asSet = new HashSet<>();
+						for (IDomain d : list) {
+							asSet.add(d.executor());
+						}
+						if (asSet.size() < nrOfSameResultHash) {
+							continue;
+						}
 					}
-					if (asSet.size() < nrOfSameResultHash) {
-						continue;
-					}
+					r = resultHash;
+					isFinished = true;
+					break;
 				}
-				r = resultHash;
-				isFinished = true;
-				break;
 			}
 		}
 		if (isFinished) {
-			this.resultOutputDomain = results.get(r).get(0);// First just in case something happend at the
-															// end...
+			// It doesn't matter which one...
+			this.resultOutputDomain = results.get(r).get(0);
 		} else {
 			this.resultOutputDomain = null;
 		}
@@ -102,7 +104,9 @@ public abstract class AbstractFinishable implements IFinishable {
 	public Integer currentMaxNrOfSameResultHash() {
 		ListMultimap<Number160, IDomain> results = ArrayListMultimap.create();
 		for (IDomain domain : outputDomains) {
-			results.put(domain.resultHash(), domain);
+			if (domain.resultHash() != null) {
+				results.put(domain.resultHash(), domain);
+			}
 		}
 		TreeSet<Integer> max = new TreeSet<>();
 		for (Number160 resultHash : results.keySet()) {
@@ -135,6 +139,16 @@ public abstract class AbstractFinishable implements IFinishable {
 			}
 		}
 		return this;
+	}
+
+	@Override
+	public int nrOfSameResultHash() {
+		return nrOfSameResultHash;
+	}
+
+	@Override
+	public boolean needsMultipleDifferentExecutors() {
+		return needsMultipleDifferentExecutors;
 	}
 
 	@Override

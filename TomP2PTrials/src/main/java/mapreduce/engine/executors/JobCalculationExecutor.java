@@ -89,7 +89,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 									if (future.isSuccess()) {
 										outputETD.resultHash(contextToUse.resultHash());
 										CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
-												procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedTasks()));
+												procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedAndTransferredTasks()));
 										// dhtCon.broadcastHandler().addBCMessage(msg);
 										dhtConnectionProvider.broadcastHandler().processMessage(msg,
 												dhtConnectionProvider.broadcastHandler().getJob(outputJPD.jobId()));
@@ -198,7 +198,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 			if (procedure.isCompleted()) {
 				JobProcedureDomain to = JobProcedureDomain.create(procedure.jobId(), dataInputDomain.jobSubmissionCount(), id,
 						procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
-				CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to.resultHash(procedure.calculateResultHash()),
+				CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(to.resultHash(procedure.resultHash()),
 						dataInputDomain);
 				return msg;
 			}

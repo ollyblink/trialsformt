@@ -16,7 +16,7 @@ public interface IFinishable {
 
 	public IFinishable addOutputDomain(IDomain domain);
 
-	public Number160 calculateResultHash();
+	public Number160 resultHash();
 
 	public IDomain resultOutputDomain();
 
@@ -26,6 +26,11 @@ public interface IFinishable {
 
 	public Integer currentMaxNrOfSameResultHash();
 
-	void reset();
+	public void reset();
+
+	public boolean needsMultipleDifferentExecutors();
+
+	public int nrOfSameResultHash();
+ 
 
 }

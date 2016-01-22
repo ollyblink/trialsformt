@@ -115,7 +115,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	@Override
-	public Number160 calculateResultHash() {
+	public Number160 resultHash() {
 		if (resultOutputDomain == null) {
 			checkIfFinished();
 		}
@@ -124,7 +124,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 
 	public void reset() {
 		super.reset();
-		outputDomains.clear(); 
+		outputDomains.clear();
 		isInProcedureDomain = false;
 		activeCount = 0;
 		resultOutputDomain = null;
@@ -189,8 +189,6 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 		return null;
 	}
 
-	public int nrOfSameResultHash() {
-		return nrOfSameResultHash;
-	}
+
 
 }

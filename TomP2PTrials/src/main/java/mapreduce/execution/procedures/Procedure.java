@@ -76,7 +76,7 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	// hash.
 	// This method only returns a hash if all tasks finished and produced a hash. In any other case, null
 	// is returned finished yet
-	public Number160 calculateResultHash() {
+	public Number160 resultHash() {
 		if (dataInputDomain == null || tasks.size() < dataInputDomain.expectedNrOfFiles()) {
 			return null;
 		} else {
@@ -87,7 +87,7 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 						resultHash = Number160.ZERO;
 					}
 					if (task.isFinished()) {
-						Number160 taskResultHash = task.calculateResultHash();
+						Number160 taskResultHash = task.resultHash();
 						if (taskResultHash != null) {
 							resultHash = resultHash.xor(taskResultHash);
 						} else {
@@ -115,11 +115,11 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	 * 
 	 * @return
 	 */
-	public int nrOfFinishedTasks() {
+	public int nrOfFinishedAndTransferredTasks() {
 		int finishedTasksCounter = 0;
 		synchronized (tasks) {
 			for (Task task : tasks) {
-				if (task.isFinished()) {
+				if (task.isFinished() && task.isInProcedureDomain()) {
 					++finishedTasksCounter;
 				}
 			}
@@ -170,6 +170,10 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	}
 
 	public boolean isCompleted() {
+		if (tasks.size() == 0) {
+			return false; // If tasks's size is 0, something certainly is odd and the procedure is not yet
+							// finished
+		}
 		synchronized (tasks) {
 			for (Task task : tasks) {
 				if (!task.isFinished() || !task.isInProcedureDomain()) {
@@ -331,5 +335,6 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 			return false;
 		return true;
 	}
+ 
 
 }

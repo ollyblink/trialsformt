@@ -269,8 +269,10 @@ public class TaskTest {
 		task.incrementActiveCount();
 		IDomain etd = Mockito.mock(ExecutorTaskDomain.class);
 		Mockito.when(etd.executor()).thenReturn("E1");
+		Mockito.when(etd.resultHash()).thenReturn(Number160.ZERO);
 		IDomain etd2 = Mockito.mock(ExecutorTaskDomain.class);
 		Mockito.when(etd2.executor()).thenReturn("E2");
+		Mockito.when(etd2.resultHash()).thenReturn(Number160.ZERO);
 		task.addOutputDomain(etd);
 		task.addOutputDomain(etd2);
 		task.isInProcedureDomain(true);
@@ -340,35 +342,122 @@ public class TaskTest {
 			assertEquals(i, task.newStatusIndex());
 		}
 
-	} 
-	@Test
-	public void testCalculateResultHash() {
-		Task task = Task.create("Key", "E1");
-
-	}
-
-	@Test
-	public void testAddOutputDomain() {
-		Task task = Task.create("Key", "E1");
-
-	}
-
-	@Test
-	public void testCurrentMaxNrOfSameResultHash() {
-		Task task = Task.create("Key", "E1");
-
-	}
-
-	@Test
-	public void testContainsExecutor() {
-		Task task = Task.create("Key", "E1");
-
 	}
 
 	@Test
 	public void testCheckIfFinished() {
 		Task task = Task.create("Key", "E1");
 
+		// Doesn't need different executors
+		// Not finished
+		assertEquals(false, task.isFinished());
+		assertEquals(null, task.resultOutputDomain());
+		assertEquals(null, task.resultHash());
+
+		// Finished
+		task.nrOfSameResultHash(0);
+		assertEquals(true, task.isFinished());
+		assertEquals(null, task.resultOutputDomain());
+		assertEquals(null, task.resultHash());
+
+		// Not Finished: hash is null
+		task.nrOfSameResultHash(1);
+
+		ExecutorTaskDomain etd = Mockito.mock(ExecutorTaskDomain.class);
+		Mockito.when(etd.resultHash()).thenReturn(null);
+		Mockito.when(etd.executor()).thenReturn("E1");
+		task.addOutputDomain(etd);
+		assertEquals(false, task.isFinished());
+		assertEquals(null, task.resultOutputDomain());
+		assertEquals(null, task.resultHash());
+
+		// Finished
+		Mockito.when(etd.resultHash()).thenReturn(Number160.ZERO);
+		assertEquals(true, task.isFinished());
+		assertEquals(etd, task.resultOutputDomain());
+		assertEquals(Number160.ZERO, task.resultHash());
+
+		// Not Finished
+		task.nrOfSameResultHash(2);
+		assertEquals(false, task.isFinished());
+		assertEquals(null, task.resultOutputDomain());
+		assertEquals(null, task.resultHash());
+
+		// Not Finished
+		ExecutorTaskDomain etd2 = Mockito.mock(ExecutorTaskDomain.class);
+		Mockito.when(etd2.resultHash()).thenReturn(null);
+		Mockito.when(etd2.executor()).thenReturn("E1");
+		task.addOutputDomain(etd2);
+		assertEquals(false, task.isFinished());
+		assertEquals(null, task.resultOutputDomain());
+		assertEquals(null, task.resultHash());
+
+		// Finished (not same result hash)
+		Mockito.when(etd2.resultHash()).thenReturn(Number160.ONE);
+		assertEquals(false, task.isFinished());
+		assertEquals(null, task.resultOutputDomain());
+		assertEquals(null, task.resultHash());
+
+		// Finished (same result hash)
+		Mockito.when(etd2.resultHash()).thenReturn(Number160.ZERO);
+		assertEquals(true, task.isFinished());
+		assertEquals(etd, task.resultOutputDomain());
+		assertEquals(Number160.ZERO, task.resultHash());
+
+		// Needs different executors
+		task.needsMultipleDifferentExecutors(true);
+		// Not Finished
+		assertEquals(false, task.isFinished());
+		assertEquals(null, task.resultOutputDomain());
+		assertEquals(null, task.resultHash());
+
+		// Finished
+		Mockito.when(etd2.executor()).thenReturn("E2");
+		assertEquals(true, task.isFinished());
+		assertEquals(etd, task.resultOutputDomain());
+		assertEquals(Number160.ZERO, task.resultHash());
+	}
+
+	@Test
+	public void testCurrentMaxNrOfSameResultHash() {
+		Task task = Task.create("Key", "E1").nrOfSameResultHash(2);
+		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash());
+
+		ExecutorTaskDomain etd = Mockito.mock(ExecutorTaskDomain.class);
+		Mockito.when(etd.resultHash()).thenReturn(null);
+		Mockito.when(etd.executor()).thenReturn("E1");
+		task.addOutputDomain(etd);
+		assertEquals(new Integer(0), task.currentMaxNrOfSameResultHash()); // null is not a result hash;
+		// 1 Result hash
+		Mockito.when(etd.resultHash()).thenReturn(Number160.ZERO);
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
+
+		// 2nd
+		ExecutorTaskDomain etd2 = Mockito.mock(ExecutorTaskDomain.class);
+		Mockito.when(etd2.resultHash()).thenReturn(null);
+		Mockito.when(etd2.executor()).thenReturn("E1");
+		task.addOutputDomain(etd2);
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
+		// No difference: 2 result hashs but are not the same
+		Mockito.when(etd2.resultHash()).thenReturn(Number160.ONE);
+		assertEquals(new Integer(1), task.currentMaxNrOfSameResultHash());
+		// 2 with same result hash
+		Mockito.when(etd2.resultHash()).thenReturn(Number160.ZERO);
+		assertEquals(new Integer(2), task.currentMaxNrOfSameResultHash());
+
+	}
+
+	@Test
+	public void testContainsExecutor() throws Exception {
+		Task task = Task.create("Key", "E1");
+		Method containsExecutor = Task.class.getSuperclass().getDeclaredMethod("containsExecutor",
+				String.class);
+		containsExecutor.setAccessible(true);
+		assertEquals(false, containsExecutor.invoke(task, "E1"));
+		IDomain etd = Mockito.mock(ExecutorTaskDomain.class);
+		Mockito.when(etd.executor()).thenReturn("E1");
+		task.addOutputDomain(etd);
+		assertEquals(true, containsExecutor.invoke(task, "E1"));
 	}
 
 }
