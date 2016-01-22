@@ -100,7 +100,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		if (receivedOutdatedMessage) {
 			logger.info("Received an old message: nothing to do.");
 			return;
-		} else if (!inputDomain.isJobFinished()) {
+		} else {
 			// need to increment procedure because we are behind in execution?
 			tryIncrementProcedure(job, inputDomain, rJPD);
 			// Same input data? Then we may try to update tasks/procedures
@@ -138,8 +138,12 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 																									// already
 				procedure.dataInputDomain().expectedNrOfFiles(inputDomain.expectedNrOfFiles());
 			}
-			iUpdate.executeUpdate(outputDomain, procedure); // Only here: execute the received task/procedure
-															// update
+
+			if (!inputDomain.isJobFinished()) { // Only here: execute the received task/procedure update
+				iUpdate.executeUpdate(outputDomain, procedure);
+			} else {
+				cancelProcedureExecution(procedure.dataInputDomain().toString());
+			}
 		} else { // May have to change input data location (inputDomain)
 			// executor of received message executes on different input data! Need to synchronize
 			changeDataInputDomain(inputDomain, procedure);
