@@ -23,7 +23,6 @@ public class ExecutorTaskDomain implements IDomain {
 	}
 
 	private ExecutorTaskDomain(String taskId, String taskExecutor, int taskStatusIndex, JobProcedureDomain jobProcedureDomain) {
-
 		this.taskId = taskId;
 		this.taskExecutor = taskExecutor;
 		this.taskStatusIndex = taskStatusIndex;

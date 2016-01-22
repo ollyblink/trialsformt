@@ -58,7 +58,7 @@ public class TestUtils {
 		Collections.addAll(peers, peerArray);
 
 		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider
-				.create(bootstrapIP, bootstrapPort, bootstrapPort).externalPeers(peers, bcHandler);
+				.create(bootstrapIP, bootstrapPort, bootstrapPort).externalPeers(peers.get(0), bcHandler);
 		return dhtConnectionProvider;
 	}
 
@@ -86,7 +86,7 @@ public class TestUtils {
 		Collections.addAll(peers, peerArray);
 
 		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider
-				.create(bootstrapIP, bootstrapPort, bootstrapPort).externalPeers(peers, bcHandler);
+				.create(bootstrapIP, bootstrapPort, bootstrapPort).externalPeers(peers.get(0), bcHandler);
 		return dhtConnectionProvider;
 	}
 }

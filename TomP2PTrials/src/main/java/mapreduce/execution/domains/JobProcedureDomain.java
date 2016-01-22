@@ -38,7 +38,6 @@ public class JobProcedureDomain implements IDomain {
 	}
 
 	private JobProcedureDomain(String jobId, int jobSubmissionCount, String procedureExecutor, String procedureSimpleName, int procedureIndex) {
-
 		this.jobId = jobId;
 		this.jobSubmissionCount = jobSubmissionCount;
 		this.procedureExecutor = procedureExecutor;

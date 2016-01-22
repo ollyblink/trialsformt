@@ -13,15 +13,15 @@ public class ExecutorMain {
 		JobCalculationBroadcastHandler executorBCHandler = JobCalculationBroadcastHandler.create(1);
 
 		int bootstrapPort = 4001;
-		IDHTConnectionProvider dhtCon2 = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, bootstrapPort).nrOfPeers(1)
-				.broadcastHandler(executorBCHandler)
+		IDHTConnectionProvider dhtCon2 = DHTConnectionProvider
+				.create("192.168.43.65", bootstrapPort, bootstrapPort).broadcastHandler(executorBCHandler)
 				// .storageFilePath("C:\\Users\\Oliver\\Desktop\\storage")
 				;
 
 		IExecutor calculationExecutor = JobCalculationExecutor.create().dhtConnectionProvider(dhtCon2);
 
-		IMessageConsumer calculationMessageConsumer = JobCalculationMessageConsumer.create().dhtConnectionProvider(dhtCon2)
-				.executor(calculationExecutor);
+		IMessageConsumer calculationMessageConsumer = JobCalculationMessageConsumer.create()
+				.dhtConnectionProvider(dhtCon2).executor(calculationExecutor);
 
 		executorBCHandler.messageConsumer(calculationMessageConsumer);
 		while (!dhtCon2.connect().peer().isShutdown()) {
