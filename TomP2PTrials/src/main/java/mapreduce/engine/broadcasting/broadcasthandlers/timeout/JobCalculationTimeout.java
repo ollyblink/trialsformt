@@ -33,7 +33,7 @@ public class JobCalculationTimeout extends AbstractTimeout {
 				if (actualTasksSize < expectedTasksSize) {
 					currentProcedure.dataInputDomain().expectedNrOfFiles(actualTasksSize);
 					JobCalculationExecutor executor = (JobCalculationExecutor) broadcastHandler.messageConsumer().executor();
-					CompletedBCMessage msg = executor.tryFinishProcedure(currentProcedure);
+					CompletedBCMessage msg = executor.tryCompletingProcedure(currentProcedure);
 					if (msg != null) {
 						broadcastHandler.processMessage(msg, broadcastHandler.getJob(job.id()));
 						broadcastHandler.dhtConnectionProvider().broadcastCompletion(msg);

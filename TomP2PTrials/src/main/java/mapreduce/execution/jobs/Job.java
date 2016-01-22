@@ -394,7 +394,4 @@ public class Job implements Serializable, Cloneable {
 		return this;
 	}
 
-	public int lastProcedureIndex() { 
-		return procedures.size() - 2;
-	}
 }

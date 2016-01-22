@@ -27,6 +27,7 @@ public class JobProcedureDomain implements IDomain {
 	private int nrOfFinishedTasks;
 	private int jobSubmissionCount;
 	private PerformanceInfo executorPerformanceInformation;
+	private boolean isJobFinished;
 
 	private JobProcedureDomain() {
 
@@ -161,5 +162,14 @@ public class JobProcedureDomain implements IDomain {
 	public JobProcedureDomain executorPerformanceInformation(PerformanceInfo executorPerformanceInformation) {
 		this.executorPerformanceInformation = executorPerformanceInformation;
 		return this;
+	}
+
+	public JobProcedureDomain isJobFinished(boolean isJobFinished) {
+		this.isJobFinished = isJobFinished;
+		return this;
+	}
+
+	public boolean isJobFinished() {
+		return this.isJobFinished;
 	}
 }

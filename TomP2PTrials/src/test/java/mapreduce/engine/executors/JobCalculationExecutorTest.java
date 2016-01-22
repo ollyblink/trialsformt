@@ -275,12 +275,12 @@ public class JobCalculationExecutorTest {
 		Procedure procedure = Procedure.create(WordCountMapper.create(), 1).dataInputDomain(dataDomain).nrOfSameResultHash(1)
 				.needsMultipleDifferentExecutors(false).nrOfSameResultHashForTasks(1).needsMultipleDifferentExecutorsForTasks(false);
 
-		jobExecutor.tryFinishProcedure(procedure);
+		jobExecutor.tryCompletingProcedure(procedure);
 		assertEquals(false, procedure.isFinished());
 
 		Task task1 = Task.create("hello", "E1");
 		procedure.addTask(task1);
-		jobExecutor.tryFinishProcedure(procedure);
+		jobExecutor.tryCompletingProcedure(procedure);
 		assertEquals(false, procedure.isFinished());
 
 		task1.addOutputDomain(ExecutorTaskDomain.create(task1.key(), "E1", 0, null));

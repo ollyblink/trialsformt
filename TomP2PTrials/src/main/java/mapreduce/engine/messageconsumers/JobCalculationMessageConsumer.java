@@ -100,7 +100,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		if (receivedOutdatedMessage) {
 			logger.info("Received an old message: nothing to do.");
 			return;
-		} else {
+		} else if (!inputDomain.isJobFinished()) {
 			// need to increment procedure because we are behind in execution?
 			tryIncrementProcedure(job, inputDomain, rJPD);
 			// Same input data? Then we may try to update tasks/procedures
@@ -174,21 +174,24 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 
 	private void tryExecuteProcedure(Job job) {
 		Procedure procedure = job.currentProcedure();
+		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
 		if (!job.isFinished()) {
-			boolean isNotComplete = procedure.tasksSize() < procedure.dataInputDomain().expectedNrOfFiles();
+			boolean isNotComplete = procedure.tasksSize() < dataInputDomain.expectedNrOfFiles();
 			boolean isNotStartProcedure = procedure.procedureIndex() > 0;
 			if (isNotComplete && isNotStartProcedure) {
 				tryRetrieveMoreTasksFromDHT(procedure);
 			} else {
-				boolean isExpectedToBeComplete = procedure.tasksSize() == procedure.dataInputDomain()
-						.expectedNrOfFiles();
+				boolean isExpectedToBeComplete = procedure.tasksSize() == dataInputDomain.expectedNrOfFiles();
 				if (isExpectedToBeComplete) {
 					trySubmitTasks(procedure);
 				}
 			}
-		} else {// if(job.isFinished()){ 
-			//procedure has to be EndProcedure... this one has no output domain anymore, so data comes from input domain
-			resultPrinter.printResults(dhtConnectionProvider, procedure.dataInputDomain().toString());
+		} else {// if(job.isFinished()){
+			dataInputDomain.isJobFinished(true);
+			CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(dataInputDomain,
+					dataInputDomain);
+			dhtConnectionProvider.broadcastCompletion(msg);
+			resultPrinter.printResults(dhtConnectionProvider, dataInputDomain.toString());
 		}
 	}
 

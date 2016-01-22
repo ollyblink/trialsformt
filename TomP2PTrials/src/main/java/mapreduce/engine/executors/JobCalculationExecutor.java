@@ -154,7 +154,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 																+ taskToTransfer + " from task executor domain to job procedure domain: "
 																+ to.toString() + ". ");
 
-												CompletedBCMessage msg = tryFinishProcedure(procedure);
+												CompletedBCMessage msg = tryCompletingProcedure(procedure);
 												if (msg != null) {
 													dhtConnectionProvider.broadcastHandler().processMessage(msg,
 															dhtConnectionProvider.broadcastHandler().getJob(procedure.jobId()));
@@ -187,7 +187,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 		}
 	}
 
-	public CompletedBCMessage tryFinishProcedure(Procedure procedure) {
+	public CompletedBCMessage tryCompletingProcedure(Procedure procedure) {
 		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
 		int expectedSize = dataInputDomain.expectedNrOfFiles();
 //		List<Task> tasks = procedure.tasks();

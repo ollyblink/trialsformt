@@ -28,6 +28,9 @@ public class ProcedureUpdate extends AbstractUpdate {
 			JobProcedureDomain resultOutputDomain = procedure.resultOutputDomain();
 			job.incrementProcedureIndex();
 			job.currentProcedure().dataInputDomain(resultOutputDomain);
+			if (job.isFinished()) {
+				resultOutputDomain.isJobFinished(true);
+			}
 		}
 	}
 }

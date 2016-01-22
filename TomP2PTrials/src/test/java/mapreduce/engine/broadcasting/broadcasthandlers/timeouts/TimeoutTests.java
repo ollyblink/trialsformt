@@ -67,7 +67,7 @@ public class TimeoutTests {
 		// Calculation Executor
 		calculationExecutor = Mockito.mock(JobCalculationExecutor.class);
 		Mockito.when(calculationExecutor.id()).thenReturn("E1");
-		Mockito.when(calculationExecutor.tryFinishProcedure(procedure)).thenReturn(mockMsg);
+		Mockito.when(calculationExecutor.tryCompletingProcedure(procedure)).thenReturn(mockMsg);
 		// Calculation MessageConsumer
 		calculationMsgConsumer = Mockito.mock(JobCalculationMessageConsumer.class);
 		Mockito.when(calculationMsgConsumer.executor()).thenReturn(calculationExecutor);
@@ -119,7 +119,7 @@ public class TimeoutTests {
 		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).dhtConnectionProvider();
 		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).processMessage(mockMsg, job);
 		Mockito.verify(calculationMsgConsumer, Mockito.times(1)).executor();
-		Mockito.verify(calculationExecutor, Mockito.times(1)).tryFinishProcedure(procedure);
+		Mockito.verify(calculationExecutor, Mockito.times(1)).tryCompletingProcedure(procedure);
 		Mockito.verify(inputDomain, Mockito.times(1)).expectedNrOfFiles();
 		Mockito.verify(bcMessage, Mockito.times(1)).inputDomain();
 	}
