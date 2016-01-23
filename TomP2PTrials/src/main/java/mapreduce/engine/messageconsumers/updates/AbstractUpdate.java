@@ -11,9 +11,11 @@ public abstract class AbstractUpdate implements IUpdate {
 
 	@Override
 	public void executeUpdate(IDomain outputDomain, Procedure procedure) {
-		logger.info(outputDomain + " " + procedure);
 		if (outputDomain != null && procedure != null) {
+			logger.info("executeUpdate(" + outputDomain + ", " + procedure.executable().getClass().getSimpleName()
+					+ ");");
 			try {
+				logger.info("executeUpdate:: before internalUpdate()");
 				internalUpdate(outputDomain, procedure);
 			} catch (Exception e) {
 				logger.warn("Exception caught", e);
@@ -21,6 +23,7 @@ public abstract class AbstractUpdate implements IUpdate {
 		} else {
 			logger.warn("No update, either output domain or procedure or both were null.");
 		}
+		logger.info("executeUpdate::done");
 	}
 
 	/**
@@ -29,7 +32,8 @@ public abstract class AbstractUpdate implements IUpdate {
 	 * @param outputDomain
 	 * @param procedure
 	 */
-	protected abstract void internalUpdate(IDomain outputDomain, Procedure procedure) throws ClassCastException, NullPointerException;
+	protected abstract void internalUpdate(IDomain outputDomain, Procedure procedure)
+			throws ClassCastException, NullPointerException;
 
 	protected AbstractUpdate() {
 

@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import mapreduce.execution.procedures.EndProcedure;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.StartProcedure;
@@ -12,6 +15,7 @@ import mapreduce.utils.IDCreator;
 import mapreduce.utils.SyncedCollectionProvider;
 
 public class Job implements Serializable, Cloneable {
+	private static Logger logger = LoggerFactory.getLogger(Job.class);
 
 	// private static Logger logger = LoggerFactory.getLogger(Job.class);
 
@@ -122,6 +126,8 @@ public class Job implements Serializable, Cloneable {
 	// Getters
 	public boolean isFinished() {
 		for (Procedure procedure : procedures) {
+			logger.info("isFinished(): is procedure [" + procedure.executable().getClass().getSimpleName()
+					+ "] finished? " + procedure.isFinished());
 			if (!procedure.isFinished()) {
 				return false;
 			}
@@ -229,6 +235,8 @@ public class Job implements Serializable, Cloneable {
 		Procedure procedureI = createProcedure(procedure, combiner, nrOfSameResultHashForProcedure,
 				nrOfSameResultHashForTasks, needsMultipleDifferentExecutors,
 				needsMultipleDifferentExecutorsForTasks);
+
+		logger.info("addSucceedingProcedure::Procedure is [" + procedureI.toString() + "]");
 		if (this.procedures.size() < 2) {
 			this.procedures.add(procedureI.procedureIndex(procedures.size()));
 		} else {

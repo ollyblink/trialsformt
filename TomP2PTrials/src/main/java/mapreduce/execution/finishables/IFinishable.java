@@ -1,5 +1,7 @@
 package mapreduce.execution.finishables;
 
+import java.io.Serializable;
+
 import mapreduce.execution.domains.IDomain;
 import net.tomp2p.peers.Number160;
 
@@ -9,7 +11,7 @@ import net.tomp2p.peers.Number160;
  * @author Oliver
  *
  */
-public interface IFinishable {
+public interface IFinishable extends Serializable {
 	public boolean isFinished();
 
 	public IFinishable needsMultipleDifferentExecutors(boolean needsMultipleDifferentDomains);

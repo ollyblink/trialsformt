@@ -46,7 +46,7 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	 * How many times should each task be executed and reach the same result hash until it is assumed to be a
 	 * correct answer?
 	 */
-	private int nrOfSameResultHashForTasks = 1;
+	private int nrOfSameResultHashForTasks = 0;
 	/** Assert that there are multiple output domains received before a task is finished */
 	private boolean needsMultipleDifferentExecutorsForTasks;
 	/**
@@ -140,6 +140,8 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	@Override
 	// Convenience for Fluent
 	public Procedure nrOfSameResultHash(int nrOfSameResultHash) {
+		logger.info("nrOfSameResultHash:: called for procedure ["+executable.getClass().getSimpleName()+"], nrOfSameResultHash before: " + this.nrOfSameResultHash
+				+ ", after: " + nrOfSameResultHash);
 		return (Procedure) super.nrOfSameResultHash(nrOfSameResultHash);
 	}
 
@@ -293,13 +295,19 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 		}
 		return null;
 	}
+ 
+
+ 
+
+ 
+ 
 
 	@Override
 	public String toString() {
-		return "Procedure [executable=" + executable + ", procedureIndex=" + procedureIndex + ", tasks="
-				+ tasks + ", dataInputDomain=" + dataInputDomain + ", combiner=" + combiner
-				+ ", nrOfSameResultHashForTasks=" + nrOfSameResultHashForTasks + ", jobId=" + jobId
-				+ ", needsMultipleDifferentDomainsForTasks=" + needsMultipleDifferentExecutorsForTasks + "]";
+		return "Procedure [executable=" + executable + ", nrOfSameResultHashForTasks="
+				+ nrOfSameResultHashForTasks + ", needsMultipleDifferentExecutorsForTasks="
+				+ needsMultipleDifferentExecutorsForTasks + ", nrOfSameResultHash=" + nrOfSameResultHash
+				+ ", needsMultipleDifferentExecutors=" + needsMultipleDifferentExecutors + "]";
 	}
 
 	@Override
@@ -335,6 +343,5 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 			return false;
 		return true;
 	}
- 
 
 }

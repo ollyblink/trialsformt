@@ -22,7 +22,7 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 		String jobId = bcMessage.inputDomain().jobId();
 		Job job = getJob(jobId);
 		if (job == null) {
-			dhtConnectionProvider.get(DomainProvider.JOB, jobId)
+			dhtConnectionProvider.get(DomainProvider.JOB, jobId).awaitUninterruptibly()
 					.addListener(new BaseFutureAdapter<FutureGet>() {
 
 						@Override
@@ -30,7 +30,8 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 							if (future.isSuccess()) {
 								if (future.data() != null) {
 									Job job = (Job) future.data().object();
-									for (Procedure procedure : job.procedures()) {
+									for (Procedure procedure : job.procedures()) { 
+										logger.info(procedure+"");
 										if (procedure.executable() instanceof String) {// Means a java script
 																						// function -->
 																						// convert
@@ -43,6 +44,10 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 											procedure.combiner(Procedures
 													.convertJavascriptToJava((String) procedure.combiner()));
 										}
+										logger.info("After possible conversion: Procedure ["
+												+ procedure.executable().getClass().getSimpleName()
+												+ "] needs [" + procedure.nrOfSameResultHash()
+												+ "] result hashes to finish");
 									}
 									processMessage(bcMessage, job);
 								}
@@ -73,6 +78,7 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 	public void processMessage(IBCMessage bcMessage, Job job) {
 		if (!job.isFinished()) {
 			logger.info("Job: " + job + " is not finished. Executing BCMessage: " + bcMessage);
+			updateTimeout(job, bcMessage);
 			jobFuturesFor.put(job, taskExecutionServer.submit(new Runnable() {
 
 				@Override
@@ -81,7 +87,6 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 				}
 			}, job.priorityLevel(), job.creationTime(), bcMessage.procedureIndex(), bcMessage.status(),
 					bcMessage.creationTime()));
-			updateTimeout(job, bcMessage);
 		} else {
 			abortJobExecution(job);
 		}

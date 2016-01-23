@@ -5,21 +5,32 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.IDomain;
+import mapreduce.execution.jobs.Job;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
 public abstract class AbstractFinishable implements IFinishable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8676046636876323261L;
+
+	private static Logger logger = LoggerFactory.getLogger(AbstractFinishable.class);
 
 	/** final output domain for where this tasks output key/values are stored */
 	protected IDomain resultOutputDomain;
 	/** Domain (ExecutorTaskDomains) of keys for next procedure */
 	protected List<IDomain> outputDomains;
 	/** How many times this object needs to be executed before it is declared finished */
-	protected int nrOfSameResultHash = 1; // Needs at least one
+	protected int nrOfSameResultHash = 0;
 	/** Assert that there are multiple output domains received before a IFinishable is finished */
 	protected boolean needsMultipleDifferentExecutors;
 
@@ -35,10 +46,16 @@ public abstract class AbstractFinishable implements IFinishable {
 
 	@Override
 	public boolean isFinished() {
+		logger.info("isFinished():: procedure needs " + nrOfSameResultHash
+				+ " same result hashs to be finished.");
 		if (nrOfSameResultHash > 0) {
 			checkIfFinished();
-			return resultOutputDomain != null;
+			boolean isFinished = resultOutputDomain != null;
+			logger.info("isFinished():: procedure is finished? (" + isFinished + ")");
+			return isFinished;
 		} else { // Doesn't need to be executed (e.g. EndProcedure...)
+			logger.info(
+					"isFinished():: procedure is finished as it needs 0 result hashs (EndProcedure most likely)");
 			return true;
 		}
 	}
@@ -49,7 +66,7 @@ public abstract class AbstractFinishable implements IFinishable {
 		checkIfFinished();
 		return resultOutputDomain;
 	}
- 
+
 	protected boolean containsExecutor(String localExecutorId) {
 		for (IDomain domain : outputDomains) {
 			if (domain.executor().equals(localExecutorId)) {
@@ -66,7 +83,7 @@ public abstract class AbstractFinishable implements IFinishable {
 		}
 		boolean isFinished = false;
 		Number160 r = null;
-		if (currentMaxNrOfSameResultHash() >= nrOfSameResultHash) { 
+		if (currentMaxNrOfSameResultHash() >= nrOfSameResultHash) {
 			for (Number160 resultHash : results.keySet()) {
 				if (resultHash == null) {
 					break;

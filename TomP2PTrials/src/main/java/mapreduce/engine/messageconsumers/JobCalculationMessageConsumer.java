@@ -188,7 +188,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			}
 			logger.info("tryUpdateTasksOrProcedures:: inputDomain.isJobFinished()? "
 					+ inputDomain.isJobFinished());
-			if (inputDomain.isJobFinished()) { 
+			if (inputDomain.isJobFinished()) {
 				logger.info("tryUpdateTasksOrProcedures:: before cancelProcedureExecution("
 						+ procedure.dataInputDomain().toString() + ");");
 
@@ -237,24 +237,39 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	private void tryExecuteProcedure(Job job) {
 		Procedure procedure = job.currentProcedure();
 		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
-		if (!job.isFinished()) {
-			boolean isNotComplete = procedure.tasksSize() < dataInputDomain.expectedNrOfFiles();
-			boolean isNotStartProcedure = procedure.procedureIndex() > 0;
-			if (isNotComplete && isNotStartProcedure) {
-				tryRetrieveMoreTasksFromDHT(procedure);
-			} else {
-				boolean isExpectedToBeComplete = procedure.tasksSize() == dataInputDomain.expectedNrOfFiles();
-				if (isExpectedToBeComplete) {
-					trySubmitTasks(procedure);
-				}
-			}
-		} else {// if(job.isFinished()){
+		logger.info("tryExecuteProcedure:: job.isFinished()? " + job.isFinished());
+		if (job.isFinished()) {
 			dataInputDomain.isJobFinished(true);
 			CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(dataInputDomain,
 					dataInputDomain);
 			dhtConnectionProvider.broadcastCompletion(msg);
-			logger.info("Final data domain to retrieve results from: " + dataInputDomain);
+			logger.info(
+					"tryExecuteProcedure:: final data domain to retrieve results from: " + dataInputDomain);
 			resultPrinter.printResults(dhtConnectionProvider, dataInputDomain.toString());
+
+		} else {//
+			logger.info("tryExecuteProcedure:: is procedure ["+procedure.executable().getClass().getSimpleName()+"] finished? " + procedure.isFinished());
+			if (!procedure.isFinished()) {
+				boolean isNotComplete = procedure.tasksSize() < dataInputDomain.expectedNrOfFiles();
+				boolean isNotStartProcedure = procedure.procedureIndex() > 0;
+
+				logger.info("tryExecuteProcedure::isNotComplete? " + isNotComplete);
+				logger.info("tryExecuteProcedure::isNotStartProcedure? " + isNotStartProcedure);
+				if (isNotComplete && isNotStartProcedure) {
+					logger.info("tryExecuteProcedure:: before tryRetrieveMoreTasksFromDHT("
+							+ procedure.executable().getClass().getSimpleName() + ")");
+					tryRetrieveMoreTasksFromDHT(procedure);
+				}
+				boolean isExpectedToBeComplete = procedure.tasksSize() == dataInputDomain.expectedNrOfFiles();
+
+				logger.info("tryExecuteProcedure:: isExpectedToBeComplete? " + procedure.tasksSize() + " == "
+						+ dataInputDomain.expectedNrOfFiles() + "? " + isExpectedToBeComplete);
+				if (isExpectedToBeComplete) {
+					logger.info("tryExecuteProcedure:: before trySubmitTasks("
+							+ procedure.executable().getClass().getSimpleName() + ")");
+					trySubmitTasks(procedure);
+				}
+			}
 		}
 	}
 
@@ -263,11 +278,11 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		Boolean retrieving = currentlyRetrievingTaskKeysForProcedure.get(dataInputDomain.toString());
 		if ((retrieving == null || !retrieving)) { // This makes sure that if it is concurrently executed,
 													// retrieval is only once called...
-			logger.info("Retrieving tasks for: " + dataInputDomain.toString());
+			logger.info("tryRetrieveMoreTasksFromDHT::Retrieving tasks for: " + dataInputDomain.toString());
 			currentlyRetrievingTaskKeysForProcedure.put(dataInputDomain.toString(), true);
 			dhtConnectionProvider
 					.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, dataInputDomain.toString())
-					.addListener(new BaseFutureAdapter<FutureGet>() {
+					.awaitUninterruptibly().addListener(new BaseFutureAdapter<FutureGet>() {
 
 						@Override
 						public void operationComplete(FutureGet future) throws Exception {
@@ -281,7 +296,6 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 									Task task = Task.create(key, executor.id());
 									procedure.addTask(task);
 								}
-								trySubmitTasks(procedure);
 								currentlyRetrievingTaskKeysForProcedure.remove(dataInputDomain.toString());
 							} else {
 								logger.info("Fail reason: " + future.failedReason());
@@ -292,15 +306,22 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	private void trySubmitTasks(Procedure procedure) {
+		logger.info("trySubmitTasks:: Shuffle tasks: " + procedure.tasksSize());
 		procedure.shuffleTasks();
 		Task task = null;
 		while ((task = procedure.nextExecutableTask()) != null) {
-			addTaskFuture(procedure.dataInputDomain().toString(), task,
-					threadPoolExecutor.submit(createTaskExecutionRunnable(procedure, task), task));
+			if (!task.isFinished()) {
+				logger.info("trySubmitTasks:: next task to add to thread pool executor: " + task.key());
+				Runnable runnable = createTaskExecutionRunnable(procedure, task);
+				Future<?> futureTaskExecution = threadPoolExecutor.submit(runnable, task);
+				addTaskFuture(procedure.dataInputDomain().toString(), task, futureTaskExecution);
+			}
 		}
 	}
 
 	private Runnable createTaskExecutionRunnable(Procedure procedure, Task task) {
+		logger.info("createTaskExecutionRunnable:: create executor();.executeTask(" + task.key() + ", "
+				+ procedure.executable().getClass().getSimpleName() + ")");
 		return new Runnable() {
 			@Override
 			public void run() {
@@ -316,6 +337,8 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			futures.put(dataInputDomainString, taskFutures);
 		}
 		taskFutures.put(task, taskFuture);
+		logger.info("added task future to taskFutures map:taskFutures.put(" + task.key() + ", " + taskFuture
+				+ ");");
 	}
 
 	public void cancelProcedureExecution(String dataInputDomainString) {

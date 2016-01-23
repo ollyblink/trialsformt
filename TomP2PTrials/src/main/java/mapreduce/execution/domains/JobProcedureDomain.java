@@ -1,10 +1,16 @@
 package mapreduce.execution.domains;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import mapreduce.engine.executors.performance.PerformanceInfo;
+import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
 import mapreduce.utils.DomainProvider;
 import net.tomp2p.peers.Number160;
 
 public class JobProcedureDomain implements IDomain {
+	private static Logger logger = LoggerFactory.getLogger(JobProcedureDomain.class);
+
 	/**
 	 * 
 	 */
@@ -138,6 +144,8 @@ public class JobProcedureDomain implements IDomain {
 	}
 
 	public JobProcedureDomain expectedNrOfFiles(int expectedNrOfFiles) {
+		logger.info("expectedNrOfFiles:: before: " + this.expectedNrOfFiles + ", updated to: "
+				+ expectedNrOfFiles);
 		this.expectedNrOfFiles = expectedNrOfFiles;
 		return this;
 	}
