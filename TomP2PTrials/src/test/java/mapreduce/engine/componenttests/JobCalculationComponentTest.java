@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -29,6 +30,7 @@ import mapreduce.execution.jobs.PriorityLevel;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.procedures.WordCountReducer;
+import mapreduce.execution.procedures.WordsWithSameCounts;
 import mapreduce.execution.tasks.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
@@ -39,6 +41,7 @@ import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.storage.Data;
 
 public class JobCalculationComponentTest {
 	private static Logger logger = LoggerFactory.getLogger(JobCalculationComponentTest.class);
@@ -91,18 +94,21 @@ public class JobCalculationComponentTest {
 		// The task has only 1 word to count
 		// Time to live before running out of time is set to Long.MAX_VALUE (should thus never run out of
 		// time)
+		// !!!!!!!!!!!!!!!!!!ADDitionally it filters out words with lower count than 2 (this is important as
+		// it requires something to happen as no output data is produced, nor transferred
 		// ===========================================================================================================================================================
 
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
 				.timeToLive(Long.MAX_VALUE)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
+				.addSucceedingProcedure(WordCountReducer.create(2), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
-		tasks.add(new Tuple(Task.create("testfile1", "S1"), "hello"));
+		tasks.add(new Tuple(Task.create("testfile1", "S1"), "hello hello world"));
+		HashMap<String, Integer> res2 = filter(getCounts(tasks), 2);
 
-		executeTest(job, tasks);
+		executeTest(job, tasks, res2);
 	}
 
 	@Test
@@ -125,8 +131,8 @@ public class JobCalculationComponentTest {
 
 		List<Tuple> tasks = new ArrayList<>();
 		tasks.add(new Tuple(Task.create("testfile1", "S1"), "the quick fox jumps over the lazy brown dog"));
-
-		executeTest(job, tasks);
+		HashMap<String, Integer> res = getCounts(tasks);
+		executeTest(job, tasks, res);
 	}
 
 	@Test
@@ -150,8 +156,8 @@ public class JobCalculationComponentTest {
 		List<Tuple> tasks = new ArrayList<>();
 		tasks.add(new Tuple(Task.create("testfile1", "S1"), "the quick fox jumps over the lazy brown dog"));
 		tasks.add(new Tuple(Task.create("testfile2", "S1"), "the quick fox jumps over the lazy brown dog"));
-
-		executeTest(job, tasks);
+		HashMap<String, Integer> res = getCounts(tasks);
+		executeTest(job, tasks, res);
 	}
 
 	@Test
@@ -180,8 +186,8 @@ public class JobCalculationComponentTest {
 				new Tuple(Task.create("testfile_" + counter++, "S1"), "sphinx of black quartz judge my vow"));
 		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"),
 				"the five boxing wizards jump quickly"));
-
-		executeTest(job, tasks);
+		HashMap<String, Integer> res = getCounts(tasks);
+		executeTest(job, tasks, res);
 	}
 
 	@Test
@@ -193,24 +199,41 @@ public class JobCalculationComponentTest {
 		// There is an external file to be processed
 		// Time to live before running out of time is set to Long.MAX_VALUE (should thus never run out of
 		// time)
+		// !!!!!!!!!!!!!!!!!!ADDitionally it filters out words with lower count than 10 (this is important as
+		// it requires something to happen as no output data is produced, nor transferred
 		// ===========================================================================================================================================================
 		String text = FileUtils.INSTANCE.readLines(System.getProperty("user.dir")
 				+ "/src/test/java/mapreduce/engine/componenttests/testfile.txt");
+		int MAX_COUNT = 10;
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
 				.timeToLive(Long.MAX_VALUE)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
+				.addSucceedingProcedure(WordCountReducer.create(MAX_COUNT), null, 1, 1, false, false)
+				// .addSucceedingProcedure(WordsWithSameCounts.create(), null, 1, 1, false, false)
+				;
 
 		List<Tuple> tasks = new ArrayList<>();
 		int counter = 0;
 		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), text));
-
-		executeTest(job, tasks);
+		HashMap<String, Integer> res = getCounts(tasks);
+		HashMap<String, Integer> res2 = filter(res, MAX_COUNT);
+		executeTest(job, tasks, res2);
 	}
 
-	private void executeTest(Job job, List<Tuple> tasks) throws ClassNotFoundException, IOException {
-		HashMap<String, Integer> res = getCounts(tasks);
+	private HashMap<String, Integer> filter(HashMap<String, Integer> res, int maxCount) {
+		HashMap<String, Integer> res2 = new HashMap<>();
+		for (String key : res.keySet()) {
+			if (res.get(key) >= maxCount) {
+				res2.put(key, res.get(key));
+			}
+		}
+		return res2;
+	}
+
+	private void executeTest(Job job, List<Tuple> tasks, Map<String, Integer> res)
+			throws ClassNotFoundException, IOException {
+
 		execute(job, tasks);
 
 		FutureGet getKeys = dhtCon
@@ -241,7 +264,7 @@ public class JobCalculationComponentTest {
 				String word = tokens.nextToken();
 				Integer count = res.get(word);
 				if (count == null) {
-					count = 0; 
+					count = 0;
 				}
 				res.put(word, ++count);
 			}
@@ -305,7 +328,7 @@ public class JobCalculationComponentTest {
 
 		while (!executorBCHandler.getJob(job.id()).isFinished()) {
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(5000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

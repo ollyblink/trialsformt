@@ -12,10 +12,8 @@ public abstract class AbstractUpdate implements IUpdate {
 	@Override
 	public void executeUpdate(IDomain outputDomain, Procedure procedure) {
 		if (outputDomain != null && procedure != null) {
-			logger.info("executeUpdate(" + outputDomain + ", " + procedure.executable().getClass().getSimpleName()
-					+ ");");
-			try {
-				logger.info("executeUpdate:: before internalUpdate()");
+			logger.info("executeUpdate(" + procedure.executable().getClass().getSimpleName() + ");");
+			try { 
 				internalUpdate(outputDomain, procedure);
 			} catch (Exception e) {
 				logger.warn("Exception caught", e);

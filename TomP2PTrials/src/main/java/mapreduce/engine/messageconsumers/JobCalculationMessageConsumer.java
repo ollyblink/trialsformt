@@ -119,7 +119,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			logger.info("handleReceivedMessage:: before tryExecuteProcedure");
 			tryExecuteProcedure(job);
 		}
-		logger.info("handleReceivedMessage:: finished");
+		logger.info("handleReceivedMessage:: done");
 	}
 
 	private void tryIncrementProcedure(Job job, JobProcedureDomain dataInputDomain, JobProcedureDomain rJPD) {
@@ -132,7 +132,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			// Means this executor is behind in the execution than the one that sent this message -->
 			// increment until we are up to date again
 			logger.info("tryIncrementProcedure:: before cancel execution on data input domain: "
-					+ job.currentProcedure().dataInputDomain().toString());
+					+ job.currentProcedure().dataInputDomain().procedureSimpleName().toString());
 			cancelProcedureExecution(job.currentProcedure().dataInputDomain().toString());
 			logger.info("tryIncrementProcedure:: before incrementing procedure index from "
 					+ job.currentProcedure().procedureIndex() + " to " + receivedPIndex);
@@ -154,16 +154,14 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 					+ job.currentProcedure().executable().getClass().getSimpleName() + " from null to "
 					+ dataInputDomain);
 		}
-		logger.info("tryIncrementProcedure:: finished");
+		logger.info("tryIncrementProcedure:: done");
 
 	}
 
 	private void tryUpdateTasksOrProcedures(Job job, JobProcedureDomain inputDomain, IDomain outputDomain,
 			IUpdate iUpdate) {
-		logger.info("tryUpdateTasksOrProcedures:: entered!");
-
 		Procedure procedure = job.currentProcedure();
-		logger.info("tryUpdateTasksOrProcedures::procedure?: "
+		logger.info("tryUpdateTasksOrProcedures::procedure? "
 				+ procedure.executable().getClass().getSimpleName());
 
 		logger.info("tryUpdateTasksOrProcedures::procedure.dataInputDomain().equals(inputDomain)?: "
@@ -190,7 +188,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 					+ inputDomain.isJobFinished());
 			if (inputDomain.isJobFinished()) {
 				logger.info("tryUpdateTasksOrProcedures:: before cancelProcedureExecution("
-						+ procedure.dataInputDomain().toString() + ");");
+						+ procedure.dataInputDomain().procedureSimpleName() + ");");
 
 				cancelProcedureExecution(procedure.dataInputDomain().toString());
 			} else { // Only here: execute the received task/procedure update
@@ -237,8 +235,9 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	private void tryExecuteProcedure(Job job) {
 		Procedure procedure = job.currentProcedure();
 		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
-		logger.info("tryExecuteProcedure:: job.isFinished()? " + job.isFinished());
-		if (job.isFinished()) {
+		boolean isJobFinished = job.isFinished();
+		logger.info("tryExecuteProcedure:: job.isFinished()? " + isJobFinished);
+		if (isJobFinished) {
 			dataInputDomain.isJobFinished(true);
 			CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(dataInputDomain,
 					dataInputDomain);
@@ -248,8 +247,9 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			resultPrinter.printResults(dhtConnectionProvider, dataInputDomain.toString());
 
 		} else {//
-			logger.info("tryExecuteProcedure:: is procedure ["+procedure.executable().getClass().getSimpleName()+"] finished? " + procedure.isFinished());
-			if (!procedure.isFinished()) {
+			boolean isProcedureFinished = procedure.isFinished();
+			logger.info("tryExecuteProcedure:: is procedure ["+procedure.executable().getClass().getSimpleName()+"] finished? " + isProcedureFinished);
+			if (!isProcedureFinished) {
 				boolean isNotComplete = procedure.tasksSize() < dataInputDomain.expectedNrOfFiles();
 				boolean isNotStartProcedure = procedure.procedureIndex() > 0;
 
@@ -288,7 +288,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 						public void operationComplete(FutureGet future) throws Exception {
 							if (future.isSuccess()) {
 								int actualNrOfTasks = future.dataMap().size();
-								logger.info("retrieved " + actualNrOfTasks + " tasks from dataInputDomain: "
+								logger.info("tryRetrieveMoreTasksFromDHT::retrieved " + actualNrOfTasks + " tasks from dataInputDomain: "
 										+ dataInputDomain.toString());
 								dataInputDomain.expectedNrOfFiles(actualNrOfTasks);
 								for (Number640 keyHash : future.dataMap().keySet()) {
@@ -320,7 +320,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	}
 
 	private Runnable createTaskExecutionRunnable(Procedure procedure, Task task) {
-		logger.info("createTaskExecutionRunnable:: create executor();.executeTask(" + task.key() + ", "
+		logger.info("createTaskExecutionRunnable:: create executor().executeTask(" + task.key() + ", "
 				+ procedure.executable().getClass().getSimpleName() + ")");
 		return new Runnable() {
 			@Override

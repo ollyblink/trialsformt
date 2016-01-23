@@ -10,9 +10,19 @@ public class WordCountReducer implements IExecutable {
 	 * 
 	 */
 	private static final long serialVersionUID = 6674686068934510011L;
+	/** Only keeps counts that are larger than this number (default is 0, keeping all counts) */
+	private int countAbove;
 
-	public static IExecutable create() {
-		return new WordCountReducer();
+	private WordCountReducer(int countAbove) {
+		this.countAbove = countAbove;
+	}
+
+	public static WordCountReducer create() {
+		return new WordCountReducer(0);
+	}
+
+	public static WordCountReducer create(int countAbove) {
+		return new WordCountReducer(countAbove);
 	}
 
 	@Override
@@ -21,9 +31,9 @@ public class WordCountReducer implements IExecutable {
 		for (Object o : valuesIn) {
 			sum += (Integer) o;
 		}
-//		if (sum > 2) {
+		if (sum >= countAbove) {
 			context.write(keyIn, sum);
-//		}
+		}
 	}
 
 }
