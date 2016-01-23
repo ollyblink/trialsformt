@@ -4,8 +4,10 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.junit.After;
 import org.junit.Before;
@@ -32,6 +34,7 @@ import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.FileSize;
+import mapreduce.utils.FileUtils;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.Futures;
@@ -67,6 +70,17 @@ public class JobCalculationComponentTest {
 		dhtCon.shutdown();
 	}
 
+	private static class Tuple {
+
+		public Tuple(Task task, Object value) {
+			this.task = task;
+			this.value = value;
+		}
+
+		Task task;
+		Object value;
+	}
+
 	@Test
 	public void testAllOnceOneInitialTaskOneWord() throws Exception {
 		// ===========================================================================================================================================================
@@ -88,35 +102,7 @@ public class JobCalculationComponentTest {
 		List<Tuple> tasks = new ArrayList<>();
 		tasks.add(new Tuple(Task.create("testfile1", "S1"), "hello"));
 
-		execute(job, tasks);
-
-		FutureGet getKeys = dhtCon
-				.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS,
-						executorBCHandler.getJob(job.id()).currentProcedure().dataInputDomain().toString())
-				.awaitUninterruptibly();
-		if (getKeys.isSuccess()) {
-			Set<Number640> keySet = getKeys.dataMap().keySet();
-			assertEquals(1, keySet.size());
-			List<String> resultKeys = new ArrayList<>();
-			for (Number640 keyN : keySet) {
-				String outKey = (String) getKeys.dataMap().get(keyN).object();
-				resultKeys.add(outKey);
-			}
-			assertEquals(1, resultKeys.size());
-			assertEquals(true, resultKeys.contains("hello"));
-			checkGets(job, resultKeys);
-		}
-	}
-
-	private static class Tuple {
-
-		public Tuple(Task task, Object value) {
-			this.task = task;
-			this.value = value;
-		}
-
-		Task task;
-		Object value;
+		executeTest(job, tasks);
 	}
 
 	@Test
@@ -126,7 +112,7 @@ public class JobCalculationComponentTest {
 		// Every task needs to be executed only once
 		// Every procedure needs to be executed only once
 		// There is only 1 initial task to execute
-		// The task has 8 words to count
+		// The task has 9 words to count
 		// Time to live before running out of time is set to Long.MAX_VALUE (should thus never run out of
 		// time)
 		// ===========================================================================================================================================================
@@ -138,8 +124,93 @@ public class JobCalculationComponentTest {
 				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
-		tasks.add(new Tuple(Task.create("testfile1", "S1"), "the quick fox jumps over the lazy dog"));
+		tasks.add(new Tuple(Task.create("testfile1", "S1"), "the quick fox jumps over the lazy brown dog"));
 
+		executeTest(job, tasks);
+	}
+
+	@Test
+	public void testAllOnceOneInitialTaskMultipleSameInitialTasks() throws Exception {
+		// ===========================================================================================================================================================
+		// This is the simplest possible trial of the word count example.
+		// Every task needs to be executed only once
+		// Every procedure needs to be executed only once
+		// There is only 2 initial tasks to execute
+		// The tasks have 9 words each (twice the same) to count
+		// Time to live before running out of time is set to Long.MAX_VALUE (should thus never run out of
+		// time)
+		// ===========================================================================================================================================================
+
+		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
+				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
+						false)
+				.timeToLive(Long.MAX_VALUE)
+				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
+
+		List<Tuple> tasks = new ArrayList<>();
+		tasks.add(new Tuple(Task.create("testfile1", "S1"), "the quick fox jumps over the lazy brown dog"));
+		tasks.add(new Tuple(Task.create("testfile2", "S1"), "the quick fox jumps over the lazy brown dog"));
+
+		executeTest(job, tasks);
+	}
+
+	@Test
+	public void testAllOnceOneInitialTaskMultipleDifferentInitialTasks() throws Exception {
+		// ===========================================================================================================================================================
+		// This is the simplest possible trial of the word count example.
+		// Every task needs to be executed only once
+		// Every procedure needs to be executed only once
+		// There is only 3 initial tasks to execute
+		// The tasks have 8 words each (twice the same) to count
+		// Time to live before running out of time is set to Long.MAX_VALUE (should thus never run out of
+		// time)
+		// ===========================================================================================================================================================
+
+		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
+				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
+						false)
+				.timeToLive(Long.MAX_VALUE)
+				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
+
+		List<Tuple> tasks = new ArrayList<>();
+		int counter = 0;
+		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"),
+				"the quick fox jumps over the lazy brown dog"));
+		tasks.add(
+				new Tuple(Task.create("testfile_" + counter++, "S1"), "sphinx of black quartz judge my vow"));
+		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"),
+				"the five boxing wizards jump quickly"));
+
+		executeTest(job, tasks);
+	}
+
+	@Test
+	public void testAllOnceExternalInputFile() throws Exception {
+		// ===========================================================================================================================================================
+		// This is the simplest possible trial of the word count example.
+		// Every task needs to be executed only once
+		// Every procedure needs to be executed only once
+		// There is an external file to be processed
+		// Time to live before running out of time is set to Long.MAX_VALUE (should thus never run out of
+		// time)
+		// ===========================================================================================================================================================
+		String text = FileUtils.INSTANCE.readLines(System.getProperty("user.dir")
+				+ "/src/test/java/mapreduce/engine/componenttests/testfile.txt");
+		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
+				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
+						false)
+				.timeToLive(Long.MAX_VALUE)
+				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
+
+		List<Tuple> tasks = new ArrayList<>();
+		int counter = 0;
+		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), text));
+
+		executeTest(job, tasks);
+	}
+
+	private void executeTest(Job job, List<Tuple> tasks) throws ClassNotFoundException, IOException {
+		HashMap<String, Integer> res = getCounts(tasks);
 		execute(job, tasks);
 
 		FutureGet getKeys = dhtCon
@@ -148,27 +219,39 @@ public class JobCalculationComponentTest {
 				.awaitUninterruptibly();
 		if (getKeys.isSuccess()) {
 			Set<Number640> keySet = getKeys.dataMap().keySet();
-			assertEquals(1, keySet.size());
 			List<String> resultKeys = new ArrayList<>();
 			for (Number640 keyN : keySet) {
 				String outKey = (String) getKeys.dataMap().get(keyN).object();
 				resultKeys.add(outKey);
 			}
-			assertEquals(7, resultKeys.size());
-			assertEquals(true, resultKeys.contains("the"));
-			assertEquals(true, resultKeys.contains("quick"));
-			assertEquals(true, resultKeys.contains("fox"));
-			assertEquals(true, resultKeys.contains("jumps"));
-			assertEquals(true, resultKeys.contains("over"));
-			assertEquals(true, resultKeys.contains("lazy"));
-			assertEquals(true, resultKeys.contains("dog"));
-			for (String key : resultKeys) {
-				checkGets(job, key);
+			assertEquals(res.keySet().size(), resultKeys.size());
+			for (String key : res.keySet()) {
+				assertEquals(true, resultKeys.contains(key));
+				checkGets(job, key, 1, res.get(key));
 			}
 		}
 	}
 
-	private void checkGets(Job job, String key, int nrOfValues) throws ClassNotFoundException, IOException {
+	private HashMap<String, Integer> getCounts(List<Tuple> tasks) {
+		HashMap<String, Integer> res = new HashMap<>();
+		for (Tuple tuple : tasks) {
+			String valueString = (String) tuple.value;
+			StringTokenizer tokens = new StringTokenizer(valueString);
+			while (tokens.hasMoreTokens()) {
+				String word = tokens.nextToken();
+				Integer count = res.get(word);
+				if (count == null) {
+					count = 0; 
+				}
+				res.put(word, ++count);
+			}
+
+		}
+		return res;
+	}
+
+	private void checkGets(Job job, String key, int nrOfValues, int sum)
+			throws ClassNotFoundException, IOException {
 		FutureGet getValues = dhtCon
 				.getAll(key,
 						executorBCHandler.getJob(job.id()).currentProcedure().dataInputDomain().toString())
@@ -182,7 +265,7 @@ public class JobCalculationComponentTest {
 				resultValues.add(outValue);
 			}
 			assertEquals(nrOfValues, resultValues.size());
-			assertEquals(true, resultValues.contains(1));
+			assertEquals(true, resultValues.contains(sum));
 			logger.info("Results: " + key + " with values " + resultValues);
 		}
 	}
@@ -198,7 +281,7 @@ public class JobCalculationComponentTest {
 				procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
 		procedure.dataInputDomain(JobProcedureDomain
 				.create(job.id(), job.submissionCount(), "S1", DomainProvider.INITIAL_PROCEDURE, -1)
-				.expectedNrOfFiles(1)).addOutputDomain(outputJPD);
+				.expectedNrOfFiles(tasks.size())).addOutputDomain(outputJPD);
 
 		List<IBCMessage> msgs = new ArrayList<>();
 		for (Tuple tuple : tasks) {
