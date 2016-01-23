@@ -78,18 +78,24 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 	@Override
 	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain,
 			JobProcedureDomain inputDomain) {
+		logger.info("handleCompletedProcedure:: entered");
 		handleReceivedMessage(job, outputDomain, inputDomain, new ProcedureUpdate(job, this));
 	}
 
 	@Override
 	public void handleCompletedTask(Job job, ExecutorTaskDomain outputDomain,
 			JobProcedureDomain inputDomain) {
+		logger.info("handleCompletedTask:: entered");
 		handleReceivedMessage(job, outputDomain, inputDomain, new TaskUpdate(this));
 	}
 
 	private void handleReceivedMessage(Job job, IDomain outputDomain, JobProcedureDomain inputDomain,
 			IUpdate iUpdate) {
+		logger.info("handleReceivedMessage:: entered");
 		if (job == null || outputDomain == null || inputDomain == null || iUpdate == null) {
+
+			logger.info("handleReceivedMessage:: input was null: job: " + job + ", outputDomain: "
+					+ outputDomain + ", inputDomain:" + inputDomain + ", iUpdate: " + iUpdate);
 			return;
 		}
 		JobProcedureDomain rJPD = (outputDomain instanceof JobProcedureDomain
@@ -97,38 +103,78 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 				: ((ExecutorTaskDomain) outputDomain).jobProcedureDomain());
 
 		boolean receivedOutdatedMessage = job.currentProcedure().procedureIndex() > rJPD.procedureIndex();
+		logger.info("handleReceivedMessage:: before if/else, receivedOutdatedMessage: "
+				+ receivedOutdatedMessage + ", received JPD: " + rJPD);
 		if (receivedOutdatedMessage) {
-			logger.info("Received an old message: nothing to do.");
+			logger.info("handleReceivedMessage:: Received an old message: nothing to do.");
 			return;
 		} else {
 			// need to increment procedure because we are behind in execution?
+			logger.info("handleReceivedMessage:: before tryIncrementProcedure");
 			tryIncrementProcedure(job, inputDomain, rJPD);
 			// Same input data? Then we may try to update tasks/procedures
+			logger.info("handleReceivedMessage:: before tryUpdateTasksOrProcedure");
 			tryUpdateTasksOrProcedures(job, inputDomain, outputDomain, iUpdate);
 			// Anything left to execute for this procedure?
+			logger.info("handleReceivedMessage:: before tryExecuteProcedure");
 			tryExecuteProcedure(job);
 		}
+		logger.info("handleReceivedMessage:: finished");
 	}
 
 	private void tryIncrementProcedure(Job job, JobProcedureDomain dataInputDomain, JobProcedureDomain rJPD) {
+		logger.info("tryIncrementProcedure:: entered");
 		int currentProcIndex = job.currentProcedure().procedureIndex();
 		int receivedPIndex = rJPD.procedureIndex();
+		logger.info("tryIncrementProcedure:: currentProcIndex < receivedPIndex? "
+				+ (currentProcIndex < receivedPIndex));
 		if (currentProcIndex < receivedPIndex) {
 			// Means this executor is behind in the execution than the one that sent this message -->
 			// increment until we are up to date again
+			logger.info("tryIncrementProcedure:: before cancel execution on data input domain: "
+					+ job.currentProcedure().dataInputDomain().toString());
 			cancelProcedureExecution(job.currentProcedure().dataInputDomain().toString());
+			logger.info("tryIncrementProcedure:: before incrementing procedure index from "
+					+ job.currentProcedure().procedureIndex() + " to " + receivedPIndex);
 			while (job.currentProcedure().procedureIndex() < receivedPIndex) {
 				job.incrementProcedureIndex();
 			}
-			job.currentProcedure().dataInputDomain(dataInputDomain);
+
+			logger.info("tryIncrementProcedure:: updated procedure index to "
+					+ job.currentProcedure().procedureIndex());
 		} // no else needed... if it's the same procedure index, we are up to date and can try to update
+		logger.info("tryIncrementProcedure:: job.currentProcedure().dataInputDomain() == null? "
+				+ (job.currentProcedure().dataInputDomain() == null));
+
+		if (job.currentProcedure().dataInputDomain() == null) { // may happen in case StartProcedure tasks are
+																// received
+
+			job.currentProcedure().dataInputDomain(dataInputDomain);
+			logger.info("tryIncrementProcedure:: updated input domain for proc: "
+					+ job.currentProcedure().executable().getClass().getSimpleName() + " from null to "
+					+ dataInputDomain);
+		}
+		logger.info("tryIncrementProcedure:: finished");
+
 	}
 
 	private void tryUpdateTasksOrProcedures(Job job, JobProcedureDomain inputDomain, IDomain outputDomain,
 			IUpdate iUpdate) {
+		logger.info("tryUpdateTasksOrProcedures:: entered!");
+
 		Procedure procedure = job.currentProcedure();
+		logger.info("tryUpdateTasksOrProcedures::procedure?: "
+				+ procedure.executable().getClass().getSimpleName());
+
+		logger.info("tryUpdateTasksOrProcedures::procedure.dataInputDomain().equals(inputDomain)?: "
+				+ procedure.dataInputDomain().equals(inputDomain));
 		if (procedure.dataInputDomain().equals(inputDomain)) { // same procedure, same input data location:
 																// everything is fine!
+			logger.info(
+					"tryUpdateTasksOrProcedures::procedure.dataInputDomain().expectedNrOfFiles() < inputDomain.expectedNrOfFiles()?: "
+							+ procedure.dataInputDomain().expectedNrOfFiles() + " < "
+							+ inputDomain.expectedNrOfFiles() + ": " + (procedure.dataInputDomain()
+									.expectedNrOfFiles() < inputDomain.expectedNrOfFiles()));
 			if (procedure.dataInputDomain().expectedNrOfFiles() < inputDomain.expectedNrOfFiles()) {// looks
 																									// like
 																									// the
@@ -137,15 +183,27 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 																									// more
 																									// already
 				procedure.dataInputDomain().expectedNrOfFiles(inputDomain.expectedNrOfFiles());
+				logger.info("tryUpdateTasksOrProcedures:: updated nr of expected files to "
+						+ inputDomain.expectedNrOfFiles());
 			}
+			logger.info("tryUpdateTasksOrProcedures:: inputDomain.isJobFinished()? "
+					+ inputDomain.isJobFinished());
+			if (inputDomain.isJobFinished()) { 
+				logger.info("tryUpdateTasksOrProcedures:: before cancelProcedureExecution("
+						+ procedure.dataInputDomain().toString() + ");");
 
-			if (!inputDomain.isJobFinished()) { // Only here: execute the received task/procedure update
-				iUpdate.executeUpdate(outputDomain, procedure);
-			} else {
 				cancelProcedureExecution(procedure.dataInputDomain().toString());
+			} else { // Only here: execute the received task/procedure update
+				logger.info("tryUpdateTasksOrProcedures:: before iUpdate.executeUpdate(" + outputDomain + ", "
+						+ procedure.executable().getClass().getSimpleName() + ");");
+				iUpdate.executeUpdate(outputDomain, procedure);
 			}
 		} else { // May have to change input data location (inputDomain)
 			// executor of received message executes on different input data! Need to synchronize
+			logger.info(
+					"tryUpdateTasksOrProcedures::else if(procedure.dataInputDomain().equals(inputDomain)){before changeDataInputDomain("
+							+ inputDomain + "," + procedure.executable().getClass().getSimpleName() + ")}");
+
 			changeDataInputDomain(inputDomain, procedure);
 		}
 	}

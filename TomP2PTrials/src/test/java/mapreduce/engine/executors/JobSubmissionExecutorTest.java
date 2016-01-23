@@ -56,8 +56,7 @@ public class JobSubmissionExecutorTest {
 		String outputFileFolder = base + "testOutputFiles/";
 
 		JobSubmissionBroadcastHandler sBCHandler = JobSubmissionBroadcastHandler.create();
-		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(5001, 1, sBCHandler)
-				.broadcastHandler(sBCHandler);
+		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(sBCHandler);
 
 		JobSubmissionMessageConsumer sMsgConsumer = JobSubmissionMessageConsumer.create();
 		sBCHandler.messageConsumer(
@@ -68,7 +67,7 @@ public class JobSubmissionExecutorTest {
 				.resultOutputFolder(outputFileFolder, FileSize.MEGA_BYTE)
 				.maxFileSize(FileSize.TWO_KILO_BYTES);
 		sExecutor.submit(job);
-//		Thread.sleep(Long.MAX_VALUE);
+		// Thread.sleep(Long.MAX_VALUE);
 
 	}
 
@@ -111,8 +110,8 @@ public class JobSubmissionExecutorTest {
 
 		Random random = new Random();
 		JobSubmissionBroadcastHandler bcHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
-		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(random.nextInt(40000) + 4000, 1,
-				bcHandler);
+
+		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(bcHandler);
 
 		sExecutor.dhtConnectionProvider(dht);
 		JobProcedureDomain outputJPD = JobProcedureDomain.create("J1", 0, sExecutor.id(),
@@ -139,8 +138,8 @@ public class JobSubmissionExecutorTest {
 
 		Random random = new Random();
 		JobSubmissionBroadcastHandler bcHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
-		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(random.nextInt(40000) + 4000, 1,
-				bcHandler);
+
+		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(bcHandler);
 
 		sExecutor.dhtConnectionProvider(dht);
 		JobProcedureDomain outputJPD = JobProcedureDomain.create("J1", 0, sExecutor.id(),
@@ -162,8 +161,8 @@ public class JobSubmissionExecutorTest {
 	public void testSubmit() throws Exception {
 		Random random = new Random();
 		JobSubmissionBroadcastHandler bcHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
-		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(random.nextInt(40000) + 4000, 1,
-				bcHandler);
+
+		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(bcHandler);
 
 		sExecutor.dhtConnectionProvider(dht);
 		String fileInputFolderPath = System.getProperty("user.dir")
@@ -217,8 +216,8 @@ public class JobSubmissionExecutorTest {
 	public void testRetrieveAndStoreDataOfFinishedJob() throws Exception {
 		Random random = new Random();
 		JobSubmissionBroadcastHandler bcHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
-		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(random.nextInt(40000) + 4000, 1,
-				bcHandler);
+
+		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(bcHandler);
 		sExecutor.dhtConnectionProvider(dht);
 		JobProcedureDomain domain = JobProcedureDomain.create("J1", 0, "E1",
 				WordCountReducer.class.getSimpleName(), 2);

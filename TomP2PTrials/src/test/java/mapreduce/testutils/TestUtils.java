@@ -13,7 +13,10 @@ import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.SyncedCollectionProvider;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.p2p.PeerBuilder;
+import net.tomp2p.peers.Number160;
 
 public class TestUtils {
 	private static Random random = new Random();
@@ -40,25 +43,26 @@ public class TestUtils {
 
 	}
 
-	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers,
+	static final Random RND = new Random(42L);
+
+	public static IDHTConnectionProvider getTestConnectionProvider(
 			AbstractMapReduceBroadcastHandler bcHandler) {
 		String bootstrapIP = "";
-		int bootstrapPort = port;
-		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
-		List<PeerDHT> peers = SyncedCollectionProvider.syncedArrayList();
-		PeerDHT[] peerArray = null;
+		int bootstrapPort = random.nextInt(40000) + 4000;
 
+		PeerDHT peerDHT = null;
 		try {
-			peerArray = Example.createAndAttachPeersDHT(nrOfPeers, bootstrapPort, bcHandler);
-		} catch (IOException e) {
+			PeerBuilder peerBuilder = new PeerBuilder(new Number160(RND)).ports(bootstrapPort);
+			if (bcHandler != null) {
+				peerBuilder.broadcastHandler(bcHandler);
+			}
+			peerDHT = new PeerBuilderDHT(peerBuilder.start()).start();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
-		Example.bootstrap(peerArray);
-		Collections.addAll(peers, peerArray);
-
 		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider
-				.create(bootstrapIP, bootstrapPort, bootstrapPort).externalPeers(peers.get(0), bcHandler);
+				.create(bootstrapIP, bootstrapPort, bootstrapPort).externalPeers(peerDHT, bcHandler);
 		return dhtConnectionProvider;
 	}
 

@@ -1,6 +1,8 @@
 package mapreduce.engine.broadcasting.broadcasthandlers;
 
 import mapreduce.engine.broadcasting.messages.IBCMessage;
+import mapreduce.engine.messageconsumers.IMessageConsumer;
+import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
 import mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer;
 import mapreduce.execution.jobs.Job;
 
@@ -63,5 +65,9 @@ public class JobSubmissionBroadcastHandler extends AbstractMapReduceBroadcastHan
 	private JobSubmissionBroadcastHandler(int nrOfConcurrentlyExecutedBCMessages) {
 		super(nrOfConcurrentlyExecutedBCMessages);
 	}
-
+	@Override
+	public JobSubmissionBroadcastHandler messageConsumer(IMessageConsumer messageConsumer) {
+		return (JobSubmissionBroadcastHandler) super.messageConsumer(
+				(JobSubmissionMessageConsumer) messageConsumer);
+	}
 }

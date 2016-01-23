@@ -87,7 +87,7 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 		}
 		return null;
 	}
-
+ 
 	public AbstractMapReduceBroadcastHandler messageConsumer(IMessageConsumer messageConsumer) {
 		this.messageConsumer = messageConsumer;
 		return this;
