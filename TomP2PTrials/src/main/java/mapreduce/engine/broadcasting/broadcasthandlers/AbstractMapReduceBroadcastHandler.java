@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.ListMultimap;
 
 import mapreduce.engine.broadcasting.broadcasthandlers.timeout.AbstractTimeout;
@@ -21,7 +24,7 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadcastHandler {
-	// private static Logger logger = LoggerFactory.getLogger(AbstractMapReduceBroadcastHandler.class);
+	private static Logger logger = LoggerFactory.getLogger(AbstractMapReduceBroadcastHandler.class);
 
 	protected IDHTConnectionProvider dhtConnectionProvider;
 	protected IMessageConsumer messageConsumer;
@@ -30,11 +33,10 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 	protected ListMultimap<Job, Future<?>> jobFuturesFor = SyncedCollectionProvider.syncedArrayListMultimap();
 
 	protected Map<Job, AbstractTimeout> timeouts = SyncedCollectionProvider.syncedHashMap();
-	private Thread timeoutThread;
+	private volatile Thread timeoutThread;
 
 	protected AbstractMapReduceBroadcastHandler(int nrOfConcurrentlyExecutedBCMessages) {
 		this.taskExecutionServer = PriorityExecutor.newFixedThreadPool(nrOfConcurrentlyExecutedBCMessages);
-
 	}
 
 	@Override
@@ -54,21 +56,29 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 
 	public void abortJobExecution(Job job) {
 		List<Future<?>> jobFutures = jobFuturesFor.get(job);
-		for (Future<?> jobFuture : jobFutures) {
-			if (!jobFuture.isCancelled()) {
-				jobFuture.cancel(true);
+		synchronized (jobFutures) {
+			for (Future<?> jobFuture : jobFutures) {
+				if (!jobFuture.isCancelled()) {
+					jobFuture.cancel(true);
+				}
 			}
 		}
 	}
 
 	protected void updateTimeout(Job job, IBCMessage bcMessage) {
-		if (timeouts.containsKey(job)) {
-			timeouts.get(job).retrievalTimestamp(System.currentTimeMillis(), bcMessage);
-		} else {
-			AbstractTimeout timeout = AbstractTimeout.create(this, job, System.currentTimeMillis(), bcMessage, job.timeToLive());
-			this.timeouts.put(job, timeout);
-			this.timeoutThread = new Thread(timeout);// timeoutcounter for job
-			this.timeoutThread.start();
+		synchronized (timeouts) {
+			if (timeouts.containsKey(job)) {
+				timeouts.get(job).retrievalTimestamp(System.currentTimeMillis(), bcMessage);
+			} else {
+				AbstractTimeout timeout = AbstractTimeout.create(this, job, System.currentTimeMillis(),
+						bcMessage, job.timeToLive());
+				this.timeouts.put(job, timeout);
+				logger.info("Timeout: " + timeout);
+				this.timeoutThread = new Thread(timeout);// timeoutcounter for job
+
+				logger.info("Thread: " + timeoutThread);
+				this.timeoutThread.start();
+			}
 		}
 	}
 
@@ -80,14 +90,16 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 	}
 
 	public Job getJob(String jobId) {
-		for (Job job : jobFuturesFor.keySet()) {
-			if (job.id().equals(jobId)) {
-				return job;
+		synchronized (jobFuturesFor) {
+			for (Job job : jobFuturesFor.keySet()) {
+				if (job.id().equals(jobId)) {
+					return job;
+				}
 			}
+			return null;
 		}
-		return null;
 	}
- 
+
 	public AbstractMapReduceBroadcastHandler messageConsumer(IMessageConsumer messageConsumer) {
 		this.messageConsumer = messageConsumer;
 		return this;
@@ -97,7 +109,8 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 		return this.messageConsumer;
 	}
 
-	public AbstractMapReduceBroadcastHandler dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+	public AbstractMapReduceBroadcastHandler dhtConnectionProvider(
+			IDHTConnectionProvider dhtConnectionProvider) {
 		this.dhtConnectionProvider = dhtConnectionProvider;
 		return this;
 	}

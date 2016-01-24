@@ -26,7 +26,7 @@ public class Job implements Serializable, Cloneable {
 	// private static final int DEFAULT_NUMBER_OF_ADD_TRIALS = 3; // 3 times
 	// private static final long DEFAULT_TIME_TO_LIVE_IN_MS = 10000; // 10secs
 	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
-	private static final FileSize DEFAULT_MAX_FILE_SIZE = FileSize.THIRTY_TWO_KILO_BYTES;
+	private static final FileSize DEFAULT_MAX_FILE_SIZE = FileSize.MEGA_BYTE;
 	private static final boolean DEFAULT_USE_LOCAL_STORAGE_FIRST = false;
 	private static final long DEFAULT_TIME_TO_LIVE = 5000;
 	private static final String DEFAULT_RESULT_OUTPUT_FOLDER = System.getProperty("user.dir") + "/tmp/";

@@ -77,30 +77,34 @@ public abstract class AbstractFinishable implements IFinishable {
 	}
 
 	protected void checkIfFinished() {
-		ListMultimap<Number160, IDomain> results = ArrayListMultimap.create();
+		ListMultimap<Number160, IDomain> results = SyncedCollectionProvider.syncedArrayListMultimap();
 		for (IDomain domain : outputDomains) {
 			results.put(domain.resultHash(), domain);
 		}
 		boolean isFinished = false;
 		Number160 r = null;
 		if (currentMaxNrOfSameResultHash() >= nrOfSameResultHash) {
-			for (Number160 resultHash : results.keySet()) {
-				if (resultHash == null) {
-					break;
-				} else if (results.get(resultHash).size() >= nrOfSameResultHash) {
-					if (needsMultipleDifferentExecutors) {
-						List<IDomain> list = results.get(resultHash);
-						Set<String> asSet = new HashSet<>();
-						for (IDomain d : list) {
-							asSet.add(d.executor());
+			synchronized (results) {
+				for (Number160 resultHash : results.keySet()) {
+					if (resultHash == null) {
+						break;
+					} else if (results.get(resultHash).size() >= nrOfSameResultHash) {
+						if (needsMultipleDifferentExecutors) {
+						 
+							List<IDomain> list = results.get(resultHash);
+							Set<String> asSet = new HashSet<>();
+							
+							for (IDomain d : list) {
+								asSet.add(d.executor());
+							}
+							if (asSet.size() < nrOfSameResultHash) {
+								continue;
+							}
 						}
-						if (asSet.size() < nrOfSameResultHash) {
-							continue;
-						}
+						r = resultHash;
+						isFinished = true;
+						break;
 					}
-					r = resultHash;
-					isFinished = true;
-					break;
 				}
 			}
 		}

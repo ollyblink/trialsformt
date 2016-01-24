@@ -7,24 +7,28 @@ import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.testutils.TestUtils;
 
 public class ExecutorMain {
 	public static void main(String[] args) throws Exception {
-		JobCalculationBroadcastHandler executorBCHandler = JobCalculationBroadcastHandler.create(1);
+		JobCalculationBroadcastHandler executorBCHandler = JobCalculationBroadcastHandler.create();
 
+		;
+		JobCalculationExecutor calculationExecutor = JobCalculationExecutor.create();
+
+		JobCalculationMessageConsumer calculationMessageConsumer = JobCalculationMessageConsumer.create()
+				.executor(calculationExecutor);
+		executorBCHandler = JobCalculationBroadcastHandler.create()
+				.messageConsumer(calculationMessageConsumer);
 		int bootstrapPort = 4001;
-		IDHTConnectionProvider dhtCon2 = DHTConnectionProvider
+		IDHTConnectionProvider dhtCon = DHTConnectionProvider
 				.create("192.168.43.65", bootstrapPort, bootstrapPort).broadcastHandler(executorBCHandler)
 				// .storageFilePath("C:\\Users\\Oliver\\Desktop\\storage")
 				;
-
-		IExecutor calculationExecutor = JobCalculationExecutor.create().dhtConnectionProvider(dhtCon2);
-
-		IMessageConsumer calculationMessageConsumer = JobCalculationMessageConsumer.create()
-				.dhtConnectionProvider(dhtCon2).executor(calculationExecutor);
-
-		executorBCHandler.messageConsumer(calculationMessageConsumer);
-		while (!dhtCon2.connect().peer().isShutdown()) {
+		dhtCon.broadcastHandler(executorBCHandler);
+		calculationExecutor.dhtConnectionProvider(dhtCon);
+		calculationMessageConsumer.dhtConnectionProvider(dhtCon);
+		while (!dhtCon.connect().peer().isShutdown()) {
 			Thread.sleep(Long.MAX_VALUE);
 		}
 	}

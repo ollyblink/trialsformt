@@ -250,7 +250,7 @@ public class JobSubmissionExecutorTest {
 		List<String> pathVisitor = new ArrayList<>();
 		FileUtils.INSTANCE.getFiles(new File(resultOutputFolder + "/tmp1"), pathVisitor);
 
-		ArrayList<String> res = FileUtils.readLinesFromFile(pathVisitor.get(0));
+		ArrayList<String> res = FileUtils.INSTANCE.readLinesFromFile(pathVisitor.get(0));
 		String resFile = "";
 		for (String line : res) {
 			resFile += line + "\n";

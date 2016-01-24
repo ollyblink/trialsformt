@@ -87,7 +87,6 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 	 * @return
 	 */
 	public void submit(final Job job) {
-		createFolder(job.resultOutputFolder());
 		taskDataComposer.splitValue("\n").maxFileSize(job.maxFileSize());
 
 		List<String> keysFilePaths = filePaths(job.fileInputFolderPath());
@@ -110,7 +109,7 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 			for (String keyfilePath : keysFilePaths) {
 				readFile((StartProcedure) procedure.executable(), keyfilePath, outputJPD,
 						procedure.dataInputDomain());
-			} 
+			}
 		}
 
 	}
@@ -149,6 +148,7 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 		Task task = Task.create(new File(keyfilePath).getName() + "_" + filePartCounter, id);
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(),
 				outputJPD);
+		logger.info("outputETD: " + outputETD.toString());
 		IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD)
 				.dhtConnectionProvider(dhtConnectionProvider);
 
@@ -263,7 +263,8 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 	}
 
 	private void flush(String resultOutputFolder) {
-		if (!outputLines.isEmpty()) {
+		if (!outputLines.isEmpty()) { 
+			createFolder(resultOutputFolder);
 			Path file = Paths.get(resultOutputFolder + "/file_" + (fileCounter++) + ".txt");
 			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
 			try (BufferedWriter writer = Files.newBufferedWriter(file, charset)) {
@@ -281,14 +282,15 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 	}
 
 	private void createFolder(String outputFolder) {
+		logger.info("createFolder::outputFolder: "+ outputFolder);
 		if (!new File(outputFolder).exists()) {
-			new File(outputFolder).mkdir();
+			new File(outputFolder).mkdirs();
 		} else {
 			int counter = 0;
 			while (new File(outputFolder + counter).exists()) {
 				counter++;
 			}
-			new File(outputFolder + counter).mkdir();
+			new File(outputFolder + counter).mkdirs();
 		}
 	}
 

@@ -1,5 +1,7 @@
 package mapreduce.utils;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +71,7 @@ public enum FileUtils {
 		return linesAsLine;
 	}
 
-	public static ArrayList<String> readLinesFromFile(String filePath) {
+	public ArrayList<String> readLinesFromFile(String filePath) {
 		ArrayList<String> lines = new ArrayList<String>();
 		try (BufferedReader reader = Files.newBufferedReader(Paths.get(filePath), Charset.forName("UTF-8"))) {
 			String line = null;
@@ -80,6 +82,19 @@ public enum FileUtils {
 			System.err.format("IOException: %s%n", x);
 		}
 		return lines;
+	}
+
+	public void deleteFilesAndFolder(String outFolder, List<String> pathVisitor) {
+		for (String fP : pathVisitor) {
+			File file = new File(fP);
+			if (file.exists()) {
+				file.delete();
+			}
+		}
+		File file = new File(outFolder);
+		if (file.exists()) {
+			file.delete();
+		}
 	}
 
 }

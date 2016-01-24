@@ -32,7 +32,7 @@ public class JobSubmissionBroadcastHandler extends AbstractMapReduceBroadcastHan
 		if (job == null || bcMessage == null) {
 			return;
 		}
-		if (job.isFinished()) {
+		if (bcMessage.inputDomain().isJobFinished()) {
 			bcMessage.execute(job, messageConsumer);
 			stopTimeout(job);
 			return;
@@ -65,6 +65,7 @@ public class JobSubmissionBroadcastHandler extends AbstractMapReduceBroadcastHan
 	private JobSubmissionBroadcastHandler(int nrOfConcurrentlyExecutedBCMessages) {
 		super(nrOfConcurrentlyExecutedBCMessages);
 	}
+
 	@Override
 	public JobSubmissionBroadcastHandler messageConsumer(IMessageConsumer messageConsumer) {
 		return (JobSubmissionBroadcastHandler) super.messageConsumer(

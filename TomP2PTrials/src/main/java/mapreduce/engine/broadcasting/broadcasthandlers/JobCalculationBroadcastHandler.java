@@ -20,55 +20,58 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 	@Override
 	public void evaluateReceivedMessage(IBCMessage bcMessage) {
 		String jobId = bcMessage.inputDomain().jobId();
-		Job job = getJob(jobId);
-		if (job == null) {
-			dhtConnectionProvider.get(DomainProvider.JOB, jobId).awaitUninterruptibly()
-					.addListener(new BaseFutureAdapter<FutureGet>() {
+		synchronized (jobFuturesFor) {
+			Job job = getJob(jobId);
+			if (job == null) {
+				dhtConnectionProvider.get(DomainProvider.JOB, jobId)
+						.addListener(new BaseFutureAdapter<FutureGet>() {
 
-						@Override
-						public void operationComplete(FutureGet future) throws Exception {
-							if (future.isSuccess()) {
-								if (future.data() != null) {
-									Job job = (Job) future.data().object();
-									for (Procedure procedure : job.procedures()) { 
-										logger.info(procedure+"");
-										if (procedure.executable() instanceof String) {// Means a java script
-																						// function -->
-																						// convert
-											procedure.executable(Procedures.convertJavascriptToJava(
-													(String) procedure.executable()));
+							@Override
+							public void operationComplete(FutureGet future) throws Exception {
+								if (future.isSuccess()) {
+									if (future.data() != null) {
+										Job job = (Job) future.data().object();
+										for (Procedure procedure : job.procedures()) {
+											if (procedure.executable() instanceof String) {// Means a java
+																							// script
+																							// function -->
+																							// convert
+												procedure.executable(Procedures.convertJavascriptToJava(
+														(String) procedure.executable()));
+											}
+											if (procedure.combiner() != null
+													&& procedure.combiner() instanceof String) {
+												// Means a java script function --> convert
+												procedure.combiner(Procedures.convertJavascriptToJava(
+														(String) procedure.combiner()));
+											}
+											logger.info("After possible conversion: Procedure ["
+													+ procedure.executable().getClass().getSimpleName()
+													+ "] needs [" + procedure.nrOfSameResultHash()
+													+ "] result hashes to finish");
 										}
-										if (procedure.combiner() != null
-												&& procedure.combiner() instanceof String) {
-											// Means a java script function --> convert
-											procedure.combiner(Procedures
-													.convertJavascriptToJava((String) procedure.combiner()));
-										}
-										logger.info("After possible conversion: Procedure ["
-												+ procedure.executable().getClass().getSimpleName()
-												+ "] needs [" + procedure.nrOfSameResultHash()
-												+ "] result hashes to finish");
+										processMessage(bcMessage, job);
 									}
-									processMessage(bcMessage, job);
+								} else {
+									logger.info(
+											"No success retrieving Job (" + jobId + ") from DHT. Try again");
 								}
-							} else {
-								logger.info("No success retrieving Job (" + jobId + ") from DHT. Try again");
 							}
-						}
-					});
-		} else {// Don't receive it if I sent it to myself
-			if (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
-				abortJobExecution(job);
-				while (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
-					logger.info("incrementing job submission count from " + job.submissionCount() + " to "
-							+ bcMessage.inputDomain().jobSubmissionCount());
-					job.incrementSubmissionCounter();
-					logger.info("incremented job submission count. It's now " + job.submissionCount());
+						});
+			} else {// Don't receive it if I sent it to myself
+				if (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
+					abortJobExecution(job);
+					while (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
+						logger.info("incrementing job submission count from " + job.submissionCount() + " to "
+								+ bcMessage.inputDomain().jobSubmissionCount());
+						job.incrementSubmissionCounter();
+						logger.info("incremented job submission count. It's now " + job.submissionCount());
+					}
 				}
-			}
-			if (messageConsumer.executor().id() != null
-					&& !bcMessage.outputDomain().executor().equals(messageConsumer.executor().id())) {
-				processMessage(bcMessage, job);
+				if (messageConsumer.executor().id() != null
+						&& !bcMessage.outputDomain().executor().equals(messageConsumer.executor().id())) {
+					processMessage(bcMessage, job);
+				}
 			}
 		}
 

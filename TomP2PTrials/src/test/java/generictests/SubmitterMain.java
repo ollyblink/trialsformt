@@ -26,7 +26,7 @@ public class SubmitterMain {
 		int bootstrapPort = 4001;
 		int other = random.nextInt(40000) + 4000;
 
-		JobSubmissionBroadcastHandler submitterBCHandler = JobSubmissionBroadcastHandler.create(1);
+		JobSubmissionBroadcastHandler submitterBCHandler = JobSubmissionBroadcastHandler.create();
 
 		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other)
 				.broadcastHandler(submitterBCHandler)
@@ -45,8 +45,11 @@ public class SubmitterMain {
 
 		String fileInputFolderPath = System.getProperty("user.dir")
 				+ "/src/test/java/mapreduce/engine/testFiles";
-		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE)
-				.maxFileSize(FileSize.THIRTY_TWO_BYTES).fileInputFolderPath(fileInputFolderPath)
+		String resultOutputFolderPath = System.getProperty("user.dir")
+				+ "/src/test/java/mapreduce/engine/testOutputFiles/";
+		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE).timeToLive(Long.MAX_VALUE)
+				.maxFileSize(FileSize.MEGA_BYTE).fileInputFolderPath(fileInputFolderPath)
+				.resultOutputFolder(resultOutputFolderPath, FileSize.MEGA_BYTE)
 				.addSucceedingProcedure(jsMapper, jsReducer, 1, 1, false, false)
 				.addSucceedingProcedure(jsReducer, null, 1, 1, false, false);
 

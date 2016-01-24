@@ -36,15 +36,15 @@ public class JobSubmissionMessageConsumer extends AbstractMessageConsumer {
 
 	private void collect(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain) {
 		if (job == null || outputDomain == null || inputDomain == null
-				|| outputDomain.procedureSimpleName() == null || !job.isFinished()) {
+				|| outputDomain.procedureSimpleName() == null || !inputDomain.isJobFinished()) {
 			return;
 		}
 		logger.info("Trying to collect data from " + outputDomain);
 
 		if (job.jobSubmitterID().equals(executor.id()) && executor().submittedJob(job)
-				&& !executor().jobIsRetrieved(job) && outputDomain.isJobFinished()) {
+				&& !executor().jobIsRetrieved(job) && inputDomain.isJobFinished()) {
 			// if (outputDomain.procedureSimpleName().equals(EndProcedure.class.getSimpleName())) {
-			logger.info("Job is finished. Final data location domain: " + outputDomain);
+			logger.info("Job is finished. Final data location domain: " + inputDomain);
 			executor().retrieveAndStoreDataOfFinishedJob(outputDomain);
 			// }
 		}
