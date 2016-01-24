@@ -23,14 +23,15 @@ public class SubmitterMain {
 				+ "/src/main/java/mapreduce/execution/procedures/wordcountreducer.js");
 		// System.out.println(jsReducer);
 
-		int bootstrapPort = 4001;
+		int bootstrapPort = 4442;
 		int other = random.nextInt(40000) + 4000;
 
 		JobSubmissionBroadcastHandler submitterBCHandler = JobSubmissionBroadcastHandler.create();
 
 		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other)
 				.broadcastHandler(submitterBCHandler)
-				// .storageFilePath("C:\\Users\\Oliver\\Desktop\\storage")
+//				 .storageFilePath(System.getProperty("user.dir")
+//							+ "/src/main/java/mapreduce/engine/componenttests/storage/submitter/")
 				;
 
 		JobSubmissionExecutor submissionExecutor = JobSubmissionExecutor.create()
@@ -47,16 +48,18 @@ public class SubmitterMain {
 				+ "/src/test/java/mapreduce/engine/componenttests/testfiles";
 		String resultOutputFolderPath = System.getProperty("user.dir")
 				+ "/src/test/java/mapreduce/engine/componenttests/testfiles/testoutputfiles/";
-		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE).timeToLive(Long.MAX_VALUE)
-				.maxFileSize(FileSize.MEGA_BYTE).fileInputFolderPath(fileInputFolderPath)
+		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE).submitterTimeToLive(10000)
+				.calculatorTimeToLive(5000).maxFileSize(FileSize.MEGA_BYTE)
+				.fileInputFolderPath(fileInputFolderPath)
 				.resultOutputFolder(resultOutputFolderPath, FileSize.MEGA_BYTE)
 				.addSucceedingProcedure(jsMapper, jsReducer, 1, 1, false, false)
 				.addSucceedingProcedure(jsReducer, null, 1, 1, false, false);
 
 		submissionExecutor.submit(job);
-		while(!submissionExecutor.jobIsRetrieved(job)){
-			Thread.sleep(10000);
+		while (!submissionExecutor.jobIsRetrieved(job)) {
+			Thread.sleep(job.submitterTimeToLive());
 		}
+		System.out.println("shutting down submitter");
 		dhtCon.shutdown();
 		// Thread.sleep(Long.MAX_VALUE);
 	}

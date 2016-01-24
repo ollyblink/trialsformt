@@ -55,7 +55,7 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 	 */
 	private int maxNrOfSubmissions = DEFAULT_NR_OF_SUBMISSIONS;
 	private Set<Job> submittedJobs = SyncedCollectionProvider.syncedHashSet();
-	private List<String> outputLines = new ArrayList<>();
+	private List<String> outputLines = SyncedCollectionProvider.syncedArrayList();
 	private int fileCounter;
 
 	private JobSubmissionExecutor() {
@@ -277,8 +277,10 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 			Path file = Paths.get(resultOutputFolder + "/file_" + (fileCounter++) + ".txt");
 			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
 			try (BufferedWriter writer = Files.newBufferedWriter(file, charset)) {
-				for (String line : outputLines) {
-					writer.write(line + "\n");
+				synchronized (outputLines) {
+					for (String line : outputLines) {
+						writer.write(line + "\n");
+					}
 				}
 				writer.flush();
 				writer.close();
@@ -305,8 +307,10 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 
 	private long lineSizes(String dataLine) {
 		long lineSizes = 0;
-		for (String line : outputLines) {
-			lineSizes += line.getBytes(Charset.forName(this.taskDataComposer.fileEncoding())).length;
+		synchronized (outputLines) {
+			for (String line : outputLines) {
+				lineSizes += line.getBytes(Charset.forName(this.taskDataComposer.fileEncoding())).length;
+			}
 		}
 		return lineSizes + dataLine.getBytes(Charset.forName(this.taskDataComposer.fileEncoding())).length;
 

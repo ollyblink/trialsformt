@@ -1,1 +1,24 @@
-hello world
+There are two general types of draw dies.   The JRD-1 can be  made 
+     either  for  bullets,  or for jackets.   The bullet draw die reduces  a 
+     finished  bullet  by  a small amount,  sometimes as  little  as  0.0005 
+     inches,  and  sometimes  as much as  0.003  inches.   However,  greater 
+     reductions cause distortion of the bullet and are not feasible.  
+          Jacket draw dies can reduce an existing jacket by a whole caliber.  
+     This  is  the  way that .41 caliber jackets  are  obtained  today,  for 
+     instance.   A  .44  caliber  jacket is pushed through a  draw  die  and 
+     reduced  to .41 caliber.   This would not work with a  bullet.   Jacket 
+     drawing  punches fit inside the jacket,  and actually push  it  through 
+     base first, while bullet draw dies push the bullet through nose first.
+          Special  versions of draw dies turn fired .22 cases into  .224  or 
+     .243  caliber rifle jackets.   The .22 WMR case can be drawn to a  long 
+     6mm jacket in another die,  and shotgun primers can be turned into free 
+     .25 ACP jackets with another.   Draw dies perform a remarkable service. 
+     Their  limitations  are  discussed in "REDISCOVER SWAGING"  in  detail.  
+     Dies  ending in "R" fit the standard reloading press and have  a  punch 
+     that  fits  into the press ram.   Dies ending in "M" fit the Mity  Mite 
+     press,  and have a punch that screws into the press ram.   The die goes 
+     into the press head,  replacing the floating punch holder.  Dies ending 
+     in  "H" are made for the Corbin Hydro-press.   They have a  long  punch 
+     that screws into the ram,  and the die fits into a 7/8-14 adapter which 
+     in  turn fits the 1.5-12 thread of the press head,  also replacing  the 
+     floating punch holder.  

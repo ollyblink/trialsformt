@@ -101,7 +101,7 @@ public class JobCalculationComponentTest {
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
-				.timeToLive(Long.MAX_VALUE)
+				.calculatorTimeToLive(Long.MAX_VALUE)
 				.addSucceedingProcedure(WordCountReducer.create(2), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
@@ -126,7 +126,7 @@ public class JobCalculationComponentTest {
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
-				.timeToLive(Long.MAX_VALUE)
+				.calculatorTimeToLive(Long.MAX_VALUE)
 				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
@@ -150,7 +150,7 @@ public class JobCalculationComponentTest {
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
-				.timeToLive(Long.MAX_VALUE)
+				.calculatorTimeToLive(Long.MAX_VALUE)
 				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
@@ -175,7 +175,7 @@ public class JobCalculationComponentTest {
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
-				.timeToLive(Long.MAX_VALUE)
+				.calculatorTimeToLive(Long.MAX_VALUE)
 				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
@@ -208,7 +208,7 @@ public class JobCalculationComponentTest {
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
-				.timeToLive(Long.MAX_VALUE)
+				.calculatorTimeToLive(Long.MAX_VALUE)
 				.addSucceedingProcedure(WordCountReducer.create(MAX_COUNT), null, 1, 1, false, false)
 				// .addSucceedingProcedure(WordsWithSameCounts.create(), null, 1, 1, false, false)
 				;

@@ -71,7 +71,7 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 				timeouts.get(job).retrievalTimestamp(System.currentTimeMillis(), bcMessage);
 			} else {
 				AbstractTimeout timeout = AbstractTimeout.create(this, job, System.currentTimeMillis(),
-						bcMessage, job.timeToLive());
+						bcMessage);
 				this.timeouts.put(job, timeout);
 				logger.info("Timeout: " + timeout);
 				this.timeoutThread = new Thread(timeout);// timeoutcounter for job

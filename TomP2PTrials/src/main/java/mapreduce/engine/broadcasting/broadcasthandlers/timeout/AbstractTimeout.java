@@ -20,8 +20,8 @@ public abstract class AbstractTimeout implements Runnable {
 
 	private long sleepingTime;
 
-	public AbstractTimeout(AbstractMapReduceBroadcastHandler broadcastHandler, Job job, long currentTimestamp, IBCMessage bcMessage,
-			long timeToLive) {
+	public AbstractTimeout(AbstractMapReduceBroadcastHandler broadcastHandler, Job job, long currentTimestamp,
+			IBCMessage bcMessage, long timeToLive) {
 		this.broadcastHandler = broadcastHandler;
 		this.job = job;
 		this.timeToLive = timeToLive;
@@ -50,11 +50,13 @@ public abstract class AbstractTimeout implements Runnable {
 		this.sleepingTime = (timeToLive - diff);
 	}
 
-	public static AbstractTimeout create(AbstractMapReduceBroadcastHandler broadcastHandler, Job job, long retrievalTimestamp, IBCMessage bcMessage,
-			long timeToLive) {
+	public static AbstractTimeout create(AbstractMapReduceBroadcastHandler broadcastHandler, Job job,
+			long retrievalTimestamp, IBCMessage bcMessage) {
 		return (broadcastHandler instanceof JobSubmissionBroadcastHandler
-				? new JobSubmissionTimeout((JobSubmissionBroadcastHandler) broadcastHandler, job, retrievalTimestamp, bcMessage, timeToLive)
-				: new JobCalculationTimeout((JobCalculationBroadcastHandler) broadcastHandler, job, retrievalTimestamp, bcMessage, timeToLive));
+				? new JobSubmissionTimeout((JobSubmissionBroadcastHandler) broadcastHandler, job,
+						retrievalTimestamp, bcMessage, job.submitterTimeToLive())
+				: new JobCalculationTimeout((JobCalculationBroadcastHandler) broadcastHandler, job,
+						retrievalTimestamp, bcMessage, job.calculatorTimeToLive()));
 	}
 
 };

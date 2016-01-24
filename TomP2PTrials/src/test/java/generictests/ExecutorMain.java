@@ -5,77 +5,14 @@ import mapreduce.engine.executors.IExecutor;
 import mapreduce.engine.executors.JobCalculationExecutor;
 import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
+import mapreduce.execution.ExecutionTestSuite;
+import mapreduce.execution.jobs.Job;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
 
 public class ExecutorMain {
 	public static void main(String[] args) throws Exception {
-		/*
-		 * input: 
-		 * ===================================================================================================
-		 * From JobCalculationComponentTest 
-		 * ===================================================================================================
-		 * input: 
-		 * JPD[
-		 * 		J(JOB[TS(1453625753719)_RND(-2408731050369712538)_LC(2)]_S(S1))_
-		 * 		JS(0)_
-		 * 		PE(S1)_
-		 * 		P(INITIAL_PROCEDURE)_
-		 * 		PI(-1)
-		 * ]
-		 * ===================================================================================================
-		 * From SubmitterMain 
-		 * ===================================================================================================
-		 * 
-		 * JPD[
-		 * 		J(JOB[TS(1453625831706)_RND(-4414736287683849163)_LC(2)]_S(JOBSUBMISSIONEXECUTOR[TS(1453625829137)_RND(-4271347404705378971)_LC(1)]))_
-		 * 		JS(0)_
-		 * 		PE(JOBSUBMISSIONEXECUTOR[TS(1453625829137)_RND(-4271347404705378971)_LC(1)])_
-		 * 		P(INITIAL_PROCEDURE)_
-		 * 		PI(-1)
-		 * ]
-		 * 
-		 * 
-		 * output: 
-		 * ===================================================================================================
-		 * From JobCalculationComponentTest 
-		 * ===================================================================================================
-		 * C{
-		 * 	JPD[
-		 * 			J(JOB[TS(1453625753719)_RND(-2408731050369712538)_LC(2)]_S(S1))_
-		 * 			JS(0)_
-		 * 			PE(S1)_
-		 * 			P(STARTPROCEDURE)_
-		 * 			PI(0)
-		 * 		]
-		 * }:::{
-		 * 	ETD[
-		 * 			T(testfile1)_
-		 * 			P(S1)_
-		 * 			JSI(0)
-		 * 		]
-		 * } 
-		 * ===================================================================================================
-		 * From SubmitterMain 
-		 * ===================================================================================================
-		 * C{
-		 * 	JPD[
-		 * 			J(JOB[TS(1453625831706)_RND(-4414736287683849163)_LC(2)]_S(JOBSUBMISSIONEXECUTOR[TS(1453625829137)_RND(-4271347404705378971)_LC(1)]))_
-		 * 			JS(0)_
-		 * 			PE(JOBSUBMISSIONEXECUTOR[TS(1453625829137)_RND(-4271347404705378971)_LC(1)])_
-		 * 			P(STARTPROCEDURE)_
-		 * 			PI(0)
-		 * 		]
-		 * }:::{
-		 * 	ETD[
-		 * 			T(testfile.txt_0)_
-		 * 			P(JOBSUBMISSIONEXECUTOR[TS(1453625829137)_RND(-4271347404705378971)_LC(1)])_
-		 * 			JSI(0)
-		 * 		]
-		 * }
-		 * 
-		 */
 
 		JobCalculationBroadcastHandler executorBCHandler = JobCalculationBroadcastHandler.create();
 
@@ -85,16 +22,32 @@ public class ExecutorMain {
 				.executor(calculationExecutor);
 		executorBCHandler = JobCalculationBroadcastHandler.create()
 				.messageConsumer(calculationMessageConsumer);
-		int bootstrapPort = 4001;
+		int bootstrapPort = 4442;
 		IDHTConnectionProvider dhtCon = DHTConnectionProvider
 				.create("192.168.43.65", bootstrapPort, bootstrapPort).broadcastHandler(executorBCHandler)
-				// .storageFilePath("C:\\Users\\Oliver\\Desktop\\storage")
+//				.storageFilePath(System.getProperty("user.dir")
+//						+ "/src/main/java/mapreduce/engine/componenttests/storage/calculator/")
 				;
-		dhtCon.broadcastHandler(executorBCHandler);
+		dhtCon.broadcastHandler(executorBCHandler).connect();
 		calculationExecutor.dhtConnectionProvider(dhtCon);
 		calculationMessageConsumer.dhtConnectionProvider(dhtCon);
-		while (!dhtCon.connect().peer().isShutdown()) {
-			Thread.sleep(Long.MAX_VALUE);
+
+		while (executorBCHandler.jobFutures().isEmpty()) {
+			Thread.sleep(10000);
 		}
+		Job job = executorBCHandler.jobFutures().keySet().iterator().next();
+		while (!job.isFinished()) {
+			Thread.sleep(10000);
+		}
+		System.err.println("Shutting down executor");
+		dhtCon.shutdown();
 	}
+	/*
+	 * 12:29:32.121 [NETTY-TOMP2P - worker-client/server - -1-7] ERROR io.netty.util.ResourceLeakDetector -
+	 * LEAK: AlternativeCompositeByteBuf.release() was not called before it's garbage-collected. Enable
+	 * advanced leak reporting to find out where the leak occurred. To enable advanced leak reporting, specify
+	 * the JVM option '-Dio.netty.leakDetectionLevel=advanced' or call ResourceLeakDetector.setLevel() See
+	 * http://netty.io/wiki/reference-counted-objects.html for more information.
+	 * 
+	 */
 }

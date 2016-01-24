@@ -28,7 +28,7 @@ public class Job implements Serializable, Cloneable {
 	private static final PriorityLevel DEFAULT_PRIORITY_LEVEL = PriorityLevel.MODERATE;
 	private static final FileSize DEFAULT_MAX_FILE_SIZE = FileSize.MEGA_BYTE;
 	private static final boolean DEFAULT_USE_LOCAL_STORAGE_FIRST = false;
-	private static final long DEFAULT_TIME_TO_LIVE = 5000;
+	private static final long DEFAULT_TIME_TO_LIVE = 10000;
 	private static final String DEFAULT_RESULT_OUTPUT_FOLDER = System.getProperty("user.dir") + "/tmp/";
 	private static final FileSize DEFAULT_RESULT_OUTPUT_FILESIZE = FileSize.MEGA_BYTE;
 	/** The folder used to store the result data of the last procedure */
@@ -71,8 +71,6 @@ public class Job implements Serializable, Cloneable {
 	 */
 	private boolean useLocalStorageFirst;
 
-	private long timeToLive;
-
 	private int submissionCounter = 0;
 
 	/** used by the submitting entity to mark this job as truely finished */
@@ -81,6 +79,10 @@ public class Job implements Serializable, Cloneable {
 	 * How many times should the job be resubmitted in case time ran out until a new bc message was received?
 	 */
 	private int maxNrOfSubmissionTrials = 1;
+
+	private long submitterTimeToLive;
+
+	private long calculatorTimeToLive;
 
 	private Job(String jobSubmitterID, PriorityLevel priorityLevel) {
 		this.jobSubmitterID = jobSubmitterID;
@@ -100,7 +102,13 @@ public class Job implements Serializable, Cloneable {
 	public static Job create(String jobSubmitterID, PriorityLevel priorityLevel) {
 		return new Job(jobSubmitterID, priorityLevel).fileInputFolderPath(null)
 				.maxFileSize(DEFAULT_MAX_FILE_SIZE).useLocalStorageFirst(DEFAULT_USE_LOCAL_STORAGE_FIRST)
-				.timeToLive(DEFAULT_TIME_TO_LIVE);
+				.submitterTimeToLive(DEFAULT_TIME_TO_LIVE).calculatorTimeToLive(DEFAULT_TIME_TO_LIVE / 2);
+		// calculator should live half the time the submitter lives in case the time out of the calculator
+		// SHOULD
+		// be reached (e.g. when the expected nr of files is not the same as the actual number of files, which
+		// may happen in the beginning when the nr of files is only guessed, but the actual splitting results
+		// in more files --> see JobSubmissionExecutor.submit and .estimateNrOfFiles
+
 	}
 
 	public Job fileInputFolderPath(String fileInputFolderPath) {
@@ -118,11 +126,6 @@ public class Job implements Serializable, Cloneable {
 		return this;
 	}
 
-	public Job timeToLive(long timeToLive) {
-		this.timeToLive = timeToLive;
-		return this;
-	}
-
 	// Getters
 	public boolean isFinished() {
 		for (Procedure procedure : procedures) {
@@ -133,10 +136,6 @@ public class Job implements Serializable, Cloneable {
 			}
 		}
 		return true;
-	}
-
-	public long timeToLive() {
-		return timeToLive;
 	}
 
 	public PriorityLevel priorityLevel() {
@@ -402,4 +401,21 @@ public class Job implements Serializable, Cloneable {
 		return this;
 	}
 
+	public Job submitterTimeToLive(long submitterTimeToLive) {
+		this.submitterTimeToLive = submitterTimeToLive;
+		return this;
+	}
+
+	public long submitterTimeToLive() {
+		return this.submitterTimeToLive;
+	}
+
+	public Job calculatorTimeToLive(long calculatorTimeToLive) {
+		this.calculatorTimeToLive = calculatorTimeToLive;
+		return this;
+	}
+
+	public long calculatorTimeToLive() {
+		return this.calculatorTimeToLive;
+	}
 }
