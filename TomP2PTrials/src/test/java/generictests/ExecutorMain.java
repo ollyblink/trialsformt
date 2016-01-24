@@ -26,7 +26,8 @@ public class ExecutorMain {
 		IDHTConnectionProvider dhtCon = DHTConnectionProvider
 				.create("192.168.43.65", bootstrapPort, bootstrapPort).broadcastHandler(executorBCHandler)
 //				.storageFilePath(System.getProperty("user.dir")
-//						+ "/src/main/java/mapreduce/engine/componenttests/storage/calculator/")
+//						
+//						+ "/src/test/java/mapreduce/engine/componenttests/storage/calculator/")
 				;
 		dhtCon.broadcastHandler(executorBCHandler).connect();
 		calculationExecutor.dhtConnectionProvider(dhtCon);

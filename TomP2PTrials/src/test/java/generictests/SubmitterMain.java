@@ -31,7 +31,7 @@ public class SubmitterMain {
 		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other)
 				.broadcastHandler(submitterBCHandler)
 //				 .storageFilePath(System.getProperty("user.dir")
-//							+ "/src/main/java/mapreduce/engine/componenttests/storage/submitter/")
+//							+ "/src/test/java/mapreduce/engine/componenttests/storage/submitter/")
 				;
 
 		JobSubmissionExecutor submissionExecutor = JobSubmissionExecutor.create()
