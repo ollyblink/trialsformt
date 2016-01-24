@@ -248,7 +248,9 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 
 		} else {//
 			boolean isProcedureFinished = procedure.isFinished();
-			logger.info("tryExecuteProcedure:: is procedure ["+procedure.executable().getClass().getSimpleName()+"] finished? " + isProcedureFinished);
+			logger.info(
+					"tryExecuteProcedure:: is procedure [" + procedure.executable().getClass().getSimpleName()
+							+ "] finished? " + isProcedureFinished);
 			if (!isProcedureFinished) {
 				boolean isNotComplete = procedure.tasksSize() < dataInputDomain.expectedNrOfFiles();
 				boolean isNotStartProcedure = procedure.procedureIndex() > 0;
@@ -288,8 +290,8 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 						public void operationComplete(FutureGet future) throws Exception {
 							if (future.isSuccess()) {
 								int actualNrOfTasks = future.dataMap().size();
-								logger.info("tryRetrieveMoreTasksFromDHT::retrieved " + actualNrOfTasks + " tasks from dataInputDomain: "
-										+ dataInputDomain.toString());
+								logger.info("tryRetrieveMoreTasksFromDHT::retrieved " + actualNrOfTasks
+										+ " tasks from dataInputDomain: " + dataInputDomain.toString());
 								dataInputDomain.expectedNrOfFiles(actualNrOfTasks);
 								for (Number640 keyHash : future.dataMap().keySet()) {
 									String key = (String) future.dataMap().get(keyHash).object();
@@ -310,6 +312,7 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 		procedure.shuffleTasks();
 		Task task = null;
 		while ((task = procedure.nextExecutableTask()) != null) {
+			logger.info("trySubmitTasks::Next task: " + task.key() + ", is finished? " + task.isFinished());
 			if (!task.isFinished()) {
 				logger.info("trySubmitTasks:: next task to add to thread pool executor: " + task.key());
 				Runnable runnable = createTaskExecutionRunnable(procedure, task);

@@ -90,10 +90,10 @@ public abstract class AbstractFinishable implements IFinishable {
 						break;
 					} else if (results.get(resultHash).size() >= nrOfSameResultHash) {
 						if (needsMultipleDifferentExecutors) {
-						 
+
 							List<IDomain> list = results.get(resultHash);
 							Set<String> asSet = new HashSet<>();
-							
+
 							for (IDomain d : list) {
 								asSet.add(d.executor());
 							}
@@ -148,13 +148,23 @@ public abstract class AbstractFinishable implements IFinishable {
 
 	@Override
 	public AbstractFinishable addOutputDomain(IDomain domain) {
+		logger.info("addOutputDomain:: try adding [" + domain + "]");
 		if (!this.outputDomains.contains(domain)) {
+			logger.info("addOutputDomain:: this.outputDomains.contains(domain)? [false]");
 			if (!isFinished()) {
+				logger.info("addOutputDomain:: this.isFinished()? [false]");
 				if (needsMultipleDifferentExecutors) {
+					logger.info("addOutputDomain:: this.needsMultipleDifferentExecutors()? [true]");
 					if (!containsExecutor(domain.executor())) {
+						logger.info(
+								"addOutputDomain:: this.containsExecutor(domain.executor())? [false] --> added domain ["
+										+ domain + "]");
 						this.outputDomains.add(domain);
 					}
 				} else {
+					logger.info(
+							"addOutputDomain:: this.needsMultipleDifferentExecutors()? [false] --> added domain ["
+									+ domain + "]");
 					this.outputDomains.add(domain);
 				}
 			}

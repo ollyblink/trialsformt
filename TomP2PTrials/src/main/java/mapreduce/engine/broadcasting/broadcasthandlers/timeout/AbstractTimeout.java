@@ -39,12 +39,12 @@ public abstract class AbstractTimeout implements Runnable {
 	protected void sleep() {
 		long diff = 0;
 		while ((diff = (System.currentTimeMillis() - retrievalTimestamp)) < timeToLive) {
+			this.sleepingTime = (timeToLive - diff);
+			logger.info("Timeout: sleeping for " + sleepingTime + " ms");
 			try {
-				this.sleepingTime = (timeToLive - diff);
-				logger.info("Timeout: sleeping for " + sleepingTime + " ms");
 				Thread.sleep(timeToLive);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				logger.warn("Exception caught", e);
 			}
 		}
 		this.sleepingTime = (timeToLive - diff);

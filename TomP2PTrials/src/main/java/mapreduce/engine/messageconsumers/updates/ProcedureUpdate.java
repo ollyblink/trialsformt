@@ -32,10 +32,11 @@ public class ProcedureUpdate extends AbstractUpdate {
 		procedure.addOutputDomain(outputJPD);
 		logger.info(
 				"internalUpdate::procedure.isCompleted() after adding outputJPD? " + procedure.isCompleted());
+		boolean procedureIsFinished = procedure.isFinished();
 		logger.info("internalUpdate::procedure.isFinished() && procedure.dataInputDomain() != null? "
-				+ procedure.isFinished() + " && " + (procedure.dataInputDomain() != null) + "? "
-				+ (procedure.isFinished() && procedure.dataInputDomain() != null));
-		if (procedure.isFinished() && procedure.dataInputDomain() != null) {
+				+ procedureIsFinished + " && " + (procedure.dataInputDomain() != null) + "? "
+				+ (procedureIsFinished && procedure.dataInputDomain() != null));
+		if (procedureIsFinished && procedure.dataInputDomain() != null) {
 			logger.info("internalUpdate::before cancelProcedureExecution("
 					+ procedure.dataInputDomain().toString() + ")");
 			msgConsumer.cancelProcedureExecution(procedure.dataInputDomain().toString());

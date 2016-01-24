@@ -206,7 +206,9 @@ public class Procedure extends AbstractFinishable implements Serializable, Clone
 	public Task nextExecutableTask() {
 		synchronized (tasks) {
 			for (Task task : tasks) {
-				if (task.canBeExecuted()) {
+				boolean canBeExecuted = task.canBeExecuted();
+				logger.info("nextExecutableTask:: can task ["+task.key()+"] be executed? "+canBeExecuted);
+				if (canBeExecuted) { 
 					return task.incrementActiveCount();
 				} else {
 					continue; // look for next task to execute

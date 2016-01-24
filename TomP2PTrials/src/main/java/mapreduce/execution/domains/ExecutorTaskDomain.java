@@ -1,9 +1,14 @@
 package mapreduce.execution.domains;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import mapreduce.utils.DomainProvider;
 import net.tomp2p.peers.Number160;
 
 public class ExecutorTaskDomain implements IDomain {
+	private static Logger logger = LoggerFactory.getLogger(ExecutorTaskDomain.class);
+
 	/**
 	 * 
 	 */
@@ -61,6 +66,7 @@ public class ExecutorTaskDomain implements IDomain {
 
 	@Override
 	public ExecutorTaskDomain resultHash(Number160 resultHash) {
+		logger.info("resultHash: "+ resultHash);
 		this.resultHash = resultHash;
 		return this;
 	}

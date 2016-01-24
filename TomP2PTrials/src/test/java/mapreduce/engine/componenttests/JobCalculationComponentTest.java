@@ -320,9 +320,10 @@ public class JobCalculationComponentTest {
 					procedure.dataInputDomain());
 			msgs.add(msg);
 		}
-		logger.info("Procedures before broadcast: " + job.procedures());
+		// logger.info("Procedures before broadcast: " + job.procedures());
 
 		for (IBCMessage msg : msgs) {
+			logger.info("XXXinput: " + msg.inputDomain() + ", output: " + msg.outputDomain());
 			dhtCon.broadcastCompletion(msg);
 		}
 

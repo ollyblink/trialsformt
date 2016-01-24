@@ -44,9 +44,9 @@ public class SubmitterMain {
 		dhtCon.connect();
 
 		String fileInputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/testFiles";
+				+ "/src/test/java/mapreduce/engine/componenttests/testfiles";
 		String resultOutputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/testOutputFiles/";
+				+ "/src/test/java/mapreduce/engine/componenttests/testfiles/testoutputfiles/";
 		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE).timeToLive(Long.MAX_VALUE)
 				.maxFileSize(FileSize.MEGA_BYTE).fileInputFolderPath(fileInputFolderPath)
 				.resultOutputFolder(resultOutputFolderPath, FileSize.MEGA_BYTE)
@@ -54,6 +54,10 @@ public class SubmitterMain {
 				.addSucceedingProcedure(jsReducer, null, 1, 1, false, false);
 
 		submissionExecutor.submit(job);
+		while(!submissionExecutor.jobIsRetrieved(job)){
+			Thread.sleep(10000);
+		}
+		dhtCon.shutdown();
 		// Thread.sleep(Long.MAX_VALUE);
 	}
 }
