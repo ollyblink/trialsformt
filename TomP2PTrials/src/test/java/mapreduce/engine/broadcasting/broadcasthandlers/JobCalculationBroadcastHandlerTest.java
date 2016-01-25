@@ -100,10 +100,11 @@ public class JobCalculationBroadcastHandlerTest {
 		for (Future<?> f : jobFutures.values()) {
 			assertEquals(true, f.isDone());
 		}
+		dhtConnectionProvider.shutdown();
 	}
 
 	@Test
-	public void testProcessMessage() {
+	public void testProcessMessage() throws InterruptedException {
 		CompletedBCMessage msg = Mockito.mock(CompletedBCMessage.class);
 		Mockito.when(msg.inputDomain()).thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(),
 				"Submitter", StartProcedure.class.getSimpleName(), 0));
@@ -112,9 +113,11 @@ public class JobCalculationBroadcastHandlerTest {
 
 		broadcastHandler.jobFutures().clear();
 		broadcastHandler.processMessage(msg, job);
+		Thread.sleep(100);
 		assertEquals(false, broadcastHandler.jobFutures().isEmpty());
 		assertEquals(true, broadcastHandler.getJob(job.id()) != null);
 		assertEquals(1, broadcastHandler.jobFutures().keySet().size());
+		
 		Mockito.verify(msg, Mockito.times(1)).execute(job, messageConsumer);
 		msg = Mockito.mock(CompletedBCMessage.class);
 		Mockito.when(msg.inputDomain()).thenReturn(JobProcedureDomain.create(job.id(), job.submissionCount(),
