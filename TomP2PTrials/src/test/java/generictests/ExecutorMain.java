@@ -18,7 +18,7 @@ public class ExecutorMain {
 
 		JobCalculationExecutor calculationExecutor = JobCalculationExecutor.create();
 
-		JobCalculationMessageConsumer calculationMessageConsumer = JobCalculationMessageConsumer.create()
+		JobCalculationMessageConsumer calculationMessageConsumer = JobCalculationMessageConsumer.create(4)
 				.executor(calculationExecutor);
 		executorBCHandler = JobCalculationBroadcastHandler.create()
 				.messageConsumer(calculationMessageConsumer);
