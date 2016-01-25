@@ -1,6 +1,11 @@
 package generictests;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
+import java.util.StringTokenizer;
 
 import mapreduce.engine.broadcasting.broadcasthandlers.JobSubmissionBroadcastHandler;
 import mapreduce.engine.executors.JobSubmissionExecutor;
@@ -30,9 +35,9 @@ public class SubmitterMain {
 
 		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other)
 				.broadcastHandler(submitterBCHandler)
-//				 .storageFilePath(System.getProperty("user.dir")
-//							+ "/src/test/java/mapreduce/engine/componenttests/storage/submitter/")
-				;
+				// .storageFilePath(System.getProperty("user.dir")
+				// + "/src/test/java/mapreduce/engine/componenttests/storage/submitter/")
+		;
 
 		JobSubmissionExecutor submissionExecutor = JobSubmissionExecutor.create()
 				.dhtConnectionProvider(dhtCon);
@@ -45,9 +50,9 @@ public class SubmitterMain {
 		dhtCon.connect();
 
 		String fileInputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/componenttests/testfiles";
+				+ "/src/test/java/mapreduce/engine/componenttests/largerinputfiles/";
 		String resultOutputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/componenttests/testfiles/testoutputfiles/";
+				+ "/src/test/java/mapreduce/engine/componenttests/testoutputfiles/";
 		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE).submitterTimeToLive(10000)
 				.calculatorTimeToLive(5000).maxFileSize(FileSize.MEGA_BYTE)
 				.fileInputFolderPath(fileInputFolderPath)
@@ -61,6 +66,38 @@ public class SubmitterMain {
 		}
 		System.out.println("shutting down submitter");
 		dhtCon.shutdown();
+		List<String> pathVisitor = new ArrayList<>();
+		FileUtils.INSTANCE.getFiles(new File(fileInputFolderPath), pathVisitor);
+		String txt = FileUtils.INSTANCE.readLines(pathVisitor.get(0));
+		HashMap<String, Integer> counter = getCounts(txt);
+
+		String outFolder = resultOutputFolderPath + "/tmp";
+		pathVisitor.clear();
+		FileUtils.INSTANCE.getFiles(new File(outFolder), pathVisitor);
+		txt = FileUtils.INSTANCE.readLines(pathVisitor.get(0));
+		for (String key : counter.keySet()) {
+			Integer count = counter.get(key);
+			System.err.println(txt.contains(key + "\t" + count));
+		}
+
+//		FileUtils.INSTANCE.deleteFilesAndFolder(outFolder, pathVisitor);
 		// Thread.sleep(Long.MAX_VALUE);
 	}
+
+	private static HashMap<String, Integer> getCounts(String txt) {
+		HashMap<String, Integer> res = new HashMap<>();
+
+		StringTokenizer tokens = new StringTokenizer(txt);
+		while (tokens.hasMoreTokens()) {
+			String word = tokens.nextToken();
+			Integer count = res.get(word);
+			if (count == null) {
+				count = 0;
+			}
+			res.put(word, ++count);
+		}
+
+		return res;
+	}
+
 }
