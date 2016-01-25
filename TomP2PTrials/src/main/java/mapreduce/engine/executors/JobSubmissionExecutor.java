@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import mapreduce.engine.broadcasting.messages.BCMessageStatus;
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
 import mapreduce.engine.broadcasting.messages.IBCMessage;
+import mapreduce.engine.executors.performance.PerformanceInfo;
 import mapreduce.execution.context.DHTStorageContext;
 import mapreduce.execution.context.IContext;
 import mapreduce.execution.domains.ExecutorTaskDomain;
@@ -281,6 +282,7 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 					for (String line : outputLines) {
 						writer.write(line + "\n");
 					}
+					outputLines.clear();
 				}
 				writer.flush();
 				writer.close();
@@ -288,21 +290,21 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 				System.err.format("IOException: %s%n", x);
 			}
 
-			outputLines.clear();
 		}
 	}
 
 	private void createFolder(String outputFolder) {
-		logger.info("createFolder::outputFolder: " + outputFolder);
 		if (!new File(outputFolder).exists()) {
 			new File(outputFolder).mkdirs();
-		} else {
-			int counter = 0;
-			while (new File(outputFolder + counter).exists()) {
-				counter++;
-			}
-			new File(outputFolder + counter).mkdirs();
+			logger.info("createFolder::outputFolder: " + outputFolder);
 		}
+		// else { //TODO do I actually need this?
+		// int counter = 0;
+		// while (new File(outputFolder + counter).exists()) {
+		// counter++;
+		// }
+		// new File(outputFolder + counter).mkdirs();
+		// }
 	}
 
 	private long lineSizes(String dataLine) {
@@ -314,11 +316,6 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 		}
 		return lineSizes + dataLine.getBytes(Charset.forName(this.taskDataComposer.fileEncoding())).length;
 
-	}
-
-	@Override
-	public JobSubmissionExecutor dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
-		return (JobSubmissionExecutor) super.dhtConnectionProvider(dhtConnectionProvider);
 	}
 
 	public boolean submittedJob(Job job) {
@@ -357,5 +354,17 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 			}
 		}
 		return null;
+	}
+
+	@Override
+	public JobSubmissionExecutor dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+		this.dhtConnectionProvider = dhtConnectionProvider;
+		return this;
+	}
+
+	@Override
+	public JobSubmissionExecutor performanceInformation(PerformanceInfo performanceInformation) {
+		this.performanceInformation = performanceInformation;
+		return this;
 	}
 }

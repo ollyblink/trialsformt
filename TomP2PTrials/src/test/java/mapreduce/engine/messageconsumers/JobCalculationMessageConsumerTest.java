@@ -247,9 +247,13 @@ public class JobCalculationMessageConsumerTest {
 				.getDeclaredField("currentlyRetrievingTaskKeysForProcedure");
 		boolsForRetrieving.setAccessible(true);
 		Map<String, Boolean> field = (Map<String, Boolean>) boolsForRetrieving.get(calculationMsgConsumer);
+		FutureGet mockFuture = Mockito.mock(FutureGet.class);
+		Mockito.when(mockFuture.awaitUninterruptibly()).thenReturn(mockFuture);
 		Mockito.when(mockDHT.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS,
 				job.currentProcedure().dataInputDomain().toString()))
-				.thenReturn(Mockito.mock(FutureGet.class));
+				.thenReturn(mockFuture);
+		
+
 		assertEquals(null, field.get(job.currentProcedure().dataInputDomain().toString()));
 		tryExecuteProcedure.invoke(calculationMsgConsumer, job);
 		assertEquals(true, field.get(job.currentProcedure().dataInputDomain().toString())); // It's not

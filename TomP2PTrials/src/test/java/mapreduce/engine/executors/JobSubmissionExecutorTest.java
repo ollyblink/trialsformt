@@ -51,22 +51,22 @@ public class JobSubmissionExecutorTest {
 
 	@Ignore
 	public void testSubmissionWithoutProcedures() throws Exception {
-		String base = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/";
-		String fileInputFolderPath = base + "testFiles/";
-		String outputFileFolder = base + "testOutputFiles/";
-
-		JobSubmissionBroadcastHandler sBCHandler = JobSubmissionBroadcastHandler.create();
-		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(sBCHandler);
-
-		JobSubmissionMessageConsumer sMsgConsumer = JobSubmissionMessageConsumer.create();
-		sBCHandler.messageConsumer(
-				sMsgConsumer.executor(sExecutor.dhtConnectionProvider(dht)).dhtConnectionProvider(dht))
-				.dhtConnectionProvider(dht);
-
-		Job job = Job.create(sExecutor.id()).fileInputFolderPath(fileInputFolderPath)
-				.resultOutputFolder(outputFileFolder, FileSize.MEGA_BYTE)
-				.maxFileSize(FileSize.TWO_KILO_BYTES);
-		sExecutor.submit(job);
+		// String base = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/";
+		// String fileInputFolderPath = base + "executors/testfiles/";
+		// String outputFileFolder = base + "testOutputFiles/";
+		//
+		// JobSubmissionBroadcastHandler sBCHandler = JobSubmissionBroadcastHandler.create();
+		// IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(sBCHandler);
+		//
+		// JobSubmissionMessageConsumer sMsgConsumer = JobSubmissionMessageConsumer.create();
+		// sBCHandler.messageConsumer(
+		// sMsgConsumer.executor(sExecutor.dhtConnectionProvider(dht)).dhtConnectionProvider(dht))
+		// .dhtConnectionProvider(dht);
+		//
+		// Job job = Job.create(sExecutor.id()).fileInputFolderPath(fileInputFolderPath)
+		// .resultOutputFolder(outputFileFolder, FileSize.MEGA_BYTE)
+		// .maxFileSize(FileSize.TWO_KILO_BYTES);
+		// sExecutor.submit(job);
 		// Thread.sleep(Long.MAX_VALUE);
 
 	}
@@ -119,7 +119,7 @@ public class JobSubmissionExecutorTest {
 		JobProcedureDomain dataInputDomain = JobProcedureDomain.create("J1", 0, sExecutor.id(),
 				StartProcedure.class.getSimpleName(), 0);
 		String keyFilePath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/testFiles/testfile2.txt";
+				+ "/src/test/java/mapreduce/engine/executors/testfiles/testfile2.txt";
 		Integer filePartCounter = 0;
 		String vals = "hello world hello world\nhello world hello world";
 
@@ -147,7 +147,7 @@ public class JobSubmissionExecutorTest {
 		JobProcedureDomain dataInputDomain = JobProcedureDomain.create("J1", 0, sExecutor.id(),
 				StartProcedure.class.getSimpleName(), 0);
 		String keyFilePath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/testFiles/testfile2.txt";
+				+ "/src/test/java/mapreduce/engine/executors/testfiles/testfile2.txt";
 
 		readFile.invoke(sExecutor, StartProcedure.create(), keyFilePath, outputJPD, dataInputDomain);
 		String key = "testfile2.txt_0";
@@ -166,7 +166,7 @@ public class JobSubmissionExecutorTest {
 
 		sExecutor.dhtConnectionProvider(dht);
 		String fileInputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/testFiles/";
+				+ "/src/test/java/mapreduce/engine/executors/testfiles/";
 
 		Job job = Job.create(sExecutor.id()).fileInputFolderPath(fileInputFolderPath)
 				.maxFileSize(FileSize.THIRTY_TWO_BYTES);
@@ -214,8 +214,7 @@ public class JobSubmissionExecutorTest {
 
 	@Test
 	public void testRetrieveAndStoreDataOfFinishedJob() throws Exception {
-		Random random = new Random();
-		JobSubmissionBroadcastHandler bcHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
+ 		JobSubmissionBroadcastHandler bcHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
 
 		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(bcHandler);
 		sExecutor.dhtConnectionProvider(dht);
@@ -236,19 +235,20 @@ public class JobSubmissionExecutorTest {
 
 		Job job = Mockito.mock(Job.class);
 		String resultOutputFolder = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/testOutputFiles";
-		File file = new File(resultOutputFolder + "/tmp1");
+				+ "/src/test/java/mapreduce/engine/executors/testoutputfiles/tmp1";
+		File file = new File(resultOutputFolder);
 		file.mkdirs();
 
 		Mockito.when(job.id()).thenReturn("J1");
-		Mockito.when(job.resultOutputFolder()).thenReturn(resultOutputFolder + "/tmp1");
+		Mockito.when(job.resultOutputFolder()).thenReturn(resultOutputFolder);
 		Mockito.when(job.outputFileSize()).thenReturn(FileSize.MEGA_BYTE);
 		submittedJobs.add(job);
 
 		sExecutor.retrieveAndStoreDataOfFinishedJob(domain);
+		Thread.sleep(1000);
 
 		List<String> pathVisitor = new ArrayList<>();
-		FileUtils.INSTANCE.getFiles(new File(resultOutputFolder + "/tmp1"), pathVisitor);
+		FileUtils.INSTANCE.getFiles(new File(resultOutputFolder), pathVisitor);
 
 		ArrayList<String> res = FileUtils.INSTANCE.readLinesFromFile(pathVisitor.get(0));
 		String resFile = "";
@@ -264,7 +264,10 @@ public class JobSubmissionExecutorTest {
 			new File(fP).delete();
 			assertEquals(false, new File(fP).exists());
 		}
-		new File(resultOutputFolder + "/tmp1").delete();
+		new File(resultOutputFolder).delete();
+		assertEquals(false, new File(resultOutputFolder).exists());
+		new File(resultOutputFolder.replace("tmp1", "")).delete();
+		assertEquals(false, new File(resultOutputFolder.replace("tmp1", "")).exists());
 	}
 
 	@Test
@@ -275,8 +278,9 @@ public class JobSubmissionExecutorTest {
 		Method flush = JobSubmissionExecutor.class.getDeclaredMethod("flush", String.class);
 		flush.setAccessible(true);
 		String resultOutputFolder = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/testOutputFiles/";
+				+ "/src/test/java/mapreduce/engine/executors/testoutputfiles";
 		Job job = Mockito.mock(Job.class);
+		new File(resultOutputFolder).mkdirs();
 		new File(resultOutputFolder + "/tmp1").mkdirs();
 		Mockito.when(job.resultOutputFolder()).thenReturn(resultOutputFolder + "/tmp1");
 
@@ -290,12 +294,10 @@ public class JobSubmissionExecutorTest {
 		List<String> pathVisitor = new ArrayList<>();
 		FileUtils.INSTANCE.getFiles(new File(resultOutputFolder + "/tmp1"), pathVisitor);
 		assertEquals(3, pathVisitor.size());
-		for (String fP : pathVisitor) {
-			new File(fP).delete();
-			assertEquals(false, new File(fP).exists());
-		}
-		new File(resultOutputFolder + "/tmp1").delete();
-		assertEquals(false, new File(resultOutputFolder + "/tmp1").exists());
+		FileUtils.INSTANCE.deleteFilesAndFolder(resultOutputFolder + "/tmp1", pathVisitor);
+		pathVisitor.clear();
+		FileUtils.INSTANCE.deleteFilesAndFolder(resultOutputFolder, pathVisitor);
+		assertEquals(false, new File(resultOutputFolder).exists());
 	}
 
 	@Test
@@ -304,8 +306,8 @@ public class JobSubmissionExecutorTest {
 				List.class, Long.class);
 		estimatedNrOfFilesMethod.setAccessible(true);
 		List<String> keyFilePaths = new ArrayList<>();
-		keyFilePaths.add(
-				System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/testFiles/testfile2.txt");
+		keyFilePaths.add(System.getProperty("user.dir")
+				+ "/src/test/java/mapreduce/engine/executors/testfiles/testfile2.txt");
 		int nrFiles = (int) estimatedNrOfFilesMethod.invoke(sExecutor, keyFilePaths, 20l);
 		assertEquals(3, nrFiles);
 	}
@@ -313,7 +315,7 @@ public class JobSubmissionExecutorTest {
 	@Test
 	public void testFilePaths() throws Exception {
 		String fileInputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/testFiles";
+				+ "/src/test/java/mapreduce/engine/executors/testfiles/";
 		Method filePaths = JobSubmissionExecutor.class.getDeclaredMethod("filePaths", String.class);
 		filePaths.setAccessible(true);
 		List<String> keyFilePaths = (List<String>) filePaths.invoke(sExecutor, fileInputFolderPath);
@@ -327,14 +329,12 @@ public class JobSubmissionExecutorTest {
 		Method createFolder = JobSubmissionExecutor.class.getDeclaredMethod("createFolder", String.class);
 		createFolder.setAccessible(true);
 		String testFolder = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/testFiles/trials";
+				+ "/src/test/java/mapreduce/engine/executors/testfiles/trials";
 
 		assertEquals(false, new File(testFolder).exists());
 		createFolder.invoke(sExecutor, testFolder);
 		assertEquals(true, new File(testFolder).exists());
-		createFolder.invoke(sExecutor, testFolder);
-		assertEquals(true, new File(testFolder + "0").exists());
-		new File(testFolder).delete();
-		new File(testFolder + "0").delete();
+		FileUtils.INSTANCE.deleteFilesAndFolder(testFolder, new ArrayList<>());
+		assertEquals(false, new File(testFolder).exists());
 	}
 }

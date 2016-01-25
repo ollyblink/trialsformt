@@ -56,7 +56,7 @@ public class JobSubmissionMessageConsumerTest {
 		// Second: same submitter, never submitted (? don't know yet where this may happen, just make it sure it never happens here)
 		Mockito.when(executor.submittedJob(job)).thenReturn(false);
 		Mockito.when(executor.jobIsRetrieved(job)).thenReturn(false);
-		Mockito.when(job.isFinished()).thenReturn(false);
+		Mockito.when(inputDomain.isJobFinished()).thenReturn(false);
 		collectMethod.invoke(messageConsumer, job, outputDomain, inputDomain);
 		Mockito.verify(executor, Mockito.times(0)).retrieveAndStoreDataOfFinishedJob(outputDomain);
 
@@ -64,7 +64,7 @@ public class JobSubmissionMessageConsumerTest {
 		// ignore!)
 		Mockito.when(executor.submittedJob(job)).thenReturn(true);
 		Mockito.when(executor.jobIsRetrieved(job)).thenReturn(true);
-		Mockito.when(job.isFinished()).thenReturn(false);
+		Mockito.when(inputDomain.isJobFinished()).thenReturn(false);
 		collectMethod.invoke(messageConsumer, job, outputDomain, inputDomain);
 		Mockito.verify(executor, Mockito.times(0)).retrieveAndStoreDataOfFinishedJob(outputDomain);
 
@@ -72,7 +72,7 @@ public class JobSubmissionMessageConsumerTest {
 		Mockito.when(executor.submittedJob(job)).thenReturn(true);
 		Mockito.when(executor.jobIsRetrieved(job)).thenReturn(false);
 		Mockito.when(outputDomain.isJobFinished()).thenReturn(true);
-		Mockito.when(job.isFinished()).thenReturn(true);
+		Mockito.when(inputDomain.isJobFinished()).thenReturn(true);
 		collectMethod.invoke(messageConsumer, job, outputDomain, inputDomain);
 		Mockito.verify(executor, Mockito.times(1)).retrieveAndStoreDataOfFinishedJob(outputDomain);
 	}

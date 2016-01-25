@@ -284,7 +284,8 @@ public class JobCalculationMessageConsumer extends AbstractMessageConsumer {
 			currentlyRetrievingTaskKeysForProcedure.put(dataInputDomain.toString(), true);
 			dhtConnectionProvider
 					.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, dataInputDomain.toString())
-					.awaitUninterruptibly().addListener(new BaseFutureAdapter<FutureGet>() {
+					.awaitUninterruptibly() //TODO remove?
+					.addListener(new BaseFutureAdapter<FutureGet>() {
 
 						@Override
 						public void operationComplete(FutureGet future) throws Exception {

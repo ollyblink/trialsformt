@@ -12,13 +12,12 @@ import mapreduce.execution.jobs.Job;
 public abstract class AbstractTimeout implements Runnable {
 	private static Logger logger = LoggerFactory.getLogger(AbstractTimeout.class);
 
-	protected AbstractMapReduceBroadcastHandler broadcastHandler;
-	protected Job job;
+	protected volatile AbstractMapReduceBroadcastHandler broadcastHandler;
+	protected volatile Job job;
+	protected volatile long timeToLive;
 	protected volatile long retrievalTimestamp;
-	protected long timeToLive;
-	protected IBCMessage bcMessage;
-
-	private long sleepingTime;
+	protected volatile IBCMessage bcMessage;
+ 
 
 	public AbstractTimeout(AbstractMapReduceBroadcastHandler broadcastHandler, Job job, long currentTimestamp,
 			IBCMessage bcMessage, long timeToLive) {
@@ -30,24 +29,21 @@ public abstract class AbstractTimeout implements Runnable {
 	}
 
 	public AbstractTimeout retrievalTimestamp(long retrievalTimestamp, IBCMessage bcMessage) {
-		logger.info("AbstractTimeout: updated timeout for job " + job);
+		logger.info("retrievalTimestamp:: updated timeout for job " + job);
 		this.retrievalTimestamp = retrievalTimestamp;
 		this.bcMessage = bcMessage;
 		return this;
 	}
 
 	protected void sleep() {
-		long diff = 0;
-		while ((diff = (System.currentTimeMillis() - retrievalTimestamp)) < timeToLive) {
-			this.sleepingTime = (timeToLive - diff);
-			logger.info("Timeout: sleeping for " + sleepingTime + " ms");
+		while ((System.currentTimeMillis() - retrievalTimestamp) < timeToLive) {
+			logger.info("sleep:: sleeping for " + timeToLive + " ms");
 			try {
 				Thread.sleep(timeToLive);
 			} catch (InterruptedException e) {
 				logger.warn("Exception caught", e);
 			}
 		}
-		this.sleepingTime = (timeToLive - diff);
 	}
 
 	public static AbstractTimeout create(AbstractMapReduceBroadcastHandler broadcastHandler, Job job,

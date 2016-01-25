@@ -31,14 +31,14 @@ public class JobSubmissionBroadcastHandlerTest {
 		Job job = Mockito.mock(Job.class);
 		Mockito.when(job.id()).thenReturn("J1");
 		Mockito.when(job.isFinished()).thenReturn(false);
-		
+
 		JobProcedureDomain in = Mockito.mock(JobProcedureDomain.class);
 		Mockito.when(in.jobId()).thenReturn("J1");
 		JobProcedureDomain out = Mockito.mock(JobProcedureDomain.class);
 		IBCMessage bcMessage = Mockito.mock(IBCMessage.class);
 		Mockito.when(bcMessage.inputDomain()).thenReturn(in);
 		Mockito.when(bcMessage.outputDomain()).thenReturn(out);
-		
+
 		broadcastHandler.evaluateReceivedMessage(null);
 		Mockito.verify(bcMessage, Mockito.times(0)).execute(job, messageConsumer);
 	}
@@ -46,20 +46,25 @@ public class JobSubmissionBroadcastHandlerTest {
 	@Test
 	public void testProcessMessage() {
 		// ========================================================================================================================================
-		// an incoming message should only be forwarded in case it is a COMPLETED_PROCEDURE message for a job that was submitted by this submitter,
+		// an incoming message should only be forwarded in case it is a COMPLETED_PROCEDURE message for a job
+		// that was submitted by this submitter,
 		// and only if the job is already finished as else it is not of relevance for retrieval yet.
 		// ========================================================================================================================================
 
 		Job job = Mockito.mock(Job.class);
 		Mockito.when(job.isFinished()).thenReturn(false);
 		IBCMessage bcMessage = Mockito.mock(IBCMessage.class);
+		JobProcedureDomain inputDomain = Mockito.mock(JobProcedureDomain.class);
+		Mockito.when(inputDomain.isJobFinished()).thenReturn(false);
+		Mockito.when(bcMessage.inputDomain()).thenReturn(inputDomain);
 
-		// Only way to check if it entered the else part is to check if bcMessage.execute(job, msgConsumer) was not invoked
+		// Only way to check if it entered the else part is to check if bcMessage.execute(job, msgConsumer)
+		// was not invoked
 		broadcastHandler.processMessage(bcMessage, job);
 		Mockito.verify(bcMessage, Mockito.times(0)).execute(job, messageConsumer);
 
 		// Now the job is finished
-		Mockito.when(job.isFinished()).thenReturn(true);
+		Mockito.when(inputDomain.isJobFinished()).thenReturn(true);
 		broadcastHandler.processMessage(bcMessage, job);
 		Mockito.verify(bcMessage, Mockito.times(1)).execute(job, messageConsumer);
 

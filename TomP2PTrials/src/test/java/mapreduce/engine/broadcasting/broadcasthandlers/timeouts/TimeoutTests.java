@@ -1,9 +1,8 @@
 package mapreduce.engine.broadcasting.broadcasthandlers.timeouts;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.lang.reflect.Field;
-import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +25,9 @@ import mapreduce.storage.IDHTConnectionProvider;
 
 public class TimeoutTests {
 
+	private static final long TIME_TO_LIVE = 40l;
+	private static final long SECOND_SLEEP = 80l;
+	private static final long FIRST_SLEEP = 20l;
 	private JobProcedureDomain oldID;
 	private Procedure procedure;
 	private Job job;
@@ -46,7 +48,7 @@ public class TimeoutTests {
 	public void before() {
 		currentTimestamp = System.currentTimeMillis();
 
-		timeToLive = 2000l;
+		timeToLive = TIME_TO_LIVE;
 
 		// Procedure
 		oldID = Mockito.mock(JobProcedureDomain.class);
@@ -108,9 +110,9 @@ public class TimeoutTests {
 				currentTimestamp, bcMessage, timeToLive);
 		Thread t = new Thread(timeout);
 		t.start();
-		Thread.sleep(1000);
+		Thread.sleep(FIRST_SLEEP);
 		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
-		Thread.sleep(3000);
+		Thread.sleep(SECOND_SLEEP);
 		Mockito.verify(job, Mockito.times(1)).currentProcedure();
 		// Mockito.verify(procedure, Mockito.times(1)).tasks();
 		Mockito.verify(procedure, Mockito.times(1)).dataInputDomain();
@@ -133,9 +135,9 @@ public class TimeoutTests {
 				currentTimestamp, bcMessage, timeToLive);
 		Thread t = new Thread(timeout);
 		t.start();
-		Thread.sleep(1000);
+		Thread.sleep(FIRST_SLEEP);
 		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
-		Thread.sleep(3000);
+		Thread.sleep(SECOND_SLEEP);
 		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).abortJobExecution(job);
 	}
 
@@ -148,9 +150,9 @@ public class TimeoutTests {
 				currentTimestamp, bcMessage, timeToLive);
 		Thread t = new Thread(timeout);
 		t.start();
-		Thread.sleep(1000);
+		Thread.sleep(FIRST_SLEEP);
 		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
-		Thread.sleep(3000);
+		Thread.sleep(SECOND_SLEEP);
 		Mockito.verify(calculationBroadcastHandler, Mockito.times(1)).abortJobExecution(job);
 	}
 
@@ -167,24 +169,33 @@ public class TimeoutTests {
 	private void submit(int maxNrOfSubmissionTrials, int invoked)
 			throws NoSuchFieldException, InterruptedException, IllegalAccessException {
 		// Actual timeout
-		JobSubmissionTimeout timeout = new JobSubmissionTimeout(submissionBroadcastHandler, job,
-				currentTimestamp, bcMessage, timeToLive);
 		Mockito.when(job.maxNrOfSubmissionTrials()).thenReturn(maxNrOfSubmissionTrials);
 		Mockito.when(job.incrementSubmissionCounter()).thenReturn(1);
-		Field sleepingTimeField = timeout.getClass().getSuperclass().getDeclaredField("sleepingTime");
-		sleepingTimeField.setAccessible(true);
+		Field retrievalTimestampField = AbstractTimeout.class.getDeclaredField("retrievalTimestamp");
+		retrievalTimestampField.setAccessible(true);
+
+		JobSubmissionTimeout timeout = new JobSubmissionTimeout(submissionBroadcastHandler, job,
+				currentTimestamp, bcMessage, timeToLive);
 		Thread t = new Thread(timeout);
 		t.start();
-		Thread.sleep(1000);
+		Thread.sleep(FIRST_SLEEP);
 
-		long sleepingTime = (long) sleepingTimeField.get(timeout);
-		assertEquals(true, sleepingTime <= (timeToLive));
+		long retrievalTimestamp = (long) retrievalTimestampField.get(timeout);
+		long diff = System.currentTimeMillis() - retrievalTimestamp;
+		System.err.println("diff: " + diff + ", After sleep");
+
+		assertEquals(true, diff < timeToLive);
 		timeout.retrievalTimestamp(System.currentTimeMillis(), bcMessage);
-		sleepingTime = (long) sleepingTimeField.get(timeout);
-		assertEquals(true, sleepingTime <= (timeToLive));
-		Thread.sleep(3000);
-		sleepingTime = (long) sleepingTimeField.get(timeout);
-		assertEquals(true, sleepingTime <= 0);
+		retrievalTimestamp = (long) retrievalTimestampField.get(timeout);
+		diff = System.currentTimeMillis() - retrievalTimestamp;
+		assertEquals(true, diff < timeToLive);
+		Thread.sleep(SECOND_SLEEP);
+		System.err.println("diff: " + diff + ", After sleep");
+		diff = System.currentTimeMillis() - retrievalTimestamp;
+
+		assertEquals(true, diff >= timeToLive);
+
+		System.err.println("diff: " + diff + ", After sleep");
 		Mockito.verify(job, Mockito.times(1)).maxNrOfSubmissionTrials();
 		Mockito.verify(job, Mockito.times(1)).incrementSubmissionCounter();
 		Mockito.verify(submissionExecutor, Mockito.times(invoked)).submit(job);

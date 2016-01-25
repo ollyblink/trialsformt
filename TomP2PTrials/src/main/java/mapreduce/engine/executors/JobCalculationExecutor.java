@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.broadcasting.messages.CompletedBCMessage;
+import mapreduce.engine.executors.performance.PerformanceInfo;
 import mapreduce.execution.context.DHTStorageContext;
 import mapreduce.execution.context.IContext;
 import mapreduce.execution.domains.ExecutorTaskDomain;
@@ -383,7 +384,14 @@ public class JobCalculationExecutor extends AbstractExecutor {
 
 	@Override
 	public JobCalculationExecutor dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
-		return (JobCalculationExecutor) super.dhtConnectionProvider(dhtConnectionProvider);
+		this.dhtConnectionProvider = dhtConnectionProvider;
+		return this;
+	}
+
+	@Override
+	public JobCalculationExecutor performanceInformation(PerformanceInfo performanceInformation) {
+		this.performanceInformation = performanceInformation;
+		return this;
 	}
 
 }

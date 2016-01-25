@@ -117,9 +117,9 @@ public class ProcedureTest {
 		ExecutorTaskDomain etd = ExecutorTaskDomain
 				.create("", "3", 0, JobProcedureDomain.create("", 0, "3", "", 0)).resultHash(Number160.ONE);
 
-		procedure.addTask(Task.create("1", "E1").addOutputDomain(etd));
-		procedure.addTask(Task.create("2", "E1").addOutputDomain(etd));
-		procedure.addTask(Task.create("3", "E1").addOutputDomain(etd));
+		procedure.addTask(Task.create("1", "E1").nrOfSameResultHash(1).addOutputDomain(etd));
+		procedure.addTask(Task.create("2", "E1").nrOfSameResultHash(1).addOutputDomain(etd));
+		procedure.addTask(Task.create("3", "E1").nrOfSameResultHash(1).addOutputDomain(etd));
 
 		Field tasksF = Procedure.class.getDeclaredField("tasks");
 		tasksF.setAccessible(true);
@@ -290,7 +290,7 @@ public class ProcedureTest {
 		tasks.add(Task.create("T" + counter++, "E1"));
 
 		for (Task t : tasks) {
-			assertEquals(1, t.nrOfSameResultHash());
+			assertEquals(0, t.nrOfSameResultHash());
 			assertEquals(false, t.needsMultipleDifferentExecutors());
 			procedure.addTask(t);
 			assertEquals(2, t.nrOfSameResultHash());
@@ -312,7 +312,7 @@ public class ProcedureTest {
 		Method containsExecutor = Procedure.class.getSuperclass().getDeclaredMethod("containsExecutor",
 				String.class);
 		containsExecutor.setAccessible(true);
-		Procedure p = Procedure.create(Mockito.mock(IExecutable.class), 0);
+		Procedure p = Procedure.create(Mockito.mock(IExecutable.class), 0).nrOfSameResultHash(1);
 		JobProcedureDomain jpd = Mockito.mock(JobProcedureDomain.class);
 		assertEquals(false, containsExecutor.invoke(p, "E1"));
 		Mockito.when(jpd.executor()).thenReturn("E1");

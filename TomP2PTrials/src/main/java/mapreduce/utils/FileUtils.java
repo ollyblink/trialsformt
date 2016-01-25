@@ -88,11 +88,13 @@ public enum FileUtils {
 		for (String fP : pathVisitor) {
 			File file = new File(fP);
 			if (file.exists()) {
+//				System.err.println("deleting: "+ fP);
 				file.delete();
 			}
 		}
 		File file = new File(outFolder);
 		if (file.exists()) {
+//			System.err.println("deleting: "+ outFolder);
 			file.delete();
 		}
 	}
