@@ -51,7 +51,7 @@ public class JobCalculationExecutorTest {
 	private static Job job;
 
 	@BeforeClass
-	public static void init() {
+	public static void init() throws InterruptedException {
 		dhtConnectionProvider = TestUtils.getTestConnectionProvider(random.nextInt(50000) + 4000, 1);
 
 		JobCalculationBroadcastHandler handler = Mockito.mock(JobCalculationBroadcastHandler.class);
@@ -65,7 +65,7 @@ public class JobCalculationExecutorTest {
 	}
 
 	@AfterClass
-	public static void tearDown() {
+	public static void tearDown() throws InterruptedException {
 		dhtConnectionProvider.shutdown();
 	}
 
@@ -104,19 +104,15 @@ public class JobCalculationExecutorTest {
 
 		task.addOutputDomain(outputETD.resultHash(context.resultHash()));
 		procedure.dataInputDomain(inputJPD);
-		Futures.whenAllSuccess(context.futurePutData()).awaitUninterruptibly()
-				.addListener(new BaseFutureAdapter<FutureDone<FuturePut[]>>() {
+		FutureDone<List<FuturePut>> future = Futures.whenAllSuccess(context.futurePutData())
+				.awaitUninterruptibly();
 
-					@Override
-					public void operationComplete(FutureDone<FuturePut[]> future) throws Exception {
-						if (future.isSuccess()) {
-							jobExecutor.switchDataFromTaskToProcedureDomain(procedure, task);
-						} else {
-							logger.info("No success");
-						}
-					}
-
-				});
+		if (future.isSuccess()) {
+			jobExecutor.switchDataFromTaskToProcedureDomain(procedure, task);
+		} else {
+			logger.info("No success");
+		}
+		Thread.sleep(2000);
 		assertEquals(true, task.isFinished());
 		assertEquals(true, task.isInProcedureDomain());
 		JobProcedureDomain jobDomain = JobProcedureDomain.create(job.id(), 0, jobExecutor.id(),
@@ -128,44 +124,44 @@ public class JobCalculationExecutorTest {
 
 	private void checkDHTValues(IDHTConnectionProvider dhtConnectionProvider, Map<String, Integer> toCheck,
 			IDomain jobDomain) {
-		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, jobDomain.toString())
-				.awaitUninterruptibly().addListener(new BaseFutureAdapter<FutureGet>() {
+		FutureGet futureGet = dhtConnectionProvider
+				.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, jobDomain.toString())
+				.awaitUninterruptibly();
 
-					@Override
-					public void operationComplete(FutureGet future) throws Exception {
-						if (future.isSuccess()) {
-							Set<Number640> keys = future.dataMap().keySet();
-							assertEquals(5, keys.size());
-							for (Number640 key : keys) {
-								String value = (String) future.dataMap().get(key).object();
-								assertEquals(true, toCheck.containsKey(value));
-								logger.info("testSwitchDataFromTaskToProcedureDomain():toCheck.containsKey("
-										+ value + ")?" + (toCheck.containsKey(value)));
-								dhtConnectionProvider.getAll(value, jobDomain.toString())
-										.awaitUninterruptibly()
-										.addListener(new BaseFutureAdapter<FutureGet>() {
+		if (futureGet.isSuccess()) {
+			try {
+				Set<Number640> keys = futureGet.dataMap().keySet();
+				assertEquals(5, keys.size());
+				for (Number640 key : keys) {
+					String value = (String) futureGet.dataMap().get(key).object();
+					assertEquals(true, toCheck.containsKey(value));
+					logger.info("testSwitchDataFromTaskToProcedureDomain():toCheck.containsKey(" + value
+							+ ")?" + (toCheck.containsKey(value)));
+					dhtConnectionProvider.getAll(value, jobDomain.toString()).awaitUninterruptibly()
+							.addListener(new BaseFutureAdapter<FutureGet>() {
 
-									@Override
-									public void operationComplete(FutureGet future) throws Exception {
-										if (future.isSuccess()) {
-											Set<Number640> keys = future.dataMap().keySet();
-											assertEquals(toCheck.get(value).intValue(), keys.size());
-											logger.info(
-													"testSwitchDataFromTaskToProcedureDomain():toCheck.get("
-															+ value + ").intValue() == " + keys.size() + "?"
-															+ (toCheck.get(value).intValue() == keys.size()));
-										} else {
-											fail();
-										}
+								@Override
+								public void operationComplete(FutureGet future) throws Exception {
+									if (future.isSuccess()) {
+										Set<Number640> keys = future.dataMap().keySet();
+										assertEquals(toCheck.get(value).intValue(), keys.size());
+										logger.info("testSwitchDataFromTaskToProcedureDomain():toCheck.get("
+												+ value + ").intValue() == " + keys.size() + "?"
+												+ (toCheck.get(value).intValue() == keys.size()));
+									} else {
+										fail();
 									}
-								});
-							}
+								}
+							});
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				fail();
+			}
 
-						} else {
-							fail();
-						}
-					}
-				});
+		} else {
+			fail();
+		}
 	}
 
 	@Test

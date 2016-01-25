@@ -45,8 +45,7 @@ public class ComparableBCMessageTask<T> extends FutureTask<T> implements Compara
 			}
 		} else {
 			result = jobPriority.compareTo(o.jobPriority);
-		}
-		// System.out.println(toString() +" vs. " + o.toString() +": "+result);
+		} 
 		return result;
 	}
 

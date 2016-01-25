@@ -1,0 +1,4 @@
+           Draw dies,  or drawing dies (as they are also called),  are simply 
+     ring dies used to reduce the diameter of a component.   When you size a 
+     cast  bullet,  you are 
+          

@@ -3,6 +3,7 @@ package mapreduce.engine.componenttests;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.StringTokenizer;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +32,6 @@ import mapreduce.execution.jobs.PriorityLevel;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.WordCountMapper;
 import mapreduce.execution.procedures.WordCountReducer;
-import mapreduce.execution.procedures.WordsWithSameCounts;
 import mapreduce.execution.tasks.Task;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.testutils.TestUtils;
@@ -41,7 +42,6 @@ import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.storage.Data;
 
 public class JobCalculationComponentTest {
 	private static Logger logger = LoggerFactory.getLogger(JobCalculationComponentTest.class);
@@ -59,6 +59,7 @@ public class JobCalculationComponentTest {
 				.messageConsumer(calculationMessageConsumer);
 		// int bootstrapPort = 4001;
 		dhtCon = TestUtils.getTestConnectionProvider(executorBCHandler);
+		Thread.sleep(1000);
 		// DHTConnectionProvider
 		// .create("192.168.43.65", bootstrapPort, bootstrapPort).broadcastHandler(executorBCHandler)
 		// .storageFilePath("C:\\Users\\Oliver\\Desktop\\storage")
@@ -71,6 +72,7 @@ public class JobCalculationComponentTest {
 	@After
 	public void tearDown() throws Exception {
 		dhtCon.shutdown();
+		Thread.sleep(1000);
 	}
 
 	private static class Tuple {
@@ -101,7 +103,7 @@ public class JobCalculationComponentTest {
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
-				.calculatorTimeToLive(Long.MAX_VALUE)
+				.calculatorTimeToLive(2000l)
 				.addSucceedingProcedure(WordCountReducer.create(2), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
@@ -126,7 +128,7 @@ public class JobCalculationComponentTest {
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
-				.calculatorTimeToLive(Long.MAX_VALUE)
+				.calculatorTimeToLive(2000l)
 				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
@@ -150,7 +152,7 @@ public class JobCalculationComponentTest {
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
-				.calculatorTimeToLive(Long.MAX_VALUE)
+				.calculatorTimeToLive(2000l)
 				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
@@ -175,7 +177,7 @@ public class JobCalculationComponentTest {
 		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
 				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
 						false)
-				.calculatorTimeToLive(Long.MAX_VALUE)
+				.calculatorTimeToLive(2000l)
 				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
@@ -202,23 +204,27 @@ public class JobCalculationComponentTest {
 		// !!!!!!!!!!!!!!!!!!ADDitionally it filters out words with lower count than 10 (this is important as
 		// it requires something to happen as no output data is produced, nor transferred
 		// ===========================================================================================================================================================
-		String text = FileUtils.INSTANCE.readLines(System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/componenttests/testfile.txt");
-		int MAX_COUNT = 10;
-		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
-						false)
-				.calculatorTimeToLive(Long.MAX_VALUE)
-				.addSucceedingProcedure(WordCountReducer.create(MAX_COUNT), null, 1, 1, false, false)
-				// .addSucceedingProcedure(WordsWithSameCounts.create(), null, 1, 1, false, false)
-				;
+		try {
+			String text = FileUtils.INSTANCE.readLines(System.getProperty("user.dir")
+					+ "/src/test/java/mapreduce/engine/componenttests/largerinputfiles/testfile.txt");
+			int MAX_COUNT = 0;
+			Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
+					.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
+							false)
+					.calculatorTimeToLive(2000)
+					.addSucceedingProcedure(WordCountReducer.create(MAX_COUNT), null, 1, 1, false, false)
+					// .addSucceedingProcedure(WordsWithSameCounts.create(), null, 1, 1, false, false)
+					;
 
-		List<Tuple> tasks = new ArrayList<>();
-		int counter = 0;
-		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), text));
-		HashMap<String, Integer> res = getCounts(tasks);
-		HashMap<String, Integer> res2 = filter(res, MAX_COUNT);
-		executeTest(job, tasks, res2);
+			List<Tuple> tasks = new ArrayList<>();
+			int counter = 0;
+			tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), text));
+			HashMap<String, Integer> res = getCounts(tasks);
+			HashMap<String, Integer> res2 = filter(res, MAX_COUNT);
+			executeTest(job, tasks, res2);
+		} catch (NoSuchFileException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private HashMap<String, Integer> filter(HashMap<String, Integer> res, int maxCount) {
@@ -232,19 +238,31 @@ public class JobCalculationComponentTest {
 	}
 
 	private void executeTest(Job job, List<Tuple> tasks, Map<String, Integer> res)
-			throws ClassNotFoundException, IOException {
+			throws ClassNotFoundException, IOException, InterruptedException {
 
 		execute(job, tasks);
 
+		while (executorBCHandler.jobFutures().isEmpty()) {
+			System.err.println("sleeping while jobFutures is empty");
+			Thread.sleep(1000);
+		}
+		job = executorBCHandler.jobFutures().keySet().iterator().next();
+
+		while (!job.isFinished()) {
+			System.err.println("sleeping while job is not finished");
+			Thread.sleep(1000);
+		}
 		FutureGet getKeys = dhtCon
 				.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS,
 						executorBCHandler.getJob(job.id()).currentProcedure().dataInputDomain().toString())
 				.awaitUninterruptibly();
 		if (getKeys.isSuccess()) {
+			System.err.println("here");
 			Set<Number640> keySet = getKeys.dataMap().keySet();
 			List<String> resultKeys = new ArrayList<>();
 			for (Number640 keyN : keySet) {
 				String outKey = (String) getKeys.dataMap().get(keyN).object();
+
 				resultKeys.add(outKey);
 			}
 			assertEquals(res.keySet().size(), resultKeys.size());
@@ -252,7 +270,7 @@ public class JobCalculationComponentTest {
 				assertEquals(true, resultKeys.contains(key));
 				checkGets(job, key, 1, res.get(key));
 			}
-		}
+		} 
 	}
 
 	private HashMap<String, Integer> getCounts(List<Tuple> tasks) {
@@ -293,7 +311,7 @@ public class JobCalculationComponentTest {
 		}
 	}
 
-	private void execute(Job job, List<Tuple> tasks) {
+	private void execute(Job job, List<Tuple> tasks) throws InterruptedException {
 
 		// executorBCHandler.dhtConnectionProvider(dhtCon);
 
@@ -327,14 +345,7 @@ public class JobCalculationComponentTest {
 			dhtCon.broadcastCompletion(msg);
 		}
 
-		while (!executorBCHandler.getJob(job.id()).isFinished()) {
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
+		Thread.sleep(1000);
 	}
 
 }

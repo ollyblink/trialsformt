@@ -249,10 +249,10 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 								@Override
 								public void operationComplete(FutureDone<FutureGet> future) throws Exception {
 									if (future.isSuccess()) {
-										flush(resultOutputFolder);
 										logger.info("Successfully wrote data to file system.Marking job "
 												+ resultDomain.jobId() + " as finished.");
 										markAsRetrieved(resultDomain.jobId());
+										flush(resultOutputFolder);
 									}
 								}
 
@@ -273,23 +273,24 @@ public class JobSubmissionExecutor extends AbstractExecutor {
 	}
 
 	private void flush(String resultOutputFolder) {
-		if (!outputLines.isEmpty()) {
-			createFolder(resultOutputFolder);
-			Path file = Paths.get(resultOutputFolder + "/file_" + (fileCounter++) + ".txt");
-			Charset charset = Charset.forName(taskDataComposer.fileEncoding());
-			try (BufferedWriter writer = Files.newBufferedWriter(file, charset)) {
-				synchronized (outputLines) {
+		synchronized (outputLines) {
+			if (!outputLines.isEmpty()) {
+				createFolder(resultOutputFolder);
+				Path file = Paths.get(resultOutputFolder + "/file_" + (fileCounter++) + ".txt");
+				Charset charset = Charset.forName(taskDataComposer.fileEncoding());
+				try (BufferedWriter writer = Files.newBufferedWriter(file, charset)) {
+
 					for (String line : outputLines) {
 						writer.write(line + "\n");
 					}
 					outputLines.clear();
-				}
-				writer.flush();
-				writer.close();
-			} catch (IOException x) {
-				System.err.format("IOException: %s%n", x);
-			}
 
+					writer.flush();
+					writer.close();
+				} catch (IOException x) {
+					System.err.format("IOException: %s%n", x);
+				}
+			}
 		}
 	}
 

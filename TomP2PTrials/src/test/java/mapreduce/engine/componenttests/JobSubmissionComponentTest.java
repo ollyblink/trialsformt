@@ -151,7 +151,7 @@ public class JobSubmissionComponentTest {
 		Set<Job> submittedJobs = (Set<Job>) jobsField.get(submissionExecutor);
 		submittedJobs.add(job);
 		submissionBCHandler.evaluateReceivedMessage(bcMessage);
-
+		Thread.sleep(1000);
 		List<String> pathVisitor = new ArrayList<>();
 		String outFolder = fileOutputFolder + "/tmp";
 		FileUtils.INSTANCE.getFiles(new File(outFolder), pathVisitor);

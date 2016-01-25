@@ -1,6 +1,6 @@
 package mapreduce.engine.priorityexecutor;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,13 +9,17 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import mapreduce.engine.multithreading.PriorityExecutor;
 import mapreduce.execution.domains.ExecutorTaskDomain;
+import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.tasks.Task;
 import net.tomp2p.peers.Number160;
 
 public class ComparableTaskExecutionTaskTest {
+	private static Logger logger = LoggerFactory.getLogger(ComparableTaskExecutionTaskTest.class);
 
 	@Test
 	public void testNonFinished() {
@@ -30,23 +34,30 @@ public class ComparableTaskExecutionTaskTest {
 	private void sortingTest(int numberOfResultHashs, int[] idOrder) {
 		List<Task> tasks = new ArrayList<>();
 		for (int i = 0; i < 6; ++i) {
-			tasks.add((Task) Task.create(i + "", "E1").nrOfSameResultHash(numberOfResultHashs).needsMultipleDifferentExecutors(false));
+			tasks.add((Task) Task.create(i + "", "E1").nrOfSameResultHash(numberOfResultHashs)
+					.needsMultipleDifferentExecutors(false));
 		}
 
 		// FINISHED
-		tasks.get(0).addOutputDomain(ExecutorTaskDomain.create(tasks.get(0).key(), "E1", 0, null).resultHash(Number160.ZERO));
-		tasks.get(0).addOutputDomain(ExecutorTaskDomain.create(tasks.get(0).key(), "E1", 0, null).resultHash(Number160.ZERO));
-
-		// NOT FINISHED, NOT SAME RESULT HASH, BUT EXECUTING ENOUGH
-		tasks.get(1).addOutputDomain(ExecutorTaskDomain.create(tasks.get(0).key(), "E1", 0, null).resultHash(Number160.ZERO));
+		JobProcedureDomain jpd = JobProcedureDomain.create("J1", 0, "E1", "P1", 0);
+		tasks.get(0).addOutputDomain(
+				ExecutorTaskDomain.create(tasks.get(0).key(), "E1", 0, jpd).resultHash(Number160.ZERO));
+		tasks.get(0).addOutputDomain(
+				ExecutorTaskDomain.create(tasks.get(0).key(), "E2", 0, jpd).resultHash(Number160.ZERO));
+		logger.info("task 0 has outputdomains: " + tasks.get(0));
+		// NOT FINISHED, EXECUTING ENOUGH
+		tasks.get(1).addOutputDomain(
+				ExecutorTaskDomain.create(tasks.get(0).key(), "E1", 0, jpd).resultHash(Number160.ZERO));
 		tasks.get(1).incrementActiveCount();
 
-		// NOT FINISHED, NOT SAME RESULT HASH, NO OTHERS EXECUTING
-		tasks.get(2).addOutputDomain(ExecutorTaskDomain.create(tasks.get(0).key(), "E1", 0, null).resultHash(Number160.ZERO));
+		// NOT FINISHED, NO OTHERS EXECUTING
+		tasks.get(2).addOutputDomain(
+				ExecutorTaskDomain.create(tasks.get(0).key(), "E1", 0, jpd).resultHash(Number160.ZERO));
 
 		// NO RESULT HASH YET, BUT EXECUTING MAX NUMBER OF TIMES
 		tasks.get(3).incrementActiveCount();
 		tasks.get(3).incrementActiveCount();
+
 		// NO RESULT HASH YET, BUT EXECUTING ONCE
 		tasks.get(4).incrementActiveCount();
 
@@ -71,7 +82,7 @@ public class ComparableTaskExecutionTaskTest {
 							}
 						} else if (o1.currentMaxNrOfSameResultHash() < o2.currentMaxNrOfSameResultHash()) {
 							return -1;
-						} else {// if (o1.currentMaxNrOfSameResultHash() > o2.currentMaxNrOfSameResultHash()) {
+						} else {
 							return 1;
 						}
 
@@ -93,6 +104,7 @@ public class ComparableTaskExecutionTaskTest {
 			}
 		});
 
+		logger.info("After sorting: " + tasks);
 		for (int i = 0; i < tasks.size(); ++i) {
 			assertEquals(idOrder[i], Integer.parseInt(tasks.get(i).key()));
 		}
@@ -115,11 +127,11 @@ public class ComparableTaskExecutionTaskTest {
 
 				@Override
 				public void run() {
-					System.err.println(idOrder[counter] + "," + Integer.parseInt(task.key()));
+					logger.info(idOrder[counter] + "," + Integer.parseInt(task.key()));
 					trueValues[counter] = idOrder[counter] == Integer.parseInt(task.key());
 					try {
 						Thread.sleep(10);
-					} catch (InterruptedException e) { 
+					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
