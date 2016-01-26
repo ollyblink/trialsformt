@@ -2,6 +2,9 @@ package mapreduce.execution.tasks;
 
 import java.io.Serializable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.IDomain;
 import mapreduce.execution.finishables.AbstractFinishable;
@@ -9,6 +12,9 @@ import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.peers.Number160;
 
 public class Task extends AbstractFinishable implements Serializable, Cloneable {
+	private static Logger logger = LoggerFactory.getLogger(Task.class);
+
+
 	/**
 	 * 
 	 */
@@ -18,8 +24,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	/** The executor of this task. */
 	private String localExecutorId;
 	/**
-	 * Set true if this tasks's result keys and values were successfully transferred from executor task domain
-	 * to executor job procedure domain
+	 * Set true if this tasks's result keys and values were successfully transferred from executor task domain to executor job procedure domain
 	 */
 	private volatile boolean isInProcedureDomain = false;
 	/** Used in the scheduler to not schedule too many executions of the same task */
@@ -35,8 +40,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	/**
-	 * Checks if a task can be executed or not. Important when adding to the executor
-	 * in @see{JobCalculationMessageConsumer.trySubmitTasks}
+	 * Checks if a task can be executed or not. Important when adding to the executor in @see{JobCalculationMessageConsumer.trySubmitTasks}
 	 * 
 	 * @param localExecutorId
 	 * @return
@@ -66,6 +70,13 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 
 	}
 
+	@Override
+	public boolean isFinished() {
+		boolean isFinished = super.isFinished();
+		logger.info("isFinished():: [" + key + "] is finished? (" + isFinished + ")");
+		return isFinished;
+	}
+
 	public Task incrementActiveCount() {
 		if (canBeExecuted()) {
 			++this.activeCount;
@@ -78,8 +89,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 	}
 
 	/**
-	 * Earlier, this had an actual meaning. Now it's only there to tell apart the executions if the same
-	 * executor executes the task multiple times
+	 * Earlier, this had an actual meaning. Now it's only there to tell apart the executions if the same executor executes the task multiple times
 	 * 
 	 * @return
 	 */
@@ -142,7 +152,7 @@ public class Task extends AbstractFinishable implements Serializable, Cloneable 
 
 	@Override
 	public String toString() {
-		return "Task [\n\tkey=" + key + "\n\tisInProcedureDomain=" + isInProcedureDomain + "\n\toutputDomains=" + outputDomains + "\n]\n";
+		return "Task [key=" + key + ", isInProcedureDomain=" + isInProcedureDomain + ", outputDomains=" + outputDomains + "]";
 	}
 
 	@Override

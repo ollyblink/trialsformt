@@ -19,24 +19,24 @@ public class DefaultResultPrinter implements IResultPrinter {
 						if (future.isSuccess()) {
 							Set<Number640> keySet = future.dataMap().keySet();
 							System.out.println("Found: " + keySet.size() + " finished tasks.");
-							for (Number640 k : keySet) {
-								String key = (String) future.dataMap().get(k).object();
-								dhtConnectionProvider.getAll(key, outputDomainString.toString()).addListener(new BaseFutureAdapter<FutureGet>() {
-
-									@Override
-									public void operationComplete(FutureGet future) throws Exception {
-										if (future.isSuccess()) {
-											Set<Number640> keySet2 = future.dataMap().keySet();
-											String values = "";
-											for (Number640 k2 : keySet2) {
-												values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
-											}
-											System.err.println(key + ":" + values);
-										}
-									}
-
-								});
-							}
+//							for (Number640 k : keySet) {
+//								String key = (String) future.dataMap().get(k).object();
+//								dhtConnectionProvider.getAll(key, outputDomainString.toString()).addListener(new BaseFutureAdapter<FutureGet>() {
+//
+//									@Override
+//									public void operationComplete(FutureGet future) throws Exception {
+//										if (future.isSuccess()) {
+//											Set<Number640> keySet2 = future.dataMap().keySet();
+//											String values = "";
+//											for (Number640 k2 : keySet2) {
+//												values += ((Value) future.dataMap().get(k2).object()).value() + ", ";
+//											}
+//											System.err.println(key + ":" + values);
+//										}
+//									}
+//
+//								});
+//							}
 						}
 					}
 

@@ -52,21 +52,7 @@ public class JobCalculationComponentTest {
 
 	@Before
 	public void setUp() throws Exception {
-		calculationExecutor = JobCalculationExecutor.create();
-
-		calculationMessageConsumer = JobCalculationMessageConsumer.create().executor(calculationExecutor);
-		executorBCHandler = JobCalculationBroadcastHandler.create()
-				.messageConsumer(calculationMessageConsumer);
-		// int bootstrapPort = 4001;
-		dhtCon = TestUtils.getTestConnectionProvider(executorBCHandler);
-		Thread.sleep(1000);
-		// DHTConnectionProvider
-		// .create("192.168.43.65", bootstrapPort, bootstrapPort).broadcastHandler(executorBCHandler)
-		// .storageFilePath("C:\\Users\\Oliver\\Desktop\\storage")
-		;
-		dhtCon.broadcastHandler(executorBCHandler);
-		calculationExecutor.dhtConnectionProvider(dhtCon);
-		calculationMessageConsumer.dhtConnectionProvider(dhtCon);
+		
 	}
 
 	@After
@@ -100,11 +86,8 @@ public class JobCalculationComponentTest {
 		// it requires something to happen as no output data is produced, nor transferred
 		// ===========================================================================================================================================================
 
-		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
-						false)
-				.calculatorTimeToLive(2000l)
-				.addSucceedingProcedure(WordCountReducer.create(2), null, 1, 1, false, false);
+		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES).addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+				.calculatorTimeToLive(2000l).addSucceedingProcedure(WordCountReducer.create(2), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
 		tasks.add(new Tuple(Task.create("testfile1", "S1"), "hello hello world"));
@@ -125,11 +108,8 @@ public class JobCalculationComponentTest {
 		// time)
 		// ===========================================================================================================================================================
 
-		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
-						false)
-				.calculatorTimeToLive(2000l)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
+		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES).addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+				.calculatorTimeToLive(2000l).addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
 		tasks.add(new Tuple(Task.create("testfile1", "S1"), "the quick fox jumps over the lazy brown dog"));
@@ -149,11 +129,8 @@ public class JobCalculationComponentTest {
 		// time)
 		// ===========================================================================================================================================================
 
-		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
-						false)
-				.calculatorTimeToLive(2000l)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
+		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES).addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+				.calculatorTimeToLive(2000l).addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
 		tasks.add(new Tuple(Task.create("testfile1", "S1"), "the quick fox jumps over the lazy brown dog"));
@@ -174,20 +151,14 @@ public class JobCalculationComponentTest {
 		// time)
 		// ===========================================================================================================================================================
 
-		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
-						false)
-				.calculatorTimeToLive(2000l)
-				.addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
+		Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES).addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+				.calculatorTimeToLive(2000l).addSucceedingProcedure(WordCountReducer.create(), null, 1, 1, false, false);
 
 		List<Tuple> tasks = new ArrayList<>();
 		int counter = 0;
-		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"),
-				"the quick fox jumps over the lazy brown dog"));
-		tasks.add(
-				new Tuple(Task.create("testfile_" + counter++, "S1"), "sphinx of black quartz judge my vow"));
-		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"),
-				"the five boxing wizards jump quickly"));
+		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), "the quick fox jumps over the lazy brown dog"));
+		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), "sphinx of black quartz judge my vow"));
+		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), "the five boxing wizards jump quickly"));
 		HashMap<String, Integer> res = getCounts(tasks);
 		executeTest(job, tasks, res);
 	}
@@ -205,14 +176,11 @@ public class JobCalculationComponentTest {
 		// it requires something to happen as no output data is produced, nor transferred
 		// ===========================================================================================================================================================
 		try {
-			String text = FileUtils.INSTANCE.readLines(System.getProperty("user.dir")
-					+ "/src/test/java/mapreduce/engine/componenttests/largerinputfiles/testfile.txt");
+			System.err.println("Before Reading file");
+			String text = FileUtils.INSTANCE.readLines(System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/componenttests/largerinputfiles/testfile.txt");
 			int MAX_COUNT = 0;
-			Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES)
-					.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false,
-							false)
-					.calculatorTimeToLive(2000)
-					.addSucceedingProcedure(WordCountReducer.create(MAX_COUNT), null, 1, 1, false, false)
+			Job job = Job.create("S1", PriorityLevel.MODERATE).maxFileSize(FileSize.THIRTY_TWO_BYTES).addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+					.calculatorTimeToLive(2000).addSucceedingProcedure(WordCountReducer.create(MAX_COUNT), null, 1, 1, false, false)
 					// .addSucceedingProcedure(WordsWithSameCounts.create(), null, 1, 1, false, false)
 					;
 
@@ -221,6 +189,7 @@ public class JobCalculationComponentTest {
 			tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), text));
 			HashMap<String, Integer> res = getCounts(tasks);
 			HashMap<String, Integer> res2 = filter(res, MAX_COUNT);
+			System.err.println("Before Execution");
 			executeTest(job, tasks, res2);
 		} catch (NoSuchFileException e) {
 			e.printStackTrace();
@@ -235,42 +204,6 @@ public class JobCalculationComponentTest {
 			}
 		}
 		return res2;
-	}
-
-	private void executeTest(Job job, List<Tuple> tasks, Map<String, Integer> res)
-			throws ClassNotFoundException, IOException, InterruptedException {
-
-		execute(job, tasks);
-
-		while (executorBCHandler.jobFutures().isEmpty()) {
-			System.err.println("sleeping while jobFutures is empty");
-			Thread.sleep(1000);
-		}
-		job = executorBCHandler.jobFutures().keySet().iterator().next();
-
-		while (!job.isFinished()) {
-			System.err.println("sleeping while job is not finished");
-			Thread.sleep(1000);
-		}
-		FutureGet getKeys = dhtCon
-				.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS,
-						executorBCHandler.getJob(job.id()).currentProcedure().dataInputDomain().toString())
-				.awaitUninterruptibly();
-		if (getKeys.isSuccess()) {
-			System.err.println("here");
-			Set<Number640> keySet = getKeys.dataMap().keySet();
-			List<String> resultKeys = new ArrayList<>();
-			for (Number640 keyN : keySet) {
-				String outKey = (String) getKeys.dataMap().get(keyN).object();
-
-				resultKeys.add(outKey);
-			}
-			assertEquals(res.keySet().size(), resultKeys.size());
-			for (String key : res.keySet()) {
-				assertEquals(true, resultKeys.contains(key));
-				checkGets(job, key, 1, res.get(key));
-			}
-		} 
 	}
 
 	private HashMap<String, Integer> getCounts(List<Tuple> tasks) {
@@ -291,12 +224,59 @@ public class JobCalculationComponentTest {
 		return res;
 	}
 
-	private void checkGets(Job job, String key, int nrOfValues, int sum)
-			throws ClassNotFoundException, IOException {
-		FutureGet getValues = dhtCon
-				.getAll(key,
-						executorBCHandler.getJob(job.id()).currentProcedure().dataInputDomain().toString())
-				.awaitUninterruptibly();
+	private void executeTest(Job job, List<Tuple> tasks, Map<String, Integer> res) throws ClassNotFoundException, IOException, InterruptedException {
+		calculationExecutor = JobCalculationExecutor.create();
+
+		calculationMessageConsumer = JobCalculationMessageConsumer.create().executor(calculationExecutor);
+		executorBCHandler = JobCalculationBroadcastHandler.create().messageConsumer(calculationMessageConsumer);
+		// int bootstrapPort = 4001;
+		dhtCon = TestUtils.getTestConnectionProvider(executorBCHandler);
+		Thread.sleep(1000);
+		// DHTConnectionProvider
+		// .create("192.168.43.65", bootstrapPort, bootstrapPort).broadcastHandler(executorBCHandler)
+		// .storageFilePath("C:\\Users\\Oliver\\Desktop\\storage")
+		;
+		dhtCon.broadcastHandler(executorBCHandler);
+		calculationExecutor.dhtConnectionProvider(dhtCon);
+		calculationMessageConsumer.dhtConnectionProvider(dhtCon);
+		long start = System.currentTimeMillis();
+		System.err.println("Executing for "+ res.keySet().size() +" words");
+		execute(job, tasks);
+
+		while (executorBCHandler.jobFutures().isEmpty()) {
+			System.err.println("sleeping while jobFutures is empty");
+			Thread.sleep(1000);
+		}
+		job = executorBCHandler.jobFutures().keySet().iterator().next();
+
+		long secs = 0;
+		long interv = 5000;
+		while (!job.isFinished()) {
+			System.err.println("slept for " + (secs/1000) +" secs.");
+			Thread.sleep(interv);
+			secs += interv;
+		}
+		long end = System.currentTimeMillis();
+		FutureGet getKeys = dhtCon.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, executorBCHandler.getJob(job.id()).currentProcedure().dataInputDomain().toString()).awaitUninterruptibly();
+		if (getKeys.isSuccess()) { 
+			Set<Number640> keySet = getKeys.dataMap().keySet();
+			List<String> resultKeys = new ArrayList<>();
+			for (Number640 keyN : keySet) {
+				String outKey = (String) getKeys.dataMap().get(keyN).object();
+
+				resultKeys.add(outKey);
+			}
+			assertEquals(res.keySet().size(), resultKeys.size());
+			for (String key : res.keySet()) {
+				assertEquals(true, resultKeys.contains(key));
+				checkGets(job, key, 1, res.get(key));
+			}
+			System.err.println("Execution time for "+ keySet.size()+" words:: " + ((end - start) / 1000) + "s.");
+		}
+	}
+
+	private void checkGets(Job job, String key, int nrOfValues, int sum) throws ClassNotFoundException, IOException {
+		FutureGet getValues = dhtCon.getAll(key, executorBCHandler.getJob(job.id()).currentProcedure().dataInputDomain().toString()).awaitUninterruptibly();
 		if (getValues.isSuccess()) {
 			Set<Number640> valueSet = getValues.dataMap().keySet();
 			assertEquals(1, valueSet.size());
@@ -318,27 +298,21 @@ public class JobCalculationComponentTest {
 		logger.info("Procedures before put: " + job.procedures());
 		dhtCon.put(DomainProvider.JOB, job, job.id()).awaitUninterruptibly();
 		Procedure procedure = job.currentProcedure();
-		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), job.submissionCount(), "S1",
-				procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
-		procedure.dataInputDomain(JobProcedureDomain
-				.create(job.id(), job.submissionCount(), "S1", DomainProvider.INITIAL_PROCEDURE, -1)
-				.expectedNrOfFiles(tasks.size())).addOutputDomain(outputJPD);
+		JobProcedureDomain outputJPD = JobProcedureDomain.create(job.id(), job.submissionCount(), "S1", procedure.executable().getClass().getSimpleName(), procedure.procedureIndex());
+		procedure.dataInputDomain(JobProcedureDomain.create(job.id(), job.submissionCount(), "S1", DomainProvider.INITIAL_PROCEDURE, -1).expectedNrOfFiles(tasks.size())).addOutputDomain(outputJPD);
 
 		List<IBCMessage> msgs = new ArrayList<>();
 		for (Tuple tuple : tasks) {
-			ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(tuple.task.key(), "S1",
-					tuple.task.newStatusIndex(), outputJPD);
-			IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD)
-					.dhtConnectionProvider(dhtCon);
+			ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(tuple.task.key(), "S1", tuple.task.newStatusIndex(), outputJPD);
+			IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtCon);
 
 			context.write(tuple.task.key(), tuple.value);
 			Futures.whenAllSuccess(context.futurePutData()).awaitUninterruptibly();
 			outputETD.resultHash(context.resultHash());
-			IBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD,
-					procedure.dataInputDomain());
+			IBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD, procedure.dataInputDomain());
 			msgs.add(msg);
 		}
-		// logger.info("Procedures before broadcast: " + job.procedures());
+		logger.info("Procedures before broadcast: " + job.procedures());
 
 		for (IBCMessage msg : msgs) {
 			logger.info("XXXinput: " + msg.inputDomain() + ", output: " + msg.outputDomain());

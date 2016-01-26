@@ -73,7 +73,7 @@ public class Job implements Serializable, Cloneable {
 
 	private int submissionCounter = 0;
 
-	/** used by the submitting entity to mark this job as truely finished */
+	/** used by the submitting entity to mark this job as truly finished */
 	private boolean isRetrieved;
 	/**
 	 * How many times should the job be resubmitted in case time ran out until a new bc message was received?
@@ -128,9 +128,7 @@ public class Job implements Serializable, Cloneable {
 
 	// Getters
 	public boolean isFinished() {
-		for (Procedure procedure : procedures) {
-			logger.info("isFinished(): is procedure [" + procedure.executable().getClass().getSimpleName()
-					+ "] finished? " + procedure.isFinished());
+		for (Procedure procedure : procedures) { 
 			if (!procedure.isFinished()) {
 				return false;
 			}

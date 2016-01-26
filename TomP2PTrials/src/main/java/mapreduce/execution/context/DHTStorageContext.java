@@ -22,7 +22,7 @@ public class DHTStorageContext implements IContext {
 	private Number160 resultHash = Number160.ZERO;
 	private IDHTConnectionProvider dhtConnectionProvider;
 	private List<FuturePut> futurePutData = SyncedCollectionProvider.syncedArrayList();
-	private ExecutorTaskDomain outputExecutorTaskDomain;
+	private ExecutorTaskDomain oETD;
 	private IExecutable combiner;
 	private ListMultimap<Object, Object> valuesForCombiner;
 	private IContext combinerContext;
@@ -42,7 +42,6 @@ public class DHTStorageContext implements IContext {
 
 	@Override
 	public void write(Object keyOut, Object valueOut) {
-		logger.info("Try to store <" + keyOut + "," + valueOut + ">.domain(" + outputExecutorTaskDomain.toString() + ")");
 		if (combiner == null) { // normal case
 			writeToDHT(keyOut, valueOut);
 		} else {
@@ -52,39 +51,23 @@ public class DHTStorageContext implements IContext {
 
 	private void writeToDHT(Object keyOut, Object valueOut) {
 		updateResultHash(keyOut, valueOut);
-		String oETDString = outputExecutorTaskDomain.toString();
-		this.futurePutData
-				.add(this.dhtConnectionProvider.add(keyOut.toString(), valueOut, oETDString, true).addListener(new BaseFutureAdapter<FuturePut>() {
+		this.futurePutData.add(add(keyOut.toString(), valueOut, oETD.toString(), true));
+		this.futurePutData.add(add(DomainProvider.TASK_OUTPUT_RESULT_KEYS, keyOut.toString(), oETD.toString(), false));
 
-					@Override
-					public void operationComplete(FuturePut future) throws Exception {
-						if (future.isSuccess()) {
-							logger.info("Procedure: " + outputExecutorTaskDomain.jobProcedureDomain().procedureSimpleName()
-									+ ": Successfully performed add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain(" + oETDString
-									+ ")");
-						} else {
-							logger.info("Procedure: " + outputExecutorTaskDomain.jobProcedureDomain().procedureSimpleName()
-									+ ": Failed to perform add(" + keyOut.toString() + ", " + valueOut.toString() + ").domain(" + oETDString + ")");
-						}
-					}
-				}));
-		this.futurePutData.add(this.dhtConnectionProvider.add(DomainProvider.TASK_OUTPUT_RESULT_KEYS, keyOut.toString(), oETDString, false)
-				.addListener(new BaseFutureAdapter<FuturePut>() {
+	}
 
-					@Override
-					public void operationComplete(FuturePut future) throws Exception {
-						if (future.isSuccess()) {
-							logger.info("Procedure: " + outputExecutorTaskDomain.jobProcedureDomain().procedureSimpleName()
-									+ ": Successfully performed add(" + DomainProvider.TASK_OUTPUT_RESULT_KEYS + ", " + keyOut.toString()
-									+ ").domain(" + oETDString + ")");
-						} else {
+	private FuturePut add(String keyOut, Object valueOut, String oETDString, boolean asList) {
+		return this.dhtConnectionProvider.add(keyOut, valueOut, oETDString, asList).addListener(new BaseFutureAdapter<FuturePut>() {
 
-							logger.warn(
-									"Procedure: " + outputExecutorTaskDomain.jobProcedureDomain().procedureSimpleName() + ": Failed to perform add("
-											+ DomainProvider.TASK_OUTPUT_RESULT_KEYS + ", " + keyOut.toString() + ").domain(" + oETDString + ")");
-						}
-					}
-				}));
+			@Override
+			public void operationComplete(FuturePut future) throws Exception {
+				if (future.isSuccess()) {
+					logger.info("add::SUCCESS::" + oETD.jobProcedureDomain().procedureSimpleName() + ":(" + keyOut + ", " + valueOut.toString() + ").domain(" + oETDString + ")");
+				} else {
+					logger.info("add::FAILED::" + oETD.jobProcedureDomain().procedureSimpleName() + ":(" + keyOut + ", " + valueOut.toString() + ").domain(" + oETDString + ")");
+				}
+			}
+		});
 	}
 
 	@Override
@@ -105,7 +88,7 @@ public class DHTStorageContext implements IContext {
 
 	@Override
 	public DHTStorageContext outputExecutorTaskDomain(ExecutorTaskDomain outputExecutorTaskDomain) {
-		this.outputExecutorTaskDomain = outputExecutorTaskDomain;
+		this.oETD = outputExecutorTaskDomain;
 		return this;
 	}
 

@@ -1,10 +1,210 @@
- A long time ago, in a city far-far away, two men had an insight.  Ward
-Christensen and Randy Suess wanted a way to leave notes and messages to their
-programmer/engineer friends.  Back then, modems were used by field-engineers and
-some high-level executives to talk to their companies computers.  A 300 baud
-modem was extremely fast, as most people were using 110 baud TeleTypes.  Ward
-and Randy devloped the concept of the BBS.  They called it CBBS, for "Computer
-Bulletin Board System." CBBS was the first of its kind.  It was an enormous
-program written in 8080 assmebly language.  By our standards today, it was
-kludgy and bug-ridden, but back then it was heavenly.  Users could enter
-messages and read messages...  that was about it.
+
+90-02/BeingInNothingness
+
+BEING IN NOTHINGNESS
+Virtual Reality and the Pioneers of Cyberspace
+
+By John Perry Barlow
+Published in Microtimes Magazine
+
+"Cyberspace.  A consensual hallucination experienced daily 
+by billions of legitimate operators, in every nation...A 
+graphic representation of data abstracted from the banks of 
+every computer in the human system.  Unthinkable 
+complexity.  Lines of light ranged in the nonspace of the 
+mind, clusters and constellations of data.  Like city lights, 
+receding..."
+			--William Gibson, Neuromancer
+
+Suddenly I don't have a body anymore.  
+
+All that remains of the aging shambles which usually constitutes my 
+corporeal self  is a glowing, golden hand floating before me like 
+Macbeth's dagger.  I point my finger and drift down its length to the 
+bookshelf on the office wall.
+
+I try to grab a book but my hand passes through it.  
+
+"Make a fist inside the book and you'll have it," says my invisible 
+guide.  
+
+I do, and when I move my hand again, the book remains embedded in 
+it.  I open my hand and withdraw it.  The book remains suspended 
+above the shelf.
+
+I look up.  Above me I can see the framework of red girders which 
+supports the walls of the office...above them the blue-blackness of 
+space.  The office has no ceiling, but it hardly needs one.  There's never 
+any weather here.  
+
+I point up and begin my ascent, passing right through one of the 
+overhead beams on my way up.  Several hundred feet above the office, 
+I look down.  It sits in the middle of a little island in space.   I 
+remember the home asteroid of The Little Prince with its one volcano, 
+it's one plant.
+
+How very like the future this place might be: a tiny world just big 
+enough to support the cubicle of one Knowledge Worker.  I feel a wave 
+of loneliness and head back down.  But I'm going too fast.  I plunge 
+right on through the office floor and into the bottomless indigo below.  
+Suddenly I can't remember how to stop and turn around.  Do I point 
+behind myself?  Do I have to turn around before I can point?  I flip into 
+brain fugue.
+
+"Just relax," says my guide in her cool clinical voice.  "Point straight 
+up and open your hand when you get where you want to be."
+
+Sure.  But how can you get where you want to be when you're coming 
+from nowhere at all?  
+
+And I don't seem to have a location exactly.  In this pulsating new 
+landscape, I've been reduced to a point of view.  The whole subject of  
+"me" yawns into a chasm of interesting questions.  It's like Disneyland 
+for epistomologists.  "If a virtual tree falls in the computer-generated 
+forest..?"  Or "How many cybernauts can dance on the head of a 
+shaded solid?"  Gregory Bateson would have loved this.  Wittgenstein, 
+phone home. 
+
+At least I know where I left my body.  It's in a room called Cyberia in a 
+building called Autodesk in a town called Sausalito, California.  Planet 
+Earth.  Milky Way.  So on and so forth.  My body is cradled in its usual 
+cozy node of space-time vectors.
+
+But I...or "I"...am in cyberspace, a universe churned up from computer 
+code by a Compaq 386 and a pair of Matrox graphics boards, then fed 
+into my rods and cones by  VPL Eyephones, a set of goggles through 
+whose twin, parallax-corrected video screens I see this new world.  
+
+When I move my head, the motion is tracked by a a Polhemus 
+magnetic sensor and the imaging engine of cyberspace is instructed to 
+alter what I see accordingly.  Thus, having made a controlled ascent 
+back up through the floor of the "office," I turn to the left and I see red 
+chair with a desk behind it.  I turn to the right and I see a door leading 
+out onto the floating platform.  
+
+The configuration and position of my right hand is fed into the system 
+by a VPL DataGlove, also with an Polhemus attached to it.  The 
+relationship between my hand and the eyephones is precisely 
+measured by the two trackers so that my hand appears where I would 
+expect it to.  When I point or make a fist, the fiber optics sewn into the 
+DataGlove convert kinesthetics into electronics.  For a decisecond or so, 
+my hand disappears and then reappears, glowing and toon-like, in the 
+appropriate shape.
+
+Despite the current confines of my little office-island, I know that I 
+have become a traveller in a realm which will be ultimately bounded 
+only by human imagination, a world without any of the usual limits of 
+geography, growth, carrying capacity, density or ownership.  In this 
+magic theater, there's no gravity, no Second Law of Thermodynamics, 
+indeed, no laws at all beyond those imposed by computer processing 
+speed...and given the accelerating capacity of that constraint, this 
+universe will probably expand faster than the one I'm used to.
+
+Welcome to Virtual Reality.  We've leapt through the looking glass.  
+Now what?  Go ask Alice.
+
+
+      
+
+
+The Next Big Thing
+Money from Nuthin'
+
+"I think this is the biggest thing since we landed on the Moon," says 
+Jaron Lanier, the dread-locked CEO of VPL Research.  (Who was 9 
+years old at that time.)  I don't choke on that one.  Indeed, I'd take it a 
+bit farther, guessing that Columbus was probably the last person to 
+behold so much usable and unclaimed real estate (or unreal estate) as 
+these cybernauts have discovered.
+
+At Autodesk, the Sausalito publisher of AutoCAD drafting software, 
+they spent the summer of T89 in product development heaven, talking 
+telephone, automobile, airplane, computer.  They invoked Edison, Bell, 
+Ford, and Jobs.  And there was that loincloth-and-machete sense of 
+enterprise which one might have experienced in the Wright Brothers' 
+Akron Bicycle Shop or Paul Jobs' garage in Mountain View...as well as 
+countless less-chronicled shots at perpetual motion or baldness cures.
+
+Neil Armstrong's small step ran about 70 Billion Real Dollars, but 
+when John Walker, the Hacker King of Autodesk, committed his 
+company to creating the first commercially-available "world in a can," 
+he figured that the prototype "gizmo" could be built for about $25,000.     
+
+VPL, the other trading post on VR frontier, isn't much fatter, although 
+internal synergy seems to magnify output.  Since their incorporation in 
+1985, they've had two Scientific American covers and produced the 
+DataGlove, DataSuit, the PowerGlove, Swivel 3-D and VPL 
+EyePhones, the only commercially available head-mounted display.  
+They've been in a couple of big lawsuits (one, just concluded to their 
+satisfaction, with Stanford University), and create, at a distance, the 
+mirage of a fair-sized company going at it pretty hard.  
+
+But up close, one can get on a first-name basis with every VPL 
+employee in the course of an afternoon. They have yet to outgrow the 
+third floor of their slightly tacky building at the Redwood City yacht 
+harbor.
+
+While Apple's research gazillions yield such dubious fruit as 
+multimedia and the AppleFax Modem, while IBM replicates methods 
+for chaining bureaucrats to its mainframes,  it begins to appear that the 
+Next Big Thing will begin its commercial evolution as humbly as the 
+personal computer.
+
+As usual, the Big Guys have neither the means nor the desire to engage 
+in such open-ended creation as settling the virtual universe will 
+require.  Like the Union Pacific Railroad awaiting the fact of empire, 
+they prefer to let the rag-tag pioneers die all over the frontier before 
+they come out to claim it.  
+
+When the Altairs and Osbornes of Virtual Reality have made their fatal 
+errors are headed for Chapter 11, IBM probably will issue forth the 
+SolutionStation VR Network or some such and accelerate natural 
+selection in the field.
+
+But as I write this, VPL and Autodesk still have  it to themselves.  
+Actually, they are not the first to make virtual landfall. They are only 
+the first at financial risk. Unlike the first automobiles or telephones 
+their commercial fledglings had the advantage of long incubation by 
+government and Academia.
+
+Virtual Reality, as a concept, found first form at the University of Utah 
+over twenty years ago in the fecund cranium of Ivan E. Sutherland, the 
+godfather of computer graphics and the originator of about every  Big 
+Computer Idea not originated by Alan Kay or Doug Englebart.  In 
+1968, he produced the first head-mounted display.  This was the 
+critical element in VR hardware, but it was so heavy that it had to be 
+suspended from the ceiling...at some peril to its wearer.  Damocles was 
+mentioned.
+
+Besides, once you got it on, there wasn't much to see in there.  There 
+wasn't a computer in existence which could churn out enough 
+polygons per second to simulate a reality much more full-bodied than 
+a game of Pong. 
+
+So Virtual Reality passed a generation waiting for the equipment to 
+arrive.  In 1985 the Japanese finally (and unintentionally) provided us 
+with the right video displays when NASA's Mike McGreevy happened 
+to notice that the Citizen Watch Co. LCD displays in a Radio Shack 
+mini-TV were small enough to fit two in a head-mounted.  
+
+I hardly need to detail what happened to CPU horsepower during that 
+period.  By 1985, graphics engines of appropriate juice were almost 
+within financial range of entities not involved in the defense of our 
+nation.
+
+Also by this time, NASA had made a strong commitment to VR 
+research, though mostly in the service of "telepresence," the ability to 
+project one's judgement and actions into a robot located some real 
+place you'd rather not be, like space.  They were less persuaded by the 
+attractions of unreal places.
+
+The Air Force was also conducting research at Wright-Patterson under 
+the direction of Tom Furness, but most of this was directed at the usual 
+dismal purpose, simplifying the annihilation of non-virtual humans.  
+Heads up displays and looks that kill were their speciality.
+
+For all this expenditure of tax dollars, Virtual Reality still lacked two 
+critical elements: a sense of whimsy and a fluid, three-dimensional 
+method for "grabbing" and manipulating the furniture of cyberspace.  
+VPL was on the case.  
+

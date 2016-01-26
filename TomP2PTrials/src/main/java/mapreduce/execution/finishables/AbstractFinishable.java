@@ -46,16 +46,11 @@ public abstract class AbstractFinishable implements IFinishable {
 
 	@Override
 	public boolean isFinished() {
-		logger.info("isFinished():: procedure needs " + nrOfSameResultHash
-				+ " same result hashs to be finished.");
 		if (nrOfSameResultHash > 0) {
 			checkIfFinished();
 			boolean isFinished = resultOutputDomain != null;
-			logger.info("isFinished():: procedure is finished? (" + isFinished + ")");
 			return isFinished;
-		} else { // Doesn't need to be executed (e.g. EndProcedure...)
-			logger.info(
-					"isFinished():: procedure is finished as it needs 0 result hashs (EndProcedure most likely)");
+		} else {  
 			return true;
 		}
 	}
