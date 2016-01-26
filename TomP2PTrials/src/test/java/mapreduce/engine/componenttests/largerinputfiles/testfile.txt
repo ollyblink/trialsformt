@@ -1,4 +1,10 @@
-           Draw dies,  or drawing dies (as they are also called),  are simply 
-     ring dies used to reduce the diameter of a component.   When you size a 
-     cast  bullet,  you are 
-          
+ A long time ago, in a city far-far away, two men had an insight.  Ward
+Christensen and Randy Suess wanted a way to leave notes and messages to their
+programmer/engineer friends.  Back then, modems were used by field-engineers and
+some high-level executives to talk to their companies computers.  A 300 baud
+modem was extremely fast, as most people were using 110 baud TeleTypes.  Ward
+and Randy devloped the concept of the BBS.  They called it CBBS, for "Computer
+Bulletin Board System." CBBS was the first of its kind.  It was an enormous
+program written in 8080 assmebly language.  By our standards today, it was
+kludgy and bug-ridden, but back then it was heavenly.  Users could enter
+messages and read messages...  that was about it.

@@ -14,19 +14,17 @@ import mapreduce.testutils.TestUtils;
 public class ExecutorMain {
 	public static void main(String[] args) throws Exception {
 
-		JobCalculationBroadcastHandler executorBCHandler = JobCalculationBroadcastHandler.create();
-
 		JobCalculationExecutor calculationExecutor = JobCalculationExecutor.create();
 
-		JobCalculationMessageConsumer calculationMessageConsumer = JobCalculationMessageConsumer.create(4)
+		JobCalculationMessageConsumer calculationMessageConsumer = JobCalculationMessageConsumer.create()
 				.executor(calculationExecutor);
-		executorBCHandler = JobCalculationBroadcastHandler.create()
+		JobCalculationBroadcastHandler executorBCHandler = JobCalculationBroadcastHandler.create()
 				.messageConsumer(calculationMessageConsumer);
 		int bootstrapPort = 4442;
 		IDHTConnectionProvider dhtCon = DHTConnectionProvider
 				.create("192.168.43.65", bootstrapPort, bootstrapPort).broadcastHandler(executorBCHandler)
 //				.storageFilePath(System.getProperty("user.dir")
-//						
+//
 //						+ "/src/test/java/mapreduce/engine/componenttests/storage/calculator/")
 				;
 		dhtCon.broadcastHandler(executorBCHandler).connect();
@@ -34,11 +32,11 @@ public class ExecutorMain {
 		calculationMessageConsumer.dhtConnectionProvider(dhtCon);
 
 		while (executorBCHandler.jobFutures().isEmpty()) {
-			Thread.sleep(10000);
+			Thread.sleep(10);
 		}
 		Job job = executorBCHandler.jobFutures().keySet().iterator().next();
 		while (!job.isFinished()) {
-			Thread.sleep(10000);
+			Thread.sleep(10);
 		}
 		System.err.println("Shutting down executor");
 		dhtCon.shutdown();

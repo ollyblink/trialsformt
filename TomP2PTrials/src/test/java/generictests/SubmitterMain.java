@@ -12,6 +12,8 @@ import mapreduce.engine.executors.JobSubmissionExecutor;
 import mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer;
 import mapreduce.execution.jobs.Job;
 import mapreduce.execution.jobs.PriorityLevel;
+import mapreduce.execution.procedures.WordCountMapper;
+import mapreduce.execution.procedures.WordCountReducer;
 import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.FileSize;
@@ -57,13 +59,17 @@ public class SubmitterMain {
 				.calculatorTimeToLive(5000).maxFileSize(FileSize.MEGA_BYTE)
 				.fileInputFolderPath(fileInputFolderPath)
 				.resultOutputFolder(resultOutputFolderPath, FileSize.MEGA_BYTE)
-				.addSucceedingProcedure(jsMapper, jsReducer, 1, 1, false, false)
-				.addSucceedingProcedure(jsReducer, null, 1, 1, false, false);
+				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
+				.addSucceedingProcedure(WordCountReducer.create(2), null, 1, 1, false, false);
 
+		long before = System.currentTimeMillis();
 		submissionExecutor.submit(job);
 		while (!submissionExecutor.jobIsRetrieved(job)) {
-			Thread.sleep(job.submitterTimeToLive());
+			Thread.sleep(100);
 		}
+		long after = System.currentTimeMillis();
+		long diff = after - before;
+		System.err.println("Finished after " + diff + " ms");
 		System.out.println("shutting down submitter");
 		dhtCon.shutdown();
 		List<String> pathVisitor = new ArrayList<>();
@@ -80,7 +86,7 @@ public class SubmitterMain {
 			System.err.println(txt.contains(key + "\t" + count));
 		}
 
-//		FileUtils.INSTANCE.deleteFilesAndFolder(outFolder, pathVisitor);
+		// FileUtils.INSTANCE.deleteFilesAndFolder(outFolder, pathVisitor);
 		// Thread.sleep(Long.MAX_VALUE);
 	}
 
