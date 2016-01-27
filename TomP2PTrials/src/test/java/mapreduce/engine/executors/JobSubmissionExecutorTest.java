@@ -49,25 +49,7 @@ public class JobSubmissionExecutorTest {
 
 	private static JobSubmissionExecutor sExecutor = JobSubmissionExecutor.create();
 
-	@Ignore
-	public void testSubmissionWithoutProcedures() throws Exception {
-		// String base = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/";
-		// String fileInputFolderPath = base + "executors/testfiles/";
-		// String outputFileFolder = base + "testOutputFiles/";
-		//
-		// JobSubmissionBroadcastHandler sBCHandler = JobSubmissionBroadcastHandler.create();
-		// IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(sBCHandler);
-		//
-		// JobSubmissionMessageConsumer sMsgConsumer = JobSubmissionMessageConsumer.create();
-		// sBCHandler.messageConsumer(
-		// sMsgConsumer.executor(sExecutor.dhtConnectionProvider(dht)).dhtConnectionProvider(dht))
-		// .dhtConnectionProvider(dht);
-		//
-		// Job job = Job.create(sExecutor.id()).fileInputFolderPath(fileInputFolderPath)
-		// .resultOutputFolder(outputFileFolder, FileSize.MEGA_BYTE)
-		// .maxFileSize(FileSize.TWO_KILO_BYTES);
-		// sExecutor.submit(job);
-		// Thread.sleep(Long.MAX_VALUE);
+	public static void main(String[] args) {
 
 	}
 
@@ -103,8 +85,7 @@ public class JobSubmissionExecutorTest {
 
 	@Test
 	public void testSubmitInternally() throws Exception {
-		Method submitInternally = JobSubmissionExecutor.class.getDeclaredMethod("submitInternally",
-				StartProcedure.class, JobProcedureDomain.class, JobProcedureDomain.class, String.class,
+		Method submitInternally = JobSubmissionExecutor.class.getDeclaredMethod("submitInternally", StartProcedure.class, JobProcedureDomain.class, JobProcedureDomain.class, String.class,
 				Integer.class, String.class);
 		submitInternally.setAccessible(true);
 
@@ -114,17 +95,13 @@ public class JobSubmissionExecutorTest {
 		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(bcHandler);
 
 		sExecutor.dhtConnectionProvider(dht);
-		JobProcedureDomain outputJPD = JobProcedureDomain.create("J1", 0, sExecutor.id(),
-				DomainProvider.INITIAL_PROCEDURE, -1);
-		JobProcedureDomain dataInputDomain = JobProcedureDomain.create("J1", 0, sExecutor.id(),
-				StartProcedure.class.getSimpleName(), 0);
-		String keyFilePath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/executors/testfiles/testfile2.txt";
+		JobProcedureDomain outputJPD = JobProcedureDomain.create("J1", 0, sExecutor.id(), DomainProvider.INITIAL_PROCEDURE, -1);
+		JobProcedureDomain dataInputDomain = JobProcedureDomain.create("J1", 0, sExecutor.id(), StartProcedure.class.getSimpleName(), 0);
+		String keyFilePath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/executors/testfiles/testfile2.txt";
 		Integer filePartCounter = 0;
 		String vals = "hello world hello world\nhello world hello world";
 
-		submitInternally.invoke(sExecutor, StartProcedure.create(), outputJPD, dataInputDomain, keyFilePath,
-				filePartCounter, vals);
+		submitInternally.invoke(sExecutor, StartProcedure.create(), outputJPD, dataInputDomain, keyFilePath, filePartCounter, vals);
 		String key = "testfile2.txt_0";
 		ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(key, sExecutor.id(), 0, outputJPD);
 		checkData(dht, outputETD, key, vals);
@@ -132,8 +109,7 @@ public class JobSubmissionExecutorTest {
 
 	@Test
 	public void testReadFile() throws Exception {
-		Method readFile = JobSubmissionExecutor.class.getDeclaredMethod("readFile", StartProcedure.class,
-				String.class, JobProcedureDomain.class, JobProcedureDomain.class);
+		Method readFile = JobSubmissionExecutor.class.getDeclaredMethod("readFile", StartProcedure.class, String.class, JobProcedureDomain.class, JobProcedureDomain.class);
 		readFile.setAccessible(true);
 
 		Random random = new Random();
@@ -142,12 +118,9 @@ public class JobSubmissionExecutorTest {
 		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(bcHandler);
 
 		sExecutor.dhtConnectionProvider(dht);
-		JobProcedureDomain outputJPD = JobProcedureDomain.create("J1", 0, sExecutor.id(),
-				DomainProvider.INITIAL_PROCEDURE, -1);
-		JobProcedureDomain dataInputDomain = JobProcedureDomain.create("J1", 0, sExecutor.id(),
-				StartProcedure.class.getSimpleName(), 0);
-		String keyFilePath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/executors/testfiles/testfile2.txt";
+		JobProcedureDomain outputJPD = JobProcedureDomain.create("J1", 0, sExecutor.id(), DomainProvider.INITIAL_PROCEDURE, -1);
+		JobProcedureDomain dataInputDomain = JobProcedureDomain.create("J1", 0, sExecutor.id(), StartProcedure.class.getSimpleName(), 0);
+		String keyFilePath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/executors/testfiles/testfile2.txt";
 
 		readFile.invoke(sExecutor, StartProcedure.create(), keyFilePath, outputJPD, dataInputDomain);
 		String key = "testfile2.txt_0";
@@ -165,17 +138,14 @@ public class JobSubmissionExecutorTest {
 		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(bcHandler);
 
 		sExecutor.dhtConnectionProvider(dht);
-		String fileInputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/executors/testfiles/";
+		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/executors/testfiles/";
 
-		Job job = Job.create(sExecutor.id()).fileInputFolderPath(fileInputFolderPath)
-				.maxFileSize(FileSize.THIRTY_TWO_BYTES);
+		Job job = Job.create(sExecutor.id()).fileInputFolderPath(fileInputFolderPath).maxFileSize(FileSize.THIRTY_TWO_BYTES);
 		sExecutor.submit(job);
 		Field outputJPDsField = AbstractFinishable.class.getDeclaredField("outputDomains");
 		outputJPDsField.setAccessible(true);
 
-		JobProcedureDomain outputJPD = (JobProcedureDomain) ((List<IDomain>) outputJPDsField
-				.get(job.currentProcedure())).get(0);
+		JobProcedureDomain outputJPD = (JobProcedureDomain) ((List<IDomain>) outputJPDsField.get(job.currentProcedure())).get(0);
 
 		String key11 = "testfile.txt_0";
 		String vals11 = "the quick fox jumps over the";
@@ -198,8 +168,7 @@ public class JobSubmissionExecutorTest {
 		checkData(dht, outputETD22, key22, vals22);
 	}
 
-	private void checkData(IDHTConnectionProvider dht, ExecutorTaskDomain outputETD1, String key, String vals)
-			throws ClassNotFoundException, IOException {
+	private void checkData(IDHTConnectionProvider dht, ExecutorTaskDomain outputETD1, String key, String vals) throws ClassNotFoundException, IOException {
 		FutureGet getData = dht.getAll(key, outputETD1.toString()).awaitUninterruptibly();
 		logger.info("Retrieved data for " + key);
 		if (getData.isSuccess()) {
@@ -214,19 +183,17 @@ public class JobSubmissionExecutorTest {
 
 	@Test
 	public void testRetrieveAndStoreDataOfFinishedJob() throws Exception {
- 		JobSubmissionBroadcastHandler bcHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
+		JobSubmissionBroadcastHandler bcHandler = Mockito.mock(JobSubmissionBroadcastHandler.class);
 
 		IDHTConnectionProvider dht = TestUtils.getTestConnectionProvider(bcHandler);
 		sExecutor.dhtConnectionProvider(dht);
-		JobProcedureDomain domain = JobProcedureDomain.create("J1", 0, "E1",
-				WordCountReducer.class.getSimpleName(), 2);
+		JobProcedureDomain domain = JobProcedureDomain.create("J1", 0, "E1", WordCountReducer.class.getSimpleName(), 2);
 		String[] keys = { "hello", "world", "this", "is", "a", "test" };
 		Integer[] counts = { 1, 2, 3, 4, 5, 6 };
 
 		for (int i = 0; i < keys.length; ++i) {
 			dht.add(keys[i], counts[i], domain.toString(), true).awaitListenersUninterruptibly();
-			dht.add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, keys[i], domain.toString(), false)
-					.awaitListenersUninterruptibly();
+			dht.add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, keys[i], domain.toString(), false).awaitListenersUninterruptibly();
 		}
 
 		Field jobsField = JobSubmissionExecutor.class.getDeclaredField("submittedJobs");
@@ -234,8 +201,7 @@ public class JobSubmissionExecutorTest {
 		Set<Job> submittedJobs = (Set<Job>) jobsField.get(sExecutor);
 
 		Job job = Mockito.mock(Job.class);
-		String resultOutputFolder = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/executors/testoutputfiles/tmp1";
+		String resultOutputFolder = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/executors/testoutputfiles/tmp1";
 		File file = new File(resultOutputFolder);
 		file.mkdirs();
 
@@ -272,13 +238,11 @@ public class JobSubmissionExecutorTest {
 
 	@Test
 	public void testWriteFlush() throws Exception {
-		Method write = JobSubmissionExecutor.class.getDeclaredMethod("write", String.class, String.class,
-				Long.class);
+		Method write = JobSubmissionExecutor.class.getDeclaredMethod("write", String.class, String.class, Long.class);
 		write.setAccessible(true);
 		Method flush = JobSubmissionExecutor.class.getDeclaredMethod("flush", String.class);
 		flush.setAccessible(true);
-		String resultOutputFolder = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/executors/testoutputfiles";
+		String resultOutputFolder = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/executors/testoutputfiles";
 		Job job = Mockito.mock(Job.class);
 		new File(resultOutputFolder).mkdirs();
 		new File(resultOutputFolder + "/tmp1").mkdirs();
@@ -302,20 +266,17 @@ public class JobSubmissionExecutorTest {
 
 	@Test
 	public void testEstimatedNrOfFiles() throws Exception {
-		Method estimatedNrOfFilesMethod = JobSubmissionExecutor.class.getDeclaredMethod("estimatedNrOfFiles",
-				List.class, Long.class);
+		Method estimatedNrOfFilesMethod = JobSubmissionExecutor.class.getDeclaredMethod("estimatedNrOfFiles", List.class, Long.class);
 		estimatedNrOfFilesMethod.setAccessible(true);
 		List<String> keyFilePaths = new ArrayList<>();
-		keyFilePaths.add(System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/executors/testfiles/testfile2.txt");
+		keyFilePaths.add(System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/executors/testfiles/testfile2.txt");
 		int nrFiles = (int) estimatedNrOfFilesMethod.invoke(sExecutor, keyFilePaths, 20l);
 		assertEquals(3, nrFiles);
 	}
 
 	@Test
 	public void testFilePaths() throws Exception {
-		String fileInputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/executors/testfiles/";
+		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/executors/testfiles/";
 		Method filePaths = JobSubmissionExecutor.class.getDeclaredMethod("filePaths", String.class);
 		filePaths.setAccessible(true);
 		List<String> keyFilePaths = (List<String>) filePaths.invoke(sExecutor, fileInputFolderPath);
@@ -328,8 +289,7 @@ public class JobSubmissionExecutorTest {
 	public void testCreateFolder() throws Exception {
 		Method createFolder = JobSubmissionExecutor.class.getDeclaredMethod("createFolder", String.class);
 		createFolder.setAccessible(true);
-		String testFolder = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/executors/testfiles/trials";
+		String testFolder = System.getProperty("user.dir") + "/src/test/java/mapreduce/engine/executors/testfiles/trials";
 
 		assertEquals(false, new File(testFolder).exists());
 		createFolder.invoke(sExecutor, testFolder);
