@@ -23,44 +23,34 @@ public class SubmitterMain {
 	private static Random random = new Random();
 
 	public static void main(String[] args) throws Exception {
-		String jsMapper = FileUtils.INSTANCE.readLines(System.getProperty("user.dir")
-				+ "/src/main/java/mapreduce/execution/procedures/wordcountmapper.js");
+		String jsMapper = FileUtils.INSTANCE.readLines(System.getProperty("user.dir") + "/src/main/java/mapreduce/execution/procedures/wordcountmapper.js");
 		// System.out.println(jsMapper);
-		String jsReducer = FileUtils.INSTANCE.readLines(System.getProperty("user.dir")
-				+ "/src/main/java/mapreduce/execution/procedures/wordcountreducer.js");
+		String jsReducer = FileUtils.INSTANCE.readLines(System.getProperty("user.dir") + "/src/main/java/mapreduce/execution/procedures/wordcountreducer.js");
 		// System.out.println(jsReducer);
 
-		int bootstrapPort = 4442;
+		int bootstrapPort = 4444;
 		int other = random.nextInt(40000) + 4000;
 
 		JobSubmissionBroadcastHandler submitterBCHandler = JobSubmissionBroadcastHandler.create();
 
-		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other)
-				.broadcastHandler(submitterBCHandler)
-				// .storageFilePath(System.getProperty("user.dir")
-				// + "/src/test/java/mapreduce/engine/componenttests/storage/submitter/")
+		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other).broadcastHandler(submitterBCHandler)
+		// .storageFilePath(System.getProperty("user.dir")
+		// + "/src/test/java/mapreduce/engine/componenttests/storage/submitter/")
 		;
 
-		JobSubmissionExecutor submissionExecutor = JobSubmissionExecutor.create()
-				.dhtConnectionProvider(dhtCon);
+		JobSubmissionExecutor submissionExecutor = JobSubmissionExecutor.create().dhtConnectionProvider(dhtCon);
 
-		JobSubmissionMessageConsumer submissionMessageConsumer = JobSubmissionMessageConsumer.create()
-				.dhtConnectionProvider(dhtCon).executor(submissionExecutor);
+		JobSubmissionMessageConsumer submissionMessageConsumer = JobSubmissionMessageConsumer.create().dhtConnectionProvider(dhtCon).executor(submissionExecutor);
 
 		submitterBCHandler.messageConsumer(submissionMessageConsumer);
 
 		dhtCon.connect();
 
-		String fileInputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/componenttests/largerinputfiles/";
-		String resultOutputFolderPath = System.getProperty("user.dir")
-				+ "/src/test/java/mapreduce/engine/componenttests/testoutputfiles/";
-		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE).submitterTimeToLive(10000)
-				.calculatorTimeToLive(5000).maxFileSize(FileSize.MEGA_BYTE)
-				.fileInputFolderPath(fileInputFolderPath)
-				.resultOutputFolder(resultOutputFolderPath, FileSize.MEGA_BYTE)
-				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false)
-				.addSucceedingProcedure(WordCountReducer.create(2), null, 1, 1, false, false);
+		String fileInputFolderPath = System.getProperty("user.dir") + "/src/test/java/generictests/files/";
+		String resultOutputFolderPath = System.getProperty("user.dir") + "/src/test/java/generictests/files/";
+		Job job = Job.create(submissionExecutor.id(), PriorityLevel.MODERATE).submitterTimeToLive(10000).calculatorTimeToLive(5000).maxFileSize(FileSize.MEGA_BYTE)
+				.fileInputFolderPath(fileInputFolderPath).resultOutputFolder(resultOutputFolderPath, FileSize.MEGA_BYTE)
+				.addSucceedingProcedure(WordCountMapper.create(), WordCountReducer.create(), 1, 1, false, false).addSucceedingProcedure(WordCountReducer.create(2), null, 1, 1, false, false);
 
 		long before = System.currentTimeMillis();
 		submissionExecutor.submit(job);

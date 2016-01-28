@@ -27,40 +27,41 @@
 	<!-- <logger name="net.tomp2p.connection.RequestHandler" level="ERROR"/> -->
 	<!-- <logger name="net.tomp2p.connection.HeartBeat" level="ERROR"/> -->
 	<!-- <logger name="net.tomp2p.connection.PeerCreator" level="ERROR"/> -->
-	<!-- <logger -->
-	name="mapreduce.engine.broadcasting.broadcasthandlers.AbstractMapReduceBroadcastHandler"
-	level="OFF" />
+
 	<logger
-	name="mapreduce.engine.broadcasting.broadcasthandlers.timeout.AbstractTimeout"
-	level="OFF" />
+		name="mapreduce.engine.broadcasting.broadcasthandlers.AbstractMapReduceBroadcastHandler"
+		level="OFF" />
 	<logger
-	name="mapreduce.engine.broadcasting.broadcasthandlers.timeout.JobCalculationTimeout"
-	level="OFF" />
+		name="mapreduce.engine.broadcasting.broadcasthandlers.timeout.AbstractTimeout"
+		level="OFF" />
 	<logger
-	name="mapreduce.engine.broadcasting.broadcasthandlers.timeout.JobSubmissionTimeout"
-	level="OFF" />
+		name="mapreduce.engine.broadcasting.broadcasthandlers.timeout.JobCalculationTimeout"
+		level="OFF" />
 	<logger
-	name="mapreduce.engine.broadcasting.broadcasthandlers.JobSubmissionBroadcastHandler"
-	level="OFF" />
+		name="mapreduce.engine.broadcasting.broadcasthandlers.timeout.JobSubmissionTimeout"
+		level="OFF" />
 	<logger
-	name="mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler"
-	level="OFF" />
-	<logger name="mapreduce.engine.broadcasting.messages.CompletedBCMessage"
-	level="OFF" />
+		name="mapreduce.engine.broadcasting.broadcasthandlers.JobSubmissionBroadcastHandler"
+		level="OFF" />
+	<logger
+		name="mapreduce.engine.broadcasting.broadcasthandlers.JobCalculationBroadcastHandler"
+		level="OFF" />
+<!-- 	<logger name="mapreduce.engine.broadcasting.messages.CompletedBCMessage" -->
+<!-- 		level="OFF" /> -->
 	<logger name="mapreduce.engine.messageconsumers.AbstractMessageConsumer"
-	level="OFF" />
+		level="OFF" />
 	<logger
-	name="mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer"
-	level="OFF" />
+		name="mapreduce.engine.messageconsumers.JobSubmissionMessageConsumer"
+		level="OFF" />
 	<logger
-	name="mapreduce.engine.messageconsumers.JobCalculationMessageConsumer"
-	level="OFF" />
+		name="mapreduce.engine.messageconsumers.JobCalculationMessageConsumer"
+		level="OFF" />
 	<logger name="mapreduce.engine.messageconsumers.updates.AbstractUpdate"
-	level="OFF" />
+		level="OFF" />
 	<logger name="mapreduce.engine.messageconsumers.updates.TaskUpdate"
-	level="OFF" />
+		level="OFF" />
 	<logger name="mapreduce.engine.messageconsumers.updates.ProcedureUpdate"
-	level="OFF" />
+		level="OFF" />
 
 	<logger name="mapreduce.engine.executors.AbstractExecutor"
 	level="OFF" />

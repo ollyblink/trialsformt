@@ -50,6 +50,9 @@ public class DHTStorageContext implements IContext {
 	}
 
 	private void writeToDHT(Object keyOut, Object valueOut) {
+		if(combiner!= null){
+			logger.info("Combiner:" + combiner.getClass().getSimpleName());
+		}
 		updateResultHash(keyOut, valueOut);
 		this.futurePutData.add(add(keyOut.toString(), valueOut, oETD.toString(), true));
 		this.futurePutData.add(add(DomainProvider.TASK_OUTPUT_RESULT_KEYS, keyOut.toString(), oETD.toString(), false));

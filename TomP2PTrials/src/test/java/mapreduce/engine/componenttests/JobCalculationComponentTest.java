@@ -104,7 +104,7 @@ public class JobCalculationComponentTest {
 		tasks.add(new Tuple(Task.create("testfile1", "S1"), "hello hello world"));
 		HashMap<String, Integer> res2 = filter(getCounts(tasks), 2);
 
-		executeTest(job, tasks, res2, 1);
+		executeTest(job, tasks, res2, 1, 1);
 	}
 
 	@Test
@@ -125,7 +125,7 @@ public class JobCalculationComponentTest {
 		List<Tuple> tasks = new ArrayList<>();
 		tasks.add(new Tuple(Task.create("testfile1", "S1"), "the quick fox jumps over the lazy brown dog"));
 		HashMap<String, Integer> res = getCounts(tasks);
-		executeTest(job, tasks, res, 1);
+		executeTest(job, tasks, res, 1, 1);
 	}
 
 	@Test
@@ -147,7 +147,7 @@ public class JobCalculationComponentTest {
 		tasks.add(new Tuple(Task.create("testfile1", "S1"), "the quick fox jumps over the lazy brown dog"));
 		tasks.add(new Tuple(Task.create("testfile2", "S1"), "the quick fox jumps over the lazy brown dog"));
 		HashMap<String, Integer> res = getCounts(tasks);
-		executeTest(job, tasks, res, 1);
+		executeTest(job, tasks, res, 1, 1);
 	}
 
 	@Test
@@ -171,7 +171,7 @@ public class JobCalculationComponentTest {
 		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), "sphinx of black quartz judge my vow"));
 		tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), "the five boxing wizards jump quickly"));
 		HashMap<String, Integer> res = getCounts(tasks);
-		executeTest(job, tasks, res, 1);
+		executeTest(job, tasks, res, 1, 1);
 	}
 
 	@Test
@@ -205,7 +205,7 @@ public class JobCalculationComponentTest {
 			HashMap<String, Integer> res = getCounts(tasks);
 			HashMap<String, Integer> res2 = filter(res, MAX_COUNT);
 			System.err.println("Before Execution");
-			executeTest(job, tasks, res2, 1);
+			executeTest(job, tasks, res2, 1, 1);
 		} catch (NoSuchFileException e) {
 			e.printStackTrace();
 		}
@@ -238,8 +238,8 @@ public class JobCalculationComponentTest {
 			int counter = 0;
 			tasks.add(new Tuple(Task.create("testfile_" + counter++, "S1"), text));
 			HashMap<String, Integer> res = getCounts(tasks);
-//			HashMap<String, Integer> res2 = filter(res, MAX_COUNT);
-			executeTest(job, tasks, res, 4);
+			// HashMap<String, Integer> res2 = filter(res, MAX_COUNT);
+			executeTest(job, tasks, res, 4, 4);
 		} catch (NoSuchFileException e) {
 			e.printStackTrace();
 		}
@@ -247,20 +247,19 @@ public class JobCalculationComponentTest {
 
 	public static void main(String[] args) {
 		try {
-			write("C:\\Users\\Oliver\\git\\trialsformt7\\TomP2PTrials\\src\\test\\java\\mapreduce\\engine\\componenttests\\largerinputfiles\\testfile2.txt", 200);
+			write(System.getProperty("user.dir") + "\\src\\test\\java\\mapreduce\\engine\\componenttests\\largerinputfiles\\testfile2.txt", 200);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	private static void write(String loc, int nrOfTokens) throws IOException {
-
 		Random r = new Random();
 		String messageToWrite = "";
 		Path logFile = Paths.get(loc);
 		try (BufferedWriter writer = Files.newBufferedWriter(logFile, StandardCharsets.UTF_8)) {
 			for (int i = 1; i < nrOfTokens; i++) {
-				messageToWrite = ((char) i % 200) + "_" + r.nextLong() + "\n";
+				messageToWrite = i + "_" + r.nextLong() + "\n";
 				writer.write(messageToWrite);
 			}
 		} catch (Exception e) {
@@ -296,11 +295,11 @@ public class JobCalculationComponentTest {
 		return res;
 	}
 
-	private void executeTest(Job job, List<Tuple> tasks, Map<String, Integer> res, int executorCount) throws ClassNotFoundException, IOException, InterruptedException {
+	private void executeTest(Job job, List<Tuple> tasks, Map<String, Integer> res, int executorCount, int bccount) throws ClassNotFoundException, IOException, InterruptedException {
 		calculationExecutor = JobCalculationExecutor.create();
 
 		calculationMessageConsumer = JobCalculationMessageConsumer.create(executorCount).executor(calculationExecutor);
-		executorBCHandler = JobCalculationBroadcastHandler.create().messageConsumer(calculationMessageConsumer);
+		executorBCHandler = JobCalculationBroadcastHandler.create(bccount).messageConsumer(calculationMessageConsumer);
 		// int bootstrapPort = 4001;
 		dhtCon = TestUtils.getTestConnectionProvider(executorBCHandler);
 		Thread.sleep(1000);
