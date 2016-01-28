@@ -28,12 +28,12 @@ public class SubmitterMain {
 		String jsReducer = FileUtils.INSTANCE.readLines(System.getProperty("user.dir") + "/src/main/java/mapreduce/execution/procedures/wordcountreducer.js");
 		// System.out.println(jsReducer);
 
-		int bootstrapPort = 4444;
+//		int bootstrapPort = 4444;
 		int other = random.nextInt(40000) + 4000;
 
 		JobSubmissionBroadcastHandler submitterBCHandler = JobSubmissionBroadcastHandler.create();
 
-		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.65", bootstrapPort, other).broadcastHandler(submitterBCHandler)
+		IDHTConnectionProvider dhtCon = DHTConnectionProvider.create("192.168.43.16", 4000, other).broadcastHandler(submitterBCHandler)
 		// .storageFilePath(System.getProperty("user.dir")
 		// + "/src/test/java/mapreduce/engine/componenttests/storage/submitter/")
 		;
@@ -61,7 +61,7 @@ public class SubmitterMain {
 		long diff = after - before;
 		System.err.println("Finished after " + diff + " ms");
 		System.out.println("shutting down submitter");
-		dhtCon.shutdown();
+//		dhtCon.shutdown();
 		List<String> pathVisitor = new ArrayList<>();
 		FileUtils.INSTANCE.getFiles(new File(fileInputFolderPath), pathVisitor);
 		String txt = FileUtils.INSTANCE.readLines(pathVisitor.get(0));
