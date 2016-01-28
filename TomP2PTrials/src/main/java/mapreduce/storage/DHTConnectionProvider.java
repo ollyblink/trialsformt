@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -15,7 +14,6 @@ import mapreduce.engine.broadcasting.broadcasthandlers.AbstractMapReduceBroadcas
 import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.utils.FileUtils;
 import mapreduce.utils.IDCreator;
-import mapreduce.utils.SyncedCollectionProvider;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -38,7 +36,7 @@ import net.tomp2p.storage.StorageDisk;
  *
  */
 public class DHTConnectionProvider implements IDHTConnectionProvider {
-	private static final int DEFAULT_NUMBER_OF_PEERS = 1;
+//	private static final int DEFAULT_NUMBER_OF_PEERS = 1;
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
 	private PeerDHT peerDHT;
 	private AbstractMapReduceBroadcastHandler broadcastHandler;
@@ -79,9 +77,9 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	/** Method for Testing purposes only... */
 	public DHTConnectionProvider externalPeers(PeerDHT peerDHT, AbstractMapReduceBroadcastHandler bcHandler) {
 		this.peerDHT = peerDHT;
-		if (bcHandler != null) {
-			this.broadcastHandler = bcHandler.dhtConnectionProvider(this);
-		}
+//		if (bcHandler != null) {
+//			this.broadcastHandler = bcHandler.dhtConnectionProvider(this);
+//		}
 		return this;
 	}
 
@@ -102,9 +100,10 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	public PeerDHT connect() throws Exception {
 		if (broadcastHandler == null) {
 			throw new Exception("Broadcasthandler not set!");
-		} else {
-			this.broadcastHandler.dhtConnectionProvider(this);
-		}
+		} 
+//		else {
+//			this.broadcastHandler.dhtConnectionProvider(this);
+//		}
 
 		try {
 

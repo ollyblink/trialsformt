@@ -12,10 +12,10 @@ public interface IMessageConsumer {
 
 	public void handleCompletedProcedure(Job job, JobProcedureDomain outputDomain, JobProcedureDomain inputDomain);
 
-	public IMessageConsumer dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider);
-
-	public IExecutor executor();
-
-	public IMessageConsumer executor(IExecutor executor);
+//	public IMessageConsumer dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider);
+//
+//	public IExecutor executor();
+//
+//	public IMessageConsumer executor(IExecutor executor);
 
 }
