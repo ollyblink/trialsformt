@@ -41,10 +41,9 @@ public class JobCalculationBroadcastHandlerTest {
 				.addSucceedingProcedure(jsReducer, null, 1, 1, false, false);
 
 		messageConsumer = Mockito.mock(JobCalculationMessageConsumer.class);
-//		JobCalculationExecutor.dhtConnectionProvider(dhtConnectionProvider);
-//		executor = Mockito.mock(JobCalculationExecutor.class);
-//		Mockito.when(JobCalculationExecutor.executorID()).thenReturn("Executor");
-//		Mockito.when(messageConsumer.executor()).thenReturn(executor);
+		JobCalculationExecutor executor = Mockito.mock(JobCalculationExecutor.class);
+		Mockito.when(executor.id()).thenReturn("Executor");
+		Mockito.when(messageConsumer.executor()).thenReturn(executor);
 
 		broadcastHandler = JobCalculationBroadcastHandler.create(1);
 		broadcastHandler.messageConsumer(messageConsumer);
@@ -55,7 +54,7 @@ public class JobCalculationBroadcastHandlerTest {
 		IDHTConnectionProvider dhtConnectionProvider = TestUtils
 				.getTestConnectionProvider(random.nextInt(50000) + 4000, 1);
 
-		JobCalculationExecutor.dhtConnectionProvider(dhtConnectionProvider);
+		broadcastHandler.dhtConnectionProvider(dhtConnectionProvider);
 
 		dhtConnectionProvider.put(DomainProvider.JOB, job, job.id()).awaitUninterruptibly();
 

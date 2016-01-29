@@ -16,6 +16,7 @@ import mapreduce.engine.broadcasting.messages.IBCMessage;
 import mapreduce.engine.messageconsumers.IMessageConsumer;
 import mapreduce.engine.multithreading.PriorityExecutor;
 import mapreduce.execution.jobs.Job;
+import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.SyncedCollectionProvider;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.StructuredBroadcastHandler;
@@ -25,7 +26,7 @@ import net.tomp2p.storage.Data;
 public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadcastHandler {
 	private static Logger logger = LoggerFactory.getLogger(AbstractMapReduceBroadcastHandler.class);
 
-	// protected IDHTConnectionProvider dhtConnectionProvider;
+	protected IDHTConnectionProvider dhtConnectionProvider;
 	protected IMessageConsumer messageConsumer;
 	protected PriorityExecutor taskExecutionServer;
 
@@ -69,7 +70,8 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 			if (timeouts.containsKey(job)) {
 				timeouts.get(job).retrievalTimestamp(System.currentTimeMillis(), bcMessage);
 			} else {
-				AbstractTimeout timeout = AbstractTimeout.create(this, job, System.currentTimeMillis(), bcMessage);
+				AbstractTimeout timeout = AbstractTimeout.create(this, job, System.currentTimeMillis(),
+						bcMessage);
 				this.timeouts.put(job, timeout);
 				logger.info("Timeout: " + timeout);
 				this.timeoutThread = new Thread(timeout);// timeoutcounter for job
@@ -107,8 +109,18 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 		return this.messageConsumer;
 	}
 
+	public AbstractMapReduceBroadcastHandler dhtConnectionProvider(
+			IDHTConnectionProvider dhtConnectionProvider) {
+		this.dhtConnectionProvider = dhtConnectionProvider;
+		return this;
+	}
+
 	public ListMultimap<Job, Future<?>> jobFutures() {
 		return this.jobFuturesFor;
+	}
+
+	public String executorId() {
+		return this.messageConsumer.executor().id();
 	}
 
 	/**
@@ -125,5 +137,9 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 	 * @param job
 	 */
 	public abstract void processMessage(IBCMessage bcMessage, Job job);
+
+	public IDHTConnectionProvider dhtConnectionProvider() {
+		return dhtConnectionProvider;
+	}
 
 }
