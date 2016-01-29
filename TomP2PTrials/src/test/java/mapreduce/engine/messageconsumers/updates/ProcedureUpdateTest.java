@@ -19,7 +19,8 @@ import mapreduce.execution.procedures.WordCountMapper;
 import net.tomp2p.peers.Number160;
 
 public class ProcedureUpdateTest {
- 
+
+	private JobCalculationExecutor calculationExecutor;
 	private JobCalculationMessageConsumer calculationMsgConsumer;
 	private Job job;
 
@@ -31,10 +32,12 @@ public class ProcedureUpdateTest {
 	public void setUpBeforeTest() throws Exception {
 
 		// Calculation Executor
+		calculationExecutor = Mockito.mock(JobCalculationExecutor.class);
 		// Calculation MessageConsumer
 		calculationMsgConsumer = Mockito.mock(JobCalculationMessageConsumer.class);
+		Mockito.when(calculationMsgConsumer.executor()).thenReturn(calculationExecutor);
 		job = Job.create("S1");
-		procedureUpdate = ProcedureUpdate.create(job, calculationMsgConsumer);
+		procedureUpdate = new ProcedureUpdate(job, calculationMsgConsumer);
 	}
 
 	@Test
@@ -91,7 +94,7 @@ public class ProcedureUpdateTest {
 
 	@Test(expected = NullPointerException.class)
 	public void testMessageConsumerNullException() {
-		procedureUpdate =   ProcedureUpdate.create(job, null);
+		procedureUpdate = new ProcedureUpdate(job, null);
 		IDomain outputDomain = Mockito.mock(JobProcedureDomain.class);
 		Procedure procedure = Mockito.mock(Procedure.class);
 		Mockito.when(procedure.dataInputDomain()).thenReturn(Mockito.mock(JobProcedureDomain.class));
@@ -104,7 +107,7 @@ public class ProcedureUpdateTest {
 
 	@Test(expected = NullPointerException.class)
 	public void testJobNullException() {
-		procedureUpdate = ProcedureUpdate.create(null, calculationMsgConsumer);
+		procedureUpdate = new ProcedureUpdate(null, calculationMsgConsumer);
 		IDomain outputDomain = Mockito.mock(JobProcedureDomain.class);
 		Procedure procedure = Mockito.mock(Procedure.class);
 		Mockito.when(procedure.dataInputDomain()).thenReturn(Mockito.mock(JobProcedureDomain.class));
@@ -118,7 +121,7 @@ public class ProcedureUpdateTest {
 
 	@Test(expected = NullPointerException.class)
 	public void testBothVarsNull() {
-		procedureUpdate = ProcedureUpdate.create(null, null);
+		procedureUpdate = new ProcedureUpdate(null, null);
 		IDomain outputDomain = Mockito.mock(JobProcedureDomain.class);
 		Procedure procedure = Mockito.mock(Procedure.class);
 		Mockito.when(procedure.dataInputDomain()).thenReturn(Mockito.mock(JobProcedureDomain.class));
@@ -136,7 +139,7 @@ public class ProcedureUpdateTest {
 		// One procedure is needed since else it would directly jump to EndProcedure and finish the job
 		// Simplest possible idea: procedure only needs to be executed once
 		job = Job.create("S1").addSucceedingProcedure(WordCountMapper.create(), null, 1, 1, false, false);
-		procedureUpdate = ProcedureUpdate.create(job, calculationMsgConsumer);
+		procedureUpdate = new ProcedureUpdate(job, calculationMsgConsumer);
 
 		// Assumption: only one file expected
 		JobProcedureDomain startInJPD = Mockito.mock(JobProcedureDomain.class);
@@ -144,9 +147,10 @@ public class ProcedureUpdateTest {
 		job.currentProcedure().dataInputDomain(startInJPD);
 		assertEquals(false, job.procedure(0).isFinished());
 		assertEquals(false, job.procedure(1).isFinished());
-		assertEquals(true, job.procedure(2).isFinished());
+		assertEquals(true, job.procedure(2).isFinished()); 
 		assertEquals(0, job.currentProcedure().procedureIndex());
-		assertEquals(StartProcedure.class.getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
+		assertEquals(StartProcedure.class.getSimpleName(),
+				job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(false, job.isFinished());
 		assertEquals(job.procedure(0).resultOutputDomain(), job.procedure(1).dataInputDomain()); // null
 
@@ -160,7 +164,8 @@ public class ProcedureUpdateTest {
 		assertEquals(false, job.procedure(1).isFinished());
 		assertEquals(true, job.procedure(2).isFinished());
 		assertEquals(1, job.currentProcedure().procedureIndex());
-		assertEquals(WordCountMapper.class.getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
+		assertEquals(WordCountMapper.class.getSimpleName(),
+				job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(false, job.isFinished());
 		assertEquals(job.procedure(0).resultOutputDomain(), job.procedure(1).dataInputDomain());
 
@@ -170,10 +175,11 @@ public class ProcedureUpdateTest {
 		assertEquals(true, job.procedure(1).isFinished());
 		assertEquals(true, job.procedure(2).isFinished());
 		assertEquals(2, job.currentProcedure().procedureIndex());
-		assertEquals(EndProcedure.class.getSimpleName(), job.currentProcedure().executable().getClass().getSimpleName());
+		assertEquals(EndProcedure.class.getSimpleName(),
+				job.currentProcedure().executable().getClass().getSimpleName());
 		assertEquals(true, job.isFinished());
 		assertEquals(job.procedure(1).resultOutputDomain(), job.procedure(2).dataInputDomain());
-
+ 
 	}
 
 }
