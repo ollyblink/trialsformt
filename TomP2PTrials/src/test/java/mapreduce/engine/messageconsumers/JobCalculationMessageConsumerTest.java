@@ -46,8 +46,7 @@ public class JobCalculationMessageConsumerTest {
 		calculationExecutor = Mockito.mock(JobCalculationExecutor.class);
 		Mockito.when(calculationExecutor.id()).thenReturn("E1");
 		// Calculation MessageConsumer
-		calculationMsgConsumer = JobCalculationMessageConsumer.create();
-		calculationMsgConsumer.dhtConnectionProvider(mockDHT).executor(calculationExecutor);
+		calculationMsgConsumer = JobCalculationMessageConsumer.create(); 
 
 	}
 

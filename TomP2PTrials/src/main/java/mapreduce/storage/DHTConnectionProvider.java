@@ -37,51 +37,53 @@ import net.tomp2p.storage.StorageDisk;
  * @author Oliver
  *
  */
-public class DHTConnectionProvider implements IDHTConnectionProvider {
-	private static final int DEFAULT_NUMBER_OF_PEERS = 1;
+public enum DHTConnectionProvider implements IDHTConnectionProvider {
+	INSTANCE;
+	// private static final int DEFAULT_NUMBER_OF_PEERS = 1;
 	private static Logger logger = LoggerFactory.getLogger(DHTConnectionProvider.class);
 	private PeerDHT peerDHT;
 	private AbstractMapReduceBroadcastHandler broadcastHandler;
-	private String bootstrapIP;
-	private int port;
+
 	private String id;
-	private String storageFilePath;
-	private boolean isBootstrapper;
-	private int bootstrapPort;
+	// private String storageFilePath;
+	// private boolean isBootstrapper;
+	// private int bootstrapPort;
+	// private String bootstrapIP;
+	// private int port;
 
 	private DHTConnectionProvider() {
 
 	}
 
-	private DHTConnectionProvider(String bootstrapIP, int bootstrapPort, int port) {
-		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
-		this.bootstrapIP = bootstrapIP;
-		this.bootstrapPort = bootstrapPort;
-		this.port = port;
-		if (bootstrapPort == port) {
-			this.isBootstrapper = true;
-		}
-	}
+	// public DHTConnectionProvider(String bootstrapIP, int bootstrapPort, int port) {
+	// this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
+	// this.bootstrapIP = bootstrapIP;
+	// this.bootstrapPort = bootstrapPort;
+	// this.port = port;
+	// if (bootstrapPort == port) {
+	// this.isBootstrapper = true;
+	// }
+	// }
 
-	public static DHTConnectionProvider create(String bootstrapIP, int bootstrapPort, int port) {
-		return new DHTConnectionProvider(bootstrapIP, bootstrapPort, port).storageFilePath(null);
-	}
+	// public static DHTConnectionProvider create(String bootstrapIP, int bootstrapPort, int port) {
+	// return new DHTConnectionProvider(bootstrapIP, bootstrapPort, port).storageFilePath(null);
+	// }
 
 	// GETTER/SETTER START
 	// ======================
 
-	@Override
-	public DHTConnectionProvider storageFilePath(String storageFilePath) {
-		this.storageFilePath = storageFilePath;
-		return this;
-	}
+	// @Override
+	// public DHTConnectionProvider storageFilePath(String storageFilePath) {
+	// this.storageFilePath = storageFilePath;
+	// return this;
+	// }
 
 	/** Method for Testing purposes only... */
-	public DHTConnectionProvider externalPeers(PeerDHT peerDHT, AbstractMapReduceBroadcastHandler bcHandler) {
+	public DHTConnectionProvider externalPeers(PeerDHT peerDHT) {
 		this.peerDHT = peerDHT;
-		if (bcHandler != null) {
-			this.broadcastHandler = bcHandler.dhtConnectionProvider(this);
-		}
+		// if (bcHandler != null) {
+		// this.broadcastHandler = bcHandler.dhtConnectionProvider(this);
+		// }
 		return this;
 	}
 
@@ -99,36 +101,51 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 	// ======================
 
 	@Override
-	public PeerDHT connect() throws Exception {
+	public PeerDHT connect(String bootstrapIP, int bootstrapPort, int port, String storageFilePath) throws Exception {
+		// () {
+		this.id = IDCreator.INSTANCE.createTimeRandomID(this.getClass().getSimpleName());
+		// this.bootstrapIP = bootstrapIP;
+		// this.bootstrapPort = bootstrapPort;
+		// this.port = port;
+
+		boolean isBootstrapper = false;
+		if (bootstrapPort == port) {
+			isBootstrapper = true;
+		}
+		// }
 		if (broadcastHandler == null) {
 			throw new Exception("Broadcasthandler not set!");
-		} else {
-			this.broadcastHandler.dhtConnectionProvider(this);
 		}
+		// else {
+		// this.broadcastHandler.dhtConnectionProvider(this);
+		// }
 
 		try {
 
-			Peer peer = new PeerBuilder(Number160.createHash(this.id)).ports(port)
-					.broadcastHandler(broadcastHandler).start();
+			Peer peer = new PeerBuilder(Number160.createHash(this.id)).ports(port).broadcastHandler(broadcastHandler).start();
 
-			if (!this.isBootstrapper) {
-				peer.bootstrap().inetAddress(InetAddress.getByName(bootstrapIP)).ports(bootstrapPort).start()
-						.awaitUninterruptibly().addListener(new BaseFutureAdapter<FutureBootstrap>() {
+			if (!isBootstrapper) {
+				peer.bootstrap().inetAddress(InetAddress.getByName(bootstrapIP)).ports(bootstrapPort).start().awaitUninterruptibly().addListener(new BaseFutureAdapter<FutureBootstrap>() {
 
-							@Override
-							public void operationComplete(FutureBootstrap future) throws Exception {
-								if (future.isSuccess()) {
-									logger.warn("successfully bootstrapped to " + bootstrapIP + "/"
-											+ bootstrapPort);
-								} else {
-									logger.warn("No success on bootstrapping: fail reason: "
-											+ future.failedReason());
-								}
-							}
+					@Override
+					public void operationComplete(FutureBootstrap future) throws Exception {
+						if (future.isSuccess()) {
+							logger.warn("successfully bootstrapped to " + bootstrapIP + "/" + bootstrapPort);
+						} else {
+							logger.warn("No success on bootstrapping: fail reason: " + future.failedReason());
+						}
+					}
 
-						});
+				});
 			}
-			return connectDHT(peer);
+			PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer);
+
+			if (storageFilePath != null) {
+				File folder = FileUtils.INSTANCE.createTmpFolder(storageFilePath, peer.peerID().toString());
+				peerDHTBuilder.storage(new StorageDisk(peer.peerID(), folder, null));
+			}
+			peerDHT = peerDHTBuilder.start();
+			return peerDHT;
 
 		} catch (IOException e) {
 			logger.debug("Exception on bootstrapping", e);
@@ -136,16 +153,16 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 		return null;
 	}
 
-	private PeerDHT connectDHT(Peer peer) {
-		PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer);
-
-		if (storageFilePath != null) {
-			File folder = FileUtils.INSTANCE.createTmpFolder(storageFilePath, peer.peerID().toString());
-			peerDHTBuilder.storage(new StorageDisk(peer.peerID(), folder, null));
-		}
-		peerDHT = peerDHTBuilder.start();
-		return peerDHT;
-	}
+	// private PeerDHT connectDHT(Peer peer, String storageFilePath) {
+	// PeerBuilderDHT peerDHTBuilder = new PeerBuilderDHT(peer);
+	//
+	// if (storageFilePath != null) {
+	// File folder = FileUtils.INSTANCE.createTmpFolder(storageFilePath, peer.peerID().toString());
+	// peerDHTBuilder.storage(new StorageDisk(peer.peerID(), folder, null));
+	// }
+	// peerDHT = peerDHTBuilder.start();
+	// return peerDHT;
+	// }
 
 	@Override
 	public void broadcastCompletion(IBCMessage completedMessage) {
@@ -178,28 +195,24 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public FutureGet getAll(String keyString, String domainString) {
-		return peerDHT.get(Number160.createHash(keyString)).domainKey(Number160.createHash(domainString))
-				.all().start();
+		return peerDHT.get(Number160.createHash(keyString)).domainKey(Number160.createHash(domainString)).all().start();
 	}
 
 	@Override
 	public FutureGet get(String keyString, String domainString) {
-		return peerDHT.get(Number160.createHash(keyString)).domainKey(Number160.createHash(domainString))
-				.start();
+		return peerDHT.get(Number160.createHash(keyString)).domainKey(Number160.createHash(domainString)).start();
 	}
 
 	@Override
 	public FuturePut add(String keyString, Object value, String domainString, boolean asList) {
 		try {
-			logger.info("add: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain("
-					+ domainString + ")");
+			logger.info("add: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain(" + domainString + ")");
 			Data valueData = new Data(value);
 			if (asList) {
 				valueData = new Data(new Value(value));
 			}
 
-			return this.peerDHT.add(Number160.createHash(keyString)).data(valueData)
-					.domainKey(Number160.createHash(domainString)).start();
+			return this.peerDHT.add(Number160.createHash(keyString)).data(valueData).domainKey(Number160.createHash(domainString)).start();
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -209,21 +222,17 @@ public class DHTConnectionProvider implements IDHTConnectionProvider {
 
 	@Override
 	public FuturePut addAll(String keyString, Collection<Data> values, String domainString) {
-		logger.info("addAll: Trying to perform: dHashtable.add(" + keyString + ", " + values + ").domain("
-				+ domainString + ")");
-		return this.peerDHT.add(Number160.createHash(keyString)).dataSet(values)
-				.domainKey(Number160.createHash(domainString)).start();
+		logger.info("addAll: Trying to perform: dHashtable.add(" + keyString + ", " + values + ").domain(" + domainString + ")");
+		return this.peerDHT.add(Number160.createHash(keyString)).dataSet(values).domainKey(Number160.createHash(domainString)).start();
 	}
 
 	@Override
 	public FuturePut put(String keyString, Object value, String domainString) {
 
 		try {
-			logger.info("put: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain("
-					+ domainString + ")");
+			logger.info("put: Trying to perform: dHashtable.add(" + keyString + ", " + value + ").domain(" + domainString + ")");
 
-			return this.peerDHT.put(Number160.createHash(keyString)).data(new Data(value))
-					.domainKey(Number160.createHash(domainString)).start();
+			return this.peerDHT.put(Number160.createHash(keyString)).data(new Data(value)).domainKey(Number160.createHash(domainString)).start();
 
 		} catch (IOException e) {
 			e.printStackTrace();

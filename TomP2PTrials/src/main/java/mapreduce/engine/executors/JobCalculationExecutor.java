@@ -2,7 +2,6 @@ package mapreduce.engine.executors;
 
 import static mapreduce.utils.SyncedCollectionProvider.syncedArrayList;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -18,9 +17,8 @@ import mapreduce.execution.domains.JobProcedureDomain;
 import mapreduce.execution.procedures.IExecutable;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.tasks.Task;
-import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
-import mapreduce.utils.IDCreator;
 import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -28,24 +26,29 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.storage.Data;
 
-public class JobCalculationExecutor extends AbstractExecutor {
+public class JobCalculationExecutor implements IJobCalculationExecutor {
+	// INSTANCE;
 	private static Logger logger = LoggerFactory.getLogger(JobCalculationExecutor.class);
-
-	// private Map<String, ListMultimap<Task, BaseFuture>> futures;
+ 
+	protected PerformanceInfo performanceInformation;
 
 	private JobCalculationExecutor() {
-		super(IDCreator.INSTANCE.createTimeRandomID(JobCalculationExecutor.class.getSimpleName()));
+ 	}
+ 
+	@Override
+	public PerformanceInfo performanceInformation() {
+		return this.performanceInformation;
 	}
 
-	public static JobCalculationExecutor create() {
-		return new JobCalculationExecutor();
+	public static JobCalculationExecutor create( ) {
+		return new JobCalculationExecutor( );
 	}
 
+	@Override
 	public void executeTask(Task task, Procedure procedure) {
 		logger.info("executeTask: Task to execute: " + task);
-		dhtConnectionProvider.getAll(task.key(), procedure.dataInputDomain().toString()).addListener(new BaseFutureAdapter<FutureGet>() {
+		DHTConnectionProvider.INSTANCE.getAll(task.key(), procedure.dataInputDomain().toString()).addListener(new BaseFutureAdapter<FutureGet>() {
 
 			@Override
 			public void operationComplete(FutureGet future) throws Exception {
@@ -57,14 +60,14 @@ public class JobCalculationExecutor extends AbstractExecutor {
 						values.add(taskValue);
 					}
 
-					JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.jobId(), procedure.dataInputDomain().jobSubmissionCount(), id, procedure.executable().getClass().getSimpleName(),
+					JobProcedureDomain outputJPD = JobProcedureDomain.create(procedure.jobId(), procedure.dataInputDomain().jobSubmissionCount(), DomainProvider.UNIT_ID, procedure.executable().getClass().getSimpleName(),
 							procedure.procedureIndex());
 
-					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), id, task.newStatusIndex(), outputJPD);
+					ExecutorTaskDomain outputETD = ExecutorTaskDomain.create(task.key(), DomainProvider.UNIT_ID, task.newStatusIndex(), outputJPD);
 
-					IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
+					IContext context = DHTStorageContext.create().outputExecutorTaskDomain(outputETD);
 					if (procedure.combiner() != null) {
-						IContext combinerContext = DHTStorageContext.create().outputExecutorTaskDomain(outputETD).dhtConnectionProvider(dhtConnectionProvider);
+						IContext combinerContext = DHTStorageContext.create().outputExecutorTaskDomain(outputETD);
 						context.combiner((IExecutable) procedure.combiner(), combinerContext);
 					}
 					((IExecutable) procedure.executable()).process(task.key(), values, context);
@@ -100,11 +103,12 @@ public class JobCalculationExecutor extends AbstractExecutor {
 		// Adds it to itself, does not receive broadcasts... Makes sure this result is ignored in case another was received already dhtConnectionProvider.broadcastCompletion(msg);
 		CompletedBCMessage msg = CompletedBCMessage.createCompletedTaskBCMessage(outputETD, procedure.dataInputDomain().nrOfFinishedTasks(procedure.nrOfFinishedAndTransferredTasks()));
 		// Adds it to itself, does not receive broadcasts... Makes sure this result is ignored in case another was received already
-		dhtConnectionProvider.broadcastCompletion(msg);//
-		dhtConnectionProvider.broadcastHandler().processMessage(msg, dhtConnectionProvider.broadcastHandler().getJob(outputJPD.jobId()));
+		DHTConnectionProvider.INSTANCE.broadcastCompletion(msg);//
+		DHTConnectionProvider.INSTANCE.broadcastHandler().processMessage(msg, DHTConnectionProvider.INSTANCE.broadcastHandler().getJob(outputJPD.jobId()));
 		logger.info("executeTask: Successfully broadcasted TaskCompletedBCMessage for task " + task);
 	}
 
+	@Override
 	public void switchDataFromTaskToProcedureDomain(Procedure procedure, Task task) {
 		if (task.isFinished() && !task.isInProcedureDomain()) {
 			logger.info("switchDataFromTaskToProcedureDomain: Transferring task " + task + " to procedure domain ");
@@ -114,11 +118,11 @@ public class JobCalculationExecutor extends AbstractExecutor {
 
 			ExecutorTaskDomain fromETD = task.resultOutputDomain();
 
-			JobProcedureDomain toJPD = JobProcedureDomain.create(procedure.jobId(), procedure.dataInputDomain().jobSubmissionCount(), id, procedure.executable().getClass().getSimpleName(),
+			JobProcedureDomain toJPD = JobProcedureDomain.create(procedure.jobId(), procedure.dataInputDomain().jobSubmissionCount(), DomainProvider.UNIT_ID, procedure.executable().getClass().getSimpleName(),
 					procedure.procedureIndex());
 			// transferDataFromETDtoJPD(taskToTransfer, from, to, futureGetKeys, futureGetValues, futurePuts);
-			
-			futureGetKeys.add(dhtConnectionProvider.getAll(DomainProvider.TASK_OUTPUT_RESULT_KEYS, fromETD.toString()).addListener(new BaseFutureAdapter<FutureGet>() {
+
+			futureGetKeys.add(DHTConnectionProvider.INSTANCE.getAll(DomainProvider.TASK_OUTPUT_RESULT_KEYS, fromETD.toString()).addListener(new BaseFutureAdapter<FutureGet>() {
 
 				@Override
 				public void operationComplete(FutureGet future) throws Exception {
@@ -127,25 +131,26 @@ public class JobCalculationExecutor extends AbstractExecutor {
 						for (Number640 n : keySet) {
 							String taskOutputKey = (String) future.dataMap().get(n).object();
 							logger.info("transferDataFromETDtoJPD:: taskOutputKey: " + taskOutputKey);
-							futureGetValues.add(dhtConnectionProvider.getAll(taskOutputKey, fromETD.toString()).addListener(new BaseFutureAdapter<FutureGet>() {
+							futureGetValues.add(DHTConnectionProvider.INSTANCE.getAll(taskOutputKey, fromETD.toString()).addListener(new BaseFutureAdapter<FutureGet>() {
 
 								@Override
 								public void operationComplete(FutureGet future) throws Exception {
 									if (future.isSuccess()) {
-//										Collection<Data> values = future.dataMap().values();
-//										List<Object> realValues = syncedArrayList();
-//										for (Data d : values) {
-//											realValues.add(((Value) d.object()).value());
-//										}
+										// Collection<Data> values = future.dataMap().values();
+										// List<Object> realValues = syncedArrayList();
+										// for (Data d : values) {
+										// realValues.add(((Value) d.object()).value());
+										// }
 
-										futurePuts.add(dhtConnectionProvider.addAll(taskOutputKey, future.dataMap().values(), toJPD.toString()).addListener(new BaseFutureAdapter<FuturePut>() {
+										futurePuts
+												.add(DHTConnectionProvider.INSTANCE.addAll(taskOutputKey, future.dataMap().values(), toJPD.toString()).addListener(new BaseFutureAdapter<FuturePut>() {
 
 											@Override
 											public void operationComplete(FuturePut future) throws Exception {
 
 												if (future.isSuccess()) {
-													logger.info("transferDataFromETDtoJPD::Successfully added task output values of task output key \"" + taskOutputKey
-															+ "\" for task " + task.key() + " to output procedure domain " + toJPD.toString());
+													logger.info("transferDataFromETDtoJPD::Successfully added task output values of task output key \"" + taskOutputKey + "\" for task " + task.key()
+															+ " to output procedure domain " + toJPD.toString());
 
 												} else {
 													logger.info("transferDataFromETDtoJPD::Failed to add values for task output key " + taskOutputKey + " to output procedure domain "
@@ -154,7 +159,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 											}
 
 										}));
-										futurePuts.add(dhtConnectionProvider.add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, taskOutputKey, toJPD.toString(), false)
+										futurePuts.add(DHTConnectionProvider.INSTANCE.add(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, taskOutputKey, toJPD.toString(), false)
 												.addListener(new BaseFutureAdapter<FuturePut>() {
 
 											@Override
@@ -240,12 +245,13 @@ public class JobCalculationExecutor extends AbstractExecutor {
 
 		CompletedBCMessage msg = tryCompletingProcedure(procedure);
 		if (msg != null) {
-			dhtConnectionProvider.broadcastCompletion(msg);
-			dhtConnectionProvider.broadcastHandler().processMessage(msg, dhtConnectionProvider.broadcastHandler().getJob(procedure.jobId()));
+			DHTConnectionProvider.INSTANCE.broadcastCompletion(msg);
+			DHTConnectionProvider.INSTANCE.broadcastHandler().processMessage(msg, DHTConnectionProvider.INSTANCE.broadcastHandler().getJob(procedure.jobId()));
 			logger.info("broadcastProcedureCompleted:: Broadcasted Completed Procedure MSG: " + msg);
 		}
 	}
 
+	@Override
 	public CompletedBCMessage tryCompletingProcedure(Procedure procedure) {
 		JobProcedureDomain dataInputDomain = procedure.dataInputDomain();
 		int expectedSize = dataInputDomain.expectedNrOfFiles();
@@ -256,7 +262,7 @@ public class JobCalculationExecutor extends AbstractExecutor {
 		if (expectedSize == currentSize) {
 			if (procedure.isCompleted()) {
 				JobProcedureDomain outputProcedure = JobProcedureDomain
-						.create(procedure.jobId(), dataInputDomain.jobSubmissionCount(), id, procedure.executable().getClass().getSimpleName(), procedure.procedureIndex())
+						.create(procedure.jobId(), dataInputDomain.jobSubmissionCount(), DomainProvider.UNIT_ID, procedure.executable().getClass().getSimpleName(), procedure.procedureIndex())
 						.resultHash(procedure.resultHash()).expectedNrOfFiles(currentSize);
 				logger.info("tryCompleteProcedure:: new output procedure is: " + outputProcedure);
 				CompletedBCMessage msg = CompletedBCMessage.createCompletedProcedureBCMessage(outputProcedure, dataInputDomain);
@@ -264,25 +270,6 @@ public class JobCalculationExecutor extends AbstractExecutor {
 			}
 		}
 		return null;
-	}
-
-	// private void transferDataFromETDtoJPD(Task task, ExecutorTaskDomain fromETD, JobProcedureDomain toJPD, List<FutureGet> futureGetKeys, List<FutureGet> futureGetValues, List<FuturePut>
-	// futurePuts) {
-	//
-	//
-	//
-	// }
-
-	@Override
-	public JobCalculationExecutor dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
-		this.dhtConnectionProvider = dhtConnectionProvider;
-		return this;
-	}
-
-	@Override
-	public JobCalculationExecutor performanceInformation(PerformanceInfo performanceInformation) {
-		this.performanceInformation = performanceInformation;
-		return this;
 	}
 
 }

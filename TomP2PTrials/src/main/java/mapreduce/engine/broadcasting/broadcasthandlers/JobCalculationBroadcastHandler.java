@@ -9,6 +9,7 @@ import mapreduce.engine.messageconsumers.JobCalculationMessageConsumer;
 import mapreduce.execution.jobs.Job;
 import mapreduce.execution.procedures.Procedure;
 import mapreduce.execution.procedures.Procedures;
+import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -23,53 +24,44 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 		synchronized (jobFuturesFor) {
 			Job job = getJob(jobId);
 			if (job == null) {
-				dhtConnectionProvider.get(DomainProvider.JOB, jobId)
-						.addListener(new BaseFutureAdapter<FutureGet>() {
+				DHTConnectionProvider.INSTANCE.get(DomainProvider.JOB, jobId).addListener(new BaseFutureAdapter<FutureGet>() {
 
-							@Override
-							public void operationComplete(FutureGet future) throws Exception {
-								if (future.isSuccess()) {
-									if (future.data() != null) {
-										Job job = (Job) future.data().object();
-										for (Procedure procedure : job.procedures()) {
-											if (procedure.executable() instanceof String) {// Means a java
-																							// script
-																							// function -->
-																							// convert
-												procedure.executable(Procedures.convertJavascriptToJava(
-														(String) procedure.executable()));
-											}
-											if (procedure.combiner() != null
-													&& procedure.combiner() instanceof String) {
-												// Means a java script function --> convert
-												procedure.combiner(Procedures.convertJavascriptToJava(
-														(String) procedure.combiner()));
-											}
-											logger.info("After possible conversion: Procedure ["
-													+ procedure.executable().getClass().getSimpleName()
-													+ "] needs [" + procedure.nrOfSameResultHash()
-													+ "] result hashes to finish");
-										}
-										processMessage(bcMessage, job);
+					@Override
+					public void operationComplete(FutureGet future) throws Exception {
+						if (future.isSuccess()) {
+							if (future.data() != null) {
+								Job job = (Job) future.data().object();
+								for (Procedure procedure : job.procedures()) {
+									if (procedure.executable() instanceof String) {// Means a java
+																					// script
+																					// function -->
+																					// convert
+										procedure.executable(Procedures.convertJavascriptToJava((String) procedure.executable()));
 									}
-								} else {
-									logger.info(
-											"No success retrieving Job (" + jobId + ") from DHT. Try again");
+									if (procedure.combiner() != null && procedure.combiner() instanceof String) {
+										// Means a java script function --> convert
+										procedure.combiner(Procedures.convertJavascriptToJava((String) procedure.combiner()));
+									}
+									logger.info("After possible conversion: Procedure [" + procedure.executable().getClass().getSimpleName() + "] needs [" + procedure.nrOfSameResultHash()
+											+ "] result hashes to finish");
 								}
+								processMessage(bcMessage, job);
 							}
-						});
+						} else {
+							logger.info("No success retrieving Job (" + jobId + ") from DHT. Try again");
+						}
+					}
+				});
 			} else {// Don't receive it if I sent it to myself
 				if (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
 					abortJobExecution(job);
 					while (job.submissionCount() < bcMessage.inputDomain().jobSubmissionCount()) {
-						logger.info("incrementing job submission count from " + job.submissionCount() + " to "
-								+ bcMessage.inputDomain().jobSubmissionCount());
+						logger.info("incrementing job submission count from " + job.submissionCount() + " to " + bcMessage.inputDomain().jobSubmissionCount());
 						job.incrementSubmissionCounter();
 						logger.info("incremented job submission count. It's now " + job.submissionCount());
 					}
 				}
-				if (messageConsumer.executor().id() != null
-						&& !bcMessage.outputDomain().executor().equals(messageConsumer.executor().id())) {
+				if (!bcMessage.outputDomain().executor().equals(DomainProvider.UNIT_ID)) {
 					processMessage(bcMessage, job);
 				}
 			}
@@ -88,8 +80,7 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 				public void run() {
 					bcMessage.execute(job, messageConsumer);
 				}
-			}, job.priorityLevel(), job.creationTime(), bcMessage.procedureIndex(), bcMessage.status(),
-					bcMessage.creationTime()));
+			}, job.priorityLevel(), job.creationTime(), bcMessage.procedureIndex(), bcMessage.status(), bcMessage.creationTime()));
 		} else {
 			abortJobExecution(job);
 		}
@@ -99,8 +90,7 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 	 *
 	 * 
 	 * @param nrOfConcurrentlyExecutedBCMessages
-	 *            number of threads for this thread pool: how many bc messages may be executed at the same
-	 *            time?
+	 *            number of threads for this thread pool: how many bc messages may be executed at the same time?
 	 * @return
 	 */
 	public static JobCalculationBroadcastHandler create(int nrOfConcurrentlyExecutedBCMessages) {
@@ -113,8 +103,7 @@ public class JobCalculationBroadcastHandler extends AbstractMapReduceBroadcastHa
 
 	@Override
 	public JobCalculationBroadcastHandler messageConsumer(IMessageConsumer messageConsumer) {
-		return (JobCalculationBroadcastHandler) super.messageConsumer(
-				(JobCalculationMessageConsumer) messageConsumer);
+		return (JobCalculationBroadcastHandler) super.messageConsumer((JobCalculationMessageConsumer) messageConsumer);
 	}
 
 	// Setter, Getter, Creator, Constructor follow below..

@@ -2,16 +2,15 @@ package mapreduce.utils.resultprinter;
 
 import java.util.Set;
 
-import mapreduce.storage.IDHTConnectionProvider;
+import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
-import mapreduce.utils.Value;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number640;
 
 public class DefaultResultPrinter implements IResultPrinter {
-	public void printResults(IDHTConnectionProvider dhtConnectionProvider, String outputDomainString) {
-		dhtConnectionProvider.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, outputDomainString).awaitUninterruptibly()
+	public void printResults(String outputDomainString) {
+		DHTConnectionProvider.INSTANCE.getAll(DomainProvider.PROCEDURE_OUTPUT_RESULT_KEYS, outputDomainString).awaitUninterruptibly()
 				.addListener(new BaseFutureAdapter<FutureGet>() {
 
 					@Override

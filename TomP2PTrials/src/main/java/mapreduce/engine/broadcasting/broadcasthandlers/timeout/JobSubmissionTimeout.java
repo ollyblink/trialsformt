@@ -11,21 +11,16 @@ import mapreduce.execution.jobs.Job;
 public class JobSubmissionTimeout extends AbstractTimeout {
 	private static Logger logger = LoggerFactory.getLogger(JobSubmissionTimeout.class);
 
-	public JobSubmissionTimeout(JobSubmissionBroadcastHandler broadcastHandler, Job job,
-			long retrievalTimestamp, IBCMessage bcMessage, long timeToLive) {
+	public JobSubmissionTimeout(JobSubmissionBroadcastHandler broadcastHandler, Job job, long retrievalTimestamp, IBCMessage bcMessage, long timeToLive) {
 		super(broadcastHandler, job, retrievalTimestamp, bcMessage, timeToLive);
 	}
 
 	@Override
 	public void run() {
 		sleep();
-		logger.info("run:: try resubmitting job " + job);
 		if (job.incrementSubmissionCounter() < job.maxNrOfSubmissionTrials()) {
-			logger.info("run:: after(job.incrementSubmissionCounter() < job.maxNrOfSubmissionTrials())");
-			((JobSubmissionExecutor) broadcastHandler.messageConsumer().executor()).submit(job);
+			JobSubmissionExecutor.create().submit(job);
 
-		} else {
-			logger.info("run::job submission aborted. Job: " + job);
 		}
 	}
 

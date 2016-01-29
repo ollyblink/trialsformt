@@ -21,32 +21,29 @@ import net.tomp2p.peers.Number160;
 public class TestUtils {
 	private static Random random = new Random();
 
-	public static IDHTConnectionProvider getTestConnectionProvider() {
-		return getTestConnectionProvider(random.nextInt(40000) + 4000, 1, false, null, null);
+	public static void getTestConnectionProvider() {
+		getTestConnectionProvider(random.nextInt(40000) + 4000, 1, false, null, null);
 
 	}
 
-	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers) {
-		return getTestConnectionProvider(port, nrOfPeers, false, null, null);
+	public static void getTestConnectionProvider(int port, int nrOfPeers) {
+		getTestConnectionProvider(port, nrOfPeers, false, null, null);
 
 	}
 
-	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers,
-			IMessageConsumer messageConsumer) {
-		return getTestConnectionProvider(port, nrOfPeers, true, null, messageConsumer);
+	public static void getTestConnectionProvider(int port, int nrOfPeers, IMessageConsumer messageConsumer) {
+		getTestConnectionProvider(port, nrOfPeers, true, null, messageConsumer);
 
 	}
 
-	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers, PeerDHT master,
-			IMessageConsumer messageConsumer) {
-		return getTestConnectionProvider(port, nrOfPeers, true, master, messageConsumer);
+	public static void getTestConnectionProvider(int port, int nrOfPeers, PeerDHT master, IMessageConsumer messageConsumer) {
+		getTestConnectionProvider(port, nrOfPeers, true, master, messageConsumer);
 
 	}
 
 	static final Random RND = new Random(42L);
 
-	public static IDHTConnectionProvider getTestConnectionProvider(
-			AbstractMapReduceBroadcastHandler bcHandler) {
+	public static IDHTConnectionProvider getTestConnectionProvider(AbstractMapReduceBroadcastHandler bcHandler) {
 		String bootstrapIP = "";
 		int bootstrapPort = random.nextInt(40000) + 4000;
 
@@ -61,13 +58,11 @@ public class TestUtils {
 			e.printStackTrace();
 		}
 
-		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider
-				.create(bootstrapIP, bootstrapPort, bootstrapPort).externalPeers(peerDHT, bcHandler);
+		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider.INSTANCE.externalPeers(peerDHT);
 		return dhtConnectionProvider;
 	}
 
-	public static IDHTConnectionProvider getTestConnectionProvider(int port, int nrOfPeers,
-			boolean hasBCHandler, PeerDHT master, IMessageConsumer messageConsumer) {
+	public static void getTestConnectionProvider(int port, int nrOfPeers, boolean hasBCHandler, PeerDHT master, IMessageConsumer messageConsumer) {
 		String bootstrapIP = "";
 		int bootstrapPort = port;
 		// DHTUtils dhtUtils = DHTUtils.newInstance(bootstrapIP, bootstrapPort);
@@ -89,8 +84,7 @@ public class TestUtils {
 		Example.bootstrap(peerArray);
 		Collections.addAll(peers, peerArray);
 
-		IDHTConnectionProvider dhtConnectionProvider = DHTConnectionProvider
-				.create(bootstrapIP, bootstrapPort, bootstrapPort).externalPeers(peers.get(0), bcHandler);
-		return dhtConnectionProvider;
+		DHTConnectionProvider.INSTANCE.externalPeers(peers.get(0));
+		// return dhtConnectionProvider;
 	}
 }

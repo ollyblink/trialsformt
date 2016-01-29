@@ -9,6 +9,7 @@ import com.google.common.collect.ListMultimap;
 
 import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.procedures.IExecutable;
+import mapreduce.storage.DHTConnectionProvider;
 import mapreduce.storage.IDHTConnectionProvider;
 import mapreduce.utils.DomainProvider;
 import mapreduce.utils.SyncedCollectionProvider;
@@ -20,7 +21,7 @@ public class DHTStorageContext implements IContext {
 	private static Logger logger = LoggerFactory.getLogger(DHTStorageContext.class);
 	// private IExecutable combiner;
 	private Number160 resultHash = Number160.ZERO;
-	private IDHTConnectionProvider dhtConnectionProvider;
+//	private IDHTConnectionProvider dhtConnectionProvider;
 	private List<FuturePut> futurePutData = SyncedCollectionProvider.syncedArrayList();
 	private ExecutorTaskDomain oETD;
 	private IExecutable combiner;
@@ -60,7 +61,7 @@ public class DHTStorageContext implements IContext {
 	}
 
 	private FuturePut add(String keyOut, Object valueOut, String oETDString, boolean asList) {
-		return this.dhtConnectionProvider.add(keyOut, valueOut, oETDString, asList).addListener(new BaseFutureAdapter<FuturePut>() {
+		return  DHTConnectionProvider.INSTANCE.add(keyOut, valueOut, oETDString, asList).addListener(new BaseFutureAdapter<FuturePut>() {
 
 			@Override
 			public void operationComplete(FuturePut future) throws Exception {
@@ -73,11 +74,11 @@ public class DHTStorageContext implements IContext {
 		});
 	}
 
-	@Override
-	public DHTStorageContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
-		this.dhtConnectionProvider = dhtConnectionProvider;
-		return this;
-	}
+//	@Override
+//	public DHTStorageContext dhtConnectionProvider(IDHTConnectionProvider dhtConnectionProvider) {
+//		this.dhtConnectionProvider = dhtConnectionProvider;
+//		return this;
+//	}
 
 	@Override
 	public Number160 resultHash() {

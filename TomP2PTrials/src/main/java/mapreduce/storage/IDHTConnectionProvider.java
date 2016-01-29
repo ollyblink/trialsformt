@@ -37,23 +37,20 @@ public interface IDHTConnectionProvider {
 	// Maintenance
 
 	/**
-	 * Creates a BroadcastHandler and Peer and connects to the DHT. If a bootstrap port and ip were provided (meaning, there are already peers
-	 * connected to a DHT), it will be bootstrap to that node.
+	 * Creates a BroadcastHandler and Peer and connects to the DHT. If a bootstrap port and ip were provided (meaning, there are already peers connected to a DHT), it will be bootstrap to that node.
 	 * 
-	 * @param performBlocking
 	 * @return
 	 * @throws Exception
 	 */
-	public PeerDHT connect() throws Exception;
+	public PeerDHT connect(String bootstrapIP, int bootstrapPort, int port, String storageFilePath) throws Exception;
 
 	public void shutdown();
 
-	public IDHTConnectionProvider storageFilePath(String storageFilePath);
+//	public IDHTConnectionProvider storageFilePath(String storageFilePath);
 
 	public AbstractMapReduceBroadcastHandler broadcastHandler();
 
 	public IDHTConnectionProvider broadcastHandler(AbstractMapReduceBroadcastHandler broadcastHandler);
-  
 
 	// public IDHTConnectionProvider isBootstrapper(boolean isBootstrapper);
 

@@ -26,7 +26,7 @@ import net.tomp2p.storage.Data;
 public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadcastHandler {
 	private static Logger logger = LoggerFactory.getLogger(AbstractMapReduceBroadcastHandler.class);
 
-	protected IDHTConnectionProvider dhtConnectionProvider;
+	// protected IDHTConnectionProvider dhtConnectionProvider;
 	protected IMessageConsumer messageConsumer;
 	protected PriorityExecutor taskExecutionServer;
 
@@ -46,7 +46,9 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 			NavigableMap<Number640, Data> dataMap = message.dataMapList().get(0).dataMap();
 			for (Number640 nr : dataMap.keySet()) {
 				IBCMessage bcMessage = (IBCMessage) dataMap.get(nr).object();
-				evaluateReceivedMessage(bcMessage);
+				if (bcMessage.inputDomain() != null || bcMessage.inputDomain().jobId() != null) {
+					evaluateReceivedMessage(bcMessage);
+				}
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
@@ -70,8 +72,7 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 			if (timeouts.containsKey(job)) {
 				timeouts.get(job).retrievalTimestamp(System.currentTimeMillis(), bcMessage);
 			} else {
-				AbstractTimeout timeout = AbstractTimeout.create(this, job, System.currentTimeMillis(),
-						bcMessage);
+				AbstractTimeout timeout = AbstractTimeout.create(this, job, System.currentTimeMillis(), bcMessage);
 				this.timeouts.put(job, timeout);
 				logger.info("Timeout: " + timeout);
 				this.timeoutThread = new Thread(timeout);// timeoutcounter for job
@@ -109,18 +110,14 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 		return this.messageConsumer;
 	}
 
-	public AbstractMapReduceBroadcastHandler dhtConnectionProvider(
-			IDHTConnectionProvider dhtConnectionProvider) {
-		this.dhtConnectionProvider = dhtConnectionProvider;
-		return this;
-	}
+	// public AbstractMapReduceBroadcastHandler dhtConnectionProvider(
+	// IDHTConnectionProvider dhtConnectionProvider) {
+	// this.dhtConnectionProvider = dhtConnectionProvider;
+	// return this;
+	// }
 
 	public ListMultimap<Job, Future<?>> jobFutures() {
 		return this.jobFuturesFor;
-	}
-
-	public String executorId() {
-		return this.messageConsumer.executor().id();
 	}
 
 	/**
@@ -138,8 +135,8 @@ public abstract class AbstractMapReduceBroadcastHandler extends StructuredBroadc
 	 */
 	public abstract void processMessage(IBCMessage bcMessage, Job job);
 
-	public IDHTConnectionProvider dhtConnectionProvider() {
-		return dhtConnectionProvider;
-	}
+	// public IDHTConnectionProvider dhtConnectionProvider() {
+	// return dhtConnectionProvider;
+	// }
 
 }

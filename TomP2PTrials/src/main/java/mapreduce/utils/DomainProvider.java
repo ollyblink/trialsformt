@@ -1,5 +1,6 @@
 package mapreduce.utils;
 
+import mapreduce.engine.executors.performance.PerformanceInfo;
 import mapreduce.execution.domains.ExecutorTaskDomain;
 import mapreduce.execution.domains.JobProcedureDomain;
 
@@ -9,6 +10,8 @@ public enum DomainProvider {
 	public static final String TASK_OUTPUT_RESULT_KEYS = "TASK_OUTPUT_RESULT_KEYS";
 	public static final String JOB = "JOB";
 	public static final String INITIAL_PROCEDURE = "INITIAL_PROCEDURE";
+	public static final String UNIT_ID = IDCreator.INSTANCE.createTimeRandomID("EXECUTION_UNIT");
+	public static PerformanceInfo PERFORMANCE_INFORMATION;
 
 	public String executorTaskDomain(ExecutorTaskDomain executorTaskDomainParameter) {
 		// ETD = EXECUTOR_TASK_DOMAIN
@@ -17,8 +20,7 @@ public enum DomainProvider {
 		// TSI = taskStatusIndex
 		// S = taskSubmissionCount
 		// C = taskCreationTime
-		return "ETD[T(" + executorTaskDomainParameter.taskId() + ")_P(" + executorTaskDomainParameter.executor() + ")_JSI("
-				+ executorTaskDomainParameter.taskStatusIndex() + ")]";
+		return "ETD[T(" + executorTaskDomainParameter.taskId() + ")_P(" + executorTaskDomainParameter.executor() + ")_JSI(" + executorTaskDomainParameter.taskStatusIndex() + ")]";
 	}
 
 	// Job procedure domain key generation
@@ -29,9 +31,8 @@ public enum DomainProvider {
 		// PE = procedureExecutor
 		// P = procedureSimpleName
 		// PI = procedureIndex
-		return "JPD[J(" + jobProcedureDomainParameter.jobId() + ")_JS(" + jobProcedureDomainParameter.jobSubmissionCount() + ")_PE("
-				+ jobProcedureDomainParameter.executor() + ")_P(" + jobProcedureDomainParameter.procedureSimpleName().toUpperCase() + ")_PI("
-				+ jobProcedureDomainParameter.procedureIndex() + ")]";
+		return "JPD[J(" + jobProcedureDomainParameter.jobId() + ")_JS(" + jobProcedureDomainParameter.jobSubmissionCount() + ")_PE(" + jobProcedureDomainParameter.executor() + ")_P("
+				+ jobProcedureDomainParameter.procedureSimpleName().toUpperCase() + ")_PI(" + jobProcedureDomainParameter.procedureIndex() + ")]";
 	}
 
 	// End Job procedure domain key generation
